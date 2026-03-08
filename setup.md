@@ -12,12 +12,26 @@ Current state:
 
 Steps:
 1. Connect the 4TB drive to your current PC using the StarTech USB-C to SATA adapter
-2. Copy all media from both the ADATA and 1TB onto the 4TB:
+2. Copy all media from the ADATA onto the 4TB:
    ```bash
    rsync -av /path/to/media/ /path/to/4tb/
    ```
-3. Verify the copy looks complete before wiping anything
-4. The ADATA and 1TB are now clear and ready for their new roles
+3. Copy photos off the 1TB WD onto the 4TB as well — they'll need to move temporarily since RAID 1 setup wipes both drives:
+   ```bash
+   rsync -av /path/to/photos/ /path/to/4tb/photos-backup/
+   ```
+4. Verify both copies look complete before wiping anything
+5. The ADATA and 1TB WD are now clear and ready for their new roles
+
+Once the server is built and RAID 1 is set up, copy photos from the 4TB back to `/mnt/personal01`:
+```bash
+rsync -av /mnt/plex01/photos-backup/ /mnt/personal01/photos/
+```
+
+Then delete the temporary backup from the 4TB:
+```bash
+rm -rf /mnt/plex01/photos-backup/
+```
 
 Drive assignments going into the build:
 - **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
