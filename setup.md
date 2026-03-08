@@ -2,6 +2,30 @@
 
 End-to-end setup for the home server. Follow phases in order.
 
+## Phase 0 — Before You Build: Consolidate Media
+
+Do this on your current PC before moving any drives to the server.
+
+Current state:
+- ~500GB of media split across the ADATA SSD and 1TB HDD
+- 4TB Seagate arriving with the case
+
+Steps:
+1. Connect the 4TB drive to your current PC (USB enclosure or SATA)
+2. Copy all media from both the ADATA and 1TB onto the 4TB:
+   ```bash
+   rsync -av /path/to/media/ /path/to/4tb/
+   ```
+3. Verify the copy looks complete before wiping anything
+4. The ADATA and 1TB are now clear and ready for their new roles
+
+Drive assignments going into the build:
+- **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
+- **1TB HDD** → `/mnt/storage` (photos)
+- **4TB HDD** → `/mnt/media` (Plex movies/TV)
+
+---
+
 ## Phase 1 — OS Install (Linux Mint)
 
 1. Download Linux Mint (latest LTS) from linuxmint.com — choose the Cinnamon edition
