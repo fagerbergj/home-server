@@ -291,6 +291,7 @@ See individual service directories:
 - [`plex/`](plex/) — Plex Media Server
 - [`minecraft/`](minecraft/) — Minecraft Server
 - [`photos/`](photos/) — Immich Photo Storage
+- [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
 
 > These will be set up in order. See each directory for its own README.
 

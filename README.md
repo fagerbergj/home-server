@@ -9,6 +9,7 @@ Personal home server running Linux Mint. This repo tracks configuration, docker 
 | Plex Media Server | Stream movies/TV locally and remotely |
 | Minecraft Server | Self-hosted game server |
 | Photo Storage | Personal photo backup and browsing |
+| qBittorrent | Download torrents directly to server via web UI |
 
 ## OS
 
