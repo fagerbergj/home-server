@@ -7,10 +7,10 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.yourdomain.com    ──► Plex      (32400)
-    │                      ──► photos.yourdomain.com  ──► Immich     (2283)
+    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com    ──► Plex    (32400)
+    │                      ──► photos.yourname.asuscomm.com  ──► Immich  (2283)
     │
-    └── :25565 ────────────────────────────────────────► Minecraft   (25565)
+    └── :25565 ──────────────────────────────────────────────► Minecraft (25565)
 ```
 
 ## Prerequisites
