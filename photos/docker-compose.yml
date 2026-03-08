@@ -6,6 +6,9 @@ services:
       - "2283:2283"
     env_file:
       - .env
+    environment:
+      - PUID=<immich-uid>         # run: id immich
+      - PGID=<personal-rw-gid>    # run: getent group personal-rw
     volumes:
       - /mnt/personal01/photos:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro

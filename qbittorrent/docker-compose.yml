@@ -4,7 +4,7 @@ services:
     container_name: qbittorrent
     environment:
       - PUID=<qbittorrent-uid>  # run: id qbittorrent
-      - PGID=<media-gid>        # run: getent group media
+      - PGID=<plex-rw-gid>      # run: getent group plex-rw
       - TZ=America/Chicago
       - WEBUI_PORT=8080
     volumes:

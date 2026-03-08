@@ -114,34 +114,50 @@ sudo useradd -r -s /sbin/nologin immich
 sudo useradd -r -s /sbin/nologin minecraft
 sudo useradd -r -s /sbin/nologin qbittorrent
 
-# Create a shared media group for drive access
-sudo groupadd media
-sudo usermod -aG media plex
-sudo usermod -aG media immich
-sudo usermod -aG media qbittorrent
+# Create groups
+sudo groupadd plex-rw
+sudo groupadd plex-ro
+sudo groupadd personal-rw
+sudo groupadd personal-ro
+
+# Assign groups
+sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
+sudo usermod -aG plex-rw jason         # manage plex drive directly
+sudo usermod -aG plex-ro plex          # plex reads media
+
+sudo usermod -aG personal-rw immich    # immich writes photos
+sudo usermod -aG personal-rw jason     # manage personal drive directly
 ```
 
-Note the UIDs — you'll need them for the compose files:
+Note the UIDs and GIDs — you'll need them for the compose files:
 ```bash
 id plex
 id immich
 id minecraft
 id qbittorrent
+getent group plex-rw
+getent group plex-ro
+getent group personal-rw
 ```
 
 ### Folder Structure and Permissions
 
 ```bash
-# Plex drive — owned by qbittorrent (writes downloads), plex reads via media group
+sudo apt install -y acl
+```
+
+```bash
+# Plex drive
 sudo mkdir -p /mnt/plex01/movies
 sudo mkdir -p /mnt/plex01/tv
-sudo chown -R qbittorrent:media /mnt/plex01
-sudo chmod -R 755 /mnt/plex01  # owner(qbittorrent) read/write, group(media) read-only
+sudo chown -R root:plex-rw /mnt/plex01
+sudo chmod -R 2775 /mnt/plex01  # setgid — new files inherit plex-rw group
+sudo setfacl -R -m g:plex-ro:rx /mnt/plex01  # plex-ro gets read-only
 
 # Personal drive
 sudo mkdir -p /mnt/personal01/photos
-sudo chown -R immich:media /mnt/personal01
-sudo chmod -R 775 /mnt/personal01
+sudo chown -R root:personal-rw /mnt/personal01
+sudo chmod -R 2775 /mnt/personal01  # setgid — new files inherit personal-rw group
 ```
 
 Verify:
