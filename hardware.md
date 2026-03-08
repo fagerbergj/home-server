@@ -77,6 +77,7 @@ The LGA1155 / Sandy Bridge platform is from 2011 and is end-of-life. It will wor
 | Second media HDD (optional) | Medium | If library is large, separate Plex/photos drives |
 | NVIDIA drivers + nvidia-container-toolkit | **High** | Required for GTX 780 NVENC in Docker |
 | ATX mid-tower case | **High** | See case notes below |
+| CPU cooler (LGA1155) | Medium | Stock cooler is loud/hot for 24/7 use — Cooler Master Hyper 212 recommended (~$30 new, less used) |
 
 ---
 
