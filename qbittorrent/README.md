@@ -45,7 +45,7 @@ Set default save path in Options > Downloads:
 | Content | Path |
 |---------|------|
 | Movies | `/mnt/plex01/movies` |
-| TV | `/mnt/plex01/tv` |
+| TV | `/mnt/plex01/shows` |
 
 ## Updating
 

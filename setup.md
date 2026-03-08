@@ -212,7 +212,7 @@ sudo apt install -y acl
 ```bash
 # Plex drive
 sudo mkdir -p /mnt/plex01/movies
-sudo mkdir -p /mnt/plex01/tv
+sudo mkdir -p /mnt/plex01/shows
 sudo chown -R root:plex-rw /mnt/plex01
 sudo chmod -R 2775 /mnt/plex01  # setgid — new files inherit plex-rw group
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex01  # plex-ro gets read-only
