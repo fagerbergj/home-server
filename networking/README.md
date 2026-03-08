@@ -15,13 +15,17 @@ Internet
 
 ## Prerequisites
 
-- A domain name (e.g. from Namecheap or Porkbun, ~$12/year)
-- DNS A records pointing to your home IP for each subdomain:
-  ```
-  plex.yourdomain.com    → your home IP
-  photos.yourdomain.com  → your home IP
-  ```
-  Find your home IP: https://whatismyip.com
+- ASUS DDNS set up (free, built into your RT-AX58U)
+- In router UI: WAN > DDNS > enable, choose a hostname e.g. `yourname.asuscomm.com`
+- The router will automatically update DNS if your home IP changes
+
+Your services will be accessible at:
+```
+plex.yourname.asuscomm.com
+photos.yourname.asuscomm.com
+```
+
+> You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
 
 ## Router Port Forwarding
 
@@ -93,9 +97,6 @@ yourdomain.com:25565
 ```
 or just your home IP if you don't want to use a subdomain.
 
-## Dynamic DNS (optional)
+## Dynamic DNS
 
-Home IPs can change. If your ISP changes your IP, your DNS records break. To handle this automatically:
-- Many routers support DDNS built-in (check your router settings)
-- Or run a DDNS client like `ddclient` on the server
-- Cloudflare, No-IP, and DuckDNS all offer free DDNS services
+Handled automatically by your ASUS RT-AX58U via the built-in DDNS feature. No extra software needed.

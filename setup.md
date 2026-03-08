@@ -212,8 +212,8 @@ See individual service directories:
 
 See [`networking/`](networking/) for the full networking setup. Summary:
 
-1. Buy a domain (~$12/year)
-2. Point DNS A records for `plex.` and `photos.` subdomains to your home IP
+1. Enable ASUS DDNS on the RT-AX58U: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`) — free, no domain purchase needed
+2. Point subdomains at your DDNS hostname
 3. Forward ports 80, 443, and 25565 on your router to the server
 4. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
 5. Install the Immich mobile app and point it at `https://photos.yourdomain.com` for automatic photo backup
