@@ -46,6 +46,50 @@ sudo mount -a
 lsblk
 ```
 
+### Folder Structure and Permissions
+
+Create the expected folder structure on each drive:
+```bash
+sudo mkdir -p /mnt/media/movies
+sudo mkdir -p /mnt/media/tv
+sudo mkdir -p /mnt/storage/photos
+```
+
+Give your user ownership of both drives so Docker containers (running as your UID) can read and write without permission errors:
+```bash
+sudo chown -R $USER:$USER /mnt/media
+sudo chown -R $USER:$USER /mnt/storage
+```
+
+Verify:
+```bash
+ls -la /mnt/media
+ls -la /mnt/storage
+```
+
+Both should show your username as owner.
+
+### Checking Drive Health
+
+Check drive health periodically with smartmontools:
+```bash
+sudo apt install -y smartmontools
+
+# Quick health check
+sudo smartctl -H /dev/sda
+
+# Full drive info
+sudo smartctl -a /dev/sda
+```
+
+Replace `/dev/sda` with the correct device — use `lsblk` to find device names.
+
+### Checking Disk Usage
+
+```bash
+df -h
+```
+
 ---
 
 ## Phase 3 — NVIDIA Drivers
