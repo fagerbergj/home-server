@@ -21,8 +21,8 @@
    ```
 
 5. Walk through the setup wizard — add media libraries pointing to:
-   - `/mnt/media` — movies, TV shows
-   - `/mnt/storage` — anything on the 1TB drive
+   - `/mnt/plex01/movies` — movies
+   - `/mnt/plex01/shows` — TV shows
 
 ## Enable Hardware Transcoding
 

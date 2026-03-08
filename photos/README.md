@@ -12,8 +12,8 @@ Self-hosted Google Photos alternative. Runs four containers: server, ML worker, 
 
 2. Create the photo upload directory on the storage drive:
    ```bash
-   sudo mkdir -p /mnt/storage/photos
-   sudo chown $USER:$USER /mnt/storage/photos
+   sudo mkdir -p /mnt/personal01/photos
+   sudo chown immich:personal-rw /mnt/personal01/photos
    ```
 
 3. Start all services:
@@ -63,7 +63,7 @@ docker compose logs -f immich-machine-learning
 ## Backups
 
 Two things to back up:
-- **Photos:** `/mnt/storage/photos` — your actual image files
+- **Photos:** `/mnt/personal01/photos` — your actual image files
 - **Database:** run a Postgres dump
   ```bash
   docker exec immich-postgres pg_dumpall -U immich > immich-db-backup-$(date +%F).sql
