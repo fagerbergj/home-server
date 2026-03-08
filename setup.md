@@ -8,7 +8,7 @@ Do this on your current PC before moving any drives to the server.
 
 Current state:
 - ~500GB of media split across the ADATA SSD (`/mnt/ADATASSD`) and 1TB WD HDD (`/mnt/HDD`)
-- ~18GB of photos on `/media/jason/Removable Drive/Pictures`
+- ~18GB of photos on `/media/jason/Removable Drive/Pictures` — safe, not moving to server until after RAID 1 is set up
 - 4TB Seagate, 1TB Seagate, and Define R5 case purchased and arriving
 - StarTech USB-C to SATA adapter purchased for connecting the 4TB externally
 
@@ -18,22 +18,10 @@ Steps:
    ```bash
    rsync -av /mnt/ADATASSD/Videos/ /path/to/4tb/
    ```
-3. Copy photos off the removable drive onto the 4TB as well — they'll need to move temporarily since RAID 1 setup wipes both drives:
-   ```bash
-   rsync -av "/media/jason/Removable Drive/Pictures/" /path/to/4tb/photos-backup/
-   ```
-4. Verify both copies look complete before wiping anything
-5. The ADATA and 1TB WD are now clear and ready for their new roles
+3. Verify the copy looks complete before wiping anything
+4. The ADATA and 1TB WD are now clear and ready for their new roles
 
-Once the server is built and RAID 1 is set up, copy photos from the 4TB back to `/mnt/personal01`:
-```bash
-rsync -av /mnt/plex01/photos-backup/ /mnt/personal01/photos/
-```
-
-Then delete the temporary backup from the 4TB:
-```bash
-rm -rf /mnt/plex01/photos-backup/
-```
+Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 2.
 
 Drive assignments going into the build:
 - **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
@@ -168,6 +156,15 @@ sudo mdadm --detail /dev/md0
 ```
 
 You should see both drives listed as `active sync`.
+
+### Copy Photos to Server
+
+Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your main PC over SSH:
+
+```bash
+# Run on your main PC
+rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason@<server-ip>:/mnt/personal01/photos/
+```
 
 ### Service Users
 
