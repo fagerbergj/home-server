@@ -166,8 +166,11 @@ See individual service directories:
 
 ## Phase 8 — Networking
 
-> To be documented — covers:
-> - Static local IP for the server
-> - Port forwarding on the router (Plex, Minecraft)
-> - Firewall (ufw) rules
-> - Optional: remote access / VPN
+See [`networking/`](networking/) for the full networking setup. Summary:
+
+1. Buy a domain (~$12/year)
+2. Point DNS A records for `plex.` and `photos.` subdomains to your home IP
+3. Forward ports 80, 443, and 25565 on your router to the server
+4. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
+5. Install the Immich mobile app and point it at `https://photos.yourdomain.com` for automatic photo backup
+6. Friends connect to Minecraft via `yourdomain.com:25565`

@@ -1,0 +1,101 @@
+# Networking
+
+Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt.
+
+## Architecture
+
+```
+Internet
+    │
+    ├── :80 / :443 ──► NPM ──► plex.yourdomain.com    ──► Plex      (32400)
+    │                      ──► photos.yourdomain.com  ──► Immich     (2283)
+    │
+    └── :25565 ────────────────────────────────────────► Minecraft   (25565)
+```
+
+## Prerequisites
+
+- A domain name (e.g. from Namecheap or Porkbun, ~$12/year)
+- DNS A records pointing to your home IP for each subdomain:
+  ```
+  plex.yourdomain.com    → your home IP
+  photos.yourdomain.com  → your home IP
+  ```
+  Find your home IP: https://whatismyip.com
+
+## Router Port Forwarding
+
+Forward these ports to the server's local IP:
+
+| External Port | Internal Port | Protocol | Service |
+|---------------|---------------|----------|---------|
+| 80 | 80 | TCP | NPM (HTTP / SSL verification) |
+| 443 | 443 | TCP | NPM (HTTPS) |
+| 25565 | 25565 | TCP | Minecraft |
+
+## Firewall (ufw)
+
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 25565/tcp
+sudo ufw enable
+```
+
+## Start NPM
+
+```bash
+docker compose up -d
+```
+
+## NPM First-Time Setup
+
+1. Open the admin UI: `http://<server-local-ip>:81`
+2. Default login:
+   - Email: `admin@example.com`
+   - Password: `changeme`
+3. Change your email and password immediately
+
+## Add Proxy Hosts
+
+For each service, go to **Proxy Hosts > Add Proxy Host**:
+
+### Plex
+- Domain: `plex.yourdomain.com`
+- Scheme: `http`
+- Forward Hostname/IP: `127.0.0.1`
+- Forward Port: `32400`
+- Enable **Websockets Support**
+- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+
+### Immich
+- Domain: `photos.yourdomain.com`
+- Scheme: `http`
+- Forward Hostname/IP: `127.0.0.1`
+- Forward Port: `2283`
+- Enable **Websockets Support**
+- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+
+## Mobile Photo Uploads (Immich)
+
+Install the Immich app on your phone (iOS or Android). In the app settings:
+- Server URL: `https://photos.yourdomain.com`
+- Log in with your Immich account
+- Enable **Automatic Background Backup**
+
+Photos will upload automatically over both WiFi and mobile data.
+
+## Minecraft
+
+Minecraft bypasses NPM entirely — it uses raw TCP on port 25565. Friends connect using:
+```
+yourdomain.com:25565
+```
+or just your home IP if you don't want to use a subdomain.
+
+## Dynamic DNS (optional)
+
+Home IPs can change. If your ISP changes your IP, your DNS records break. To handle this automatically:
+- Many routers support DDNS built-in (check your router settings)
+- Or run a DDNS client like `ddclient` on the server
+- Cloudflare, No-IP, and DuckDNS all offer free DDNS services
