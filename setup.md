@@ -271,12 +271,11 @@ Install Claude Code:
 npm install -g @anthropic-ai/claude-code
 ```
 
-Authenticate:
+Authenticate via API key — get one from console.anthropic.com:
 ```bash
-claude
+echo 'export ANTHROPIC_API_KEY=your-key-here' >> ~/.bashrc
+source ~/.bashrc
 ```
-
-This will open a browser to authenticate with your Anthropic account. Follow the prompts.
 
 Verify:
 ```bash
