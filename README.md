@@ -37,6 +37,18 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 
 > To be evaluated — see [hardware.md](hardware.md)
 
+## Setup Order
+
+1. OS Install (Linux Mint)
+2. Mount drives
+3. NVIDIA drivers
+4. Docker + NVIDIA Container Toolkit
+5. GitHub
+6. Services (Plex, Minecraft, Immich)
+7. Networking
+
+See [setup.md](setup.md) for the full step-by-step guide.
+
 ## Status
 
 Planning / hardware evaluation phase.
