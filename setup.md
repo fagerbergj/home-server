@@ -43,6 +43,41 @@ sudo apt update && sudo apt upgrade -y
 sudo reboot
 ```
 
+### Enable SSH
+
+Do this while you still have a monitor plugged in — everything after this can be done remotely.
+
+```bash
+sudo apt install -y openssh-server
+sudo systemctl enable ssh
+sudo systemctl start ssh
+```
+
+Find the server's local IP:
+```bash
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+From your main PC, connect:
+```bash
+ssh jason@<server-ip>
+```
+
+### SSH Key Authentication
+
+Avoid typing a password every time:
+```bash
+# Run on your main PC
+ssh-copy-id jason@<server-ip>
+```
+
+If you don't have an SSH key yet:
+```bash
+ssh-keygen -t ed25519
+```
+
+**Everything from this point forward can be done via SSH from your main PC. Unplug the monitor.**
+
 ---
 
 ## Phase 2 — Mount Drives

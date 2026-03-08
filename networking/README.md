@@ -46,37 +46,6 @@ Use this IP for all port forwarding rules below.
 
 ---
 
-## SSH
-
-Install and enable SSH on the server so you can manage it headlessly from your main PC:
-
-```bash
-sudo apt install -y openssh-server
-sudo systemctl enable ssh
-sudo systemctl start ssh
-```
-
-From your main PC:
-```bash
-ssh jason@192.168.1.10
-```
-
-### SSH Key Authentication (recommended)
-
-Avoid typing a password every time — copy your main PC's SSH key to the server:
-
-```bash
-# Run this on your main PC
-ssh-copy-id jason@192.168.1.10
-```
-
-If you don't have an SSH key yet, generate one first:
-```bash
-ssh-keygen -t ed25519
-```
-
----
-
 ## Router Port Forwarding
 
 Forward these ports to the server's local IP:
