@@ -215,23 +215,26 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 
 ## Phase 5 — GitHub
 
-Install GitHub CLI:
+Generate an SSH key on the server:
 ```bash
-sudo apt install -y gh
+ssh-keygen -t ed25519 -C "home-server"
+cat ~/.ssh/id_ed25519.pub
 ```
 
-Authenticate — since you're on SSH with no browser, use a personal access token:
+Copy the output and add it to GitHub: **Settings > SSH and GPG keys > New SSH key**
+
+Verify it works:
 ```bash
-gh auth login --with-token
+ssh -T git@github.com
 ```
 
-Paste your token when prompted. Generate one at: GitHub > Settings > Developer Settings > Personal Access Tokens > Tokens (classic) — needs `repo` scope.
+You should see: `Hi fagerbergj! You've successfully authenticated...`
 
 Clone this repo:
 ```bash
 mkdir -p ~/workspace
 cd ~/workspace
-gh repo clone fagerbergj/home-server
+git clone git@github.com:fagerbergj/home-server.git
 ```
 
 ---
