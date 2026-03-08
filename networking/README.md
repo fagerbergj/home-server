@@ -27,6 +27,56 @@ photos.yourname.asuscomm.com
 
 > You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
 
+## Static Local IP
+
+Port forwarding requires the server always has the same local IP. Set a DHCP reservation in your ASUS router so it always assigns the same IP to the server's MAC address.
+
+1. Connect the server to the router via ethernet
+2. In the ASUS router UI: **LAN > DHCP Server > Manually Assigned IP**
+3. Find the server in the client list, click the `+` to add a reservation
+4. Assign it a static IP outside the DHCP range, e.g. `192.168.1.10`
+5. Save and reboot the server
+
+Verify after reboot:
+```bash
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+Use this IP for all port forwarding rules below.
+
+---
+
+## SSH
+
+Install and enable SSH on the server so you can manage it headlessly from your main PC:
+
+```bash
+sudo apt install -y openssh-server
+sudo systemctl enable ssh
+sudo systemctl start ssh
+```
+
+From your main PC:
+```bash
+ssh jason@192.168.1.10
+```
+
+### SSH Key Authentication (recommended)
+
+Avoid typing a password every time — copy your main PC's SSH key to the server:
+
+```bash
+# Run this on your main PC
+ssh-copy-id jason@192.168.1.10
+```
+
+If you don't have an SSH key yet, generate one first:
+```bash
+ssh-keygen -t ed25519
+```
+
+---
+
 ## Router Port Forwarding
 
 Forward these ports to the server's local IP:

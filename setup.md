@@ -212,9 +212,10 @@ See individual service directories:
 
 See [`networking/`](networking/) for the full networking setup. Summary:
 
-1. Enable ASUS DDNS on the RT-AX58U: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`) — free, no domain purchase needed
-2. Point subdomains at your DDNS hostname
-3. Forward ports 80, 443, and 25565 on your router to the server
-4. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
-5. Install the Immich mobile app and point it at `https://photos.yourdomain.com` for automatic photo backup
-6. Friends connect to Minecraft via `yourdomain.com:25565`
+1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
+2. Install and enable SSH — manage the server headlessly from your main PC going forward
+3. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
+4. Forward ports 80, 443, and 25565 on your router to the server's static IP
+5. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
+6. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
+7. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
