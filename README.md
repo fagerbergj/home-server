@@ -10,6 +10,7 @@ Personal home server running Linux Mint. This repo tracks configuration, docker 
 | Minecraft Server | Self-hosted game server |
 | Photo Storage | Personal photo backup and browsing |
 | qBittorrent | Download torrents directly to server via web UI |
+| Watchtower | Monitors containers and restarts them if they go down |
 
 ## OS
 

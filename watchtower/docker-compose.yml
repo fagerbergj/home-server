@@ -1,0 +1,11 @@
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_NO_PULL=true        # never pull new images
+      - WATCHTOWER_CLEANUP=true        # clean up old images after update
+      - WATCHTOWER_INCLUDE_STOPPED=false
+    restart: unless-stopped
