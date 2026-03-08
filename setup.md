@@ -7,18 +7,20 @@ End-to-end setup for the home server. Follow phases in order.
 Do this on your current PC before moving any drives to the server.
 
 Current state:
-- ~500GB of media split across the ADATA SSD and 1TB HDD
-- 4TB Seagate arriving with the case
+- ~500GB of media split across the ADATA SSD (`/mnt/ADATASSD`) and 1TB WD HDD (`/mnt/HDD`)
+- ~18GB of photos on the 1TB WD HDD
+- 4TB Seagate, 1TB Seagate, and Define R5 case purchased and arriving
+- StarTech USB-C to SATA adapter purchased for connecting the 4TB externally
 
 Steps:
 1. Connect the 4TB drive to your current PC using the StarTech USB-C to SATA adapter
 2. Copy all media from the ADATA onto the 4TB:
    ```bash
-   rsync -av /path/to/media/ /path/to/4tb/
+   rsync -av /mnt/ADATASSD/Videos/ /path/to/4tb/
    ```
 3. Copy photos off the 1TB WD onto the 4TB as well — they'll need to move temporarily since RAID 1 setup wipes both drives:
    ```bash
-   rsync -av /path/to/photos/ /path/to/4tb/photos-backup/
+   rsync -av /mnt/HDD/ /path/to/4tb/photos-backup/
    ```
 4. Verify both copies look complete before wiping anything
 5. The ADATA and 1TB WD are now clear and ready for their new roles
