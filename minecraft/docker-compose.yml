@@ -1,0 +1,19 @@
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: minecraft
+    ports:
+      - "25565:25565"
+    environment:
+      - EULA=TRUE
+      - VERSION=LATEST
+      - TYPE=VANILLA
+      - MEMORY=4G
+      - TZ=America/Chicago
+      - DIFFICULTY=normal
+      - MAX_PLAYERS=10
+      - MOTD=Home Server
+      - ENABLE_AUTOPAUSE=TRUE   # pauses server when no players online to save resources
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
