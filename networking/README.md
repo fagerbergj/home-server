@@ -13,11 +13,33 @@ Internet
     └── :25565 ──────────────────────────────────────────────► Minecraft (25565)
 ```
 
-## Prerequisites
+---
 
-- ASUS DDNS set up (free, built into your RT-AX58U)
-- In router UI: WAN > DDNS > enable, choose a hostname e.g. `yourname.asuscomm.com`
-- The router will automatically update DNS if your home IP changes
+## Step 1 — Static Local IP (DHCP Reservation)
+
+Port forwarding requires the server always has the same local IP.
+
+1. Connect the server to the router via ethernet and boot it
+2. In the router UI: **Advanced Settings > LAN > DHCP Server**
+3. Scroll to **Enable Manual Assignment** — set to **Yes**
+4. In the **Manually Assigned IP** table, find the server's MAC address in the client list and assign it a static IP e.g. `192.168.1.10`
+5. Click **Add** then **Apply**
+6. Reboot the server
+
+Verify after reboot:
+```bash
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+---
+
+## Step 2 — DDNS
+
+1. In the router UI: **Advanced Settings > WAN > DDNS**
+2. Set **Enable the DDNS Client** to **Yes**
+3. Under **Server and Host Name**, choose **WWW.ASUS.COM**
+4. Enter your hostname — it will become `yourname.asuscomm.com`
+5. Click **Apply**
 
 Your services will be accessible at:
 ```
@@ -27,36 +49,25 @@ photos.yourname.asuscomm.com
 
 > You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
 
-## Static Local IP
+---
 
-Port forwarding requires the server always has the same local IP. Set a DHCP reservation in your ASUS router so it always assigns the same IP to the server's MAC address.
+## Step 3 — Port Forwarding
 
-1. Connect the server to the router via ethernet
-2. In the ASUS router UI: **LAN > DHCP Server > Manually Assigned IP**
-3. Find the server in the client list, click the `+` to add a reservation
-4. Assign it a static IP outside the DHCP range, e.g. `192.168.1.10`
-5. Save and reboot the server
+1. In the router UI: **Advanced Settings > WAN > Virtual Server / Port Forwarding**
+2. Set **Enable Port Forwarding** to **On**
+3. Add the following rules pointing to the server's static IP:
 
-Verify after reboot:
-```bash
-ip addr show | grep "inet " | grep -v 127.0.0.1
-```
+| Service Name | External Port | Internal Port | Internal IP | Protocol |
+|-------------|---------------|---------------|-------------|----------|
+| NPM-HTTP | 80 | 80 | 192.168.1.10 | TCP |
+| NPM-HTTPS | 443 | 443 | 192.168.1.10 | TCP |
+| Minecraft | 25565 | 25565 | 192.168.1.10 | TCP |
 
-Use this IP for all port forwarding rules below.
+4. Click **Apply**
 
 ---
 
-## Router Port Forwarding
-
-Forward these ports to the server's local IP:
-
-| External Port | Internal Port | Protocol | Service |
-|---------------|---------------|----------|---------|
-| 80 | 80 | TCP | NPM (HTTP / SSL verification) |
-| 443 | 443 | TCP | NPM (HTTPS) |
-| 25565 | 25565 | TCP | Minecraft |
-
-## Firewall (ufw)
+## Step 4 — Firewall (ufw)
 
 ```bash
 sudo ufw allow 80/tcp
@@ -65,13 +76,18 @@ sudo ufw allow 25565/tcp
 sudo ufw enable
 ```
 
-## Start NPM
+---
+
+## Step 5 — Start NPM
 
 ```bash
+cd ~/workspace/home-server/networking
 docker compose up -d
 ```
 
-## NPM First-Time Setup
+---
+
+## Step 6 — NPM First-Time Setup
 
 1. Open the admin UI: `http://<server-local-ip>:81`
 2. Default login:
@@ -79,12 +95,14 @@ docker compose up -d
    - Password: `changeme`
 3. Change your email and password immediately
 
-## Add Proxy Hosts
+---
+
+## Step 7 — Add Proxy Hosts
 
 For each service, go to **Proxy Hosts > Add Proxy Host**:
 
 ### Plex
-- Domain: `plex.yourdomain.com`
+- Domain: `plex.yourname.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `32400`
@@ -92,29 +110,34 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
 ### Immich
-- Domain: `photos.yourdomain.com`
+- Domain: `photos.yourname.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `2283`
 - Enable **Websockets Support**
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
+---
+
 ## Mobile Photo Uploads (Immich)
 
 Install the Immich app on your phone (iOS or Android). In the app settings:
-- Server URL: `https://photos.yourdomain.com`
+- Server URL: `https://photos.yourname.asuscomm.com`
 - Log in with your Immich account
 - Enable **Automatic Background Backup**
 
 Photos will upload automatically over both WiFi and mobile data.
 
+---
+
 ## Minecraft
 
 Minecraft bypasses NPM entirely — it uses raw TCP on port 25565. Friends connect using:
 ```
-yourdomain.com:25565
+yourname.asuscomm.com:25565
 ```
-or just your home IP if you don't want to use a subdomain.
+
+---
 
 ## Dynamic DNS
 
