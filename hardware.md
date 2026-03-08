@@ -42,8 +42,8 @@
 | OS Drive | 256GB ADATA SSD (moving from main PC) | ✅ Good — Linux Mint + Docker config |
 | Media Drive 1 | 1TB HDD (moving from main PC) | ✅ Secondary media / overflow |
 | Media Drive 2 | 4TB Seagate Barracuda HDD | ✅ Purchased — primary media drive |
-| GPU | EVGA GTX 780 (Kepler, 3GB VRAM) | ✅ Supports NVENC hardware transcoding (Plex Pass required) |
-| iGPU | Intel HD Graphics 3000 (in CPU) | ⚠️ Quick Sync gen 1 — usable but NVENC from GTX 780 is better |
+| GPU | GTX 1070 Ti (Pascal, 8GB VRAM) | ✅ Excellent NVENC — handles multiple simultaneous transcode streams |
+| iGPU | Intel HD Graphics 3000 (in CPU) | ⚠️ Quick Sync gen 1 — superseded by 1070 Ti NVENC |
 | PSU | EVGA 500W AXI | ✅ Sufficient for this build |
 | Network | Realtek Gigabit LAN (onboard) | ✅ Gigabit — good |
 | Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ Purchased |
@@ -57,7 +57,7 @@
 - **Storage** — 256GB SSD for OS, 1TB + 4TB for media gives solid capacity to start
 - **PSU** — 500W is sufficient for current hardware
 - **Network** — onboard Gigabit, just keep it wired to the router
-- **GPU** — GTX 780 NVENC handles Plex hardware transcoding, removing most CPU load
+- **GPU** — GTX 1070 Ti Pascal NVENC is excellent, handles multiple simultaneous transcode streams, lower power draw than 780 (~180W vs 250W)
 - **Case** — Define R5 has plenty of HDD bays for future expansion
 
 ### Remaining concerns
