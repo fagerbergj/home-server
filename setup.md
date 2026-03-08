@@ -11,7 +11,7 @@ Current state:
 - 4TB Seagate arriving with the case
 
 Steps:
-1. Connect the 4TB drive to your current PC (USB enclosure or SATA)
+1. Connect the 4TB drive to your current PC using the StarTech USB-C to SATA adapter
 2. Copy all media from both the ADATA and 1TB onto the 4TB:
    ```bash
    rsync -av /path/to/media/ /path/to/4tb/
@@ -21,8 +21,9 @@ Steps:
 
 Drive assignments going into the build:
 - **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
-- **1TB HDD** → `/mnt/storage` (photos)
-- **4TB HDD** → `/mnt/media` (Plex movies/TV)
+- **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01`
+- **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01`
+- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
 
 ---
 
@@ -85,23 +86,72 @@ Find drive UUIDs:
 lsblk -f
 ```
 
-Add entries to `/etc/fstab` for the 1TB and 4TB drives:
-```
-UUID=<4tb-uuid>     /mnt/plex01      ext4  defaults  0  2
-UUID=<1tb-uuid>     /mnt/personal01  ext4  defaults  0  2
+### Mount plex01
+
+Format the 4TB drive:
+```bash
+sudo mkfs.ext4 /dev/sdX   # replace sdX with correct device — use lsblk to find it
 ```
 
-Format drives if new (skip if already formatted):
-```bash
-sudo mkfs.ext4 /dev/sdX   # replace sdX with correct device
+Add to `/etc/fstab`:
+```
+UUID=<4tb-uuid>   /mnt/plex01   ext4   defaults   0   2
 ```
 
-Mount and verify:
 ```bash
-sudo mkdir -p /mnt/plex01 /mnt/personal01
+sudo mkdir -p /mnt/plex01
 sudo mount -a
+```
+
+### Set Up RAID 1 for personal01
+
+Install mdadm:
+```bash
+sudo apt install -y mdadm
+```
+
+Identify the two 1TB drives:
+```bash
 lsblk
 ```
+
+Create the RAID 1 array — replace `sdX` and `sdY` with your two 1TB drives:
+```bash
+sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdX /dev/sdY
+```
+
+> **Drive order matters:** put the new Seagate first (`sdX`) and the old WD second (`sdY`) — the new drive is the primary.
+
+Monitor the initial sync (takes ~2 hours for 1TB):
+```bash
+watch cat /proc/mdstat
+```
+
+Format and mount once sync completes:
+```bash
+sudo mkfs.ext4 /dev/md0
+sudo mkdir -p /mnt/personal01
+sudo mount /dev/md0 /mnt/personal01
+```
+
+Save the RAID config and add to fstab:
+```bash
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
+sudo update-initramfs -u
+
+# Get the UUID of the md0 array
+sudo blkid /dev/md0
+
+# Add to /etc/fstab
+UUID=<md0-uuid>   /mnt/personal01   ext4   defaults   0   2
+```
+
+Verify:
+```bash
+sudo mdadm --detail /dev/md0
+```
+
+You should see both drives listed as `active sync`.
 
 ### Service Users
 

@@ -40,8 +40,9 @@
 | Motherboard | ASUS P8H61-M LE/CSM (LGA1155, H61 chipset) | ⚠️ Old platform, max 16GB DDR3, 2 DIMM slots |
 | RAM | 16GB (2×8GB) Silicon Power DDR3-1600 CL11 | ✅ Purchased — maxes out the board |
 | OS Drive | 256GB ADATA SSD (moving from main PC) | ✅ Good — Linux Mint + Docker config |
-| Media Drive 1 | 1TB HDD (moving from main PC) | ✅ Secondary media / overflow |
-| Media Drive 2 | 4TB Seagate Barracuda HDD | ✅ Purchased — primary media drive |
+| Personal Drive (primary) | 1TB Seagate HDD | ✅ Purchased — RAID 1 primary for photos |
+| Personal Drive (secondary) | 1TB WD HDD (moving from main PC) | ✅ RAID 1 mirror — 35,648 hrs, healthy SMART |
+| Plex Drive | 4TB Seagate Barracuda HDD | ✅ Purchased — Plex movies & TV |
 | GPU | GTX 1070 Ti (Pascal, 8GB VRAM) | ✅ Excellent NVENC — handles multiple simultaneous transcode streams |
 | iGPU | Intel HD Graphics 3000 (in CPU) | ⚠️ Quick Sync gen 1 — superseded by 1070 Ti NVENC |
 | PSU | EVGA 500W AXI | ✅ Sufficient for this build |
@@ -85,7 +86,7 @@ LGA1155 / Sandy Bridge is end-of-life (2011). Works fine as a home server for no
 |-------------|-------|---------|--------------|
 | `/` (OS) | 256GB ADATA SSD | Linux Mint + Docker configs | — |
 | `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & TV | `plex` |
-| `/mnt/personal01` | 1TB HDD | Immich photos & personal videos | `immich` |
+| `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `immich` |
 
 ---
 
