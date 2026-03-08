@@ -45,8 +45,8 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 ## Setup Order
 
 1. OS Install (Linux Mint)
-2. Mount drives
-3. NVIDIA drivers
+2. NVIDIA drivers
+3. Mount drives
 4. Docker + NVIDIA Container Toolkit
 5. GitHub
 6. Networking

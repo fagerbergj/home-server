@@ -83,7 +83,26 @@ ssh-keygen -t ed25519
 
 ---
 
-## Phase 2 — Mount Drives
+## Phase 2 — NVIDIA Drivers
+> **Script:** `scripts/phase3-nvidia.sh`
+
+Install the recommended NVIDIA driver:
+```bash
+sudo apt install -y ubuntu-drivers-common
+sudo ubuntu-drivers autoinstall
+sudo reboot
+```
+
+Verify after reboot:
+```bash
+nvidia-smi
+```
+
+You should see the GTX 1070 Ti listed with driver version and VRAM.
+
+---
+
+## Phase 3 — Mount Drives
 > **Script:** `scripts/phase2-drives.sh` — run this instead of the manual steps below.
 
 Find drive UUIDs:
@@ -250,25 +269,6 @@ Replace `/dev/sda` with the correct device — use `lsblk` to find device names.
 ```bash
 df -h
 ```
-
----
-
-## Phase 3 — NVIDIA Drivers
-> **Script:** `scripts/phase3-nvidia.sh`
-
-Install the recommended NVIDIA driver:
-```bash
-sudo apt install -y ubuntu-drivers-common
-sudo ubuntu-drivers autoinstall
-sudo reboot
-```
-
-Verify after reboot:
-```bash
-nvidia-smi
-```
-
-You should see the GTX 1070 Ti listed with driver version and VRAM.
 
 ---
 
