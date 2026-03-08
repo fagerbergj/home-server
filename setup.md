@@ -28,14 +28,12 @@ Drive assignments going into the build:
 
 ## Phase 1 — OS Install (Linux Mint)
 
-1. Download Linux Mint (latest LTS) from linuxmint.com — choose the Cinnamon edition
-2. Flash to a USB drive using Balena Etcher or `dd`
-3. Boot the server from USB (spam F12 or DEL on POST to get boot menu)
-4. Install Linux Mint:
+1. Boot the server from your existing Mint USB drive (spam F12 or DEL on POST to get boot menu)
+2. Install Linux Mint:
    - Select the 256GB SSD as the install target
    - Use "Erase disk and install" — this is a dedicated machine
    - Set a strong password, enable auto-login is fine since it's headless
-5. After install, remove USB and reboot
+3. After install, remove USB and reboot
 
 Update system after first boot:
 ```bash
