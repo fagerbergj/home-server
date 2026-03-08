@@ -45,7 +45,7 @@
 | iGPU | Intel HD Graphics 3000 (in CPU) | ⚠️ Quick Sync gen 1 — usable but NVENC from GTX 780 is better |
 | PSU | EVGA 500W AXI | ✅ Sufficient for this build |
 | Network | Realtek Gigabit LAN (onboard) | ✅ Gigabit — good |
-| Case | Unknown | ❓ Needs confirmation |
+| Case | None yet | ❌ Needed — see case recommendation below |
 
 ---
 
@@ -76,6 +76,28 @@ The LGA1155 / Sandy Bridge platform is from 2011 and is end-of-life. It will wor
 | Media HDD (2–4TB+) | **High** | Dedicated drive for Plex + photos |
 | Second media HDD (optional) | Medium | If library is large, separate Plex/photos drives |
 | NVIDIA drivers + nvidia-container-toolkit | **High** | Required for GTX 780 NVENC in Docker |
+| ATX mid-tower case | **High** | See case notes below |
+
+---
+
+## Case
+
+**Recommendation: Full ATX mid-tower**
+
+Reasoning:
+- Floor placement behind desk — size/aesthetics don't matter
+- mATX board fits in any ATX case, no constraint
+- Need 4+ HDD bays for expansion (starting with 2×2TB, will grow)
+- Full-size GPU now and when upgrading later
+- Better airflow for GTX 780 which runs hot
+
+**Suggested:** Fractal Design Define 7 or Define R6
+- Modular HDD trays (up to 9 drives configurable)
+- Very quiet with noise dampening
+- Great airflow and cable management
+- New ~$120, used ~$60–80
+
+**PSU note:** 500W is fine for current hardware but when you drop a modern GPU in later, you'll likely need to upgrade the PSU at the same time. Budget for that when the time comes.
 
 ---
 
