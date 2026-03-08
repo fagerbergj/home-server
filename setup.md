@@ -112,11 +112,13 @@ Create dedicated system users for each service — no login, no home dir. Each c
 sudo useradd -r -s /sbin/nologin plex
 sudo useradd -r -s /sbin/nologin immich
 sudo useradd -r -s /sbin/nologin minecraft
+sudo useradd -r -s /sbin/nologin qbittorrent
 
 # Create a shared media group for drive access
 sudo groupadd media
 sudo usermod -aG media plex
 sudo usermod -aG media immich
+sudo usermod -aG media qbittorrent
 ```
 
 Note the UIDs — you'll need them for the compose files:
@@ -124,6 +126,7 @@ Note the UIDs — you'll need them for the compose files:
 id plex
 id immich
 id minecraft
+id qbittorrent
 ```
 
 ### Folder Structure and Permissions

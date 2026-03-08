@@ -3,8 +3,8 @@ services:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
-      - PUID=<plex-uid>   # same user as plex so downloads land with correct ownership
-      - PGID=<media-gid>  # run: getent group media
+      - PUID=<qbittorrent-uid>  # run: id qbittorrent
+      - PGID=<media-gid>        # run: getent group media
       - TZ=America/Chicago
       - WEBUI_PORT=8080
     volumes:
