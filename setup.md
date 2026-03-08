@@ -84,6 +84,7 @@ ssh-keygen -t ed25519
 ---
 
 ## Phase 2 — Mount Drives
+> **Script:** `scripts/phase2-drives.sh` — run this instead of the manual steps below.
 
 Find drive UUIDs:
 ```bash
@@ -253,6 +254,7 @@ df -h
 ---
 
 ## Phase 3 — NVIDIA Drivers
+> **Script:** `scripts/phase3-nvidia.sh`
 
 Install the recommended NVIDIA driver:
 ```bash
@@ -271,6 +273,7 @@ You should see the GTX 1070 Ti listed with driver version and VRAM.
 ---
 
 ## Phase 4 — Docker
+> **Script:** `scripts/phase4-docker.sh`
 
 Linux Mint is Debian-based so we use the Debian Docker repo:
 
@@ -315,6 +318,7 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 ---
 
 ## Phase 5 — GitHub
+> **Script:** `scripts/phase5-github.sh`
 
 Generate an SSH key on the server:
 ```bash
