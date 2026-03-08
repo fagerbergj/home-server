@@ -344,7 +344,21 @@ git clone git@github.com:fagerbergj/home-server.git
 
 ---
 
-## Phase 6 — Services (Docker Compose)
+## Phase 6 — Networking
+
+See [`networking/`](networking/) for the full networking setup. Summary:
+
+1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
+2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
+3. Forward ports 80, 443, and 25565 on your router to the server's static IP
+4. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
+5. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
+6. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
+7. Access the LLM from anywhere at `https://llm.yourname.asuscomm.com`
+
+---
+
+## Phase 7 — Services (Docker Compose)
 
 See individual service directories:
 
@@ -352,18 +366,6 @@ See individual service directories:
 - [`minecraft/`](minecraft/) — Minecraft Server
 - [`photos/`](photos/) — Immich Photo Storage
 - [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
+- [`llm/`](llm/) — Ollama + DeepSeek + Open WebUI
 
 > These will be set up in order. See each directory for its own README.
-
----
-
-## Phase 7 — Networking
-
-See [`networking/`](networking/) for the full networking setup. Summary:
-
-1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
-2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
-4. Forward ports 80, 443, and 25565 on your router to the server's static IP
-5. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
-6. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
-7. Friends connect to Minecraft via `yourname.asuscomm.com:25565`

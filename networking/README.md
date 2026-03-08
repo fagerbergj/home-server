@@ -7,10 +7,11 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com    ──► Plex    (32400)
-    │                      ──► photos.yourname.asuscomm.com  ──► Immich  (2283)
+    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com    ──► Plex       (32400)
+    │                      ──► photos.yourname.asuscomm.com  ──► Immich     (2283)
+    │                      ──► llm.yourname.asuscomm.com     ──► Open WebUI (3000)
     │
-    └── :25565 ──────────────────────────────────────────────► Minecraft (25565)
+    └── :25565 ──────────────────────────────────────────────► Minecraft    (25565)
 ```
 
 ---
@@ -77,6 +78,8 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw allow 25565/tcp
 sudo ufw enable
+
+# Port 3000 (Open WebUI) is intentionally not opened — external access goes through NPM on 443
 ```
 
 ---
@@ -117,6 +120,14 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `2283`
+- Enable **Websockets Support**
+- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+
+### Open WebUI (LLM)
+- Domain: `llm.yourname.asuscomm.com`
+- Scheme: `http`
+- Forward Hostname/IP: `127.0.0.1`
+- Forward Port: `3000`
 - Enable **Websockets Support**
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
