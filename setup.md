@@ -171,16 +171,18 @@ You should see the GTX 1070 Ti listed with driver version and VRAM.
 
 ## Phase 4 — Docker
 
+Linux Mint is Debian-based so we use the Debian Docker repo:
+
 ```bash
 # Install dependencies
 sudo apt install -y ca-certificates curl gnupg
 
 # Add Docker's official GPG key and repo
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  https://download.docker.com/linux/debian bookworm stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update
@@ -213,11 +215,17 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 
 ## Phase 5 — GitHub
 
-Install GitHub CLI and authenticate:
+Install GitHub CLI:
 ```bash
 sudo apt install -y gh
-gh auth login
 ```
+
+Authenticate — since you're on SSH with no browser, use a personal access token:
+```bash
+gh auth login --with-token
+```
+
+Paste your token when prompted. Generate one at: GitHub > Settings > Developer Settings > Personal Access Tokens > Tokens (classic) — needs `repo` scope.
 
 Clone this repo:
 ```bash
@@ -272,8 +280,7 @@ See individual service directories:
 See [`networking/`](networking/) for the full networking setup. Summary:
 
 1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
-2. Install and enable SSH — manage the server headlessly from your main PC going forward
-3. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
+2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
 4. Forward ports 80, 443, and 25565 on your router to the server's static IP
 5. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
 6. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
