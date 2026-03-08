@@ -125,7 +125,34 @@ gh repo clone fagerbergj/home-server
 
 ---
 
-## Phase 6 — Services (Docker Compose)
+## Phase 6 — Claude Code
+
+Install Node.js (required for Claude Code):
+```bash
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+Install Claude Code:
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+Authenticate:
+```bash
+claude
+```
+
+This will open a browser to authenticate with your Anthropic account. Follow the prompts.
+
+Verify:
+```bash
+claude --version
+```
+
+---
+
+## Phase 7 — Services (Docker Compose)
 
 See individual service directories:
 
@@ -137,7 +164,7 @@ See individual service directories:
 
 ---
 
-## Phase 7 — Networking
+## Phase 8 — Networking
 
 > To be documented — covers:
 > - Static local IP for the server
