@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-SCRIPT="$BATS_TEST_DIRNAME/../phase3-nvidia.sh"
+SCRIPT="$BATS_TEST_DIRNAME/../phase2-nvidia.sh"
 
 setup() {
     export TMPDIR="$(mktemp -d)"
