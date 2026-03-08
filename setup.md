@@ -132,11 +132,11 @@ id qbittorrent
 ### Folder Structure and Permissions
 
 ```bash
-# Plex drive
+# Plex drive — owned by qbittorrent (writes downloads), plex reads via media group
 sudo mkdir -p /mnt/plex01/movies
 sudo mkdir -p /mnt/plex01/tv
-sudo chown -R plex:media /mnt/plex01
-sudo chmod -R 775 /mnt/plex01
+sudo chown -R qbittorrent:media /mnt/plex01
+sudo chmod -R 755 /mnt/plex01  # owner(qbittorrent) read/write, group(media) read-only
 
 # Personal drive
 sudo mkdir -p /mnt/personal01/photos
