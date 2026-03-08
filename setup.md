@@ -340,33 +340,7 @@ git clone git@github.com:fagerbergj/home-server.git
 
 ---
 
-## Phase 6 — Claude Code
-
-Install Node.js (required for Claude Code):
-```bash
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs
-```
-
-Install Claude Code:
-```bash
-npm install -g @anthropic-ai/claude-code
-```
-
-Authenticate via API key — get one from console.anthropic.com:
-```bash
-echo 'export ANTHROPIC_API_KEY=your-key-here' >> ~/.bashrc
-source ~/.bashrc
-```
-
-Verify:
-```bash
-claude --version
-```
-
----
-
-## Phase 7 — Services (Docker Compose)
+## Phase 6 — Services (Docker Compose)
 
 See individual service directories:
 
@@ -379,7 +353,7 @@ See individual service directories:
 
 ---
 
-## Phase 8 — Networking
+## Phase 7 — Networking
 
 See [`networking/`](networking/) for the full networking setup. Summary:
 

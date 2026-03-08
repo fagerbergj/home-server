@@ -45,9 +45,8 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 3. NVIDIA drivers
 4. Docker + NVIDIA Container Toolkit
 5. GitHub
-6. Claude Code
-7. Services (Plex, Minecraft, Immich)
-8. Networking
+6. Services (Plex, Minecraft, Immich, qBittorrent)
+7. Networking
 
 See [setup.md](setup.md) for the full step-by-step guide.
 
