@@ -81,11 +81,11 @@ LGA1155 / Sandy Bridge is end-of-life (2011). Works fine as a home server for no
 
 ## Drive Layout
 
-| Mount Point | Drive | Purpose |
-|-------------|-------|---------|
-| `/` (OS) | 256GB ADATA SSD | Linux Mint + Docker config |
-| `/mnt/media` | 4TB Seagate Barracuda | Primary media (Plex movies/TV) |
-| `/mnt/storage` | 1TB HDD | Photos (Immich) / overflow |
+| Mount Point | Drive | Purpose | Service User |
+|-------------|-------|---------|--------------|
+| `/` (OS) | 256GB ADATA SSD | Linux Mint + Docker configs | — |
+| `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & TV | `plex` |
+| `/mnt/personal01` | 1TB HDD | Immich photos & personal videos | `immich` |
 
 ---
 

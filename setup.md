@@ -87,8 +87,8 @@ lsblk -f
 
 Add entries to `/etc/fstab` for the 1TB and 4TB drives:
 ```
-UUID=<4tb-uuid>   /mnt/media    ext4  defaults  0  2
-UUID=<1tb-uuid>   /mnt/storage  ext4  defaults  0  2
+UUID=<4tb-uuid>     /mnt/plex01      ext4  defaults  0  2
+UUID=<1tb-uuid>     /mnt/personal01  ext4  defaults  0  2
 ```
 
 Format drives if new (skip if already formatted):
@@ -98,33 +98,54 @@ sudo mkfs.ext4 /dev/sdX   # replace sdX with correct device
 
 Mount and verify:
 ```bash
-sudo mkdir -p /mnt/media /mnt/storage
+sudo mkdir -p /mnt/plex01 /mnt/personal01
 sudo mount -a
 lsblk
 ```
 
-### Folder Structure and Permissions
+### Service Users
 
-Create the expected folder structure on each drive:
+Create dedicated system users for each service — no login, no home dir. Each container runs as its own user with access only to what it needs.
+
 ```bash
-sudo mkdir -p /mnt/media/movies
-sudo mkdir -p /mnt/media/tv
-sudo mkdir -p /mnt/storage/photos
+# Create service users
+sudo useradd -r -s /sbin/nologin plex
+sudo useradd -r -s /sbin/nologin immich
+sudo useradd -r -s /sbin/nologin minecraft
+
+# Create a shared media group for drive access
+sudo groupadd media
+sudo usermod -aG media plex
+sudo usermod -aG media immich
 ```
 
-Give your user ownership of both drives so Docker containers (running as your UID) can read and write without permission errors:
+Note the UIDs — you'll need them for the compose files:
 ```bash
-sudo chown -R $USER:$USER /mnt/media
-sudo chown -R $USER:$USER /mnt/storage
+id plex
+id immich
+id minecraft
+```
+
+### Folder Structure and Permissions
+
+```bash
+# Plex drive
+sudo mkdir -p /mnt/plex01/movies
+sudo mkdir -p /mnt/plex01/tv
+sudo chown -R plex:media /mnt/plex01
+sudo chmod -R 775 /mnt/plex01
+
+# Personal drive
+sudo mkdir -p /mnt/personal01/photos
+sudo chown -R immich:media /mnt/personal01
+sudo chmod -R 775 /mnt/personal01
 ```
 
 Verify:
 ```bash
-ls -la /mnt/media
-ls -la /mnt/storage
+ls -la /mnt/plex01
+ls -la /mnt/personal01
 ```
-
-Both should show your username as owner.
 
 ### Checking Drive Health
 
