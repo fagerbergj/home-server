@@ -16,6 +16,7 @@ Internet
 ---
 
 ## Step 1 — Static Local IP (DHCP Reservation)
+> Manual: [Section 3.9.2 DHCP Server](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.49
 
 Port forwarding requires the server always has the same local IP.
 
@@ -34,6 +35,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 ---
 
 ## Step 2 — DDNS
+> Manual: [Section 3.14.5 DDNS](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.76
 
 1. In the router UI: **Advanced Settings > WAN > DDNS**
 2. Set **Enable the DDNS Client** to **Yes**
@@ -52,6 +54,7 @@ photos.yourname.asuscomm.com
 ---
 
 ## Step 3 — Port Forwarding
+> Manual: [Section 3.14.3 Virtual Server / Port Forwarding](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.72
 
 1. In the router UI: **Advanced Settings > WAN > Virtual Server / Port Forwarding**
 2. Set **Enable Port Forwarding** to **On**
