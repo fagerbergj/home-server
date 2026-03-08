@@ -47,13 +47,6 @@ Set default save path in Options > Downloads:
 | Movies | `/mnt/plex01/movies` |
 | TV | `/mnt/plex01/tv` |
 
-## Adding to NPM
-
-Add a proxy host in Nginx Proxy Manager to access qBittorrent remotely:
-- Domain: `torrent.yourname.asuscomm.com`
-- Forward port: `8080`
-- Enable SSL
-
 ## Updating
 
 ```bash
