@@ -57,9 +57,21 @@ docker exec -it ollama ollama list
 
 Open WebUI is accessible from your local network at `http://<server-ip>:3000`.
 
-For access outside your home network, Nginx Proxy Manager handles it — see [`networking/README.md`](../networking/README.md). Once configured, you can reach it at `https://llm.yourname.asuscomm.com` from any browser or device.
+For external access (family/friends), Open WebUI is exposed via Nginx Proxy Manager — see [`networking/README.md`](../networking/README.md). Once configured it's available at `https://llm.yourname.asuscomm.com` from any browser, no app required.
 
-Port 11434 (Ollama API) is local-only by default. Point CLI clients at the server IP on your home network:
+### Setting Up User Accounts
+
+Open WebUI requires account creation on first launch — this also locks it down so only people you've created accounts for can use it.
+
+1. Open `http://<server-ip>:3000` in your browser
+2. Create your admin account (first account gets admin)
+3. For each family/friend: **Admin Panel > Users > Add User**
+   - Set their name, email, and a temporary password
+   - Send them the URL and credentials — they can change their password after logging in
+
+### CLI Access (local network only)
+
+Port 11434 (Ollama API) stays local-only. To use the CLI from your main PC:
 ```bash
 OLLAMA_HOST=http://<server-ip>:11434 ollama run qwen3:14b
 ```

@@ -351,7 +351,7 @@ See [`networking/`](networking/) for the full networking setup. Summary:
 1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
 2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
 3. Forward ports 80, 443, and 25565 on your router to the server's static IP
-4. Start Nginx Proxy Manager and configure proxy hosts for Plex and Immich
+4. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
 5. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
 6. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
 
