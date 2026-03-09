@@ -21,11 +21,11 @@
 
 ## Drive Layout
 
-| Mount Point | Drive | Purpose | Owner | Group |
-|-------------|-------|---------|-------|-------|
-| `/` | 256GB ADATA SSD | Linux Mint + Docker configs | — | — |
-| `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `qbittorrent` | `plex-rw` / `plex-ro` |
-| `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `immich` | `personal-rw` |
+| Mount Point | Drive | Purpose | Owner | Group | Access |
+|-------------|-------|---------|-------|-------|--------|
+| `/` | 256GB ADATA SSD | Linux Mint + Docker configs | — | — | — |
+| `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
+| `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
 
 ---
 
