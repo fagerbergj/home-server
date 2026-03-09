@@ -140,6 +140,20 @@ nvidia-smi
 
 You should see the GTX 1070 Ti listed with driver version and VRAM.
 
+### Monitoring Tools
+> **Script:** `scripts/setup/phase3-monitoring.sh`
+
+Install btop (system overview) and nvtop (GPU monitor):
+```bash
+sudo apt install -y btop nvtop
+```
+
+Run them:
+```bash
+btop    # CPU, memory, disk, and network at a glance
+nvtop   # GPU utilization and VRAM usage
+```
+
 ---
 
 ## Phase 4 — Mount Drives
