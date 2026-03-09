@@ -73,10 +73,10 @@ photos.yourname.asuscomm.com
 ---
 
 ## Step 4 — Firewall (ufw)
-> **Script:** `scripts/phase6-firewall.sh`
+> **Script:** `scripts/setup/phase6-firewall.sh`
 
 ```bash
-scripts/phase6-firewall.sh
+scripts/setup/phase6-firewall.sh
 ```
 
 ---

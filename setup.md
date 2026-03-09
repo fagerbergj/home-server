@@ -84,7 +84,7 @@ ssh-keygen -t ed25519
 ---
 
 ## Phase 2 — NVIDIA Drivers
-> **Script:** `scripts/phase2-nvidia.sh`
+> **Script:** `scripts/setup/phase2-nvidia.sh`
 
 Install the recommended NVIDIA driver:
 ```bash
@@ -103,7 +103,7 @@ You should see the GTX 1070 Ti listed with driver version and VRAM.
 ---
 
 ## Phase 3 — Mount Drives
-> **Script:** `scripts/phase3-drives.sh` — run this instead of the manual steps below.
+> **Script:** `scripts/setup/phase3-drives.sh` — run this instead of the manual steps below.
 
 Find drive UUIDs:
 ```bash
@@ -254,7 +254,7 @@ ls -la /mnt/personal01
 Run the alerts setup script — it configures msmtp, mdadm email alerts, and a daily disk usage check:
 
 ```bash
-scripts/phase3-alerts.sh
+scripts/setup/phase3-alerts.sh
 ```
 
 You'll be prompted for your Gmail app password (Google Account > Security > App Passwords). Everything else is automatic.
@@ -283,7 +283,7 @@ df -h
 ---
 
 ## Phase 4 — Docker
-> **Script:** `scripts/phase4-docker.sh`
+> **Script:** `scripts/setup/phase4-docker.sh`
 
 Linux Mint is Debian-based so we use the Debian Docker repo:
 
@@ -328,7 +328,7 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 ---
 
 ## Phase 5 — GitHub
-> **Script:** `scripts/phase5-github.sh`
+> **Script:** `scripts/setup/phase5-github.sh`
 
 Generate an SSH key on the server:
 ```bash
@@ -361,7 +361,7 @@ See [`networking/`](networking/) for the full networking setup. Summary:
 1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
 2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
 3. Forward ports 80, 443, and 25565 on your router to the server's static IP
-4. Run `scripts/phase6-firewall.sh` to configure ufw
+4. Run `scripts/setup/phase6-firewall.sh` to configure ufw
 5. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
 5. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
 6. Friends connect to Minecraft via `yourname.asuscomm.com:25565`

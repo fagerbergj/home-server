@@ -45,7 +45,7 @@ else
 fi
 
 # Add disk usage cron job (runs daily at 8am)
-SCRIPT_PATH="$(realpath "$(dirname "$0")/check-disk.sh")"
+SCRIPT_PATH="$(realpath "$(dirname "$0")/../check-disk.sh")"
 if ! crontab -l 2>/dev/null | grep -q "check-disk.sh"; then
     (crontab -l 2>/dev/null; echo "0 8 * * * $SCRIPT_PATH") | crontab -
     echo "Disk usage check scheduled daily at 8am."
