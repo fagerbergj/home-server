@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 # Sets a key only if it doesn't already exist in .env
 set_env() {
     local key=$1
