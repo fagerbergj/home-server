@@ -27,4 +27,15 @@ set_secret() {
 
 touch .env
 
-set_secret OLLAMA_API_KEY "$(openssl rand -hex 32)"
+DB_USERNAME=immich
+DB_DATABASE_NAME=immich
+
+set_secret DB_PASSWORD "$(openssl rand -hex 32)"
+
+# Read the current password (either just generated or pre-existing)
+DB_PASSWORD=$(grep "^DB_PASSWORD=" .env | cut -d= -f2)
+
+set_env DB_USERNAME "$DB_USERNAME"
+set_env DB_DATABASE_NAME "$DB_DATABASE_NAME"
+set_env DB_URL "postgresql://${DB_USERNAME}:${DB_PASSWORD}@immich-postgres/${DB_DATABASE_NAME}"
+set_env REDIS_HOSTNAME "immich-redis"
