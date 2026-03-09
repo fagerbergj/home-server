@@ -14,7 +14,7 @@ if [[ -n "${GMAIL_APP_PASSWORD:-}" ]]; then
 else
     echo ""
     echo "You'll need a Gmail App Password — not your regular password."
-    echo "Generate one at: Google Account > Security > 2-Step Verification > App Passwords"
+    echo "Generate one at: https://myaccount.google.com/apppasswords"
     echo "Tip: set GMAIL_APP_PASSWORD in your .env to skip this prompt."
     echo ""
     read -rsp "App password: " PASSWORD

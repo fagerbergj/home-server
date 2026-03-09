@@ -356,7 +356,7 @@ git clone git@github.com:fagerbergj/home-server.git
 Create `~/workspace/home-server/.env` with secrets needed by setup scripts:
 ```bash
 cat > ~/workspace/home-server/.env << 'EOF'
-GMAIL_APP_PASSWORD=your-app-password-here
+GMAIL_APP_PASSWORD=your-app-password-here  # https://myaccount.google.com/apppasswords
 EOF
 ```
 
