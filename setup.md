@@ -249,47 +249,15 @@ ls -la /mnt/plex01
 ls -la /mnt/personal01
 ```
 
-### RAID Failure Alerts
+### RAID Failure Alerts and Disk Monitoring
 
-Configure mdadm to email you if a drive degrades or fails. Install a lightweight mail sender:
-
-```bash
-sudo apt install -y msmtp msmtp-mta
-```
-
-Create `~/.msmtprc`:
-```
-defaults
-auth           on
-tls            on
-tls_trust_file /etc/ssl/certs/ca-certificates.crt
-logfile        ~/.msmtp.log
-
-account        gmail
-host           smtp.gmail.com
-port           587
-from           your@gmail.com
-user           your@gmail.com
-password       <app-password>   # Gmail > Security > App Passwords
-
-account default : gmail
-```
+Run the alerts setup script — it configures msmtp, mdadm email alerts, and a daily disk usage check:
 
 ```bash
-chmod 600 ~/.msmtprc
+scripts/phase3-alerts.sh
 ```
 
-Tell mdadm where to send alerts — add to `/etc/mdadm/mdadm.conf`:
-```
-MAILADDR your@gmail.com
-```
-
-Test it:
-```bash
-sudo mdadm --monitor --scan --test --oneshot
-```
-
-You should receive a test email. mdadm monitors the array automatically via a systemd service — no extra setup needed.
+You'll be prompted for your Gmail app password (Google Account > Security > App Passwords). Everything else is automatic.
 
 ### Checking Drive Health
 
@@ -393,7 +361,8 @@ See [`networking/`](networking/) for the full networking setup. Summary:
 1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
 2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
 3. Forward ports 80, 443, and 25565 on your router to the server's static IP
-4. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
+4. Run `scripts/phase6-firewall.sh` to configure ufw
+5. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
 5. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
 6. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
 

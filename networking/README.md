@@ -73,14 +73,10 @@ photos.yourname.asuscomm.com
 ---
 
 ## Step 4 — Firewall (ufw)
+> **Script:** `scripts/phase6-firewall.sh`
 
 ```bash
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 25565/tcp
-sudo ufw enable
-
-# Port 3000 (Open WebUI) is not opened directly — traffic goes through NPM on 443
+scripts/phase6-firewall.sh
 ```
 
 ---
