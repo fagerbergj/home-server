@@ -249,6 +249,48 @@ ls -la /mnt/plex01
 ls -la /mnt/personal01
 ```
 
+### RAID Failure Alerts
+
+Configure mdadm to email you if a drive degrades or fails. Install a lightweight mail sender:
+
+```bash
+sudo apt install -y msmtp msmtp-mta
+```
+
+Create `~/.msmtprc`:
+```
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+account        gmail
+host           smtp.gmail.com
+port           587
+from           your@gmail.com
+user           your@gmail.com
+password       <app-password>   # Gmail > Security > App Passwords
+
+account default : gmail
+```
+
+```bash
+chmod 600 ~/.msmtprc
+```
+
+Tell mdadm where to send alerts — add to `/etc/mdadm/mdadm.conf`:
+```
+MAILADDR your@gmail.com
+```
+
+Test it:
+```bash
+sudo mdadm --monitor --scan --test --oneshot
+```
+
+You should receive a test email. mdadm monitors the array automatically via a systemd service — no extra setup needed.
+
 ### Checking Drive Health
 
 Check drive health periodically with smartmontools:
@@ -361,11 +403,13 @@ See [`networking/`](networking/) for the full networking setup. Summary:
 
 See individual service directories:
 
-- [`plex/`](plex/) — Plex Media Server
-- [`minecraft/`](minecraft/) — Minecraft Server
-- [`photos/`](photos/) — Immich Photo Storage
-- [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
-- [`llm/`](llm/) — Ollama + Qwen3 + Open WebUI
-- [`watchtower/`](watchtower/) — Monitors and restarts containers automatically
+Start services in this order:
 
-> These will be set up in order. See each directory for its own README.
+1. [`plex/`](plex/) — Plex Media Server
+2. [`minecraft/`](minecraft/) — Minecraft Server
+3. [`photos/`](photos/) — Immich Photo Storage
+4. [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
+5. [`llm/`](llm/) — Ollama + Qwen3 + Open WebUI
+6. [`watchtower/`](watchtower/) — Start this last, after all other services are up
+
+See each directory for its own README.

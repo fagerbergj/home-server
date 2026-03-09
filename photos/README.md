@@ -59,11 +59,19 @@ docker compose logs -f immich-server
 docker compose logs -f immich-machine-learning
 ```
 
+## Data Locations
+
+Both photos and the Postgres database live on the RAID array — if the OS drive fails, your data survives:
+
+| Data | Location |
+|------|----------|
+| Photos | `/mnt/personal01/photos` |
+| Database | `/mnt/personal01/db` |
+
 ## Backups
 
-Two things to back up:
-- **Photos:** `/mnt/personal01/photos` — your actual image files
-- **Database:** run a Postgres dump
-  ```bash
-  docker exec immich-postgres pg_dumpall -U immich > immich-db-backup-$(date +%F).sql
-  ```
+The RAID protects against single drive failure but not accidental deletion or both drives failing. To dump the database manually:
+
+```bash
+docker exec immich-postgres pg_dumpall -U immich > immich-db-backup-$(date +%F).sql
+```
