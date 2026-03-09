@@ -11,7 +11,7 @@ Personal home server running Linux Mint. This repo tracks configuration, docker 
 | Photo Storage | Personal photo backup and browsing |
 | qBittorrent | Download torrents directly to server via web UI |
 | Watchtower | Monitors containers and restarts them if they go down |
-| Ollama | Local LLM inference (DeepSeek via GPU) |
+| Ollama | Local LLM inference (Qwen3 8B via GPU) |
 
 ## OS
 
@@ -50,7 +50,7 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 4. Docker + NVIDIA Container Toolkit
 5. GitHub
 6. Networking
-7. Services (Plex, Minecraft, Immich, qBittorrent, Ollama + DeepSeek)
+7. Services (Plex, Minecraft, Immich, qBittorrent, Ollama + Qwen3)
 
 See [setup.md](setup.md) for the full step-by-step guide.
 
