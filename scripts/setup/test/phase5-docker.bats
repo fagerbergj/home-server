@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-SCRIPT="$BATS_TEST_DIRNAME/../phase4-docker.sh"
+SCRIPT="$BATS_TEST_DIRNAME/../phase5-docker.sh"
 
 setup() {
     export TMPDIR="$(mktemp -d)"

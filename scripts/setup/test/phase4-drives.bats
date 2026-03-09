@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
-# Tests for phase3-drives.sh
+# Tests for phase4-drives.sh
 # Mocks all destructive system commands — safe to run on any machine
 
-SCRIPT="$BATS_TEST_DIRNAME/../phase3-drives.sh"
+SCRIPT="$BATS_TEST_DIRNAME/../phase4-drives.sh"
 
 setup() {
     # Create a temp dir for each test to hold mock binaries and state

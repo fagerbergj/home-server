@@ -1,8 +1,8 @@
 #!/bin/bash
-# Phase 4 — Docker + NVIDIA Container Toolkit
+# Phase 5 — Docker + NVIDIA Container Toolkit
 set -euo pipefail
 
-echo "=== Phase 4: Docker ==="
+echo "=== Phase 5: Docker ==="
 echo ""
 
 # --- Docker ---
@@ -41,5 +41,5 @@ echo "Verifying GPU is accessible from Docker..."
 docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 
 echo ""
-echo "=== Phase 4 complete ==="
+echo "=== Phase 5 complete ==="
 echo "NOTE: Log out and back in (or run 'newgrp docker') for Docker group membership to take effect."

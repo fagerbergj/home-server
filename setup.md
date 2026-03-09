@@ -21,7 +21,7 @@ Steps:
 3. Verify the copy looks complete before wiping anything
 4. The ADATA and 1TB WD are now clear and ready for their new roles
 
-Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 2.
+Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
 
 Drive assignments going into the build:
 - **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
@@ -83,8 +83,48 @@ ssh-keygen -t ed25519
 
 ---
 
-## Phase 2 — NVIDIA Drivers
-> **Script:** `scripts/setup/phase2-nvidia.sh`
+## Phase 2 — GitHub
+
+Generate an SSH key on the server:
+```bash
+ssh-keygen -t ed25519 -C "home-server"
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copy the output and add it to GitHub: **Settings > SSH and GPG keys > New SSH key**
+
+Verify it works:
+```bash
+ssh -T git@github.com
+```
+
+You should see: `Hi fagerbergj! You've successfully authenticated...`
+
+Clone this repo:
+```bash
+mkdir -p ~/workspace
+cd ~/workspace
+git clone git@github.com:fagerbergj/home-server.git
+```
+
+### Create Root .env
+
+Create `~/workspace/home-server/.env` with secrets needed by setup scripts:
+```bash
+cat > ~/workspace/home-server/.env << 'EOF'
+GMAIL_APP_PASSWORD=your-app-password-here  # https://myaccount.google.com/apppasswords
+EOF
+```
+
+This file is gitignored. Setup scripts that need it will say so — source it before running them:
+```bash
+source ~/workspace/home-server/.env
+```
+
+---
+
+## Phase 3 — NVIDIA Drivers
+> **Script:** `scripts/setup/phase3-nvidia.sh`
 
 Install the recommended NVIDIA driver:
 ```bash
@@ -102,8 +142,8 @@ You should see the GTX 1070 Ti listed with driver version and VRAM.
 
 ---
 
-## Phase 3 — Mount Drives
-> **Script:** `scripts/setup/phase3-drives.sh` — run this instead of the manual steps below.
+## Phase 4 — Mount Drives
+> **Script:** `scripts/setup/phase4-drives.sh` — run this instead of the manual steps below.
 
 Find drive UUIDs:
 ```bash
@@ -255,7 +295,7 @@ Run the alerts setup script — it configures msmtp, mdadm email alerts, and a d
 
 ```bash
 source ~/workspace/home-server/.env
-scripts/setup/phase3-alerts.sh
+scripts/setup/phase4-alerts.sh
 ```
 
 ### Checking Drive Health
@@ -281,8 +321,8 @@ df -h
 
 ---
 
-## Phase 4 — Docker
-> **Script:** `scripts/setup/phase4-docker.sh`
+## Phase 5 — Docker
+> **Script:** `scripts/setup/phase5-docker.sh`
 
 Linux Mint is Debian-based so we use the Debian Docker repo:
 
@@ -322,47 +362,6 @@ sudo systemctl restart docker
 Verify GPU is accessible from Docker:
 ```bash
 docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
-```
-
----
-
-## Phase 5 — GitHub
-> **Script:** `scripts/setup/phase5-github.sh`
-
-Generate an SSH key on the server:
-```bash
-ssh-keygen -t ed25519 -C "home-server"
-cat ~/.ssh/id_ed25519.pub
-```
-
-Copy the output and add it to GitHub: **Settings > SSH and GPG keys > New SSH key**
-
-Verify it works:
-```bash
-ssh -T git@github.com
-```
-
-You should see: `Hi fagerbergj! You've successfully authenticated...`
-
-Clone this repo:
-```bash
-mkdir -p ~/workspace
-cd ~/workspace
-git clone git@github.com:fagerbergj/home-server.git
-```
-
-### Create Root .env
-
-Create `~/workspace/home-server/.env` with secrets needed by setup scripts:
-```bash
-cat > ~/workspace/home-server/.env << 'EOF'
-GMAIL_APP_PASSWORD=your-app-password-here  # https://myaccount.google.com/apppasswords
-EOF
-```
-
-This file is gitignored. Setup scripts that need it will say so — source it before running them:
-```bash
-source ~/workspace/home-server/.env
 ```
 
 ---

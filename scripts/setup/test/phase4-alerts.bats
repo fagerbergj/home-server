@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-SCRIPT="$BATS_TEST_DIRNAME/../phase3-alerts.sh"
+SCRIPT="$BATS_TEST_DIRNAME/../phase4-alerts.sh"
 
 setup() {
     export TMPDIR="$(mktemp -d)"

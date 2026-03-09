@@ -45,10 +45,10 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 ## Setup Order
 
 1. OS Install (Linux Mint)
-2. NVIDIA drivers
-3. Mount drives
-4. Docker + NVIDIA Container Toolkit
-5. GitHub
+2. GitHub (clone repo, create .env)
+3. NVIDIA Drivers
+4. Mount Drives + Alerts
+5. Docker + NVIDIA Container Toolkit
 6. Networking
 7. Services (Plex, Minecraft, Immich, qBittorrent, Ollama + Qwen3)
 

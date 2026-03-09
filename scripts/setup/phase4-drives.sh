@@ -1,8 +1,8 @@
 #!/bin/bash
-# Phase 3 — Mount Drives, RAID 1, Users, and Permissions
+# Phase 4 — Mount Drives, RAID 1, Users, and Permissions
 set -euo pipefail
 
-echo "=== Phase 3: Drive Setup ==="
+echo "=== Phase 4: Drive Setup ==="
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ sudo chmod -R 2775 /mnt/personal01
 # 6. Summary
 # ---------------------------------------------------------------------------
 echo ""
-echo "=== Phase 3 complete ==="
+echo "=== Phase 4 complete ==="
 echo ""
 echo "Update these values in each docker-compose.yml:"
 echo ""
