@@ -365,6 +365,7 @@ See individual service directories:
 - [`minecraft/`](minecraft/) — Minecraft Server
 - [`photos/`](photos/) — Immich Photo Storage
 - [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
-- [`llm/`](llm/) — Ollama + Qwen3 + Open WebUI
+- [`llm/`](llm/) — Ollama + DeepSeek + Open WebUI
+- [`watchtower/`](watchtower/) — Monitors and restarts containers automatically
 
 > These will be set up in order. See each directory for its own README.
