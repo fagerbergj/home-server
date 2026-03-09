@@ -69,12 +69,30 @@ Open WebUI requires account creation on first launch — this also locks it down
    - Set their name, email, and a temporary password
    - Send them the URL and credentials — they can change their password after logging in
 
-### CLI Access (local network only)
+### API Access
 
-Port 11434 (Ollama API) stays local-only. To use the CLI from your main PC:
+The Ollama API is protected by the key in `.env` and exposed externally via NPM at `https://llm-api.yourname.asuscomm.com`.
+
+Set up the key before starting:
 ```bash
-OLLAMA_HOST=http://<server-ip>:11434 ollama run qwen3:14b
+cp .env.example .env
+# Generate a strong key and paste it in:
+openssl rand -hex 32
 ```
+
+**From your local network:**
+```bash
+OLLAMA_HOST=http://<server-ip>:11434 OLLAMA_API_KEY=<your-key> ollama run qwen3:14b
+```
+
+**From outside your network (e.g. opencode):**
+```
+Base URL: https://llm-api.yourname.asuscomm.com
+API Key:  <your-key>
+Model:    qwen3:14b
+```
+
+Ollama is OpenAI API-compatible, so any tool that supports a custom OpenAI base URL will work.
 
 ## Updating
 

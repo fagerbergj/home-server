@@ -7,11 +7,12 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com    ──► Plex       (32400)
-    │                      ──► photos.yourname.asuscomm.com  ──► Immich     (2283)
-    │                      ──► llm.yourname.asuscomm.com     ──► Open WebUI (3000)
+    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com        ──► Plex       (32400)
+    │                      ──► photos.yourname.asuscomm.com      ──► Immich     (2283)
+    │                      ──► llm.yourname.asuscomm.com         ──► Open WebUI (3000)
+    │                      ──► llm-api.yourname.asuscomm.com     ──► Ollama API (11434)
     │
-    └── :25565 ──────────────────────────────────────────────► Minecraft    (25565)
+    └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
 
 ---
@@ -131,7 +132,14 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - Enable **Websockets Support**
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
-> Port 11434 (Ollama API) stays closed — only the WebUI is exposed.
+### Ollama API
+- Domain: `llm-api.yourname.asuscomm.com`
+- Scheme: `http`
+- Forward Hostname/IP: `127.0.0.1`
+- Forward Port: `11434`
+- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+
+> The API key set in `llm/.env` is the only auth layer here — keep it strong.
 
 ---
 
