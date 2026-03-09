@@ -30,7 +30,7 @@ EOF
     # Mock realpath
     cat > "$TMPDIR/bin/realpath" <<'EOF'
 #!/bin/bash
-echo "/scripts/phase3-check-disk.sh"
+echo "/scripts/check-disk.sh"
 EOF
     chmod +x "$TMPDIR/bin/realpath"
 
