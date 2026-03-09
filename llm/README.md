@@ -75,9 +75,7 @@ The Ollama API is protected by the key in `.env` and exposed externally via NPM 
 
 Set up the key before starting:
 ```bash
-cp .env.example .env
-# Generate a strong key and paste it in:
-openssl rand -hex 32
+./generate-env.sh
 ```
 
 **From your local network:**
