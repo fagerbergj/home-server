@@ -254,10 +254,9 @@ ls -la /mnt/personal01
 Run the alerts setup script — it configures msmtp, mdadm email alerts, and a daily disk usage check:
 
 ```bash
+source ~/workspace/home-server/.env
 scripts/setup/phase3-alerts.sh
 ```
-
-You'll be prompted for your Gmail app password (Google Account > Security > App Passwords). Everything else is automatic.
 
 ### Checking Drive Health
 
@@ -352,6 +351,20 @@ cd ~/workspace
 git clone git@github.com:fagerbergj/home-server.git
 ```
 
+### Create Root .env
+
+Create `~/workspace/home-server/.env` with secrets needed by setup scripts:
+```bash
+cat > ~/workspace/home-server/.env << 'EOF'
+GMAIL_APP_PASSWORD=your-app-password-here
+EOF
+```
+
+This file is gitignored. Setup scripts that need it will say so — source it before running them:
+```bash
+source ~/workspace/home-server/.env
+```
+
 ---
 
 ## Phase 6 — Networking
@@ -363,8 +376,8 @@ See [`networking/`](networking/) for the full networking setup. Summary:
 3. Forward ports 80, 443, and 25565 on your router to the server's static IP
 4. Run `scripts/setup/phase6-firewall.sh` to configure ufw
 5. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
-5. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
-6. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
+6. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
+7. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
 
 ---
 
@@ -376,9 +389,9 @@ Start services in this order:
 
 1. [`plex/`](plex/) — Plex Media Server
 2. [`minecraft/`](minecraft/) — Minecraft Server
-3. [`photos/`](photos/) — Immich Photo Storage
-4. [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
-5. [`llm/`](llm/) — Ollama + Qwen3 + Open WebUI
+3. [`photos/`](photos/) — run `./generate-env.sh` first, then `docker compose up -d`
+4. [`qbittorrent/`](qbittorrent/) — `docker compose up -d`
+5. [`llm/`](llm/) — run `./generate-env.sh` first, then `docker compose up -d`
 6. [`watchtower/`](watchtower/) — Start this last, after all other services are up
 
 See each directory for its own README.
