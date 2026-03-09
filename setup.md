@@ -366,6 +366,6 @@ See individual service directories:
 - [`minecraft/`](minecraft/) — Minecraft Server
 - [`photos/`](photos/) — Immich Photo Storage
 - [`qbittorrent/`](qbittorrent/) — qBittorrent (downloads straight to `/mnt/plex01`)
-- [`llm/`](llm/) — Ollama + DeepSeek + Open WebUI
+- [`llm/`](llm/) — Ollama + Qwen3 + Open WebUI
 
 > These will be set up in order. See each directory for its own README.
