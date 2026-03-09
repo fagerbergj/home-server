@@ -32,12 +32,12 @@ touch .env
 DB_USERNAME=immich
 DB_DATABASE_NAME=immich
 
-set_secret IMMICH_DB_PASSWORD "$(openssl rand -hex 32)"
+set_secret DB_PASSWORD "$(openssl rand -hex 32)"
 
 # Read the current password (either just generated or pre-existing)
-DB_PASSWORD=$(grep "^IMMICH_DB_PASSWORD=" .env | cut -d= -f2)
+DB_PASSWORD=$(grep "^DB_PASSWORD=" .env | cut -d= -f2)
 
-set_env IMMICH_DB_USERNAME "$DB_USERNAME"
-set_env IMMICH_DB_DATABASE_NAME "$DB_DATABASE_NAME"
-set_env IMMICH_DB_URL "postgresql://${DB_USERNAME}:${DB_PASSWORD}@immich-postgres/${DB_DATABASE_NAME}"
-set_env IMMICH_REDIS_HOSTNAME "immich-redis"
+set_env DB_USERNAME "$DB_USERNAME"
+set_env DB_DATABASE_NAME "$DB_DATABASE_NAME"
+set_env DB_URL "postgresql://${DB_USERNAME}:${DB_PASSWORD}@immich-postgres/${DB_DATABASE_NAME}"
+set_env REDIS_HOSTNAME "immich-redis"
