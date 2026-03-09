@@ -9,12 +9,17 @@ EMAIL="jf.fagerberg@gmail.com"
 echo "Installing msmtp..."
 sudo apt install -y msmtp msmtp-mta
 
-echo ""
-echo "You'll need a Gmail App Password — not your regular password."
-echo "Generate one at: Google Account > Security > 2-Step Verification > App Passwords"
-echo ""
-read -rsp "App password: " PASSWORD
-echo ""
+if [[ -n "${GMAIL_APP_PASSWORD:-}" ]]; then
+    PASSWORD="$GMAIL_APP_PASSWORD"
+else
+    echo ""
+    echo "You'll need a Gmail App Password — not your regular password."
+    echo "Generate one at: Google Account > Security > 2-Step Verification > App Passwords"
+    echo "Tip: set GMAIL_APP_PASSWORD in your .env to skip this prompt."
+    echo ""
+    read -rsp "App password: " PASSWORD
+    echo ""
+fi
 
 cat > ~/.msmtprc << EOF
 defaults
