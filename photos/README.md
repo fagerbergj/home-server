@@ -4,10 +4,9 @@ Self-hosted Google Photos alternative. Runs four containers: server, ML worker, 
 
 ## First-Time Setup
 
-1. Copy the env file and set a database password:
+1. Generate the env file:
    ```bash
-   cp .env.example .env
-   nano .env   # change DB_PASSWORD to something strong
+   ./generate-env.sh
    ```
 
 2. Create the photo upload directory on the storage drive:
