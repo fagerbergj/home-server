@@ -118,17 +118,29 @@ teardown() {
     rm -rf "$TMPDIR"
 }
 
-@test "detects 4TB drive as plex01" {
+@test "detects 4TB drive as plex01 and targets partition" {
     run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sda"* ]]
+    [[ "$output" == *"sda1"* ]]
     [[ "$output" == *"plex01"* ]]
 }
 
-@test "assigns two 1TB drives to RAID array" {
+@test "assigns two 1TB drives to RAID array and targets partitions" {
     run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sdb"* ]]
-    [[ "$output" == *"sdc"* ]]
+    [[ "$output" == *"sdb1"* ]]
+    [[ "$output" == *"sdc1"* ]]
     [[ "$output" == *"RAID"* ]]
+}
+
+@test "formats plex partition not whole disk" {
+    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"mkfs.ext4 called with"*"sda1"* ]]
+    [[ "$output" != *"mkfs.ext4 called with"*"/dev/sda "* ]]
+}
+
+@test "creates RAID with partitions not whole disks" {
+    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"mdadm called with"*"sdb1"* ]]
+    [[ "$output" == *"mdadm called with"*"sdc1"* ]]
 }
 
 @test "skips OS drive" {

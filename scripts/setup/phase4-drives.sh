@@ -60,10 +60,24 @@ while IFS= read -r line; do
     fi
 done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort -k2 -rn)
 
+# Resolve partition devices (phase0 creates a single partition on each drive)
+part_dev() {
+    local dev="$1"
+    if [[ "$dev" == *nvme* ]]; then
+        echo "${dev}p1"
+    else
+        echo "${dev}1"
+    fi
+}
+
+PLEX_PART=$(part_dev "$PLEX_DEV")
+RAID_PRIMARY_PART=$(part_dev "$RAID_PRIMARY")
+RAID_SECONDARY_PART=$(part_dev "$RAID_SECONDARY")
+
 echo "Auto-detected drive assignments:"
-echo "  plex01  (4TB Plex drive)        -> $PLEX_DEV ($PLEX_SIZE)"
-echo "  RAID primary  (new Seagate 1TB) -> $RAID_PRIMARY ($RAID_PRIMARY_SIZE)"
-echo "  RAID secondary (old WD 1TB)     -> $RAID_SECONDARY ($RAID_SECONDARY_SIZE)"
+echo "  plex01  (4TB Plex drive)        -> $PLEX_PART ($PLEX_SIZE)"
+echo "  RAID primary  (new Seagate 1TB) -> $RAID_PRIMARY_PART ($RAID_PRIMARY_SIZE)"
+echo "  RAID secondary (old WD 1TB)     -> $RAID_SECONDARY_PART ($RAID_SECONDARY_SIZE)"
 echo ""
 echo "WARNING: The drives above will be formatted. All data will be lost."
 read -rp "Does this look correct? (yes/no): " CONFIRM
@@ -76,10 +90,10 @@ echo ""
 # ---------------------------------------------------------------------------
 # 2. Format and mount plex01
 # ---------------------------------------------------------------------------
-echo "Formatting $PLEX_DEV as ext4..."
-sudo mkfs.ext4 -F "$PLEX_DEV"
+echo "Formatting $PLEX_PART as ext4..."
+sudo mkfs.ext4 -F "$PLEX_PART"
 
-PLEX_UUID=$(sudo blkid -s UUID -o value "$PLEX_DEV")
+PLEX_UUID=$(sudo blkid -s UUID -o value "$PLEX_PART")
 sudo mkdir -p /mnt/plex01
 
 if ! grep -q "/mnt/plex01" /etc/fstab; then
@@ -93,8 +107,8 @@ echo ""
 # ---------------------------------------------------------------------------
 # 3. Create RAID 1 array for personal01
 # ---------------------------------------------------------------------------
-echo "Creating RAID 1 array from $RAID_PRIMARY (primary) and $RAID_SECONDARY (secondary)..."
-sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY" "$RAID_SECONDARY"
+echo "Creating RAID 1 array from $RAID_PRIMARY_PART (primary) and $RAID_SECONDARY_PART (secondary)..."
+sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY_PART" "$RAID_SECONDARY_PART"
 
 echo ""
 echo "RAID sync started. This takes ~2 hours for 1TB drives."
