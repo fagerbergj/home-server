@@ -20,9 +20,9 @@ How to get your Minecraft client ready to join the server.
    - **Mod loader:** `NeoForge`
 5. Open the profile and click **Add More Content**
 6. Search for and add each of these mods:
-   - **Ars Nouveau**
-   - **GeckoLib**
-   - **Patchouli**
+   - **[Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau)**
+   - **[GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib)**
+   - **[Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)**
 7. Launch Minecraft from the profile
 
 ### Linux (Prism Launcher)
@@ -31,9 +31,9 @@ How to get your Minecraft client ready to join the server.
 2. Set **Minecraft version** to `1.21.1` and **Mod loader** to `NeoForge`
 3. Right-click the instance → **Edit** → **Mods** → **Download mods**
 4. Search for and add each of these mods:
-   - **Ars Nouveau**
-   - **GeckoLib**
-   - **Patchouli**
+   - **[Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau)**
+   - **[GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib)**
+   - **[Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)**
 5. Launch the instance
 
 ## Connect
