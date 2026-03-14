@@ -24,7 +24,7 @@ Steps:
 Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
 
 Drive assignments going into the build:
-- **256GB ADATA SSD** → OS drive (Linux Mint + Docker)
+- **480GB ADATA SSD** → OS drive (Linux Mint + Docker)
 - **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01`
 - **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01`
 - **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
@@ -35,7 +35,7 @@ Drive assignments going into the build:
 
 1. Boot the server from your existing Mint USB drive (spam F12 or DEL on POST to get boot menu)
 2. Install Linux Mint:
-   - Select the 256GB SSD as the install target
+   - Select the 480GB SSD as the install target
    - Use "Erase disk and install" — this is a dedicated machine
    - Set a strong password, enable auto-login is fine since it's headless
 3. After install, remove USB and reboot
