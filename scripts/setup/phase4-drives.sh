@@ -37,6 +37,7 @@ echo ""
 
 # Auto-assign roles by size (excluding OS drive)
 PLEX_DEV=""
+PLEX2_DEV=""
 RAID_PRIMARY=""
 RAID_SECONDARY=""
 
@@ -57,6 +58,9 @@ while IFS= read -r line; do
     elif [[ -z "$RAID_SECONDARY" ]]; then
         RAID_SECONDARY="/dev/$dev"
         RAID_SECONDARY_SIZE="$size_human"
+    elif [[ -z "$PLEX2_DEV" ]]; then
+        PLEX2_DEV="/dev/$dev"
+        PLEX2_SIZE="$size_human"
     fi
 done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort -k2 -rn)
 
@@ -73,11 +77,18 @@ part_dev() {
 PLEX_PART=$(part_dev "$PLEX_DEV")
 RAID_PRIMARY_PART=$(part_dev "$RAID_PRIMARY")
 RAID_SECONDARY_PART=$(part_dev "$RAID_SECONDARY")
+PLEX2_PART=""
+if [[ -n "$PLEX2_DEV" ]]; then
+    PLEX2_PART=$(part_dev "$PLEX2_DEV")
+fi
 
 echo "Auto-detected drive assignments:"
 echo "  plex01  (4TB Plex drive)        -> $PLEX_PART ($PLEX_SIZE)"
 echo "  RAID primary  (new Seagate 1TB) -> $RAID_PRIMARY_PART ($RAID_PRIMARY_SIZE)"
 echo "  RAID secondary (old WD 1TB)     -> $RAID_SECONDARY_PART ($RAID_SECONDARY_SIZE)"
+if [[ -n "$PLEX2_PART" ]]; then
+    echo "  plex02  (overflow Plex drive)   -> $PLEX2_PART ($PLEX2_SIZE)"
+fi
 echo ""
 echo "WARNING: The drives above will be formatted. All data will be lost."
 read -rp "Does this look correct? (yes/no): " CONFIRM
@@ -105,7 +116,26 @@ echo "plex01 mounted."
 echo ""
 
 # ---------------------------------------------------------------------------
-# 3. Create RAID 1 array for personal01
+# 3. Format and mount plex02 (optional overflow drive)
+# ---------------------------------------------------------------------------
+if [[ -n "$PLEX2_PART" ]]; then
+    echo "Formatting $PLEX2_PART as ext4 (plex02)..."
+    sudo mkfs.ext4 -F "$PLEX2_PART"
+
+    PLEX2_UUID=$(sudo blkid -s UUID -o value "$PLEX2_PART")
+    sudo mkdir -p /mnt/plex02
+
+    if ! grep -q "/mnt/plex02" /etc/fstab; then
+        echo "UUID=$PLEX2_UUID   /mnt/plex02   ext4   defaults   0   2" | sudo tee -a /etc/fstab
+    fi
+
+    sudo mount -a
+    echo "plex02 mounted."
+    echo ""
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Create RAID 1 array for personal01
 # ---------------------------------------------------------------------------
 echo "Creating RAID 1 array from $RAID_PRIMARY_PART (primary) and $RAID_SECONDARY_PART (secondary)..."
 sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY_PART" "$RAID_SECONDARY_PART"
@@ -132,7 +162,7 @@ echo "personal01 mounted."
 echo ""
 
 # ---------------------------------------------------------------------------
-# 4. Service users and groups
+# 5. Service users and groups
 # ---------------------------------------------------------------------------
 echo "Creating service users and groups..."
 
@@ -162,7 +192,7 @@ sudo usermod -aG personal-rw jason
 echo ""
 
 # ---------------------------------------------------------------------------
-# 5. Folder structure and permissions
+# 6. Folder structure and permissions
 # ---------------------------------------------------------------------------
 echo "Setting up folder structure and permissions..."
 sudo apt install -y acl
@@ -176,8 +206,15 @@ sudo mkdir -p /mnt/personal01/photos
 sudo chown -R root:personal-rw /mnt/personal01
 sudo chmod -R 2775 /mnt/personal01
 
+if [[ -n "$PLEX2_PART" ]]; then
+    sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows
+    sudo chown -R root:plex-rw /mnt/plex02
+    sudo chmod -R 2775 /mnt/plex02
+    sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
+fi
+
 # ---------------------------------------------------------------------------
-# 6. Summary
+# 7. Summary
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Phase 4 complete ==="

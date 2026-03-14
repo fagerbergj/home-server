@@ -12,8 +12,9 @@
 | Personal Drive (primary) | 1TB Seagate HDD | ✅ Purchased — RAID 1 primary |
 | Personal Drive (secondary) | 1TB WD HDD | ✅ Moving from main PC — 35,648 hrs, healthy SMART |
 | Plex Drive | 4TB Seagate Barracuda HDD | ✅ Purchased |
+| Plex Drive (overflow) | 640GB Hitachi Deskstar HDD | ⚠️ Old drive (41k hrs) — non-critical re-downloadable media only |
 | GPU | GTX 1070 Ti (Pascal, 8GB VRAM) | ✅ From friend — excellent NVENC, ~180W |
-| PSU | EVGA 500W AXI | ✅ Sufficient — upgrade when swapping to modern GPU |
+| PSU | EVGA 500W AXI | ✅ Sufficient |
 | Network | Realtek Gigabit LAN (onboard) | ✅ Gigabit |
 | Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ Purchased |
 
@@ -26,14 +27,14 @@
 | `/` | 480GB ADATA SU650 SSD | Linux Mint + Docker configs | — | — | — |
 | `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 | `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
+| `/mnt/plex02` | 640GB Hitachi Deskstar HDD | Plex overflow — re-downloadable media only | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 
 ---
 
 ## Platform Notes
 
 - LGA1155 / Sandy Bridge (2011) — end-of-life but works fine for this use case
-- Planned upgrade path: when upgrading main PC, cascade CPU/mobo/RAM to server
-- On mobo swap: Linux and Docker configs carry over seamlessly; RAID array reassembles automatically; may need to reinstall NVIDIA drivers if GPU changes
+- See [`hardware_upgrades.md`](hardware_upgrades.md) for the planned AM4 platform upgrade
 
 ---
 

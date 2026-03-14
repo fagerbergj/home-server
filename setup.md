@@ -181,6 +181,21 @@ sudo mkdir -p /mnt/plex01
 sudo mount -a
 ```
 
+### Mount plex02 (optional overflow drive)
+
+If the 640GB Hitachi drive is present, the script detects it automatically and mounts it as `/mnt/plex02`. Use this for non-critical, re-downloadable Plex media only — the drive has high hours.
+
+If running manually:
+```bash
+sudo mkfs.ext4 /dev/sdX1   # replace with correct device
+sudo mkdir -p /mnt/plex02
+# Get UUID:
+sudo blkid /dev/sdX1
+# Add to /etc/fstab:
+UUID=<uuid>   /mnt/plex02   ext4   defaults   0   2
+sudo mount -a
+```
+
 ### Set Up RAID 1 for personal01
 
 Install mdadm:

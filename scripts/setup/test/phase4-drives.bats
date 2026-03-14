@@ -14,7 +14,7 @@ setup() {
     touch "$FSTAB"
     touch "$MDADM_CONF"
 
-    # Mock lsblk — 3 non-OS drives: 4TB, 1TB (new), 1TB (old)
+    # Mock lsblk — 4 non-OS drives: 4TB, 1TB (new), 1TB (old), 640GB (overflow)
     mkdir -p "$TMPDIR/bin"
     cat > "$TMPDIR/bin/lsblk" <<'EOF'
 #!/bin/bash
@@ -23,12 +23,14 @@ if [[ "$*" == *"-d -b -o NAME,SIZE"* ]]; then
     echo "sda  4000000000000"
     echo "sdb  1000000000000"
     echo "sdc  1000000000000"
+    echo "sdd  640000000000"
     echo "nvme0n1 256000000000"
 elif [[ "$*" == *"-d -o NAME,SIZE"* ]]; then
     echo "NAME SIZE"
     echo "sda  3.6T"
     echo "sdb  931.5G"
     echo "sdc  931.5G"
+    echo "sdd  596.2G"
     echo "nvme0n1 238.5G"
 elif [[ "$*" == *"-no pkname"* ]]; then
     echo "nvme0n1"
@@ -37,6 +39,7 @@ else
     echo "sda        3.6T"
     echo "sdb        931.5G"
     echo "sdc        931.5G"
+    echo "sdd        596.2G"
     echo "nvme0n1    238.5G"
 fi
 EOF
@@ -152,6 +155,17 @@ teardown() {
 @test "aborts when user enters 'no'" {
     run bash -c "echo 'no' | bash $SCRIPT"
     [[ "$output" == *"Aborted"* ]]
+}
+
+@test "detects 640GB drive as plex02 and targets partition" {
+    run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"sdd1"* ]]
+    [[ "$output" == *"plex02"* ]]
+}
+
+@test "formats plex02 partition when present" {
+    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"mkfs.ext4 called with"*"sdd1"* ]]
 }
 
 @test "prints UID/GID summary at end" {
