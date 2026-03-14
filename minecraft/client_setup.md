@@ -39,7 +39,7 @@ How to get your Minecraft client ready to join the server.
 ## Connect
 
 Add the server under **Multiplayer → Add Server**:
-- Address: `yourname.asuscomm.com:25565`
+- Address: `jasonfagerberg.asuscomm.com:25565`
 
 ## Notes
 

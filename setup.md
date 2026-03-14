@@ -398,12 +398,12 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu24.04 nvidia-smi
 See [`networking/`](networking/) for the full networking setup. Summary:
 
 1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
-2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `yourname.asuscomm.com`)
+2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `jasonfagerberg.asuscomm.com`)
 3. Forward ports 80, 443, and 25565 on your router to the server's static IP
 4. Run `scripts/setup/phase6-firewall.sh` to configure ufw
 5. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
-6. Install the Immich mobile app and point it at `https://photos.yourname.asuscomm.com` for automatic photo backup
-7. Friends connect to Minecraft via `yourname.asuscomm.com:25565`
+6. Install the Immich mobile app and point it at `https://photos.jasonfagerberg.asuscomm.com` for automatic photo backup
+7. Friends connect to Minecraft via `jasonfagerberg.asuscomm.com:25565`
 
 ---
 

@@ -58,7 +58,7 @@ docker exec -it ollama ollama list
 
 Open WebUI is accessible from your local network at `http://<server-ip>:3000`.
 
-For external access (family/friends), Open WebUI is exposed via Nginx Proxy Manager — see [`networking/README.md`](../networking/README.md). Once configured it's available at `https://llm.yourname.asuscomm.com` from any browser, no app required.
+For external access (family/friends), Open WebUI is exposed via Nginx Proxy Manager — see [`networking/README.md`](../networking/README.md). Once configured it's available at `https://llm.jasonfagerberg.asuscomm.com` from any browser, no app required.
 
 ### Setting Up User Accounts
 
@@ -72,7 +72,7 @@ Open WebUI requires account creation on first launch — this also locks it down
 
 ### API Access
 
-The Ollama API is protected by the key in `.env` and exposed externally via NPM at `https://llm-api.yourname.asuscomm.com`.
+The Ollama API is protected by the key in `.env` and exposed externally via NPM at `https://llm-api.jasonfagerberg.asuscomm.com`.
 
 Set up the key before starting:
 ```bash
@@ -86,7 +86,7 @@ OLLAMA_HOST=http://<server-ip>:11434 OLLAMA_API_KEY=<your-key> ollama run qwen3:
 
 **From outside your network** — any tool that supports a custom OpenAI-compatible base URL:
 ```
-Base URL: https://llm-api.yourname.asuscomm.com
+Base URL: https://llm-api.jasonfagerberg.asuscomm.com
 API Key:  <your-key>
 Model:    qwen3:8b
 ```

@@ -7,10 +7,10 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.yourname.asuscomm.com        ──► Plex       (32400)
-    │                      ──► photos.yourname.asuscomm.com      ──► Immich     (2283)
-    │                      ──► llm.yourname.asuscomm.com         ──► Open WebUI (3000)
-    │                      ──► llm-api.yourname.asuscomm.com     ──► Ollama API (11434)
+    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.asuscomm.com        ──► Plex       (32400)
+    │                      ──► photos.jasonfagerberg.asuscomm.com      ──► Immich     (2283)
+    │                      ──► llm.jasonfagerberg.asuscomm.com         ──► Open WebUI (3000)
+    │                      ──► llm-api.jasonfagerberg.asuscomm.com     ──► Ollama API (11434)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
@@ -42,13 +42,13 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 1. In the router UI: **Advanced Settings > WAN > DDNS**
 2. Set **Enable the DDNS Client** to **Yes**
 3. Under **Server and Host Name**, choose **WWW.ASUS.COM**
-4. Enter your hostname — it will become `yourname.asuscomm.com`
+4. Enter your hostname — it will become `jasonfagerberg.asuscomm.com`
 5. Click **Apply**
 
 Your services will be accessible at:
 ```
-plex.yourname.asuscomm.com
-photos.yourname.asuscomm.com
+plex.jasonfagerberg.asuscomm.com
+photos.jasonfagerberg.asuscomm.com
 ```
 
 > You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
@@ -105,7 +105,7 @@ docker compose up -d
 For each service, go to **Proxy Hosts > Add Proxy Host**:
 
 ### Plex
-- Domain: `plex.yourname.asuscomm.com`
+- Domain: `plex.jasonfagerberg.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `32400`
@@ -113,7 +113,7 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
 ### Immich
-- Domain: `photos.yourname.asuscomm.com`
+- Domain: `photos.jasonfagerberg.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `2283`
@@ -121,7 +121,7 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
 ### Open WebUI (LLM)
-- Domain: `llm.yourname.asuscomm.com`
+- Domain: `llm.jasonfagerberg.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `3000`
@@ -129,7 +129,7 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 - SSL tab: request a Let's Encrypt cert, enable **Force SSL**
 
 ### Ollama API
-- Domain: `llm-api.yourname.asuscomm.com`
+- Domain: `llm-api.jasonfagerberg.asuscomm.com`
 - Scheme: `http`
 - Forward Hostname/IP: `127.0.0.1`
 - Forward Port: `11434`
@@ -142,7 +142,7 @@ For each service, go to **Proxy Hosts > Add Proxy Host**:
 ## Mobile Photo Uploads (Immich)
 
 Install the Immich app on your phone (iOS or Android). In the app settings:
-- Server URL: `https://photos.yourname.asuscomm.com`
+- Server URL: `https://photos.jasonfagerberg.asuscomm.com`
 - Log in with your Immich account
 - Enable **Automatic Background Backup**
 
@@ -154,7 +154,7 @@ Photos will upload automatically over both WiFi and mobile data.
 
 Minecraft bypasses NPM entirely — it uses raw TCP on port 25565. Friends connect using:
 ```
-yourname.asuscomm.com:25565
+jasonfagerberg.asuscomm.com:25565
 ```
 
 ---
