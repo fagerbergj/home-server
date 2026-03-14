@@ -8,7 +8,7 @@
 | Motherboard | ASUS P8H61-M LE/CSM (LGA1155, H61 chipset) | ⚠️ Old platform, max 16GB DDR3, 2 DIMM slots |
 | RAM | 16GB (2×8GB) Silicon Power DDR3-1600 CL11 | ✅ Purchased — maxes out the board |
 | CPU Cooler | Stock Intel cooler | ⚠️ Marginal for 24/7 — upgrade eventually |
-| OS Drive | 256GB ADATA SSD | ✅ Moving from main PC |
+| OS Drive | 480GB ADATA SU650 SSD | ✅ Moving from main PC |
 | Personal Drive (primary) | 1TB Seagate HDD | ✅ Purchased — RAID 1 primary |
 | Personal Drive (secondary) | 1TB WD HDD | ✅ Moving from main PC — 35,648 hrs, healthy SMART |
 | Plex Drive | 4TB Seagate Barracuda HDD | ✅ Purchased |
@@ -23,7 +23,7 @@
 
 | Mount Point | Drive | Purpose | Owner | Group | Access |
 |-------------|-------|---------|-------|-------|--------|
-| `/` | 256GB ADATA SSD | Linux Mint + Docker configs | — | — | — |
+| `/` | 480GB ADATA SU650 SSD | Linux Mint + Docker configs | — | — | — |
 | `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 | `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
 
