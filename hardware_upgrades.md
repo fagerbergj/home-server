@@ -45,6 +45,14 @@ Avoid 105W chips (5800X, 5900X, 5950X) for 24/7 server use — B350 VRM wasn't d
 - TDP is ~180W — same as the 1070 Ti, so the 500W PSU doesn't need upgrading
 - Retire the 1070 Ti when this goes in
 
+### LLM upgrade
+With 16GB VRAM, switch from Qwen3 8B to **Qwen3-Coder 30B-A3B** in Ollama:
+```bash
+docker exec -it ollama ollama pull qwen3-coder:30b-a3b
+```
+The MoE architecture keeps active parameters low enough to fit in 16GB despite the 30B total size. Stronger coding capability while staying in the same Qwen3 family.
+
 ### Migration notes
 - Reinstall NVIDIA drivers after swap
 - Update `hardware.md` with new GPU specs
+- Update `llm/README.md` with new model recommendations
