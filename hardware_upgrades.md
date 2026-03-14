@@ -32,3 +32,19 @@ Avoid 105W chips (5800X, 5900X, 5950X) for 24/7 server use — B350 VRM wasn't d
 - RAID array reassembles automatically
 - Reinstall NVIDIA drivers after platform swap
 - Note new CPU/RAM specs in `hardware.md` after swap
+
+---
+
+## Phase 2 — GPU Upgrade
+
+**Priority:** After Phase 1 — more VRAM is the main bottleneck for running larger LLMs.
+
+### Target: RTX 5060 Ti 16GB
+- 16GB VRAM unlocks larger models (13B+ quantized, potentially 30B at lower quant)
+- Blackwell NVENC is a significant step up for Plex transcoding
+- TDP is ~180W — same as the 1070 Ti, so the 500W PSU doesn't need upgrading
+- Retire the 1070 Ti when this goes in
+
+### Migration notes
+- Reinstall NVIDIA drivers after swap
+- Update `hardware.md` with new GPU specs
