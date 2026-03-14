@@ -24,20 +24,20 @@ Steps:
 Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
 
 Drive assignments going into the build:
-- **480GB ADATA SSD** → OS drive (Linux Mint + Docker)
+- **480GB ADATA SSD** → OS drive (Ubuntu Server 24.04 LTS + Docker)
 - **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01`
 - **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01`
 - **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
 
 ---
 
-## Phase 1 — OS Install (Linux Mint)
+## Phase 1 — OS Install (Ubuntu Server 24.04 LTS)
 
-1. Boot the server from your existing Mint USB drive (spam F12 or DEL on POST to get boot menu)
-2. Install Linux Mint:
+1. Boot the server from your Ubuntu Server USB drive (spam F12 or DEL on POST to get boot menu)
+2. Install Ubuntu Server:
    - Select the 480GB SSD as the install target
-   - Use "Erase disk and install" — this is a dedicated machine
-   - Set a strong password, enable auto-login is fine since it's headless
+   - Use the entire disk — this is a dedicated machine
+   - Set a strong password
 3. After install, remove USB and reboot
 
 Update system after first boot:
@@ -48,7 +48,7 @@ sudo reboot
 
 ### Enable SSH
 
-Do this while you still have a monitor plugged in — everything after this can be done remotely.
+The Ubuntu Server installer offers to enable SSH during setup — do it there if you didn't, otherwise:
 
 ```bash
 sudo apt install -y openssh-server
@@ -353,18 +353,16 @@ df -h
 ## Phase 5 — Docker
 > **Script:** `scripts/setup/phase5-docker.sh`
 
-Linux Mint is Debian-based so we use the Debian Docker repo:
-
 ```bash
 # Install dependencies
 sudo apt install -y ca-certificates curl gnupg
 
 # Add Docker's official GPG key and repo
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/debian bookworm stable" | \
+  https://download.docker.com/linux/ubuntu noble stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update
