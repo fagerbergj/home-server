@@ -24,7 +24,7 @@
 
 | Mount Point | Drive | Purpose | Owner | Group | Access |
 |-------------|-------|---------|-------|-------|--------|
-| `/` | 480GB ADATA SU650 SSD | Linux Mint + Docker configs | — | — | — |
+| `/` | 480GB ADATA SU650 SSD | Ubuntu Server 24.04 LTS + Docker configs | — | — | — |
 | `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 | `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
 | `/mnt/plex02` | 640GB Hitachi Deskstar HDD | Plex overflow — re-downloadable media only | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |

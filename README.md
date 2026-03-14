@@ -1,6 +1,6 @@
 # Home Server
 
-Personal home server running Linux Mint. This repo tracks configuration, docker compose files, and setup notes.
+Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configuration, docker compose files, and setup notes.
 
 ## Use Cases
 
@@ -15,7 +15,7 @@ Personal home server running Linux Mint. This repo tracks configuration, docker 
 
 ## OS
 
-**Linux Mint** (Debian-based) — chosen for its familiar desktop environment and stability.
+**Ubuntu Server 24.04 LTS** — chosen for strong NVIDIA/CUDA driver support and Docker compatibility.
 
 ## Architecture
 
@@ -44,7 +44,7 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 
 ## Setup Order
 
-1. OS Install (Linux Mint)
+1. OS Install (Ubuntu Server 24.04 LTS)
 2. GitHub (clone repo, create .env)
 3. NVIDIA Drivers
 4. Mount Drives + Alerts
