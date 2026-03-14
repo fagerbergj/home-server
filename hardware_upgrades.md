@@ -9,7 +9,7 @@ Replace the Sandy Bridge platform with AM4 hardware already owned.
 |-----------|---------|
 | Motherboard | MSI B350 Tomahawk |
 | RAM | 16GB DDR4 |
-| CPU Cooler | Stock AMD Wraith (from main PC build) |
+| CPU Cooler | Stock AMD Wraith (unused, stored in CPU box) |
 
 ### CPU strategy
 The B350 Tomahawk supports Ryzen 5000 (Vermeer) via beta BIOS, but has no BIOS flashback — an older AM4 CPU is required to boot and flash first.
