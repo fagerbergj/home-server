@@ -6,8 +6,8 @@ services:
       - "25565:25565"
     environment:
       - EULA=TRUE
-      - VERSION=LATEST
-      - TYPE=VANILLA
+      - VERSION=1.21.1
+      - TYPE=NEOFORGE
       - MEMORY=4G
       - TZ=America/Chicago
       - DIFFICULTY=normal
@@ -16,4 +16,5 @@ services:
       - ENABLE_AUTOPAUSE=TRUE   # pauses server when no players online to save resources
     volumes:
       - ./data:/data
+      - ./mods:/data/mods
     restart: unless-stopped
