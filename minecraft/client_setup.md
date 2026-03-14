@@ -5,9 +5,12 @@ How to get your Minecraft client ready to join the server.
 ## Requirements
 
 - Minecraft Java Edition
-- [CurseForge launcher](https://www.curseforge.com/download/app) (Windows .exe installer)
+- **Windows:** [CurseForge launcher](https://www.curseforge.com/download/app) (.exe installer)
+- **Linux:** [Prism Launcher](https://prismlauncher.org/)
 
 ## Steps
+
+### Windows (CurseForge)
 
 1. Install the CurseForge launcher and open it
 2. Select **Minecraft** from the game list
@@ -21,8 +24,22 @@ How to get your Minecraft client ready to join the server.
    - **GeckoLib**
    - **Patchouli**
 7. Launch Minecraft from the profile
-8. Add the server under **Multiplayer → Add Server**:
-   - Address: `yourname.asuscomm.com:25565`
+
+### Linux (Prism Launcher)
+
+1. Click **Add Instance**
+2. Set **Minecraft version** to `1.21.1` and **Mod loader** to `NeoForge`
+3. Right-click the instance → **Edit** → **Mods** → **Download mods**
+4. Search for and add each of these mods:
+   - **Ars Nouveau**
+   - **GeckoLib**
+   - **Patchouli**
+5. Launch the instance
+
+## Connect
+
+Add the server under **Multiplayer → Add Server**:
+- Address: `yourname.asuscomm.com:25565`
 
 ## Notes
 
