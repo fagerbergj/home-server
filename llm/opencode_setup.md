@@ -10,6 +10,7 @@ Run this to write the config file:
 mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3:8b",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -34,6 +35,7 @@ Or manually edit `~/.config/opencode/opencode.json`:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3:8b",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
