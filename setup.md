@@ -81,6 +81,14 @@ ssh-keygen -t ed25519
 
 **Everything from this point forward can be done via SSH from your main PC. Unplug the monitor.**
 
+### Sync .env to Server
+
+You already have a filled-out `.env` on your main PC — copy it over now:
+```bash
+# Run on your main PC
+scp ~/workspace/home-server/.env jason@<server-ip>:~/workspace/home-server/.env
+```
+
 ---
 
 ## Phase 2 — GitHub

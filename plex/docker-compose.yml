@@ -11,7 +11,7 @@ services:
       - VERSION=docker
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
-      - PLEX_CLAIM=        # get token from plex.tv/claim (expires in 4 min)
+      - PLEX_CLAIM=${PLEX_CLAIM}  # set inline: PLEX_CLAIM=claim-xxx docker compose up -d
     volumes:
       - ./config:/config
       - /mnt/plex01:/mnt/plex01

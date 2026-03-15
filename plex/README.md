@@ -2,17 +2,15 @@
 
 ## First-Time Setup
 
-1. Get a claim token — visit https://www.plex.tv/claim and paste it into `PLEX_CLAIM` in `docker-compose.yml`. It expires in 4 minutes so do this right before starting the container.
-
-2. Check your user's UID/GID match the compose file:
+1. Check your user's UID/GID match the compose file:
    ```bash
    id $USER
    ```
    Update `PUID` and `PGID` in `docker-compose.yml` if they differ from 1000.
 
-3. Start Plex:
+2. Get a claim token from https://www.plex.tv/claim — it expires in 4 minutes, so do this right before starting. Start Plex with the token:
    ```bash
-   docker compose up -d
+   PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx docker compose up -d
    ```
 
 4. Open a browser on the same local network and go to:
