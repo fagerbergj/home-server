@@ -75,31 +75,17 @@ Do this before adding proxy hosts so the cert is ready to assign.
 5. Credentials: paste your DuckDNS token
 6. Agree to ToS and click **Save** — cert will appear once issued
 
-### Add Proxy Hosts
+### Add / Update Proxy Hosts
 
-For each service, go to **Proxy Hosts > Add Proxy Host**:
+For each service, go to **Proxy Hosts** and either edit an existing host or click **Add Proxy Host**:
 
-#### Plex
-- Domain: `plex.jasonfagerberg.duckdns.org`
-- Scheme: `http`, Forward to: `127.0.0.1:32400`
-- Enable **Websockets Support**
-- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
+| Service | Domain | Forward to | Websockets | SSL cert |
+|---------|--------|------------|------------|----------|
+| Plex | `plex.jasonfagerberg.duckdns.org` | `http://127.0.0.1:32400` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Immich | `photos.jasonfagerberg.duckdns.org` | `http://127.0.0.1:2283` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http://127.0.0.1:3000` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http://127.0.0.1:11434` | No | `*.jasonfagerberg.duckdns.org` |
 
-#### Immich
-- Domain: `photos.jasonfagerberg.duckdns.org`
-- Scheme: `http`, Forward to: `127.0.0.1:2283`
-- Enable **Websockets Support**
-- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
-
-#### Open WebUI (LLM)
-- Domain: `llm.jasonfagerberg.duckdns.org`
-- Scheme: `http`, Forward to: `127.0.0.1:3000`
-- Enable **Websockets Support**
-- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
-
-#### Ollama API
-- Domain: `llm-api.jasonfagerberg.duckdns.org`
-- Scheme: `http`, Forward to: `127.0.0.1:11434`
-- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
+Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
 > The API key set in `llm/.env` is the only auth layer here — keep it strong.
