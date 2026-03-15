@@ -101,8 +101,13 @@ echo ""
 # ---------------------------------------------------------------------------
 # 2. Format and mount plex01
 # ---------------------------------------------------------------------------
-echo "Formatting $PLEX_PART as ext4..."
-sudo mkfs.ext4 -F "$PLEX_PART"
+EXISTING_FS=$(sudo blkid -s TYPE -o value "$PLEX_PART" 2>/dev/null || true)
+if [[ -n "$EXISTING_FS" ]]; then
+    echo "plex01 ($PLEX_PART) already has a $EXISTING_FS filesystem — skipping format, preserving data."
+else
+    echo "Formatting $PLEX_PART as ext4..."
+    sudo mkfs.ext4 -F "$PLEX_PART"
+fi
 
 PLEX_UUID=$(sudo blkid -s UUID -o value "$PLEX_PART")
 sudo mkdir -p /mnt/plex01

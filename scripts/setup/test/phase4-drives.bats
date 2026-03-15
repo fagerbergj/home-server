@@ -68,9 +68,12 @@ echo "mkfs.ext4 called with: $*"
 EOF
     chmod +x "$TMPDIR/bin/mkfs.ext4"
 
-    # Mock blkid
+    # Mock blkid — returns UUID by default, no existing filesystem type
     cat > "$TMPDIR/bin/blkid" <<'EOF'
 #!/bin/bash
+if [[ "$*" == *"-s TYPE"* ]]; then
+    exit 0  # no existing filesystem
+fi
 echo "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 EOF
     chmod +x "$TMPDIR/bin/blkid"
@@ -173,4 +176,19 @@ teardown() {
     run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"PUID (plex)"* ]]
     [[ "$output" == *"PGID (plex-rw)"* ]]
+}
+
+@test "skips formatting plex01 if filesystem already exists" {
+    # Override blkid to report an existing ext4 on plex01
+    cat > "$TMPDIR/bin/blkid" <<'EOF'
+#!/bin/bash
+if [[ "$*" == *"-s TYPE"* ]]; then
+    echo "ext4"
+    exit 0
+fi
+echo "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+EOF
+    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"already has a ext4 filesystem"* ]]
+    [[ "$output" != *"mkfs.ext4 called with"*"sda1"* ]]
 }
