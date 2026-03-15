@@ -143,6 +143,37 @@ source ~/workspace/home-server/.env
 
 ---
 
+## Phase 3 — NVIDIA Drivers
+
+Nouveau (the open-source driver) loads by default but lacks NVENC hardware encoding, which Plex needs for transcoding. You must blacklist it and install the proprietary driver.
+
+### Blacklist nouveau
+
+```bash
+echo "blacklist nouveau" | sudo tee /etc/modprobe.d/blacklist-nouveau.conf
+echo "options nouveau modeset=0" | sudo tee -a /etc/modprobe.d/blacklist-nouveau.conf
+sudo update-initramfs -u
+sudo reboot
+```
+
+### Install the proprietary driver
+
+```bash
+sudo apt install -y nvidia-driver-535
+sudo reboot
+```
+
+### Verify
+
+```bash
+nvidia-smi
+nvtop
+```
+
+You should see the GTX 1070 Ti listed with driver version and VRAM.
+
+---
+
 ### Monitoring Tools
 > **Script:** `scripts/setup/phase3-monitoring.sh`
 
@@ -164,35 +195,49 @@ nvtop   # GPU utilization and VRAM usage
 ---
 
 ## Phase 4 — Mount Drives
-> **Script:** `scripts/setup/phase4-drives.sh` — run this instead of the manual steps below.
->
-> ⚠️ **If you completed Phase 0**, plex01 already has your media — **do not run the script**, it will format the drive and wipe everything. Use the manual steps below and skip the format step for plex01.
+
+First, detect and assign drives:
+```bash
+sudo bash scripts/setup/phase4-detect-drives.sh
+```
+
+This auto-detects all non-OS drives by size, assigns roles (plex01, plex02, personal01 RAID), and writes `scripts/setup/drives.json`. If plex01 already has a filesystem (coming from Phase 0), it sets `preserve: true` automatically — the drive won't be formatted.
+
+Review the config before proceeding:
+```bash
+cat scripts/setup/drives.json
+```
+
+Edit it if the assignments look wrong, then run:
+```bash
+sudo bash scripts/setup/phase4-drives.sh
+```
+
+The script will prompt for confirmation, mount drives, create the RAID 1 array, wait for sync (~2 hours for 1TB), then set up service users, groups, and permissions. It prints the PUID/PGID values you'll need for docker-compose at the end.
 
 <details>
 <summary>Manual steps</summary>
 
-Find drive UUIDs:
-```bash
-lsblk -f
-```
-
 ### Mount plex01
 
-> **If you completed Phase 0:** the 4TB drive already has your media — skip the format step and go straight to mounting by UUID.
+> **If you completed Phase 0:** the 4TB drive already has your media — skip the format step.
 
-Format the 4TB drive (**skip if coming from Phase 0**):
 ```bash
-sudo mkfs.ext4 /dev/sdX   # replace sdX with correct device — use lsblk to find it
+lsblk -f  # find device and existing UUID
 ```
 
-Get the UUID (run this regardless):
+Format (**skip if coming from Phase 0**):
 ```bash
-sudo blkid /dev/sdX
+sudo mkfs.ext4 /dev/sdX1
 ```
 
-Add to `/etc/fstab`:
+Get UUID and add to fstab:
+```bash
+sudo blkid /dev/sdX1
 ```
-UUID=<4tb-uuid>   /mnt/plex01   ext4   defaults   0   2
+
+```
+UUID=<uuid>   /mnt/plex01   ext4   defaults   0   2
 ```
 
 ```bash
@@ -200,15 +245,13 @@ sudo mkdir -p /mnt/plex01
 sudo mount -a
 ```
 
-### Mount plex02 (optional overflow drive)
+### Mount plex02 (optional)
 
-If the 640GB Hitachi drive is present, the script detects it automatically and mounts it as `/mnt/plex02`. Use this for non-critical, re-downloadable Plex media only — the drive has high hours.
+If the 640GB Hitachi drive is present, mount it as `/mnt/plex02`. Use for non-critical, re-downloadable Plex media only — the drive has high hours.
 
-If running manually:
 ```bash
-sudo mkfs.ext4 /dev/sdX1   # replace with correct device
+sudo mkfs.ext4 /dev/sdX1
 sudo mkdir -p /mnt/plex02
-# Get UUID:
 sudo blkid /dev/sdX1
 # Add to /etc/fstab:
 UUID=<uuid>   /mnt/plex02   ext4   defaults   0   2
@@ -217,24 +260,17 @@ sudo mount -a
 
 ### Set Up RAID 1 for personal01
 
-Install mdadm:
 ```bash
 sudo apt install -y mdadm
+lsblk  # identify the two 1TB drives
 ```
 
-Identify the two 1TB drives:
+Create the array — put the new Seagate first (primary), old WD second:
 ```bash
-lsblk
+sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 /dev/sdX1 /dev/sdY1
 ```
 
-Create the RAID 1 array — replace `sdX` and `sdY` with your two 1TB drives:
-```bash
-sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdX /dev/sdY
-```
-
-> **Drive order matters:** put the new Seagate first (`sdX`) and the old WD second (`sdY`) — the new drive is the primary.
-
-Monitor the initial sync (takes ~2 hours for 1TB):
+Monitor sync (~2 hours):
 ```bash
 watch cat /proc/mdstat
 ```
@@ -246,15 +282,12 @@ sudo mkdir -p /mnt/personal01
 sudo mount /dev/md0 /mnt/personal01
 ```
 
-Save the RAID config and add to fstab:
+Save config and add to fstab:
 ```bash
 sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
 sudo update-initramfs -u
-
-# Get the UUID of the md0 array
 sudo blkid /dev/md0
-
-# Add to /etc/fstab
+# Add to /etc/fstab:
 UUID=<md0-uuid>   /mnt/personal01   ext4   defaults   0   2
 ```
 
@@ -263,11 +296,9 @@ Verify:
 sudo mdadm --detail /dev/md0
 ```
 
-You should see both drives listed as `active sync`.
+Both drives should show `active sync`.
 
 ### Service Users
-
-Create dedicated system users for each service — no login, no home dir. Each container runs as its own user with access only to what it needs.
 
 ```bash
 # Create service users
@@ -284,37 +315,27 @@ sudo groupadd personal-ro
 
 # Assign groups
 sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
-sudo usermod -aG plex-rw jason-server  # manage plex drive directly
+sudo usermod -aG plex-rw jason         # manage plex drive directly
 sudo usermod -aG plex-ro plex          # plex reads media
-
 sudo usermod -aG personal-rw immich    # immich writes photos
-sudo usermod -aG personal-rw jason-server  # manage personal drive directly
+sudo usermod -aG personal-rw jason     # manage personal drive directly
 ```
 
 ### Folder Structure and Permissions
 
 ```bash
 sudo apt install -y acl
-```
 
-```bash
 # Plex drive
-sudo mkdir -p /mnt/plex01/movies
-sudo mkdir -p /mnt/plex01/shows
+sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows
 sudo chown -R root:plex-rw /mnt/plex01
-sudo chmod -R 2775 /mnt/plex01  # setgid — new files inherit plex-rw group
-sudo setfacl -R -m g:plex-ro:rx /mnt/plex01  # plex-ro gets read-only
+sudo chmod -R 2775 /mnt/plex01
+sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
 
 # Personal drive
 sudo mkdir -p /mnt/personal01/photos
 sudo chown -R root:personal-rw /mnt/personal01
-sudo chmod -R 2775 /mnt/personal01  # setgid — new files inherit personal-rw group
-```
-
-Verify:
-```bash
-ls -la /mnt/plex01
-ls -la /mnt/personal01
+sudo chmod -R 2775 /mnt/personal01
 ```
 
 </details>
