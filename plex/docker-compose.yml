@@ -15,4 +15,5 @@ services:
     volumes:
       - ./config:/config
       - /mnt/plex01:/mnt/plex01
+      - /mnt/plex02:/mnt/plex02
     restart: unless-stopped
