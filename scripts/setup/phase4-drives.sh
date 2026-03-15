@@ -143,7 +143,8 @@ fi
 # 4. Create RAID 1 array for personal01
 # ---------------------------------------------------------------------------
 echo "Creating RAID 1 array from $RAID_PRIMARY_PART (primary) and $RAID_SECONDARY_PART (secondary)..."
-sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY_PART" "$RAID_SECONDARY_PART"
+# --force overwrites any existing RAID metadata or filesystem signatures on the drives
+sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY_PART" "$RAID_SECONDARY_PART"
 
 echo ""
 echo "RAID sync started. This takes ~2 hours for 1TB drives."
