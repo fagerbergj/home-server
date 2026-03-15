@@ -36,6 +36,7 @@ Your old library paths won't match the new server. In the Plex Web UI, update ea
 
 - Movies → `/mnt/plex01/movies`
 - TV Shows → `/mnt/plex01/shows`
+- Overflow media → `/mnt/plex02` (if present)
 
 Settings > Libraries > (select library) > Edit > Manage Locations — remove the old path and add the new one. Watch history and metadata will be preserved.
 
