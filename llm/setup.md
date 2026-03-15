@@ -37,3 +37,9 @@ Open `http://<server-ip>:3000` in your browser.
    docker exec -it ollama ollama ps
    ```
    You should see the model listed with `100% GPU`
+3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen3:8b` from a project
+4. Confirm auth is actually enforced — a request without the key should be rejected:
+   ```bash
+   curl https://llm-api.jasonfagerberg.asuscomm.com/v1/models
+   ```
+   You should get a `401 Unauthorized` response
