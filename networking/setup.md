@@ -17,15 +17,18 @@ Done after first boot, before the system update reboot — the server is on the 
 4. Click **Add** then **Apply**
 
 ### DDNS
-> Manual: [Section 3.14.5 DDNS](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.76
 
-1. In the router UI: **Advanced Settings > WAN > DDNS**
-2. Set **Enable the DDNS Client** to **Yes**
-3. Under **Server and Host Name**, choose **WWW.ASUS.COM**
-4. Enter your hostname — it will become `jasonfagerberg.asuscomm.com`
-5. Click **Apply**
+DDNS is handled by the `duckdns-updater` container — no router config needed.
 
-> You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
+1. Go to [duckdns.org](https://www.duckdns.org) and sign in
+2. Claim the subdomain `jasonfagerberg` (or your preferred name)
+3. Copy your token
+4. Add to `~/.env`:
+   ```
+   DUCKDNS_SUBDOMAIN=jasonfagerberg
+   DUCKDNS_TOKEN=<your-token>
+   ```
+5. The updater container will keep your IP current automatically once started in Phase 6
 
 ### Port Forwarding
 > Manual: [Section 3.14.3 Virtual Server / Port Forwarding](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.72
@@ -61,31 +64,42 @@ docker compose up -d
 2. Default login: `admin@example.com` / `changeme`
 3. Change your email and password immediately
 
+### Request Wildcard SSL Certificate
+
+Do this before adding proxy hosts so the cert is ready to assign.
+
+1. Go to **SSL Certificates > Add SSL Certificate > Let's Encrypt**
+2. Domain: `*.jasonfagerberg.duckdns.org`
+3. Enable **Use a DNS Challenge**
+4. DNS Provider: **DuckDNS**
+5. Credentials: paste your DuckDNS token
+6. Agree to ToS and click **Save** — cert will appear once issued
+
 ### Add Proxy Hosts
 
 For each service, go to **Proxy Hosts > Add Proxy Host**:
 
 #### Plex
-- Domain: `plex.jasonfagerberg.asuscomm.com`
+- Domain: `plex.jasonfagerberg.duckdns.org`
 - Scheme: `http`, Forward to: `127.0.0.1:32400`
 - Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
 
 #### Immich
-- Domain: `photos.jasonfagerberg.asuscomm.com`
+- Domain: `photos.jasonfagerberg.duckdns.org`
 - Scheme: `http`, Forward to: `127.0.0.1:2283`
 - Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
 
 #### Open WebUI (LLM)
-- Domain: `llm.jasonfagerberg.asuscomm.com`
+- Domain: `llm.jasonfagerberg.duckdns.org`
 - Scheme: `http`, Forward to: `127.0.0.1:3000`
 - Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
 
 #### Ollama API
-- Domain: `llm-api.jasonfagerberg.asuscomm.com`
+- Domain: `llm-api.jasonfagerberg.duckdns.org`
 - Scheme: `http`, Forward to: `127.0.0.1:11434`
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
+- SSL tab: select the `*.jasonfagerberg.duckdns.org` cert, enable **Force SSL**
 
 > The API key set in `llm/.env` is the only auth layer here — keep it strong.

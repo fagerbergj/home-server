@@ -1,16 +1,16 @@
 # Networking
 
-Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt. DDNS via ASUS router built-in client — no extra software needed.
+Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt wildcard cert (DNS-01 challenge via DuckDNS). DDNS via a DuckDNS updater container — no router config needed.
 
 ## Architecture
 
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.asuscomm.com        ──► Plex       (32400)
-    │                      ──► photos.jasonfagerberg.asuscomm.com      ──► Immich     (2283)
-    │                      ──► llm.jasonfagerberg.asuscomm.com         ──► Open WebUI (3000)
-    │                      ──► llm-api.jasonfagerberg.asuscomm.com     ──► Ollama API (11434)
+    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.duckdns.org        ──► Plex       (32400)
+    │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich     (2283)
+    │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI (3000)
+    │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API (11434)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
@@ -21,11 +21,11 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 
 | Service | URL |
 |---------|-----|
-| Plex | `https://plex.jasonfagerberg.asuscomm.com` |
-| Immich | `https://photos.jasonfagerberg.asuscomm.com` |
-| Open WebUI | `https://llm.jasonfagerberg.asuscomm.com` |
-| Ollama API | `https://llm-api.jasonfagerberg.asuscomm.com` |
-| Minecraft | `jasonfagerberg.asuscomm.com:25565` |
+| Plex | `https://plex.jasonfagerberg.duckdns.org` |
+| Immich | `https://photos.jasonfagerberg.duckdns.org` |
+| Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
+| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
+| Minecraft | `jasonfagerberg.duckdns.org:25565` |
 
 ## NPM Admin
 
