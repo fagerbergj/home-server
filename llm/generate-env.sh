@@ -10,11 +10,14 @@ ENV_FILE="../.env"
 set_secret() {
     local key=$1
     local value=$2
-    if ! grep -q "^${key}=.\+" "$ENV_FILE" 2>/dev/null; then
-        echo "${key}=${value}" >> "$ENV_FILE"
+    if grep -q "^${key}=.\+" "$ENV_FILE" 2>/dev/null; then
+        echo "${key} already set — skipping"
+    elif grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
         echo "${key} generated"
     else
-        echo "${key} already set — skipping"
+        echo "${key}=${value}" >> "$ENV_FILE"
+        echo "${key} generated"
     fi
 }
 
