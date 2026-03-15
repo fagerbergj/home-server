@@ -20,6 +20,7 @@ Download the **NeoForge 1.21.1** version of each mod from CurseForge and place t
 | Mod | CurseForge Page |
 |-----|----------------|
 | Ars Nouveau | https://www.curseforge.com/minecraft/mc-mods/ars-nouveau |
+| Curios API *(required by Ars Nouveau)* | https://www.curseforge.com/minecraft/mc-mods/curios/download/7642217 |
 | GeckoLib | https://www.curseforge.com/minecraft/mc-mods/geckolib |
 | Patchouli | https://www.curseforge.com/minecraft/mc-mods/patchouli |
 
@@ -34,7 +35,7 @@ Everyone needs the same mods installed on their client:
 
 1. Install the [CurseForge launcher](https://www.curseforge.com/download/app)
 2. Create a new profile: **NeoForge 1.21.1**
-3. Add the same three mods to the profile
+3. Add the same four mods to the profile
 4. Launch from that profile and connect to the server
 
 Anyone without the mods will be kicked on join.
@@ -43,4 +44,4 @@ Anyone without the mods will be kicked on join.
 
 1. Launch Minecraft with the NeoForge 1.21.1 profile in CurseForge
 2. Add a server with `<server-ip>:25565` and connect — you should spawn in a world with Ars Nouveau available
-3. Run `/mods` in chat to confirm all three mods are loaded
+3. Run `/mods` in chat to confirm all four mods are loaded
