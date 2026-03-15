@@ -287,15 +287,9 @@ sudo usermod -aG personal-rw immich    # immich writes photos
 sudo usermod -aG personal-rw jason     # manage personal drive directly
 ```
 
-Note the UIDs and GIDs — you'll need them for the compose files:
+Run the IDs script to look up UIDs/GIDs and automatically update the compose files:
 ```bash
-id plex
-id immich
-id minecraft
-id qbittorrent
-getent group plex-rw
-getent group plex-ro
-getent group personal-rw
+scripts/setup/phase4-ids.sh
 ```
 
 ### Folder Structure and Permissions
