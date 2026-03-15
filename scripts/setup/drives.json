@@ -1,0 +1,10 @@
+{
+  "plex01": {
+    "device": "/dev/sda1",
+    "preserve": false
+  },
+  "personal01": {
+    "raid_primary": "/dev/sdc1",
+    "raid_secondary": "/dev/sdb1"
+  }
+}

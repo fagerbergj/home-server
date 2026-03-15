@@ -143,27 +143,6 @@ source ~/workspace/home-server/.env
 
 ---
 
-## Phase 3 — NVIDIA Drivers
-> **Script:** `scripts/setup/phase3-nvidia.sh`
-
-<details>
-<summary>Manual steps</summary>
-
-```bash
-sudo apt install -y ubuntu-drivers-common
-sudo ubuntu-drivers autoinstall
-sudo reboot
-```
-
-</details>
-
-Verify after reboot:
-```bash
-nvidia-smi
-```
-
-You should see the GTX 1070 Ti listed with driver version and VRAM.
-
 ### Monitoring Tools
 > **Script:** `scripts/setup/phase3-monitoring.sh`
 

@@ -1,91 +1,64 @@
 #!/usr/bin/env bats
 
-# Tests for phase4-drives.sh
+# Tests for phase4-drives.sh (config-driven)
 # Mocks all destructive system commands — safe to run on any machine
 
 SCRIPT="$BATS_TEST_DIRNAME/../phase4-drives.sh"
 
 setup() {
-    # Create a temp dir for each test to hold mock binaries and state
     export TMPDIR="$(mktemp -d)"
     export PATH="$TMPDIR/bin:$PATH"
-    export FSTAB="$TMPDIR/fstab"
-    export MDADM_CONF="$TMPDIR/mdadm.conf"
-    touch "$FSTAB"
-    touch "$MDADM_CONF"
 
-    # Mock lsblk — 4 non-OS drives: 4TB, 1TB (new), 1TB (old), 640GB (overflow)
+    # Write a base drives.json config
+    cat > "$TMPDIR/drives.json" <<'EOF'
+{
+  "plex01": {
+    "device": "/dev/sda1",
+    "preserve": false
+  },
+  "plex02": {
+    "device": "/dev/sdd1",
+    "preserve": false
+  },
+  "personal01": {
+    "raid_primary": "/dev/sdb1",
+    "raid_secondary": "/dev/sdc1"
+  }
+}
+EOF
+
     mkdir -p "$TMPDIR/bin"
-    cat > "$TMPDIR/bin/lsblk" <<'EOF'
-#!/bin/bash
-if [[ "$*" == *"-d -b -o NAME,SIZE"* ]]; then
-    echo "NAME SIZE"
-    echo "sda  4000000000000"
-    echo "sdb  1000000000000"
-    echo "sdc  1000000000000"
-    echo "sdd  640000000000"
-    echo "nvme0n1 256000000000"
-elif [[ "$*" == *"-d -o NAME,SIZE"* ]]; then
-    echo "NAME SIZE"
-    echo "sda  3.6T"
-    echo "sdb  931.5G"
-    echo "sdc  931.5G"
-    echo "sdd  596.2G"
-    echo "nvme0n1 238.5G"
-elif [[ "$*" == *"-no pkname"* ]]; then
-    echo "nvme0n1"
-else
-    echo "NAME FSTYPE SIZE"
-    echo "sda        3.6T"
-    echo "sdb        931.5G"
-    echo "sdc        931.5G"
-    echo "sdd        596.2G"
-    echo "nvme0n1    238.5G"
-fi
-EOF
-    chmod +x "$TMPDIR/bin/lsblk"
 
-    # Mock findmnt
-    cat > "$TMPDIR/bin/findmnt" <<'EOF'
-#!/bin/bash
-echo "/dev/nvme0n1p3"
-EOF
-    chmod +x "$TMPDIR/bin/findmnt"
-
-    # Mock sudo — just run the command without sudo
     cat > "$TMPDIR/bin/sudo" <<'EOF'
 #!/bin/bash
-# Strip sudo and run rest, redirecting fstab/mdadm paths to temp files
-cmd=("$@")
-"${cmd[@]}" 2>/dev/null || true
+"$@" 2>/dev/null || true
 EOF
     chmod +x "$TMPDIR/bin/sudo"
 
-    # Mock mkfs.ext4
+    cat > "$TMPDIR/bin/jq" <<'EOF'
+#!/bin/bash
+/usr/bin/jq "$@"
+EOF
+    chmod +x "$TMPDIR/bin/jq"
+
     cat > "$TMPDIR/bin/mkfs.ext4" <<'EOF'
 #!/bin/bash
 echo "mkfs.ext4 called with: $*"
 EOF
     chmod +x "$TMPDIR/bin/mkfs.ext4"
 
-    # Mock blkid — returns UUID by default, no existing filesystem type
     cat > "$TMPDIR/bin/blkid" <<'EOF'
 #!/bin/bash
-if [[ "$*" == *"-s TYPE"* ]]; then
-    exit 0  # no existing filesystem
-fi
 echo "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 EOF
     chmod +x "$TMPDIR/bin/blkid"
 
-    # Mock mdadm
     cat > "$TMPDIR/bin/mdadm" <<'EOF'
 #!/bin/bash
 echo "mdadm called with: $*"
 EOF
     chmod +x "$TMPDIR/bin/mdadm"
 
-    # Mock mount, mkdir, chown, chmod, setfacl, useradd, groupadd, usermod, apt, update-initramfs, nvidia-ctk
     for cmd in mount mkdir chown chmod setfacl useradd groupadd usermod apt update-initramfs; do
         cat > "$TMPDIR/bin/$cmd" <<EOF
 #!/bin/bash
@@ -94,16 +67,15 @@ EOF
         chmod +x "$TMPDIR/bin/$cmd"
     done
 
-    # Mock id and getent to return predictable values
     cat > "$TMPDIR/bin/id" <<'EOF'
 #!/bin/bash
 case "$1" in
+    -u) echo "1001" ;;
     plex)        echo "uid=1001(plex)" ;;
     immich)      echo "uid=1002(immich)" ;;
     minecraft)   echo "uid=1003(minecraft)" ;;
     qbittorrent) echo "uid=1004(qbittorrent)" ;;
-    -u)          echo "1001" ;;
-    *)           echo "uid=1000(jason)" ;;
+    *) echo "uid=1000(jason)" ;;
 esac
 EOF
     chmod +x "$TMPDIR/bin/id"
@@ -111,84 +83,73 @@ EOF
     cat > "$TMPDIR/bin/getent" <<'EOF'
 #!/bin/bash
 case "$2" in
-    plex-rw)      echo "plex-rw:x:2001:" ;;
-    plex-ro)      echo "plex-ro:x:2002:" ;;
-    personal-rw)  echo "personal-rw:x:2003:" ;;
-    *)            return 1 ;;
+    plex-rw)     echo "plex-rw:x:2001:" ;;
+    plex-ro)     echo "plex-ro:x:2002:" ;;
+    personal-rw) echo "personal-rw:x:2003:" ;;
+    *) return 1 ;;
 esac
 EOF
     chmod +x "$TMPDIR/bin/getent"
+
+    grep -qF 'drives.json' "$SCRIPT" && \
+        export SCRIPT_PATCHED="$(sed "s|SCRIPT_DIR/drives.json|TMPDIR/drives.json|g" <<< "$SCRIPT")" || true
 }
 
 teardown() {
     rm -rf "$TMPDIR"
 }
 
-@test "detects 4TB drive as plex01 and targets partition" {
-    run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sda1"* ]]
-    [[ "$output" == *"plex01"* ]]
+run_script() {
+    BATS_TEST_DIRNAME="$TMPDIR" run bash -c \
+        "SCRIPT_DIR='$TMPDIR' && $(sed 's|SCRIPT_DIR=.*|SCRIPT_DIR='"$TMPDIR"'|' "$SCRIPT")" 2>&1 || true
 }
 
-@test "assigns two 1TB drives to RAID array and targets partitions" {
-    run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sdb1"* ]]
-    [[ "$output" == *"sdc1"* ]]
-    [[ "$output" == *"RAID"* ]]
-}
-
-@test "formats plex partition not whole disk" {
-    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mkfs.ext4 called with"*"sda1"* ]]
-    [[ "$output" != *"mkfs.ext4 called with"*"/dev/sda "* ]]
-}
-
-@test "creates RAID with partitions not whole disks" {
-    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mdadm called with"*"sdb1"* ]]
-    [[ "$output" == *"mdadm called with"*"sdc1"* ]]
-}
-
-@test "skips OS drive" {
-    run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" != *"nvme0n1   /mnt/plex01"* ]]
-    [[ "$output" == *"OS drive (will be skipped)"* ]]
+@test "aborts if drives.json not found" {
+    rm "$TMPDIR/drives.json"
+    run bash -c "SCRIPT_DIR='$TMPDIR' bash $SCRIPT"
+    [[ "$output" == *"not found"* ]]
+    [[ "$status" -ne 0 ]]
 }
 
 @test "aborts when user enters 'no'" {
-    run bash -c "echo 'no' | bash $SCRIPT"
+    run bash -c "SCRIPT_DIR='$TMPDIR' echo 'no' | bash $SCRIPT"
     [[ "$output" == *"Aborted"* ]]
 }
 
-@test "detects 640GB drive as plex02 and targets partition" {
-    run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sdd1"* ]]
-    [[ "$output" == *"plex02"* ]]
+@test "formats plex01 when preserve is false" {
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"mkfs.ext4 called with"*"sda1"* ]]
 }
 
-@test "formats plex02 partition when present" {
-    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+@test "skips formatting plex01 when preserve is true" {
+    jq '.plex01.preserve = true' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
+    mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"preserving existing data"* ]]
+    [[ "$output" != *"mkfs.ext4 called with"*"sda1"* ]]
+}
+
+@test "formats plex02 when present and preserve is false" {
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"mkfs.ext4 called with"*"sdd1"* ]]
 }
 
+@test "creates RAID with --force using configured devices" {
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"mdadm called with"*"--force"* ]]
+    [[ "$output" == *"sdb1"* ]]
+    [[ "$output" == *"sdc1"* ]]
+}
+
 @test "prints UID/GID summary at end" {
-    # Feed 'yes' then ENTER for RAID sync wait
-    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"PUID (plex)"* ]]
     [[ "$output" == *"PGID (plex-rw)"* ]]
 }
 
-@test "skips formatting plex01 if filesystem already exists" {
-    # Override blkid to report an existing ext4 on plex01
-    cat > "$TMPDIR/bin/blkid" <<'EOF'
-#!/bin/bash
-if [[ "$*" == *"-s TYPE"* ]]; then
-    echo "ext4"
-    exit 0
-fi
-echo "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-EOF
-    run bash -c "printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"already has a ext4 filesystem"* ]]
-    [[ "$output" != *"mkfs.ext4 called with"*"sda1"* ]]
+@test "skips plex02 when not in config" {
+    jq 'del(.plex02)' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
+    mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" != *"mkfs.ext4 called with"*"sdd1"* ]]
 }

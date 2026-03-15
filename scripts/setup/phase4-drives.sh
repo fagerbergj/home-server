@@ -1,150 +1,94 @@
 #!/bin/bash
 # Phase 4 — Mount Drives, RAID 1, Users, and Permissions
+# Reads drives.json — run phase4-detect-drives.sh first to generate it.
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG="$SCRIPT_DIR/drives.json"
+
+if [[ ! -f "$CONFIG" ]]; then
+    echo "Error: $CONFIG not found. Run phase4-detect-drives.sh first."
+    exit 1
+fi
+
+if ! command -v jq &>/dev/null; then
+    echo "Error: jq is required. Install with: sudo apt install -y jq"
+    exit 1
+fi
 
 echo "=== Phase 4: Drive Setup ==="
 echo ""
-
-# ---------------------------------------------------------------------------
-# 1. Auto-detect drives by size
-# ---------------------------------------------------------------------------
-echo "Detecting drives..."
+echo "Config ($CONFIG):"
+cat "$CONFIG"
 echo ""
 
-# Get all physical drives with their sizes in bytes
-declare -A drive_sizes
-while IFS= read -r line; do
-    dev=$(echo "$line" | awk '{print $1}')
-    size=$(echo "$line" | awk '{print $2}')
-    drive_sizes["$dev"]="$size"
-done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop)
-
-# Find the OS drive (the one with / mounted)
-OS_DEV=$(lsblk -no pkname "$(findmnt -n -o SOURCE /)")
-
-echo "Drives found:"
-printf "%-10s %s\n" "DEVICE" "SIZE"
-for dev in "${!drive_sizes[@]}"; do
-    size_bytes="${drive_sizes[$dev]}"
-    size_human=$(lsblk -d -o NAME,SIZE | grep "^$dev" | awk '{print $2}')
-    if [[ "$dev" == "$OS_DEV" ]]; then
-        printf "%-10s %s  <-- OS drive (will be skipped)\n" "/dev/$dev" "$size_human"
-    else
-        printf "%-10s %s\n" "/dev/$dev" "$size_human"
-    fi
-done | sort
-echo ""
-
-# Auto-assign roles by size (excluding OS drive)
-PLEX_DEV=""
-PLEX2_DEV=""
-RAID_PRIMARY=""
-RAID_SECONDARY=""
-
-# Sort non-OS drives by size descending
-while IFS= read -r line; do
-    dev=$(echo "$line" | awk '{print $1}')
-    size=$(echo "$line" | awk '{print $2}')
-    [[ "$dev" == "$OS_DEV" ]] && continue
-
-    size_human=$(lsblk -d -o NAME,SIZE | grep "^$dev" | awk '{print $2}')
-
-    if [[ -z "$PLEX_DEV" ]]; then
-        PLEX_DEV="/dev/$dev"
-        PLEX_SIZE="$size_human"
-    elif [[ -z "$RAID_PRIMARY" ]]; then
-        RAID_PRIMARY="/dev/$dev"
-        RAID_PRIMARY_SIZE="$size_human"
-    elif [[ -z "$RAID_SECONDARY" ]]; then
-        RAID_SECONDARY="/dev/$dev"
-        RAID_SECONDARY_SIZE="$size_human"
-    elif [[ -z "$PLEX2_DEV" ]]; then
-        PLEX2_DEV="/dev/$dev"
-        PLEX2_SIZE="$size_human"
-    fi
-done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort -k2 -rn)
-
-# Resolve partition devices (phase0 creates a single partition on each drive)
-part_dev() {
-    local dev="$1"
-    if [[ "$dev" == *nvme* ]]; then
-        echo "${dev}p1"
-    else
-        echo "${dev}1"
-    fi
-}
-
-PLEX_PART=$(part_dev "$PLEX_DEV")
-RAID_PRIMARY_PART=$(part_dev "$RAID_PRIMARY")
-RAID_SECONDARY_PART=$(part_dev "$RAID_SECONDARY")
-PLEX2_PART=""
-if [[ -n "$PLEX2_DEV" ]]; then
-    PLEX2_PART=$(part_dev "$PLEX2_DEV")
-fi
-
-echo "Auto-detected drive assignments:"
-echo "  plex01  (4TB Plex drive)        -> $PLEX_PART ($PLEX_SIZE)"
-echo "  RAID primary  (new Seagate 1TB) -> $RAID_PRIMARY_PART ($RAID_PRIMARY_SIZE)"
-echo "  RAID secondary (old WD 1TB)     -> $RAID_SECONDARY_PART ($RAID_SECONDARY_SIZE)"
-if [[ -n "$PLEX2_PART" ]]; then
-    echo "  plex02  (overflow Plex drive)   -> $PLEX2_PART ($PLEX2_SIZE)"
-fi
-echo ""
-echo "WARNING: The drives above will be formatted. All data will be lost."
-read -rp "Does this look correct? (yes/no): " CONFIRM
+read -rp "Proceed with this config? (yes/no): " CONFIRM
 if [[ "$CONFIRM" != "yes" ]]; then
-    echo "Aborted. Edit the script manually to override drive assignments."
+    echo "Aborted."
     exit 1
 fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# 2. Format and mount plex01
+# Read config
 # ---------------------------------------------------------------------------
-EXISTING_FS=$(sudo blkid -s TYPE -o value "$PLEX_PART" 2>/dev/null || true)
-if [[ -n "$EXISTING_FS" ]]; then
-    echo "plex01 ($PLEX_PART) already has a $EXISTING_FS filesystem — skipping format, preserving data."
+
+PLEX01_DEV=$(jq -r '.plex01.device' "$CONFIG")
+PLEX01_PRESERVE=$(jq -r '.plex01.preserve' "$CONFIG")
+PLEX02_DEV=$(jq -r '.plex02.device // empty' "$CONFIG")
+PLEX02_PRESERVE=$(jq -r '.plex02.preserve // "false"' "$CONFIG")
+RAID_PRIMARY=$(jq -r '.personal01.raid_primary' "$CONFIG")
+RAID_SECONDARY=$(jq -r '.personal01.raid_secondary' "$CONFIG")
+
+# ---------------------------------------------------------------------------
+# Mount plex01
+# ---------------------------------------------------------------------------
+
+if [[ "$PLEX01_PRESERVE" == "true" ]]; then
+    echo "plex01 ($PLEX01_DEV) — preserving existing data, skipping format."
 else
-    echo "Formatting $PLEX_PART as ext4..."
-    sudo mkfs.ext4 -F "$PLEX_PART"
+    echo "Formatting $PLEX01_DEV as ext4..."
+    sudo mkfs.ext4 -F "$PLEX01_DEV"
 fi
 
-PLEX_UUID=$(sudo blkid -s UUID -o value "$PLEX_PART")
+PLEX01_UUID=$(sudo blkid -s UUID -o value "$PLEX01_DEV")
 sudo mkdir -p /mnt/plex01
-
 if ! grep -q "/mnt/plex01" /etc/fstab; then
-    echo "UUID=$PLEX_UUID   /mnt/plex01   ext4   defaults   0   2" | sudo tee -a /etc/fstab
+    echo "UUID=$PLEX01_UUID   /mnt/plex01   ext4   defaults   0   2" | sudo tee -a /etc/fstab
 fi
-
 sudo mount -a
 echo "plex01 mounted."
 echo ""
 
 # ---------------------------------------------------------------------------
-# 3. Format and mount plex02 (optional overflow drive)
+# Mount plex02 (optional)
 # ---------------------------------------------------------------------------
-if [[ -n "$PLEX2_PART" ]]; then
-    echo "Formatting $PLEX2_PART as ext4 (plex02)..."
-    sudo mkfs.ext4 -F "$PLEX2_PART"
 
-    PLEX2_UUID=$(sudo blkid -s UUID -o value "$PLEX2_PART")
-    sudo mkdir -p /mnt/plex02
-
-    if ! grep -q "/mnt/plex02" /etc/fstab; then
-        echo "UUID=$PLEX2_UUID   /mnt/plex02   ext4   defaults   0   2" | sudo tee -a /etc/fstab
+if [[ -n "$PLEX02_DEV" ]]; then
+    if [[ "$PLEX02_PRESERVE" == "true" ]]; then
+        echo "plex02 ($PLEX02_DEV) — preserving existing data, skipping format."
+    else
+        echo "Formatting $PLEX02_DEV as ext4 (plex02)..."
+        sudo mkfs.ext4 -F "$PLEX02_DEV"
     fi
 
+    PLEX02_UUID=$(sudo blkid -s UUID -o value "$PLEX02_DEV")
+    sudo mkdir -p /mnt/plex02
+    if ! grep -q "/mnt/plex02" /etc/fstab; then
+        echo "UUID=$PLEX02_UUID   /mnt/plex02   ext4   defaults   0   2" | sudo tee -a /etc/fstab
+    fi
     sudo mount -a
     echo "plex02 mounted."
     echo ""
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Create RAID 1 array for personal01
+# Create RAID 1 for personal01
 # ---------------------------------------------------------------------------
-echo "Creating RAID 1 array from $RAID_PRIMARY_PART (primary) and $RAID_SECONDARY_PART (secondary)..."
+
+echo "Creating RAID 1 array from $RAID_PRIMARY (primary) and $RAID_SECONDARY (secondary)..."
 # --force overwrites any existing RAID metadata or filesystem signatures on the drives
-sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY_PART" "$RAID_SECONDARY_PART"
+sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY" "$RAID_SECONDARY"
 
 echo ""
 echo "RAID sync started. This takes ~2 hours for 1TB drives."
@@ -163,13 +107,13 @@ MD0_UUID=$(sudo blkid -s UUID -o value /dev/md0)
 if ! grep -q "/mnt/personal01" /etc/fstab; then
     echo "UUID=$MD0_UUID   /mnt/personal01   ext4   defaults   0   2" | sudo tee -a /etc/fstab
 fi
-
 echo "personal01 mounted."
 echo ""
 
 # ---------------------------------------------------------------------------
-# 5. Service users and groups
+# Service users and groups
 # ---------------------------------------------------------------------------
+
 echo "Creating service users and groups..."
 
 for user in plex immich minecraft qbittorrent; do
@@ -198,8 +142,9 @@ sudo usermod -aG personal-rw jason
 echo ""
 
 # ---------------------------------------------------------------------------
-# 6. Folder structure and permissions
+# Folder structure and permissions
 # ---------------------------------------------------------------------------
+
 echo "Setting up folder structure and permissions..."
 sudo apt install -y acl
 
@@ -212,7 +157,7 @@ sudo mkdir -p /mnt/personal01/photos
 sudo chown -R root:personal-rw /mnt/personal01
 sudo chmod -R 2775 /mnt/personal01
 
-if [[ -n "$PLEX2_PART" ]]; then
+if [[ -n "$PLEX02_DEV" ]]; then
     sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows
     sudo chown -R root:plex-rw /mnt/plex02
     sudo chmod -R 2775 /mnt/plex02
@@ -220,8 +165,9 @@ if [[ -n "$PLEX2_PART" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Summary
+# Summary
 # ---------------------------------------------------------------------------
+
 echo ""
 echo "=== Phase 4 complete ==="
 echo ""
