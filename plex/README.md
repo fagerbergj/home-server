@@ -30,6 +30,15 @@ docker compose up -d
 
 Open `http://<server-ip>:32400/web` and verify your libraries and watch history are intact.
 
+### 4. Update library paths
+
+Your old library paths won't match the new server. In the Plex Web UI, update each library to point to the new locations:
+
+- Movies → `/mnt/plex01/movies`
+- TV Shows → `/mnt/plex01/shows`
+
+Settings > Libraries > (select library) > Edit > Manage Locations — remove the old path and add the new one. Watch history and metadata will be preserved.
+
 ## Enable Hardware Transcoding
 
 Requires Plex Pass.
