@@ -429,7 +429,7 @@ sudo systemctl restart docker
 
 Verify GPU is accessible from Docker:
 ```bash
-docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu24.04 nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.3.1-base-ubuntu22.04 nvidia-smi
 ```
 
 ---
