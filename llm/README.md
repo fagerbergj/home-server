@@ -41,6 +41,8 @@ API Key:  <your-key from .env>
 Model:    qwen3:8b
 ```
 
+See [opencode_setup.md](opencode_setup.md) for OpenCode configuration.
+
 ## Managing Models
 
 ```bash
