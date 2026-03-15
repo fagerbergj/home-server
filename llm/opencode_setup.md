@@ -4,7 +4,32 @@ Configure OpenCode to use the local Ollama API.
 
 ## Config
 
-Add to `~/.config/opencode/opencode.json`:
+Run this to write the config file:
+
+```bash
+mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama",
+      "options": {
+        "baseURL": "https://llm-api.jasonfagerberg.asuscomm.com/v1",
+        "apiKey": "{env:OLLAMA_API_KEY}"
+      },
+      "models": {
+        "qwen3:8b": {
+          "name": "qwen3:8b"
+        }
+      }
+    }
+  }
+}
+EOF
+```
+
+Or manually edit `~/.config/opencode/opencode.json`:
 
 ```json
 {
