@@ -186,6 +186,8 @@ nvtop   # GPU utilization and VRAM usage
 
 ## Phase 4 — Mount Drives
 > **Script:** `scripts/setup/phase4-drives.sh` — run this instead of the manual steps below.
+>
+> ⚠️ **If you completed Phase 0**, plex01 already has your media — **do not run the script**, it will format the drive and wipe everything. Use the manual steps below and skip the format step for plex01.
 
 <details>
 <summary>Manual steps</summary>
@@ -197,9 +199,16 @@ lsblk -f
 
 ### Mount plex01
 
-Format the 4TB drive:
+> **If you completed Phase 0:** the 4TB drive already has your media — skip the format step and go straight to mounting by UUID.
+
+Format the 4TB drive (**skip if coming from Phase 0**):
 ```bash
 sudo mkfs.ext4 /dev/sdX   # replace sdX with correct device — use lsblk to find it
+```
+
+Get the UUID (run this regardless):
+```bash
+sudo blkid /dev/sdX
 ```
 
 Add to `/etc/fstab`:
