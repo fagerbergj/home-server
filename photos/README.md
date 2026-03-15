@@ -2,64 +2,26 @@
 
 Self-hosted Google Photos alternative. Runs four containers: server, ML worker, Postgres, Redis.
 
-## First-Time Setup
+## Access
 
-1. Make sure `scripts/setup/phase4-ids.sh` has been run — it fills in `PUID` and `PGID` in `docker-compose.yml` automatically.
+```
+http://<server-ip>:2283
+```
 
-2. Generate the env file:
-   ```bash
-   ./generate-env.sh
-   ```
-
-3. Create the photo upload directory on the storage drive:
-   ```bash
-   sudo mkdir -p /mnt/personal01/photos
-   sudo chown immich:personal-rw /mnt/personal01/photos
-   ```
-
-4. Start all services:
-   ```bash
-   docker compose up -d
-   ```
-
-5. Check everything came up:
-   ```bash
-   docker compose ps
-   ```
-
-6. Open the web UI:
-   ```
-   http://<server-ip>:2283
-   ```
-
-7. Create your admin account on first visit.
+External: `https://photos.jasonfagerberg.asuscomm.com`
 
 ## Uploading Photos
 
 - **Web UI** — drag and drop in the browser
 - **Mobile app** — Immich has iOS and Android apps with automatic background backup
+  - Server URL: `https://photos.jasonfagerberg.asuscomm.com`
+  - Enable **Automatic Background Backup**
 
 ## GPU Acceleration (ML)
 
 The machine learning container uses the GTX 1070 Ti for face detection and image classification. This runs automatically — no extra config needed after nvidia-container-toolkit is installed.
 
 GPU is only used during indexing (initial library scan and new photo processing), not during normal browsing.
-
-## Updating
-
-Immich updates frequently. Always check the release notes before updating as breaking changes do occur.
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-## Logs
-
-```bash
-docker compose logs -f immich-server
-docker compose logs -f immich-machine-learning
-```
 
 ## Data Locations
 
@@ -74,4 +36,20 @@ To dump the database manually:
 
 ```bash
 docker exec immich-postgres pg_dumpall -U immich > immich-db-backup-$(date +%F).sql
+```
+
+## Updating
+
+Always check the [release notes](https://github.com/immich-app/immich/releases) before updating — breaking changes do occur.
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+## Logs
+
+```bash
+docker compose logs -f immich-server
+docker compose logs -f immich-machine-learning
 ```

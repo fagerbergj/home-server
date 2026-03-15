@@ -1,6 +1,6 @@
 # Networking
 
-Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt.
+Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt. DDNS via ASUS router built-in client — no extra software needed.
 
 ## Architecture
 
@@ -15,150 +15,20 @@ Internet
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
 
----
+Minecraft bypasses NPM entirely — raw TCP on port 25565.
 
-## Step 1 — Static Local IP (DHCP Reservation)
-> Manual: [Section 3.9.2 DHCP Server](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.49
+## External URLs
 
-Port forwarding requires the server always has the same local IP.
+| Service | URL |
+|---------|-----|
+| Plex | `https://plex.jasonfagerberg.asuscomm.com` |
+| Immich | `https://photos.jasonfagerberg.asuscomm.com` |
+| Open WebUI | `https://llm.jasonfagerberg.asuscomm.com` |
+| Ollama API | `https://llm-api.jasonfagerberg.asuscomm.com` |
+| Minecraft | `jasonfagerberg.asuscomm.com:25565` |
 
-1. Connect the server to the router via ethernet and boot it
-2. In the router UI: **Advanced Settings > LAN > DHCP Server**
-3. Scroll to **Enable Manual Assignment** — set to **Yes**
-4. In the **Manually Assigned IP** table, find the server's MAC address in the client list and assign it a static IP e.g. `192.168.1.10`
-5. Click **Add** then **Apply**
-6. Reboot the server
+## NPM Admin
 
-Verify after reboot:
-```bash
-ip addr show | grep "inet " | grep -v 127.0.0.1
 ```
-
----
-
-## Step 2 — DDNS
-> Manual: [Section 3.14.5 DDNS](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.76
-
-1. In the router UI: **Advanced Settings > WAN > DDNS**
-2. Set **Enable the DDNS Client** to **Yes**
-3. Under **Server and Host Name**, choose **WWW.ASUS.COM**
-4. Enter your hostname — it will become `jasonfagerberg.asuscomm.com`
-5. Click **Apply**
-
-Your services will be accessible at:
+http://<server-local-ip>:81
 ```
-plex.jasonfagerberg.asuscomm.com
-photos.jasonfagerberg.asuscomm.com
-```
-
-> You can swap to a custom domain later by updating NPM and DNS records — takes ~10 minutes.
-
----
-
-## Step 3 — Port Forwarding
-> Manual: [Section 3.14.3 Virtual Server / Port Forwarding](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.72
-
-1. In the router UI: **Advanced Settings > WAN > Virtual Server / Port Forwarding**
-2. Set **Enable Port Forwarding** to **On**
-3. Add the following rules pointing to the server's static IP:
-
-| Service Name | External Port | Internal Port | Internal IP | Protocol |
-|-------------|---------------|---------------|-------------|----------|
-| NPM-HTTP | 80 | 80 | 192.168.1.10 | TCP |
-| NPM-HTTPS | 443 | 443 | 192.168.1.10 | TCP |
-| Minecraft | 25565 | 25565 | 192.168.1.10 | TCP |
-
-4. Click **Apply**
-
----
-
-## Step 4 — Firewall (ufw)
-> **Script:** `scripts/setup/phase6-firewall.sh`
-
-```bash
-scripts/setup/phase6-firewall.sh
-```
-
----
-
-## Step 5 — Start NPM
-
-```bash
-cd ~/workspace/home-server/networking
-docker compose up -d
-```
-
----
-
-## Step 6 — NPM First-Time Setup
-
-1. Open the admin UI: `http://<server-local-ip>:81`
-2. Default login:
-   - Email: `admin@example.com`
-   - Password: `changeme`
-3. Change your email and password immediately
-
----
-
-## Step 7 — Add Proxy Hosts
-
-For each service, go to **Proxy Hosts > Add Proxy Host**:
-
-### Plex
-- Domain: `plex.jasonfagerberg.asuscomm.com`
-- Scheme: `http`
-- Forward Hostname/IP: `127.0.0.1`
-- Forward Port: `32400`
-- Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
-
-### Immich
-- Domain: `photos.jasonfagerberg.asuscomm.com`
-- Scheme: `http`
-- Forward Hostname/IP: `127.0.0.1`
-- Forward Port: `2283`
-- Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
-
-### Open WebUI (LLM)
-- Domain: `llm.jasonfagerberg.asuscomm.com`
-- Scheme: `http`
-- Forward Hostname/IP: `127.0.0.1`
-- Forward Port: `3000`
-- Enable **Websockets Support**
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
-
-### Ollama API
-- Domain: `llm-api.jasonfagerberg.asuscomm.com`
-- Scheme: `http`
-- Forward Hostname/IP: `127.0.0.1`
-- Forward Port: `11434`
-- SSL tab: request a Let's Encrypt cert, enable **Force SSL**
-
-> The API key set in `llm/.env` is the only auth layer here — keep it strong.
-
----
-
-## Mobile Photo Uploads (Immich)
-
-Install the Immich app on your phone (iOS or Android). In the app settings:
-- Server URL: `https://photos.jasonfagerberg.asuscomm.com`
-- Log in with your Immich account
-- Enable **Automatic Background Backup**
-
-Photos will upload automatically over both WiFi and mobile data.
-
----
-
-## Minecraft
-
-Minecraft bypasses NPM entirely — it uses raw TCP on port 25565. Friends connect using:
-```
-jasonfagerberg.asuscomm.com:25565
-```
-
----
-
-## Dynamic DNS
-
-Handled automatically by your ASUS RT-AX58U via the built-in DDNS feature. No extra software needed.

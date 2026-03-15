@@ -1,59 +1,35 @@
 # Plex Media Server
 
-## Migrating from an Existing Plex Install
+Runs via Docker using the [linuxserver/plex](https://hub.docker.com/r/linuxserver/plex) image. Media lives on `/mnt/plex01` (and optionally `/mnt/plex02`), mounted as read-only volumes.
 
-### 1. Stop and remove Plex on your main PC
+## Access
 
-```bash
-sudo systemctl stop plexmediaserver
-sudo systemctl disable plexmediaserver
-sudo apt remove plexmediaserver
+```
+http://<server-ip>:32400/web
 ```
 
-### 2. Copy Plex data to the server
+## Library Paths
 
-Run this from your main PC once the server is up and SSH is working:
+| Library | Path |
+|---------|------|
+| Movies | `/mnt/plex01/movies` |
+| TV Shows | `/mnt/plex01/shows` |
+| plex02 Movies | `/mnt/plex02/movies` (if present) |
+| plex02 TV Shows | `/mnt/plex02/shows` (if present) |
 
-```bash
-sudo rsync -av --progress \
-  /var/lib/plexmediaserver/Library/ \
-  jason@<server-ip>:~/workspace/home-server/plex/config/Library/
-```
-
-### 3. Start Plex on the server
-
-No claim token needed — the server is already linked to your account via the migrated data:
-
-```bash
-docker compose up -d
-```
-
-Open `http://<server-ip>:32400/web` and verify your libraries and watch history are intact.
-
-### 4. Update library paths
-
-Your old library paths won't match the new server. In the Plex Web UI, update each library to point to the new locations:
-
-- Movies → `/mnt/plex01/movies`
-- TV Shows → `/mnt/plex01/shows`
-- plex02 Movies → `/mnt/plex02/movies` (if present)
-- plex02 TV Shows → `/mnt/plex02/shows` (if present)
-
-Settings > Libraries > (select library) > Edit > Manage Locations — remove the old path and add the new one. Watch history and metadata will be preserved.
-
-## Enable Hardware Transcoding
+## Hardware Transcoding
 
 Requires Plex Pass.
 
-In Plex Web UI: Settings > Transcoder > check **Use hardware acceleration when available**
+Settings > Transcoder > check **Use hardware acceleration when available**
 
-To verify it's working, start a stream that forces a transcode and check Settings > Dashboard — you should see `(hw)` next to the session.
+To verify: start a stream that forces a transcode and check Settings > Dashboard — you should see `(hw)` next to the session.
 
-## Enable Remote Access
+## Remote Access
 
 Settings > Remote Access > check **Enable Remote Access**
 
-See the networking setup in [`../setup.md`](../setup.md) for port forwarding and firewall rules.
+Port forwarding and firewall rules are handled in [networking/setup.md](../networking/setup.md).
 
 ## Updating
 

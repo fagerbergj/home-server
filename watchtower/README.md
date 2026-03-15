@@ -1,16 +1,8 @@
 # Watchtower
 
-Monitors running containers and restarts them if they go down. Does **not** pull new images — updates are done manually.
-
-## Start
-
-```bash
-docker compose up -d
-```
+Monitors running containers and restarts them if they go down. Does **not** pull new images — updates are manual.
 
 ## Manual Updates
-
-To update a specific service when you're ready:
 
 ```bash
 cd ~/workspace/home-server/<service>

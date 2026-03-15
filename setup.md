@@ -38,17 +38,27 @@ Drive assignments going into the build:
    - Select the 480GB SSD as the install target
    - Use the entire disk — this is a dedicated machine
    - Set a strong password
-3. After install, remove USB and reboot
+   - Enable SSH when the installer offers it
+3. After install, remove USB and boot into the OS
 
-Update system after first boot:
+### Static IP & Router Config
+
+Do this before the first system update reboot — the server is on the network now and its MAC address is visible in the router.
+
+See [`networking/setup.md`](networking/setup.md) — Phase 1 section.
+
+### Update & Reboot
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo reboot
 ```
 
+The server will come back on its reserved static IP.
+
 ### Enable SSH
 
-The Ubuntu Server installer offers to enable SSH during setup — do it there if you didn't, otherwise:
+If you didn't enable SSH during install:
 
 ```bash
 sudo apt install -y openssh-server
@@ -79,15 +89,13 @@ If you don't have an SSH key yet:
 ssh-keygen -t ed25519
 ```
 
-**Everything from this point forward can be done via SSH from your main PC. Unplug the monitor.**
+### Firewall
 
-### Sync .env to Server
-
-You already have a filled-out `.env` on your main PC — copy it over now:
 ```bash
-# Run on your main PC
-scp ~/workspace/home-server/.env jason@<server-ip>:~/workspace/home-server/.env
+scripts/setup/phase1-firewall.sh
 ```
+
+**Everything from this point forward can be done via SSH from your main PC. Unplug the monitor.**
 
 ---
 
@@ -115,9 +123,15 @@ cd ~/workspace
 git clone git@github.com:fagerbergj/home-server.git
 ```
 
-### Create Root .env
+### Root .env
 
-Copy the example and fill in your values:
+If you already have a filled-out `.env` on your main PC, copy it over:
+```bash
+# Run on your main PC
+scp ~/workspace/home-server/.env jason@<server-ip>:~/workspace/home-server/.env
+```
+
+Otherwise copy the example and fill in your values:
 ```bash
 cp ~/workspace/home-server/.env.example ~/workspace/home-server/.env
 ```
@@ -132,12 +146,16 @@ source ~/workspace/home-server/.env
 ## Phase 3 — NVIDIA Drivers
 > **Script:** `scripts/setup/phase3-nvidia.sh`
 
-Install the recommended NVIDIA driver:
+<details>
+<summary>Manual steps</summary>
+
 ```bash
 sudo apt install -y ubuntu-drivers-common
 sudo ubuntu-drivers autoinstall
 sudo reboot
 ```
+
+</details>
 
 Verify after reboot:
 ```bash
@@ -149,10 +167,14 @@ You should see the GTX 1070 Ti listed with driver version and VRAM.
 ### Monitoring Tools
 > **Script:** `scripts/setup/phase3-monitoring.sh`
 
-Install btop (system overview) and nvtop (GPU monitor):
+<details>
+<summary>Manual steps</summary>
+
 ```bash
 sudo apt install -y btop nvtop
 ```
+
+</details>
 
 Run them:
 ```bash
@@ -164,6 +186,9 @@ nvtop   # GPU utilization and VRAM usage
 
 ## Phase 4 — Mount Drives
 > **Script:** `scripts/setup/phase4-drives.sh` — run this instead of the manual steps below.
+
+<details>
+<summary>Manual steps</summary>
 
 Find drive UUIDs:
 ```bash
@@ -251,6 +276,8 @@ sudo mdadm --detail /dev/md0
 ```
 
 You should see both drives listed as `active sync`.
+
+</details>
 
 ### Copy Photos to Server
 
@@ -353,6 +380,9 @@ df -h
 ## Phase 5 — Docker
 > **Script:** `scripts/setup/phase5-docker.sh`
 
+<details>
+<summary>Manual steps</summary>
+
 ```bash
 # Install dependencies
 sudo apt install -y ca-certificates curl gnupg
@@ -386,6 +416,8 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
+</details>
+
 Verify GPU is accessible from Docker:
 ```bash
 docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu24.04 nvidia-smi
@@ -393,31 +425,21 @@ docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu24.04 nvidia-smi
 
 ---
 
-## Phase 6 — Networking
+## Phase 6 — Nginx Proxy Manager
 
-See [`networking/`](networking/) for the full networking setup. Summary:
+Router config and firewall were handled in Phase 1. This phase starts NPM and configures proxy hosts.
 
-1. Set a DHCP reservation in the ASUS router so the server always gets the same local IP
-2. Enable ASUS DDNS: WAN > DDNS > pick a hostname (e.g. `jasonfagerberg.asuscomm.com`)
-3. Forward ports 80, 443, and 25565 on your router to the server's static IP
-4. Run `scripts/setup/phase6-firewall.sh` to configure ufw
-5. Start Nginx Proxy Manager and configure proxy hosts for Plex, Immich, and Open WebUI
-6. Install the Immich mobile app and point it at `https://photos.jasonfagerberg.asuscomm.com` for automatic photo backup
-7. Friends connect to Minecraft via `jasonfagerberg.asuscomm.com:25565`
+See [`networking/setup.md`](networking/setup.md) — Phase 6 section for full details.
 
 ---
 
 ## Phase 7 — Services (Docker Compose)
 
-See individual service directories:
+Start services in this order — see each directory's `setup.md` for details:
 
-Start services in this order:
-
-1. [`plex/`](plex/) — Plex Media Server
-2. [`minecraft/`](minecraft/) — Minecraft Server
-3. [`photos/`](photos/) — run `./generate-env.sh` first, then `docker compose up -d`
-4. [`qbittorrent/`](qbittorrent/) — `docker compose up -d`
-5. [`llm/`](llm/) — run `./generate-env.sh` first, then `docker compose up -d`
-6. [`watchtower/`](watchtower/) — Start this last, after all other services are up
-
-See each directory for its own README.
+1. [`plex/setup.md`](plex/setup.md)
+2. [`minecraft/setup.md`](minecraft/setup.md)
+3. [`photos/setup.md`](photos/setup.md)
+4. [`qbittorrent/setup.md`](qbittorrent/setup.md)
+5. [`llm/setup.md`](llm/setup.md)
+6. [`watchtower/setup.md`](watchtower/setup.md) — start this last

@@ -1,13 +1,22 @@
 # Minecraft Server
 
-Uses the [itzg/minecraft-server](https://github.com/itzg/docker-minecraft-server) image.
-Running **NeoForge 1.21.1** with mods.
+Runs [itzg/minecraft-server](https://github.com/itzg/docker-minecraft-server) with **NeoForge 1.21.1** and mods.
+
+## Connect
+
+Local:
+```
+<server-ip>:25565
+```
+
+External (via DDNS):
+```
+jasonfagerberg.asuscomm.com:25565
+```
 
 ## Mods
 
 Mod jars go in `./mods/`. The server loads them on startup.
-
-Required mods — download the **NeoForge 1.21.1** version of each from CurseForge:
 
 | Mod | CurseForge Page | Notes |
 |-----|----------------|-------|
@@ -18,37 +27,6 @@ Required mods — download the **NeoForge 1.21.1** version of each from CurseFor
 After adding or removing mods, restart the server:
 ```bash
 docker compose restart minecraft
-```
-
-## Client Setup (for friends)
-
-Everyone needs the same mods installed on their client:
-
-1. Install the [CurseForge launcher](https://www.curseforge.com/download/app)
-2. Create a new profile: **NeoForge 1.21.1**
-3. Add the same three mods above to the profile
-4. Launch from that profile and connect to the server
-
-Anyone without the mods will be kicked on join.
-
-## Start
-
-```bash
-docker compose up -d
-```
-
-Check logs to see when it's ready:
-```bash
-docker compose logs -f minecraft
-```
-
-You'll see `Done! For help, type "help"` when it's ready to accept connections.
-
-## Connect
-
-From Minecraft, add a server with your server's local IP and default port:
-```
-<server-ip>:25565
 ```
 
 ## Configuration
@@ -65,9 +43,7 @@ Key settings in `docker-compose.yml`:
 
 Full list of options: https://docker-minecraft-server.readthedocs.io
 
-## Memory Tuning
-
-With 16GB total RAM shared across OS + Plex + Immich, 4G is a reasonable default. Modded servers use more memory than vanilla — if you add more mods and see lag, bump to `6G`.
+With 16GB total RAM shared across OS + Plex + Immich, 4G is a reasonable default. If you add more mods and see lag, bump to `6G`.
 
 ## Console Access
 
@@ -77,9 +53,18 @@ docker attach minecraft
 
 Detach without stopping: `Ctrl+P` then `Ctrl+Q`
 
+## Logs
+
+```bash
+docker compose logs -f minecraft
+```
+
+You'll see `Done! For help, type "help"` when it's ready to accept connections.
+
 ## Updating
 
-When updating NeoForge or mods, back up the world first:
+Always back up the world before updating NeoForge or mods:
+
 ```bash
 tar -czf world-backup-$(date +%F).tar.gz ./data/world
 ```

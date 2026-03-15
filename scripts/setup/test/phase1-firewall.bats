@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-SCRIPT="$BATS_TEST_DIRNAME/../phase6-firewall.sh"
+SCRIPT="$BATS_TEST_DIRNAME/../phase1-firewall.sh"
 
 setup() {
     export TMPDIR="$(mktemp -d)"

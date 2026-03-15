@@ -44,13 +44,13 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 
 ## Setup Order
 
-1. OS Install (Ubuntu Server 24.04 LTS)
+1. OS Install + [Router & Firewall](networking/setup.md) (DHCP reservation, port forwarding, ufw)
 2. GitHub (clone repo, create .env)
 3. NVIDIA Drivers
 4. Mount Drives + Alerts
 5. Docker + NVIDIA Container Toolkit
-6. Networking
-7. Services (Plex, Minecraft, Immich, qBittorrent, Ollama + Qwen3)
+6. [Nginx Proxy Manager](networking/setup.md) (proxy hosts, SSL)
+7. Services — see each service's `setup.md`
 
 See [setup.md](setup.md) for the full step-by-step guide.
 
