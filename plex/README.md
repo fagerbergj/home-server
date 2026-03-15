@@ -9,7 +9,12 @@
    Update `PUID` and `PGID` in `docker-compose.yml` if they differ from 1000.
 
 2. Get a claim token from https://www.plex.tv/claim — it expires in 4 minutes, so do this right before starting. Start Plex with the token:
-   ```bash
+   ```bash# Plex
+# One-time claim token to link the server to your plex.tv account.
+# Get it from https://plex.tv/claim — expires in 4 minutes.
+# Only needed on first start; leave blank after the server is claimed.
+# ---------------------------------------------------------------------------
+PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx
    PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx docker compose up -d
    ```
 
