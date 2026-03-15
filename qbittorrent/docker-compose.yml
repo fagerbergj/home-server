@@ -13,7 +13,6 @@ services:
       - VPN_SERVICE_PROVIDER=mullvad
       - VPN_TYPE=wireguard
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - SERVER_COUNTRIES=USA         # or e.g. Sweden, Netherlands — see Mullvad server list
     ports:
       - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
