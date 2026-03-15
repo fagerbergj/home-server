@@ -21,7 +21,7 @@ set_env() {
 set_secret() {
     local key=$1
     local value=$2
-    if ! grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+    if ! grep -q "^${key}=.\+" "$ENV_FILE" 2>/dev/null; then
         echo "${key}=${value}" >> "$ENV_FILE"
         echo "${key} generated"
     else
