@@ -1,5 +1,39 @@
 # Plex Media Server
 
+## Migrating from an Existing Plex Install
+
+Do this **instead of** First-Time Setup below — your watch history, metadata, and libraries will carry over intact.
+
+### 1. Stop and remove Plex on your main PC
+
+```bash
+sudo systemctl stop plexmediaserver
+sudo systemctl disable plexmediaserver
+sudo apt remove plexmediaserver
+```
+
+### 2. Copy Plex data to the server
+
+Run this from your main PC once the server is up and SSH is working:
+
+```bash
+sudo rsync -av --progress \
+  /var/lib/plexmediaserver/Library/ \
+  jason@<server-ip>:~/workspace/home-server/plex/config/Library/
+```
+
+### 3. Start Plex on the server
+
+No claim token needed — the server is already linked to your account via the migrated data:
+
+```bash
+docker compose up -d
+```
+
+Open `http://<server-ip>:32400/web` and verify your libraries and watch history are intact.
+
+---
+
 ## First-Time Setup
 
 1. Check your user's UID/GID match the compose file:
