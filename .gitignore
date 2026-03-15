@@ -1,2 +1,8 @@
 .*
 !.*.example
+
+# Service data directories — these are large runtime/config dirs, not for git
+plex/config/
+minecraft/data/
+photos/config/
+llm/config/
