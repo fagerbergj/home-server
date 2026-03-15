@@ -277,17 +277,6 @@ sudo mdadm --detail /dev/md0
 
 You should see both drives listed as `active sync`.
 
-</details>
-
-### Copy Photos to Server
-
-Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your main PC over SSH:
-
-```bash
-# Run on your main PC
-rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason@<server-ip>:/mnt/personal01/photos/
-```
-
 ### Service Users
 
 Create dedicated system users for each service — no login, no home dir. Each container runs as its own user with access only to what it needs.
@@ -314,11 +303,6 @@ sudo usermod -aG personal-rw immich    # immich writes photos
 sudo usermod -aG personal-rw jason     # manage personal drive directly
 ```
 
-Run the IDs script to look up UIDs/GIDs and automatically update the compose files:
-```bash
-scripts/setup/phase4-ids.sh
-```
-
 ### Folder Structure and Permissions
 
 ```bash
@@ -343,6 +327,22 @@ Verify:
 ```bash
 ls -la /mnt/plex01
 ls -la /mnt/personal01
+```
+
+</details>
+
+### Copy Photos to Server
+
+Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your main PC over SSH:
+
+```bash
+# Run on your main PC
+rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason@<server-ip>:/mnt/personal01/photos/
+```
+
+Run the IDs script to look up UIDs/GIDs and automatically update the compose files:
+```bash
+scripts/setup/phase4-ids.sh
 ```
 
 ### RAID Failure Alerts and Disk Monitoring
