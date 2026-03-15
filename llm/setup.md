@@ -28,3 +28,12 @@ Open `http://<server-ip>:3000` in your browser.
 2. For each family/friend: **Admin Panel > Users > Add User**
    - Set their name, email, and a temporary password
    - Send them `https://llm.jasonfagerberg.asuscomm.com` and their credentials — they can change their password after logging in
+
+## Verify
+
+1. Open `http://<server-ip>:3000`, select `qwen3:8b`, and send a test message — you should get a response within a few seconds
+2. Check GPU is being used:
+   ```bash
+   docker exec -it ollama ollama ps
+   ```
+   You should see the model listed with `100% GPU`

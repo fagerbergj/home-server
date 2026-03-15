@@ -33,3 +33,12 @@ In Options > Downloads, set the default save path and per-category paths:
 |---------|------|
 | Movies | `/mnt/plex01/movies` |
 | TV | `/mnt/plex01/shows` |
+
+## Verify
+
+1. Open `http://<server-ip>:8080` and confirm you can log in with your new password
+2. Check the VPN is connected — the Gluetun container logs should show a successful WireGuard handshake:
+   ```bash
+   docker compose logs gluetun | grep -i "connected\|handshake"
+   ```
+3. Add a test torrent and confirm it downloads to `/mnt/plex01/`

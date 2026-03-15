@@ -31,3 +31,12 @@ docker compose ps
 ## 4. Create your admin account
 
 Open `http://<server-ip>:2283` and create your admin account on first visit.
+
+## Verify
+
+1. Upload a test photo via the web UI — it should appear in the timeline
+2. Check that the ML container is processing it:
+   ```bash
+   docker compose logs -f immich-machine-learning
+   ```
+   You should see face detection and CLIP encoding jobs run against the upload

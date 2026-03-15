@@ -42,3 +42,9 @@ Settings > Libraries > (select library) > Edit > Manage Locations — remove the
 - plex02 TV Shows → `/mnt/plex02/shows` (if present)
 
 Watch history and metadata will be preserved.
+
+## Verify
+
+1. Open `http://<server-ip>:32400/web` and confirm your libraries and watch history are intact
+2. Start playing something — check Settings > Dashboard to confirm the stream appears
+3. If you have Plex Pass, verify hardware transcoding: force a transcode and confirm `(hw)` appears next to the session
