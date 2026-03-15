@@ -4,33 +4,35 @@ Self-hosted Google Photos alternative. Runs four containers: server, ML worker, 
 
 ## First-Time Setup
 
-1. Generate the env file:
+1. Make sure `scripts/setup/phase4-ids.sh` has been run — it fills in `PUID` and `PGID` in `docker-compose.yml` automatically.
+
+2. Generate the env file:
    ```bash
    ./generate-env.sh
    ```
 
-2. Create the photo upload directory on the storage drive:
+3. Create the photo upload directory on the storage drive:
    ```bash
    sudo mkdir -p /mnt/personal01/photos
    sudo chown immich:personal-rw /mnt/personal01/photos
    ```
 
-3. Start all services:
+4. Start all services:
    ```bash
    docker compose up -d
    ```
 
-4. Check everything came up:
+5. Check everything came up:
    ```bash
    docker compose ps
    ```
 
-5. Open the web UI:
+6. Open the web UI:
    ```
    http://<server-ip>:2283
    ```
 
-6. Create your admin account on first visit.
+7. Create your admin account on first visit.
 
 ## Uploading Photos
 

@@ -2,7 +2,7 @@
 
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
 # Look up IDs
 PLEX_UID=$(id -u plex)
