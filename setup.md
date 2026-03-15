@@ -73,20 +73,20 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 From your main PC, connect:
 ```bash
-ssh jason@<server-ip>
+ssh jason-server@<server-ip>
 ```
 
 ### SSH Key Authentication
 
-Avoid typing a password every time:
-```bash
-# Run on your main PC
-ssh-copy-id jason@<server-ip>
-```
-
-If you don't have an SSH key yet:
+Avoid typing a password every time. If you don't have an SSH key yet, generate one first:
 ```bash
 ssh-keygen -t ed25519
+```
+
+Then copy it to the server:
+```bash
+# Run on your main PC
+ssh-copy-id jason-server@<server-ip>
 ```
 
 ### Firewall
@@ -128,7 +128,7 @@ git clone git@github.com:fagerbergj/home-server.git
 If you already have a filled-out `.env` on your main PC, copy it over:
 ```bash
 # Run on your main PC
-scp ~/workspace/home-server/.env jason@<server-ip>:~/workspace/home-server/.env
+scp ~/workspace/home-server/.env jason-server@<server-ip>:~/workspace/home-server/.env
 ```
 
 Otherwise copy the example and fill in your values:
@@ -305,11 +305,11 @@ sudo groupadd personal-ro
 
 # Assign groups
 sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
-sudo usermod -aG plex-rw jason         # manage plex drive directly
+sudo usermod -aG plex-rw jason-server  # manage plex drive directly
 sudo usermod -aG plex-ro plex          # plex reads media
 
 sudo usermod -aG personal-rw immich    # immich writes photos
-sudo usermod -aG personal-rw jason     # manage personal drive directly
+sudo usermod -aG personal-rw jason-server  # manage personal drive directly
 ```
 
 ### Folder Structure and Permissions
@@ -346,7 +346,7 @@ Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your ma
 
 ```bash
 # Run on your main PC
-rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason@<server-ip>:/mnt/personal01/photos/
+rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason-server@<server-ip>:/mnt/personal01/photos/
 ```
 
 Run the IDs script to look up UIDs/GIDs and automatically update the compose files:
