@@ -1,7 +1,32 @@
+env_file:
+  - ../.env
+
 services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_COUNTRIES=USA         # or e.g. Sweden, Netherlands — see Mullvad server list
+    ports:
+      - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
+      - "6881:6881"
+      - "6881:6881/udp"
+    restart: unless-stopped
+
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
+    network_mode: "service:gluetun"   # all traffic routed through Gluetun
+    depends_on:
+      - gluetun
     environment:
       - PUID=<qbittorrent-uid>  # run: id qbittorrent
       - PGID=<plex-rw-gid>      # run: getent group plex-rw
@@ -11,8 +36,4 @@ services:
       - ./config:/config
       - ./config/qBittorrent/nova3/engines:/config/qBittorrent/nova3/engines  # search plugins
       - /mnt/plex01:/mnt/plex01
-    ports:
-      - "8080:8080"
-      - "6881:6881"       # torrent traffic (TCP)
-      - "6881:6881/udp"   # torrent traffic (UDP)
     restart: unless-stopped

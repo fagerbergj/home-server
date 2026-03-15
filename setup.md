@@ -109,14 +109,12 @@ git clone git@github.com:fagerbergj/home-server.git
 
 ### Create Root .env
 
-Create `~/workspace/home-server/.env` with secrets needed by setup scripts:
+Copy the example and fill in your values:
 ```bash
-cat > ~/workspace/home-server/.env << 'EOF'
-GMAIL_APP_PASSWORD=your-app-password-here  # https://myaccount.google.com/apppasswords
-EOF
+cp ~/workspace/home-server/.env.example ~/workspace/home-server/.env
 ```
 
-This file is gitignored. Setup scripts that need it will say so — source it before running them:
+See `.env.example` for all required variables and where to get them. This file is gitignored. Setup scripts that need it will say so — source it before running them:
 ```bash
 source ~/workspace/home-server/.env
 ```

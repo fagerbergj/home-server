@@ -5,7 +5,7 @@ services:
     ports:
       - "2283:2283"
     env_file:
-      - .env
+      - ../.env
     environment:
       - PUID=<immich-uid>         # run: id immich
       - PGID=<personal-rw-gid>    # run: getent group personal-rw
@@ -22,7 +22,7 @@ services:
     container_name: immich-machine-learning
     runtime: nvidia
     env_file:
-      - .env
+      - ../.env
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -39,7 +39,7 @@ services:
     image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
     container_name: immich-postgres
     env_file:
-      - .env
+      - ../.env
     environment:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USERNAME}

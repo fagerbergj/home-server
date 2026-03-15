@@ -2,6 +2,16 @@
 
 Downloads torrents directly to `/mnt/plex01`. Managed via web UI — no desktop needed.
 
+All traffic is routed through Mullvad VPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks.
+
+## VPN Setup (one-time)
+
+1. Log in to [mullvad.net](https://mullvad.net) > **Manage Account > WireGuard keys > Generate key**
+2. Note the **private key** and the **assigned address** (e.g. `10.x.x.x/32`)
+3. Add both values to `~/workspace/home-server/.env` (see root `.env.example`)
+
+To change the exit country, edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [Mullvad server list](https://mullvad.net/servers) for options.
+
 ## Start
 
 ```bash

@@ -4,6 +4,8 @@ services:
     container_name: ollama
     ports:
       - "11434:11434"
+    env_file:
+      - ../.env
     environment:
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
     volumes:
@@ -22,6 +24,8 @@ services:
     container_name: open-webui
     ports:
       - "3000:8080"
+    env_file:
+      - ../.env
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}

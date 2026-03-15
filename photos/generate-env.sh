@@ -4,14 +4,16 @@ set -e
 
 cd "$(dirname "$0")"
 
+ENV_FILE="../.env"
+
 # Sets a key only if it doesn't already exist in .env
 set_env() {
     local key=$1
     local value=$2
-    if grep -q "^${key}=" .env 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${value}|" .env
+    if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
     else
-        echo "${key}=${value}" >> .env
+        echo "${key}=${value}" >> "$ENV_FILE"
     fi
 }
 
@@ -19,15 +21,15 @@ set_env() {
 set_secret() {
     local key=$1
     local value=$2
-    if ! grep -q "^${key}=" .env 2>/dev/null; then
-        echo "${key}=${value}" >> .env
+    if ! grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+        echo "${key}=${value}" >> "$ENV_FILE"
         echo "${key} generated"
     else
         echo "${key} already set — skipping"
     fi
 }
 
-touch .env
+touch "$ENV_FILE"
 
 DB_USERNAME=immich
 DB_DATABASE_NAME=immich
@@ -35,7 +37,7 @@ DB_DATABASE_NAME=immich
 set_secret DB_PASSWORD "$(openssl rand -hex 32)"
 
 # Read the current password (either just generated or pre-existing)
-DB_PASSWORD=$(grep "^DB_PASSWORD=" .env | cut -d= -f2)
+DB_PASSWORD=$(grep "^DB_PASSWORD=" "$ENV_FILE" | cut -d= -f2)
 
 set_env DB_USERNAME "$DB_USERNAME"
 set_env DB_DATABASE_NAME "$DB_DATABASE_NAME"
