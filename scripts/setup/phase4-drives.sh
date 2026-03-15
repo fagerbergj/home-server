@@ -135,10 +135,10 @@ for group in plex-rw plex-ro personal-rw personal-ro; do
 done
 
 sudo usermod -aG plex-rw qbittorrent
-sudo usermod -aG plex-rw jason
+sudo usermod -aG plex-rw jason-server
 sudo usermod -aG plex-ro plex
 sudo usermod -aG personal-rw immich
-sudo usermod -aG personal-rw jason
+sudo usermod -aG personal-rw jason-server
 echo ""
 
 # ---------------------------------------------------------------------------

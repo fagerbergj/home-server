@@ -315,10 +315,10 @@ sudo groupadd personal-ro
 
 # Assign groups
 sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
-sudo usermod -aG plex-rw jason         # manage plex drive directly
+sudo usermod -aG plex-rw jason-server  # manage plex drive directly
 sudo usermod -aG plex-ro plex          # plex reads media
 sudo usermod -aG personal-rw immich    # immich writes photos
-sudo usermod -aG personal-rw jason     # manage personal drive directly
+sudo usermod -aG personal-rw jason-server  # manage personal drive directly
 ```
 
 ### Folder Structure and Permissions
