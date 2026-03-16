@@ -10,7 +10,7 @@ Run this to write the config file:
 mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "ollama/qwen3:8b-nothink",
+  "model": "ollama/qwen3:8b",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -20,11 +20,15 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {
-        "qwen3:8b-nothink": {
-          "name": "qwen3:8b-nothink"
-        },
         "qwen3:8b": {
-          "name": "qwen3:8b"
+          "name": "qwen3:8b (no think)",
+          "options": {
+            "reasoningEffort": "none"
+          }
+        },
+        "qwen3:8b-think": {
+          "name": "qwen3:8b (think)",
+          "modelId": "qwen3:8b"
         }
       }
     }
@@ -33,41 +37,18 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
 EOF
 ```
 
-Or manually edit `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "model": "ollama/qwen3:8b-nothink",
-  "provider": {
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama",
-      "options": {
-        "baseURL": "https://llm-api.jasonfagerberg.duckdns.org/v1",
-        "apiKey": "{env:OLLAMA_API_KEY}"
-      },
-      "models": {
-        "qwen3:8b-nothink": {
-          "name": "qwen3:8b-nothink"
-        },
-        "qwen3:8b": {
-          "name": "qwen3:8b"
-        }
-      }
-    }
-  }
-}
-```
+Or manually edit `~/.config/opencode/opencode.json`.
 
 ## API Key
 
 Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
-export OLLAMA_API_KEY=<your-key from llm/.env>
+export OLLAMA_API_KEY=<your-key from NPM nginx config>
 ```
 
 ## Select the Model
 
-In OpenCode, run `/models` and select `ollama > qwen3:8b-nothink`.
+In OpenCode, run `/models` and select from `ollama`:
+- `qwen3:8b (no think)` — default, faster responses
+- `qwen3:8b (think)` — enables reasoning mode for harder problems
