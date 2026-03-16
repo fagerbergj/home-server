@@ -14,18 +14,11 @@ This generates the API key used in NPM's nginx config to protect the external Ol
 docker compose up -d
 ```
 
-## 3. Pull models and create nothink variant
+## 3. Pull models
 
 ```bash
-docker exec -it ollama ollama pull qwen3:8b
-```
-
-Create a thinking-disabled variant for use with OpenCode and other OpenAI-compatible clients:
-
-```bash
-echo -e 'FROM qwen3:8b\nSYSTEM /nothink' > /tmp/Modelfile
-docker cp /tmp/Modelfile ollama:/tmp/Modelfile
-docker exec ollama ollama create qwen3:8b-nothink -f /tmp/Modelfile
+docker exec ollama ollama pull qwen3:8b
+docker exec ollama ollama pull qwen2.5-coder:7b
 ```
 
 ## 4. Set up Open WebUI
@@ -45,7 +38,7 @@ Open `http://192.168.50.186:3000` in your browser.
    docker exec -it ollama ollama ps
    ```
    You should see the model listed with `100% GPU`
-3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen3:8b-nothink` from a project
+3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen2.5-coder:7b` from a project
 4. Confirm auth is enforced at NPM — a request without the key should be rejected:
    ```bash
    curl -s -o /dev/null -w "%{http_code}" https://llm-api.jasonfagerberg.duckdns.org/v1/models
