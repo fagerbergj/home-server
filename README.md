@@ -23,14 +23,13 @@ All services run via **Docker Compose**. Each service lives in its own subdirect
 
 ```
 home-server/
-├── plex/
-│   └── docker-compose.yml
-├── minecraft/
-│   └── docker-compose.yml
-├── photos/
-│   └── docker-compose.yml
-├── llm/
-│   └── docker-compose.yml
+├── networking/       # Nginx Proxy Manager + DuckDNS updater
+├── plex/             # Plex Media Server
+├── minecraft/        # Minecraft NeoForge server
+├── photos/           # Immich photo storage
+├── llm/              # Ollama + Open WebUI
+├── qbittorrent/      # qBittorrent behind Mullvad VPN
+├── watchtower/       # Container auto-restart
 └── README.md
 ```
 
@@ -56,4 +55,4 @@ See [setup.md](setup.md) for the full step-by-step guide.
 
 ## Status
 
-Planning / hardware evaluation phase.
+Active — all services running.

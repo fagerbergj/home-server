@@ -23,6 +23,7 @@ Mod jars go in `./mods/`. The server loads them on startup.
 | Ars Nouveau | https://www.curseforge.com/minecraft/mc-mods/ars-nouveau | Main mod |
 | GeckoLib | https://www.curseforge.com/minecraft/mc-mods/geckolib | Required dependency |
 | Patchouli | https://www.curseforge.com/minecraft/mc-mods/patchouli | Required dependency |
+| Curios API | https://www.curseforge.com/minecraft/mc-mods/curios | Required dependency |
 
 After adding or removing mods, restart the server:
 ```bash
