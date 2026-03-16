@@ -13,11 +13,12 @@ API: `https://llm-api.jasonfagerberg.duckdns.org`
 | Model | VRAM | Notes |
 |-------|------|-------|
 | `qwen3:1.7b` | ~1.5GB | Fast, lightweight |
-| `qwen3:8b` | ~5GB | Best balance of speed and quality — recommended |
+| `qwen3:8b` | ~5GB | Best balance of speed and quality — thinking enabled |
+| `qwen3:8b-nothink` | ~5GB | Same model, thinking disabled — use with OpenCode and API clients |
 
 Avoid 14B+ models — they exceed 8GB VRAM and will spill to CPU, making inference very slow.
 
-Qwen3 supports built-in thinking mode. Append `/think` to a prompt to enable it, `/no_think` to disable.
+Qwen3 supports built-in thinking mode. Append `/think` to a prompt to enable it, `/nothink` to disable.
 
 ## Chat via CLI
 
@@ -37,9 +38,11 @@ curl http://192.168.50.186:11434/api/generate \
 From outside your network — any tool that supports a custom OpenAI-compatible base URL:
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
-API Key:  <your-key from .env>
-Model:    qwen3:8b
+API Key:  <your-key from NPM nginx config>
+Model:    qwen3:8b-nothink
 ```
+
+> Auth is enforced by NPM's nginx config, not Ollama itself.
 
 See [opencode_setup.md](opencode_setup.md) for OpenCode configuration.
 

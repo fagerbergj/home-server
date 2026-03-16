@@ -6,7 +6,7 @@
 ./generate-env.sh
 ```
 
-This sets the API key used to protect the external Ollama endpoint.
+This generates the API key used in NPM's nginx config to protect the external Ollama endpoint.
 
 ## 2. Start services
 
@@ -14,10 +14,18 @@ This sets the API key used to protect the external Ollama endpoint.
 docker compose up -d
 ```
 
-## 3. Pull a model
+## 3. Pull models and create nothink variant
 
 ```bash
 docker exec -it ollama ollama pull qwen3:8b
+```
+
+Create a thinking-disabled variant for use with OpenCode and other OpenAI-compatible clients:
+
+```bash
+echo -e 'FROM qwen3:8b\nSYSTEM /nothink' > /tmp/Modelfile
+docker cp /tmp/Modelfile ollama:/tmp/Modelfile
+docker exec ollama ollama create qwen3:8b-nothink -f /tmp/Modelfile
 ```
 
 ## 4. Set up Open WebUI
@@ -37,9 +45,9 @@ Open `http://192.168.50.186:3000` in your browser.
    docker exec -it ollama ollama ps
    ```
    You should see the model listed with `100% GPU`
-3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen3:8b` from a project
-4. Confirm auth is actually enforced — a request without the key should be rejected:
+3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen3:8b-nothink` from a project
+4. Confirm auth is enforced at NPM — a request without the key should be rejected:
    ```bash
-   curl https://llm-api.jasonfagerberg.duckdns.org/v1/models
+   curl -s -o /dev/null -w "%{http_code}" https://llm-api.jasonfagerberg.duckdns.org/v1/models
    ```
-   You should get a `401 Unauthorized` response
+   You should get `401`
