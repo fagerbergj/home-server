@@ -10,7 +10,7 @@ Run this to write the config file:
 mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "ollama/qwen3:8b",
+  "model": "ollama/qwen3:8b-nothink",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -20,8 +20,8 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {
-        "qwen3:8b": {
-          "name": "qwen3:8b"
+        "qwen3:8b-nothink": {
+          "name": "qwen3:8b-nothink"
         }
       }
     }
@@ -35,7 +35,7 @@ Or manually edit `~/.config/opencode/opencode.json`:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "ollama/qwen3:8b",
+  "model": "ollama/qwen3:8b-nothink",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -45,8 +45,8 @@ Or manually edit `~/.config/opencode/opencode.json`:
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {
-        "qwen3:8b": {
-          "name": "qwen3:8b"
+        "qwen3:8b-nothink": {
+          "name": "qwen3:8b-nothink"
         }
       }
     }
@@ -64,4 +64,4 @@ export OLLAMA_API_KEY=<your-key from llm/.env>
 
 ## Select the Model
 
-In OpenCode, run `/models` and select `ollama > qwen3:8b`.
+In OpenCode, run `/models` and select `ollama > qwen3:8b-nothink`.
