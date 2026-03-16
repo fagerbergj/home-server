@@ -30,7 +30,7 @@ docker compose ps
 
 ## 4. Create your admin account
 
-Open `http://<server-ip>:2283` and create your admin account on first visit.
+Open `http://192.168.50.186:2283` and create your admin account on first visit.
 
 ## Verify
 

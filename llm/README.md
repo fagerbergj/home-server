@@ -4,7 +4,7 @@ Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on th
 
 ## Access
 
-Local: `http://<server-ip>:3000`
+Local: `http://192.168.50.186:3000`
 External: `https://llm.jasonfagerberg.asuscomm.com`
 API: `https://llm-api.jasonfagerberg.asuscomm.com`
 
@@ -30,7 +30,7 @@ docker exec -it ollama ollama run qwen3:8b
 Ollama exposes an OpenAI-compatible REST API on port 11434:
 
 ```bash
-curl http://<server-ip>:11434/api/generate \
+curl http://192.168.50.186:11434/api/generate \
   -d '{"model": "qwen3:8b", "prompt": "Hello!", "stream": false}'
 ```
 

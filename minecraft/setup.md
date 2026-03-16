@@ -43,5 +43,5 @@ Anyone without the mods will be kicked on join.
 ## Verify
 
 1. Launch Minecraft with the NeoForge 1.21.1 profile in CurseForge
-2. Add a server with `<server-ip>:25565` and connect — you should spawn in a world with Ars Nouveau available
+2. Add a server with `192.168.50.186:25565` and connect — you should spawn in a world with Ars Nouveau available
 3. Run `/mods` in chat to confirm all four mods are loaded

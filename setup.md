@@ -73,7 +73,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 
 From your main PC, connect:
 ```bash
-ssh jason-server@<server-ip>
+ssh jason-server@192.168.50.186
 ```
 
 ### SSH Key Authentication
@@ -86,7 +86,7 @@ ssh-keygen -t ed25519
 Then copy it to the server:
 ```bash
 # Run on your main PC
-ssh-copy-id jason-server@<server-ip>
+ssh-copy-id jason-server@192.168.50.186
 ```
 
 ### Firewall
@@ -128,7 +128,7 @@ git clone git@github.com:fagerbergj/home-server.git
 If you already have a filled-out `.env` on your main PC, copy it over:
 ```bash
 # Run on your main PC
-scp ~/workspace/home-server/.env jason-server@<server-ip>:~/workspace/home-server/.env
+scp ~/workspace/home-server/.env jason-server@192.168.50.186:~/workspace/home-server/.env
 ```
 
 Otherwise copy the example and fill in your values:
@@ -346,7 +346,7 @@ Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your ma
 
 ```bash
 # Run on your main PC
-rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason-server@<server-ip>:/mnt/personal01/photos/
+rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason-server@192.168.50.186:/mnt/personal01/photos/
 ```
 
 Run the IDs script to look up UIDs/GIDs and automatically update the compose files:

@@ -5,7 +5,7 @@ Self-hosted Google Photos alternative. Runs four containers: server, ML worker, 
 ## Access
 
 ```
-http://<server-ip>:2283
+http://192.168.50.186:2283
 ```
 
 External: `https://photos.jasonfagerberg.asuscomm.com`

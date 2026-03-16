@@ -7,7 +7,7 @@ All traffic is routed through Mullvad VPN via [Gluetun](https://github.com/qdm12
 ## Access
 
 ```
-http://<server-ip>:8080
+http://192.168.50.186:8080
 ```
 
 ## Download Paths

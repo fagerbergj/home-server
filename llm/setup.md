@@ -22,7 +22,7 @@ docker exec -it ollama ollama pull qwen3:8b
 
 ## 4. Set up Open WebUI
 
-Open `http://<server-ip>:3000` in your browser.
+Open `http://192.168.50.186:3000` in your browser.
 
 1. Create your admin account (first account gets admin)
 2. For each family/friend: **Admin Panel > Users > Add User**
@@ -31,7 +31,7 @@ Open `http://<server-ip>:3000` in your browser.
 
 ## Verify
 
-1. Open `http://<server-ip>:3000`, select `qwen3:8b`, and send a test message — you should get a response within a few seconds
+1. Open `http://192.168.50.186:3000`, select `qwen3:8b`, and send a test message — you should get a response within a few seconds
 2. Check GPU is being used:
    ```bash
    docker exec -it ollama ollama ps

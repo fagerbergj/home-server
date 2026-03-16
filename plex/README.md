@@ -5,7 +5,7 @@ Runs via Docker using the [linuxserver/plex](https://hub.docker.com/r/linuxserve
 ## Access
 
 ```
-http://<server-ip>:32400/web
+http://192.168.50.186:32400/web
 ```
 
 ## Library Paths

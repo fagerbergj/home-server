@@ -13,7 +13,7 @@ Done after first boot, before the system update reboot — the server is on the 
 
 1. In the router UI: **Advanced Settings > LAN > DHCP Server**
 2. Scroll to **Enable Manual Assignment** — set to **Yes**
-3. Find the server's MAC address in the client list, assign it a static IP (e.g. `192.168.1.10`)
+3. Find the server's MAC address in the client list, assign it a static IP (`192.168.50.186`)
 4. Click **Add** then **Apply**
 
 ### DDNS
@@ -39,9 +39,9 @@ DDNS is handled by the `duckdns-updater` container — no router config needed.
 
 | Service Name | External Port | Internal Port | Internal IP | Protocol |
 |-------------|---------------|---------------|-------------|----------|
-| NPM-HTTP | 80 | 80 | 192.168.1.10 | TCP |
-| NPM-HTTPS | 443 | 443 | 192.168.1.10 | TCP |
-| Minecraft | 25565 | 25565 | 192.168.1.10 | TCP |
+| NPM-HTTP | 80 | 80 | 192.168.50.186 | TCP |
+| NPM-HTTPS | 443 | 443 | 192.168.50.186 | TCP |
+| Minecraft | 25565 | 25565 | 192.168.50.186 | TCP |
 
 4. Click **Apply**
 
@@ -81,10 +81,10 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 
 | Service | Domain | Scheme | Forward Host | Port | Websockets | SSL cert |
 |---------|--------|--------|--------------|------|------------|----------|
-| Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `172.17.0.1` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `172.17.0.1` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `172.17.0.1` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `172.17.0.1` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
+| Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 

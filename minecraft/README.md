@@ -6,7 +6,7 @@ Runs [itzg/minecraft-server](https://github.com/itzg/docker-minecraft-server) wi
 
 Local:
 ```
-<server-ip>:25565
+192.168.50.186:25565
 ```
 
 External (via DDNS):

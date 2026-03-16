@@ -17,7 +17,7 @@ Run this from your main PC once the server is up and SSH is working:
 ```bash
 sudo rsync -av --progress \
   /var/lib/plexmediaserver/Library/ \
-  jason@<server-ip>:~/workspace/home-server/plex/config/Library/
+  jason-server@192.168.50.186:~/workspace/home-server/plex/config/Library/
 ```
 
 ## 3. Start Plex
@@ -28,7 +28,7 @@ No claim token needed — the server is already linked to your account via the m
 docker compose up -d
 ```
 
-Open `http://<server-ip>:32400/web` and verify your libraries and watch history are intact.
+Open `http://192.168.50.186:32400/web` and verify your libraries and watch history are intact.
 
 ## 4. Update library paths
 
@@ -45,6 +45,6 @@ Watch history and metadata will be preserved.
 
 ## Verify
 
-1. Open `http://<server-ip>:32400/web` and confirm your libraries and watch history are intact
+1. Open `http://192.168.50.186:32400/web` and confirm your libraries and watch history are intact
 2. Start playing something — check Settings > Dashboard to confirm the stream appears
 3. If you have Plex Pass, verify hardware transcoding: force a transcode and confirm `(hw)` appears next to the session
