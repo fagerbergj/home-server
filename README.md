@@ -11,7 +11,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Photo Storage | Personal photo backup and browsing |
 | qBittorrent | Download torrents directly to server via web UI |
 | Watchtower | Monitors containers and restarts them if they go down |
-| Ollama | Local LLM inference (Qwen3 8B via GPU) |
+| Ollama | Local LLM inference (Qwen2.5 Coder 7B via GPU) |
 
 ## OS
 
