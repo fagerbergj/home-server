@@ -4,19 +4,19 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| CPU | Intel Core i7-2700K (Sandy Bridge, 4c/8t, 3.5GHz) | ⚠️ Old but functional — NVENC offloads transcoding |
-| Motherboard | ASUS P8H61-M LE/CSM (LGA1155, H61 chipset) | ⚠️ Old platform, max 16GB DDR3, 2 DIMM slots |
-| RAM | 16GB (2×8GB) Silicon Power DDR3-1600 CL11 | ✅ Purchased — maxes out the board |
-| CPU Cooler | Stock Intel cooler | ⚠️ Marginal for 24/7 — upgrade eventually |
-| OS Drive | 480GB ADATA SU650 SSD | ✅ Moving from main PC |
-| Personal Drive (primary) | 1TB Seagate HDD | ✅ Purchased — RAID 1 primary |
-| Personal Drive (secondary) | 1TB WD HDD | ✅ Moving from main PC — 35,648 hrs, healthy SMART |
-| Plex Drive | 4TB Seagate Barracuda HDD | ✅ Purchased |
+| CPU | AMD Ryzen 5 3600 (Matisse, 6c/12t, 3.6GHz, 65W) | ⚠️ Interim — 5000-series replaces this when it cascades from main PC |
+| Motherboard | MSI B350 Tomahawk (AM4, B350 chipset) | ✅ Flashed to latest beta BIOS (Ryzen 5000 ready) |
+| RAM | 16GB DDR4 | ✅ |
+| CPU Cooler | Stock AMD Wraith | ✅ |
+| OS Drive | 480GB ADATA SU650 SSD | ✅ |
+| Personal Drive (primary) | 1TB Seagate HDD | ✅ RAID 1 primary |
+| Personal Drive (secondary) | 1TB WD HDD | ✅ RAID 1 secondary — 35,648 hrs, healthy SMART |
+| Plex Drive | 4TB Seagate Barracuda HDD | ✅ |
 | Plex Drive (overflow) | 640GB Hitachi Deskstar HDD | ⚠️ Old drive (41k hrs) — non-critical re-downloadable media only |
-| GPU | GTX 1070 Ti (Pascal, 8GB VRAM) | ✅ From friend — excellent NVENC, ~180W |
+| GPU | GTX 1070 Ti (Pascal, 8GB VRAM) | ✅ Excellent NVENC, ~180W |
 | PSU | EVGA 500W AXI | ✅ Sufficient |
-| Network | Realtek Gigabit LAN (onboard) | ✅ Gigabit |
-| Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ Purchased |
+| Network | Realtek Gigabit LAN (onboard, `enp35s0`) | ✅ Gigabit |
+| Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ |
 
 ---
 
@@ -33,13 +33,5 @@
 
 ## Platform Notes
 
-- LGA1155 / Sandy Bridge (2011) — end-of-life but works fine for this use case
-- See [`hardware_upgrades.md`](hardware_upgrades.md) for the planned AM4 platform upgrade
-
----
-
-## Still Needed
-
-| Item | Priority | Notes |
-|------|----------|-------|
-| CPU cooler (LGA1155) | Low | Stock cooler is marginal for 24/7 — Hyper 212 (~$30) when ready |
+- AM4 / B350 Tomahawk — Ryzen 5 3600 interim, awaiting 5000-series cascade from main PC
+- See [`hardware_upgrades.md`](hardware_upgrades.md) for next steps

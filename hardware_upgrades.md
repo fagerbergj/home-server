@@ -14,11 +14,8 @@ Replace the Sandy Bridge platform with AM4 hardware already owned.
 ### CPU strategy
 The B350 Tomahawk supports Ryzen 5000 (Vermeer) via beta BIOS, but has no BIOS flashback — an older AM4 CPU is required to boot and flash first.
 
-**Step 1 — Get a cheap 3000-series CPU (~$30-50 on eBay)**
-Any Matisse or Picasso chip works. Just needs to POST so the BIOS can be flashed to "Latest Beta BIOS" from the MSI support page.
-
-**Step 2 — Flash to latest beta BIOS**
-This unlocks Ryzen 5000 support and future-proofs the board.
+**~~Step 1 — Get a cheap 3000-series CPU~~** ✅ Ryzen 5 3600 installed
+**~~Step 2 — Flash to latest beta BIOS~~** ✅ Done — Ryzen 5000 support unlocked
 
 **Step 3 — Drop in 5000-series when it cascades from main PC**
 When the main PC gets a new platform, the current CPU moves to the server. Good 65W targets:
@@ -29,6 +26,7 @@ Avoid 105W chips (5800X, 5900X, 5950X) for 24/7 server use — B350 VRM wasn't d
 
 ### Migration notes
 - Linux and Docker configs carry over seamlessly
+- Update netplan interface name (was `enp4s0`, now `enp35s0` on B350 Tomahawk)
 - RAID array reassembles automatically
 - Reinstall NVIDIA drivers after platform swap
 - Note new CPU/RAM specs in `hardware.md` after swap
