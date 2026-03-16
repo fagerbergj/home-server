@@ -22,6 +22,9 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
       "models": {
         "qwen3:8b-nothink": {
           "name": "qwen3:8b-nothink"
+        },
+        "qwen3:8b": {
+          "name": "qwen3:8b"
         }
       }
     }
@@ -47,6 +50,9 @@ Or manually edit `~/.config/opencode/opencode.json`:
       "models": {
         "qwen3:8b-nothink": {
           "name": "qwen3:8b-nothink"
+        },
+        "qwen3:8b": {
+          "name": "qwen3:8b"
         }
       }
     }
