@@ -8,8 +8,8 @@
 set -euo pipefail
 
 PLEX_URL="http://127.0.0.1:32400"
-PLEX_TOKEN="h_Bkg9wfMEnr4LVGVvsY"
-SHOW_RATING_KEY="1623"
+PLEX_TOKEN="Gj9CaUXLfEyT7KNFKaa_"
+SHOW_RATING_KEY="5129"
 
 DRY_RUN=true
 UNTAG=false
