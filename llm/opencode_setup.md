@@ -21,14 +21,10 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
       },
       "models": {
         "qwen3:8b": {
-          "name": "qwen3:8b (no think)",
+          "name": "qwen3:8b",
           "options": {
             "reasoningEffort": "none"
           }
-        },
-        "qwen3:8b-think": {
-          "name": "qwen3:8b (think)",
-          "modelId": "qwen3:8b"
         }
       }
     }
@@ -49,6 +45,4 @@ export OLLAMA_API_KEY=<your-key from NPM nginx config>
 
 ## Select the Model
 
-In OpenCode, run `/models` and select from `ollama`:
-- `qwen3:8b (no think)` — default, faster responses
-- `qwen3:8b (think)` — enables reasoning mode for harder problems
+In OpenCode, run `/models` and select `ollama > qwen3:8b`. Thinking is disabled by default — add `/think` anywhere in a prompt to enable it for that message.
