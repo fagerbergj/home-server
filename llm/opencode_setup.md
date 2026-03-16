@@ -16,7 +16,7 @@ mkdir -p ~/.config/opencode && cat > ~/.config/opencode/opencode.json << 'EOF'
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama",
       "options": {
-        "baseURL": "https://llm-api.jasonfagerberg.asuscomm.com/v1",
+        "baseURL": "https://llm-api.jasonfagerberg.duckdns.org/v1",
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {
@@ -41,7 +41,7 @@ Or manually edit `~/.config/opencode/opencode.json`:
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama",
       "options": {
-        "baseURL": "https://llm-api.jasonfagerberg.asuscomm.com/v1",
+        "baseURL": "https://llm-api.jasonfagerberg.duckdns.org/v1",
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {

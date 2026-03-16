@@ -5,8 +5,8 @@ Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on th
 ## Access
 
 Local: `http://192.168.50.186:3000`
-External: `https://llm.jasonfagerberg.asuscomm.com`
-API: `https://llm-api.jasonfagerberg.asuscomm.com`
+External: `https://llm.jasonfagerberg.duckdns.org`
+API: `https://llm-api.jasonfagerberg.duckdns.org`
 
 ## Models
 
@@ -36,7 +36,7 @@ curl http://192.168.50.186:11434/api/generate \
 
 From outside your network — any tool that supports a custom OpenAI-compatible base URL:
 ```
-Base URL: https://llm-api.jasonfagerberg.asuscomm.com
+Base URL: https://llm-api.jasonfagerberg.duckdns.org
 API Key:  <your-key from .env>
 Model:    qwen3:8b
 ```

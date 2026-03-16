@@ -27,7 +27,7 @@ Open `http://192.168.50.186:3000` in your browser.
 1. Create your admin account (first account gets admin)
 2. For each family/friend: **Admin Panel > Users > Add User**
    - Set their name, email, and a temporary password
-   - Send them `https://llm.jasonfagerberg.asuscomm.com` and their credentials — they can change their password after logging in
+   - Send them `https://llm.jasonfagerberg.duckdns.org` and their credentials — they can change their password after logging in
 
 ## Verify
 
@@ -40,6 +40,6 @@ Open `http://192.168.50.186:3000` in your browser.
 3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it, then confirm you can chat with `qwen3:8b` from a project
 4. Confirm auth is actually enforced — a request without the key should be rejected:
    ```bash
-   curl https://llm-api.jasonfagerberg.asuscomm.com/v1/models
+   curl https://llm-api.jasonfagerberg.duckdns.org/v1/models
    ```
    You should get a `401 Unauthorized` response

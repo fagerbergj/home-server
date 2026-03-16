@@ -11,7 +11,7 @@ Local:
 
 External (via DDNS):
 ```
-jasonfagerberg.asuscomm.com:25565
+jasonfagerberg.duckdns.org:25565
 ```
 
 ## Mods
