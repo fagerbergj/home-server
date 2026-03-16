@@ -23,6 +23,7 @@ How to get your Minecraft client ready to join the server.
    - **[Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau)**
    - **[GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib)**
    - **[Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)**
+   - **[Curios API](https://www.curseforge.com/minecraft/mc-mods/curios)**
 7. Launch Minecraft from the profile
 
 ### Linux (Prism Launcher)
@@ -34,12 +35,13 @@ How to get your Minecraft client ready to join the server.
    - **[Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau)**
    - **[GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib)**
    - **[Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)**
+   - **[Curios API](https://www.curseforge.com/minecraft/mc-mods/curios)**
 5. Launch the instance
 
 ## Connect
 
 Add the server under **Multiplayer → Add Server**:
-- Address: `jasonfagerberg.asuscomm.com:25565`
+- Address: `jasonfagerberg.duckdns.org:25565`
 
 ## Notes
 
