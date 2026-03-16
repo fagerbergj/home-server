@@ -81,10 +81,10 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 
 | Service | Domain | Forward to | Websockets | SSL cert |
 |---------|--------|------------|------------|----------|
-| Plex | `plex.jasonfagerberg.duckdns.org` | `http://127.0.0.1:32400` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Immich | `photos.jasonfagerberg.duckdns.org` | `http://127.0.0.1:2283` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http://127.0.0.1:3000` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http://127.0.0.1:11434` | No | `*.jasonfagerberg.duckdns.org` |
+| Plex | `plex.jasonfagerberg.duckdns.org` | `http://host.docker.internal:32400` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Immich | `photos.jasonfagerberg.duckdns.org` | `http://host.docker.internal:2283` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http://host.docker.internal:3000` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http://host.docker.internal:11434` | No | `*.jasonfagerberg.duckdns.org` |
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
