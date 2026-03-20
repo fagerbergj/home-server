@@ -71,11 +71,12 @@ EOF
 #!/bin/bash
 case "$1" in
     -u) echo "1001" ;;
-    plex)        echo "uid=1001(plex)" ;;
-    immich)      echo "uid=1002(immich)" ;;
-    minecraft)   echo "uid=1003(minecraft)" ;;
-    qbittorrent) echo "uid=1004(qbittorrent)" ;;
-    *) echo "uid=1000(jason)" ;;
+    plex)            echo "uid=1001(plex)" ;;
+    immich)          echo "uid=1002(immich)" ;;
+    minecraft)       echo "uid=1003(minecraft)" ;;
+    qbittorrent)     echo "uid=1004(qbittorrent)" ;;
+    audiobookshelf)  echo "uid=1005(audiobookshelf)" ;;
+    *) return 1 ;;
 esac
 EOF
     chmod +x "$TMPDIR/bin/id"
@@ -145,6 +146,17 @@ run_script() {
     run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"PUID (plex)"* ]]
     [[ "$output" == *"PGID (plex-rw)"* ]]
+    [[ "$output" == *"PUID (audiobookshelf)"* ]]
+}
+
+@test "creates audiobookshelf user" {
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"useradd called with"*"audiobookshelf"* ]]
+}
+
+@test "creates audiobooks directory on plex01" {
+    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    [[ "$output" == *"audiobooks"* ]]
 }
 
 @test "skips plex02 when not in config" {

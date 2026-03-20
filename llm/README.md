@@ -1,6 +1,6 @@
 # Local LLM (Ollama)
 
-Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on the GTX 1070 Ti. [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
+Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on 2x GTX 1070 Ti. Ollama splits model layers across both GPUs (~16GB effective VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
 
 ## Access
 
@@ -12,18 +12,16 @@ API: `https://llm-api.jasonfagerberg.duckdns.org`
 
 | Model | VRAM | Use |
 |-------|------|-----|
-| `qwen3:1.7b` | ~1.5GB | Fast, lightweight chat |
-| `qwen3:8b` | ~5GB | General chat via Open WebUI |
-| `qwen2.5-coder:7b` | ~5GB | Coding tasks via OpenCode |
+| `qwen2.5-coder:7b` | ~5GB | Small coding tasks |
+| `llama3.1:8b` | ~5GB | Chat |
+| `mistral-nemo:12b` | ~7GB | Large coding tasks |
 
-Avoid 14B+ models — they exceed 8GB VRAM and will spill to CPU, making inference very slow.
-
-Qwen3 supports built-in thinking mode. Append `/think` to a prompt to enable it, `/nothink` to disable.
+With ~16GB effective VRAM across both GPUs, models up to ~13B run fully on GPU. Larger models (30B+) will start spilling to CPU.
 
 ## Chat via CLI
 
 ```bash
-docker exec -it ollama ollama run qwen3:8b
+docker exec -it ollama ollama run llama3.1:8b
 ```
 
 ## API
@@ -39,24 +37,25 @@ From outside your network — any tool that supports a custom OpenAI-compatible 
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
 API Key:  <your-key from NPM nginx config>
-Model:    qwen2.5-coder:7b
+Model:    llama3.1:8b  (or qwen2.5-coder:7b, mistral-nemo:12b)
 ```
 
 > Auth is enforced by NPM's nginx config, not Ollama itself.
 
-See [opencode_setup.md](opencode_setup.md) for OpenCode configuration.
+See [npcsh_setup.md](npcsh_setup.md) for npcsh configuration.
 
 ## Managing Models
 
 ```bash
 docker exec -it ollama ollama list
-docker exec -it ollama ollama pull qwen3:8b
 docker exec -it ollama ollama pull qwen2.5-coder:7b
+docker exec -it ollama ollama pull llama3.1:8b
+docker exec -it ollama ollama pull mistral-nemo:12b
 ```
 
 ## Resource Notes
 
-- GPU inference on GTX 1070 Ti — expect ~15–30 tokens/sec on the 8B models
+- GPU inference across 2x GTX 1070 Ti (~16GB effective VRAM) — expect ~15–30 tokens/sec on 7–8B models, slower on 12B+
 - Plex NVENC transcoding and LLM inference share the GPU but rarely overlap in practice
 - Model files are stored in `./data`
 

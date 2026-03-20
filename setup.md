@@ -306,6 +306,7 @@ sudo useradd -r -s /sbin/nologin plex
 sudo useradd -r -s /sbin/nologin immich
 sudo useradd -r -s /sbin/nologin minecraft
 sudo useradd -r -s /sbin/nologin qbittorrent
+sudo useradd -r -s /sbin/nologin audiobookshelf
 
 # Create groups
 sudo groupadd plex-rw
@@ -317,6 +318,7 @@ sudo groupadd personal-ro
 sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
 sudo usermod -aG plex-rw jason-server  # manage plex drive directly
 sudo usermod -aG plex-ro plex          # plex reads media
+sudo usermod -aG plex-ro audiobookshelf  # audiobookshelf reads media
 sudo usermod -aG personal-rw immich    # immich writes photos
 sudo usermod -aG personal-rw jason-server  # manage personal drive directly
 ```
@@ -327,7 +329,7 @@ sudo usermod -aG personal-rw jason-server  # manage personal drive directly
 sudo apt install -y acl
 
 # Plex drive
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows
+sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks
 sudo chown -R root:plex-rw /mnt/plex01
 sudo chmod -R 2775 /mnt/plex01
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
@@ -451,4 +453,5 @@ Start services in this order — see each directory's `setup.md` for details:
 3. [`photos/setup.md`](photos/setup.md)
 4. [`qbittorrent/setup.md`](qbittorrent/setup.md)
 5. [`llm/setup.md`](llm/setup.md)
-6. [`watchtower/setup.md`](watchtower/setup.md) — start this last
+6. [`audiobooks/setup.md`](audiobooks/setup.md)
+7. [`watchtower/setup.md`](watchtower/setup.md) — start this last

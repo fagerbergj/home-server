@@ -1,0 +1,13 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - /mnt/plex01/audiobooks:/audiobooks
+      - ./config:/config
+      - ./metadata:/metadata
+    ports:
+      - 13378:80
+    restart: unless-stopped

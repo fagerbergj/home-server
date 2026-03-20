@@ -1,0 +1,10 @@
+#!/usr/bin/env npc
+name: assistant
+primary_directive: You are a helpful assistant that can run commands.
+model: mistral-nemo:12b
+provider: openai-like
+jinxes:
+  - sh
+  - git
+  - edit
+  - cmd

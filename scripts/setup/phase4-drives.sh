@@ -116,7 +116,7 @@ echo ""
 
 echo "Creating service users and groups..."
 
-for user in plex immich minecraft qbittorrent; do
+for user in plex immich minecraft qbittorrent audiobookshelf; do
     if ! id "$user" &>/dev/null; then
         sudo useradd -r -s /sbin/nologin "$user"
         echo "  Created user: $user"
@@ -137,6 +137,7 @@ done
 sudo usermod -aG plex-rw qbittorrent
 sudo usermod -aG plex-rw jason-server
 sudo usermod -aG plex-ro plex
+sudo usermod -aG plex-ro audiobookshelf
 sudo usermod -aG personal-rw immich
 sudo usermod -aG personal-rw jason-server
 echo ""
@@ -148,7 +149,7 @@ echo ""
 echo "Setting up folder structure and permissions..."
 sudo apt install -y acl
 
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows
+sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks
 sudo chown -R root:plex-rw /mnt/plex01
 sudo chmod -R 2775 /mnt/plex01
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
@@ -180,3 +181,4 @@ printf "  %-20s %s\n" "PUID (qbittorrent):" "$(id -u qbittorrent)"
 printf "  %-20s %s\n" "PGID (plex-rw):"     "$(getent group plex-rw | cut -d: -f3)"
 printf "  %-20s %s\n" "PGID (plex-ro):"     "$(getent group plex-ro | cut -d: -f3)"
 printf "  %-20s %s\n" "PGID (personal-rw):" "$(getent group personal-rw | cut -d: -f3)"
+printf "  %-20s %s\n" "PUID (audiobookshelf):" "$(id -u audiobookshelf)"

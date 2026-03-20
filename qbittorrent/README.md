@@ -30,7 +30,7 @@ docker restart qbittorrent
 
 In the web UI: View > Search Engine. A Search tab will appear.
 
-Plugins included: `animetosho.py`, `audiobookbay.py`, `kickasstorrents.py`, `thepiratebay.py`
+Plugins included: `animetosho.py`, `audiobookbay.py`, `kickasstorrents.py`, `solidtorrents.py`, `thepiratebay.py`
 
 ## Changing Exit Country
 
