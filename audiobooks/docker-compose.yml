@@ -4,6 +4,8 @@ services:
     container_name: audiobookshelf
     environment:
       - TZ=America/Chicago
+      - PUID=993
+      - PGID=1002
     volumes:
       - /mnt/plex01/audiobooks:/audiobooks
       - ./config:/config
