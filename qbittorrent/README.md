@@ -21,10 +21,10 @@ Set in Options > Downloads:
 
 ## Search Engine Plugins
 
-Plugins are in `Search/`. To enable them:
+Plugins are in `search/`. To enable them:
 
 ```bash
-docker cp Search/. qbittorrent:/config/qBittorrent/nova3/engines/
+docker cp search/. qbittorrent:/config/qBittorrent/nova3/engines/
 docker restart qbittorrent
 ```
 
