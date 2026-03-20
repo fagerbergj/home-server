@@ -1,10 +1,9 @@
 services:
   audiobookshelf:
-    image: lscr.io/linuxserver/audiobookshelf:latest
+    image: ghcr.io/advplyr/audiobookshelf:latest
     container_name: audiobookshelf
+    user: "993:1002"
     environment:
-      - PUID=993
-      - PGID=1002
       - TZ=America/Chicago
     volumes:
       - /mnt/plex01/audiobooks:/audiobooks
