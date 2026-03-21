@@ -91,3 +91,5 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
 > The API key set in `llm/.env` is the only auth layer here — keep it strong.
+
+> Netdata is bound to `127.0.0.1:19999` — not directly internet-accessible. Auth is handled by Netdata Cloud. The NPM proxy host provides the HTTPS entry point but the dashboard itself requires a Netdata Cloud login to use.
