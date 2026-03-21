@@ -19,5 +19,7 @@ services:
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /mnt:/host/mnt:ro,rslave
+      - /mnt/plex01:/mnt/plex01:ro
+      - /mnt/plex02:/mnt/plex02:ro
+      - /mnt/personal01:/mnt/personal01:ro
     restart: unless-stopped
