@@ -3,7 +3,7 @@
 # Reads drives.json — run phase4-detect-drives.sh first to generate it.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 CONFIG="$SCRIPT_DIR/drives.json"
 
 if [[ ! -f "$CONFIG" ]]; then
@@ -117,7 +117,7 @@ echo ""
 echo "Creating service users and groups..."
 
 for user in plex immich minecraft qbittorrent audiobookshelf; do
-    if ! id "$user" &>/dev/null; then
+    if ! getent passwd "$user" &>/dev/null; then
         sudo useradd -r -s /sbin/nologin "$user"
         echo "  Created user: $user"
     else

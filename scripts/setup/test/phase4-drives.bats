@@ -113,55 +113,55 @@ run_script() {
 }
 
 @test "aborts when user enters 'no'" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' echo 'no' | bash $SCRIPT"
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; echo 'no' | bash $SCRIPT"
     [[ "$output" == *"Aborted"* ]]
 }
 
 @test "formats plex01 when preserve is false" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"mkfs.ext4 called with"*"sda1"* ]]
 }
 
 @test "skips formatting plex01 when preserve is true" {
     jq '.plex01.preserve = true' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
     mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"preserving existing data"* ]]
     [[ "$output" != *"mkfs.ext4 called with"*"sda1"* ]]
 }
 
 @test "formats plex02 when present and preserve is false" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"mkfs.ext4 called with"*"sdd1"* ]]
 }
 
 @test "creates RAID with --force using configured devices" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"mdadm called with"*"--force"* ]]
     [[ "$output" == *"sdb1"* ]]
     [[ "$output" == *"sdc1"* ]]
 }
 
 @test "prints UID/GID summary at end" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"PUID (plex)"* ]]
     [[ "$output" == *"PGID (plex-rw)"* ]]
     [[ "$output" == *"PUID (audiobookshelf)"* ]]
 }
 
 @test "creates audiobookshelf user" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"useradd called with"*"audiobookshelf"* ]]
 }
 
 @test "creates audiobooks directory on plex01" {
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"audiobooks"* ]]
 }
 
 @test "skips plex02 when not in config" {
     jq 'del(.plex02)' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
     mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
-    run bash -c "SCRIPT_DIR='$TMPDIR' printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" != *"mkfs.ext4 called with"*"sdd1"* ]]
 }

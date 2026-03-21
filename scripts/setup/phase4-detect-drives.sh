@@ -3,7 +3,7 @@
 # Review and edit drives.json before running phase4-drives.sh.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 OUTPUT="$SCRIPT_DIR/drives.json"
 
 echo "=== Phase 4: Drive Detection ==="
@@ -40,7 +40,7 @@ while IFS= read -r line; do
     dev=$(echo "$line" | awk '{print $1}')
     [[ "$dev" == "$OS_DEV" ]] && continue
     DRIVES+=("$dev")
-done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort -k2 -rn)
+done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort --stable -k2 -rn)
 
 if [[ ${#DRIVES[@]} -lt 3 ]]; then
     echo "Error: expected at least 3 non-OS drives (plex01, raid primary, raid secondary), found ${#DRIVES[@]}."
