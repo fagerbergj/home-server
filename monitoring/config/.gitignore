@@ -1,0 +1,7 @@
+# Ignore all Netdata-generated config files
+*
+
+# Except our own
+!.gitignore
+!netdata.conf
+!diskspace.conf
