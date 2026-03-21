@@ -3,8 +3,6 @@ services:
     image: netdata/netdata:latest
     container_name: netdata
     hostname: jason-server
-    ports:
-      - "19999:19999"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
