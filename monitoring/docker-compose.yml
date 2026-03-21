@@ -19,4 +19,5 @@ services:
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt:/host/mnt:ro,rslave
     restart: unless-stopped
