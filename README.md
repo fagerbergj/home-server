@@ -8,12 +8,12 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 |---------|---------|
 | Plex Media Server | Stream movies/TV locally and remotely |
 | Minecraft Server | Self-hosted game server |
-| Photo Storage | Personal photo backup and browsing |
+| Immich | Personal photo backup and browsing with ML-powered search |
 | qBittorrent | Download torrents directly to server via web UI |
 | Audiobookshelf | Self-hosted audiobook server |
 | Watchtower | Monitors containers and restarts them if they go down |
-| Netdata | Real-time server and Docker container monitoring |
-| Ollama | Local LLM inference (Qwen2.5 Coder 7B via GPU) |
+| Netdata | Real-time server and Docker container monitoring (via Netdata Cloud) |
+| Ollama + Open WebUI | Local LLM inference via GPU |
 
 ## OS
 
