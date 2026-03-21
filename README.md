@@ -10,7 +10,9 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Minecraft Server | Self-hosted game server |
 | Photo Storage | Personal photo backup and browsing |
 | qBittorrent | Download torrents directly to server via web UI |
+| Audiobookshelf | Self-hosted audiobook server |
 | Watchtower | Monitors containers and restarts them if they go down |
+| Netdata | Real-time server and Docker container monitoring |
 | Ollama | Local LLM inference (Qwen2.5 Coder 7B via GPU) |
 
 ## OS
@@ -29,7 +31,9 @@ home-server/
 ├── photos/           # Immich photo storage
 ├── llm/              # Ollama + Open WebUI
 ├── qbittorrent/      # qBittorrent behind Mullvad VPN
+├── audiobooks/       # Audiobookshelf
 ├── watchtower/       # Container auto-restart
+├── monitoring/       # Netdata
 └── README.md
 ```
 
