@@ -13,9 +13,9 @@ Add in Nginx Proxy Manager — see [`networking/setup.md`](../networking/setup.m
 
 | Service | Domain | Port |
 |---------|--------|------|
-| Netdata | `netdata.jasonfagerberg.duckdns.org` | `19999` |
+| Netdata | `monitoring.jasonfagerberg.duckdns.org` | `19999` |
 
 ## Access
 
 - Local: `http://192.168.50.186:19999`
-- Remote: `https://netdata.jasonfagerberg.duckdns.org`
+- Remote: `https://monitoring.jasonfagerberg.duckdns.org`
