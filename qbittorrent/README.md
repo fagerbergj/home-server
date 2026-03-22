@@ -42,6 +42,12 @@ http://192.168.50.186:9117
 
 Config file for the qBittorrent plugin: `config/qBittorrent/nova3/engines/jackett.json`
 
+To write the config (file is owned by the container user):
+
+```bash
+echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee config/qBittorrent/nova3/engines/jackett.json
+```
+
 ## Changing Exit Country
 
 Edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [Mullvad server list](https://mullvad.net/servers) for options.
