@@ -25,7 +25,28 @@ docker cp Search/. qbittorrent:/config/qBittorrent/nova3/engines/
 docker restart qbittorrent
 ```
 
-## 5. Set download paths
+## 5. Configure Jackett
+
+1. Open `http://192.168.50.186:9117` and set an admin password (wrench icon)
+2. Copy the API key from the top-right corner
+3. Create the plugin config file:
+
+```bash
+cat > ~/workspace/home-server/qbittorrent/config/qBittorrent/nova3/engines/jackett.json << 'EOF'
+{
+    "api_key": "YOUR_API_KEY_HERE",
+    "url": "http://127.0.0.1:9117",
+    "tracker_first": false,
+    "thread_count": 20
+}
+EOF
+```
+
+4. In qBittorrent, install the Jackett search plugin:
+   - Go to the Search tab > **Search plugins…** > **Install a new one** > **Web link**
+   - Paste: `https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/jackett.py`
+
+## 6. Set download paths
 
 In Options > Downloads, set the default save path and per-category paths:
 

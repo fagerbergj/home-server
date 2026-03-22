@@ -32,6 +32,16 @@ In the web UI: View > Search Engine. A Search tab will appear.
 
 Plugins included: `animetosho.py`, `audiobookbay.py`, `kickasstorrents.py`, `solidtorrents.py`, `thepiratebay.py`
 
+## Jackett
+
+Jackett runs alongside qBittorrent and gluetun, routing through the VPN. It proxies searches across many torrent indexers.
+
+```
+http://192.168.50.186:9117
+```
+
+Config file for the qBittorrent plugin: `config/qBittorrent/nova3/engines/jackett.json`
+
 ## Changing Exit Country
 
 Edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [Mullvad server list](https://mullvad.net/servers) for options.
