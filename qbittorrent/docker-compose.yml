@@ -15,8 +15,23 @@ services:
       - SERVER_COUNTRIES=Netherlands
     ports:
       - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
+      - "9117:9117"   # Jackett web UI (exposed here since jackett shares this network)
       - "6881:6881"
       - "6881:6881/udp"
+    restart: unless-stopped
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    network_mode: "service:gluetun"   # all traffic routed through Gluetun
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - ./jackett/config:/config
     restart: unless-stopped
 
   qbittorrent:
