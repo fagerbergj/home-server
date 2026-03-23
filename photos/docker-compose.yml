@@ -2,6 +2,9 @@ services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:release
     container_name: immich-server
+    networks:
+      - frontend
+      - backend
     ports:
       - "2283:2283"
     env_file:
@@ -20,6 +23,8 @@ services:
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release-cuda
     container_name: immich-machine-learning
+    networks:
+      - backend
     runtime: nvidia
     deploy:
       resources:
@@ -40,11 +45,15 @@ services:
   redis:
     image: docker.io/redis:6.2-alpine
     container_name: immich-redis
+    networks:
+      - backend
     restart: unless-stopped
 
   postgres:
     image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
     container_name: immich-postgres
+    networks:
+      - backend
     env_file:
       - ../.env
     environment:
@@ -54,3 +63,8 @@ services:
     volumes:
       - ./postgres:/var/lib/postgresql/data
     restart: unless-stopped
+
+networks:
+  frontend:
+  backend:
+    internal: true
