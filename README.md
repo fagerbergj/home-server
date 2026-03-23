@@ -32,9 +32,9 @@ home-server/
 ├── minecraft/        # Minecraft NeoForge server
 ├── photos/           # Immich photo storage
 ├── llm/              # Ollama + Open WebUI
-├── qbittorrent/      # qBittorrent behind Mullvad VPN
+├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
-├── watchtower/       # Watchtower (auto-updates) + Diun (update notifications)
+├── updater/          # Watchtower (auto-updates) + Diun (update notifications)
 ├── monitoring/       # Glances + Uptime Kuma
 └── README.md
 ```

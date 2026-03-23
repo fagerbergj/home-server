@@ -3,7 +3,7 @@
 Start this last, after all other services are up:
 
 ```bash
-cd ~/workspace/home-server/watchtower
+cd ~/workspace/home-server/updater
 docker compose up -d
 ```
 
