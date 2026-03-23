@@ -19,7 +19,7 @@ docker compose up -d
 ```bash
 docker exec ollama ollama pull qwen3:4b
 docker exec ollama ollama pull gpt-oss:20b
-docker exec ollama ollama pull devstral
+docker exec ollama ollama pull carstenuhlig/omnicoder-9b:latest
 ```
 
 ## 4. Create context-capped model variants
@@ -28,10 +28,10 @@ All models default to large context windows that exceed available VRAM — cap t
 
 ```bash
 docker exec ollama sh -c 'cat > /tmp/Modelfile << EOF
-FROM devstral:latest
-PARAMETER num_ctx 65536
+FROM carstenuhlig/omnicoder-9b:latest
+PARAMETER num_ctx 131072
 EOF
-ollama create devstral-24b-64k -f /tmp/Modelfile'
+ollama create omnicoder-9b-128k -f /tmp/Modelfile'
 
 docker exec ollama sh -c 'cat > /tmp/Modelfile << EOF
 FROM gpt-oss:20b

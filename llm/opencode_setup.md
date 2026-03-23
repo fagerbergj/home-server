@@ -25,10 +25,10 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
             "output": 8192
           }
         },
-        "devstral-24b-64k": {
-          "name": "Devstral 24B (64K)",
+        "omnicoder-9b-128k": {
+          "name": "OmniCoder 9B (128K)",
           "limit": {
-            "context": 65536,
+            "context": 131072,
             "output": 8192
           }
         },
@@ -73,7 +73,7 @@ Auth is the same API key — enforced by NPM, not Ollama.
 ## Verify
 
 1. Run `opencode` in any project
-2. Run `/models` — you should see GPT-OSS 20B (32K), Devstral 24B (64K), and Qwen3 4B (32K) listed
+2. Run `/models` — you should see GPT-OSS 20B (64K), OmniCoder 9B (128K), and Qwen3 4B (32K) listed
 3. Send a test message and confirm a response
 4. Check the model loaded on GPU:
    ```bash
