@@ -12,6 +12,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | qBittorrent | Download torrents directly to server via web UI |
 | Audiobookshelf | Self-hosted audiobook server |
 | Watchtower | Auto-updates containers on a daily schedule |
+| Glances | Real-time system and Docker container monitoring |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Ollama + Open WebUI | Local LLM inference via GPU |
 
@@ -33,7 +34,7 @@ home-server/
 ├── qbittorrent/      # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── watchtower/       # Container auto-restart
-├── monitoring/       # Uptime Kuma
+├── monitoring/       # Glances + Uptime Kuma
 └── README.md
 ```
 
