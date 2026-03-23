@@ -21,7 +21,7 @@ Go to Tools > Options > Web UI > Authentication and set a strong password.
 ## 4. Copy search plugins
 
 ```bash
-docker cp Search/. qbittorrent:/config/qBittorrent/nova3/engines/
+docker cp search/. qbittorrent:/config/qBittorrent/nova3/engines/
 docker restart qbittorrent
 ```
 

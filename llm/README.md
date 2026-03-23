@@ -13,7 +13,7 @@ API: `https://llm-api.jasonfagerberg.duckdns.org`
 | Model | Tier | VRAM | Context Cap | Default For |
 |-------|------|------|-------------|-------------|
 | `qwen3-4b-32k` | Fast | ~2.5GB | 32K | Open WebUI (default) |
-| `gpt-oss-20b-32k` | Middle | ~10.5GB | 32K | OpenCode |
+| `gpt-oss-20b-64k` | Middle | ~10.5GB | 64K | OpenCode |
 | `devstral-24b-64k` | Smart | ~13.5GB | 64K | Complex coding tasks |
 
 ### Why context is capped
@@ -21,7 +21,7 @@ API: `https://llm-api.jasonfagerberg.duckdns.org`
 With ~16GB effective VRAM across both GPUs, model weights leave limited room for the KV cache (which grows with context length):
 
 - **qwen3-4b-32k** — weights only ~2.5GB, 32K fits entirely in VRAM with room to spare. Also small enough to stay loaded in VRAM alongside whichever larger model was last used.
-- **gpt-oss-20b-32k** — weights ~10.5GB, leaving ~5.5GB for KV cache. 32K context (~2.7GB KV) fits fully in VRAM.
+- **gpt-oss-20b-64k** — weights ~10.5GB, leaving ~5.5GB for KV cache. 64K context (~5.4GB KV) fits in VRAM with minimal spill to RAM (fine with 32GB).
 - **devstral-24b-64k** — weights ~13.5GB, leaving only ~2.5GB for KV cache in VRAM. 64K context (~5.4GB KV) intentionally spills ~3GB into RAM (fine with 32GB system RAM). 128K would require ~21GB KV cache — too much.
 
 All three are custom models created via Modelfile — see setup.md.
@@ -45,7 +45,7 @@ From outside your network — any tool that supports a custom OpenAI-compatible 
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
 API Key:  <your-key from NPM nginx config>
-Model:    gpt-oss-20b-32k  (or qwen3-4b-32k, devstral-24b-64k)
+Model:    gpt-oss-20b-64k  (or qwen3-4b-32k, devstral-24b-64k)
 ```
 
 > Auth is enforced by NPM's nginx config, not Ollama itself.

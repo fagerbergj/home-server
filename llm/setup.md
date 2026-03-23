@@ -35,9 +35,9 @@ ollama create devstral-24b-64k -f /tmp/Modelfile'
 
 docker exec ollama sh -c 'cat > /tmp/Modelfile << EOF
 FROM gpt-oss:20b
-PARAMETER num_ctx 32768
+PARAMETER num_ctx 65536
 EOF
-ollama create gpt-oss-20b-32k -f /tmp/Modelfile'
+ollama create gpt-oss-20b-64k -f /tmp/Modelfile'
 
 docker exec ollama sh -c 'cat > /tmp/Modelfile << EOF
 FROM qwen3:4b
@@ -64,7 +64,7 @@ Open `http://192.168.50.186:3000` in your browser.
    docker exec -it ollama ollama ps
    ```
    You should see the model listed with `100% GPU`
-3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it with `gpt-oss-20b-32k`, then confirm you can chat from a project
+3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it with `gpt-oss-20b-64k`, then confirm you can chat from a project
 4. Confirm auth is enforced at NPM — a request without the key should be rejected:
    ```bash
    curl -s -o /dev/null -w "%{http_code}" https://llm-api.jasonfagerberg.duckdns.org/v1/models

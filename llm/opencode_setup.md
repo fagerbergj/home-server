@@ -18,10 +18,10 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
         "apiKey": "{env:OLLAMA_API_KEY}"
       },
       "models": {
-        "gpt-oss-20b-32k": {
-          "name": "GPT-OSS 20B (32K)",
+        "gpt-oss-20b-64k": {
+          "name": "GPT-OSS 20B (64K)",
           "limit": {
-            "context": 32768,
+            "context": 65536,
             "output": 8192
           }
         },
@@ -42,7 +42,7 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
       }
     }
   },
-  "model": "ollama/gpt-oss-20b-32k"
+  "model": "ollama/gpt-oss-20b-64k"
 }
 ```
 
@@ -79,4 +79,4 @@ Auth is the same API key — enforced by NPM, not Ollama.
    ```bash
    ssh jason-server 'docker exec ollama ollama ps'
    ```
-   Should show `gpt-oss-20b-32k` with `100% GPU`
+   Should show `gpt-oss-20b-64k` with `100% GPU`
