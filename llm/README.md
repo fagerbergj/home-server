@@ -1,6 +1,6 @@
 # Local LLM (Ollama)
 
-Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on 2x GTX 1070 Ti. Ollama splits model layers across both GPUs (~16GB effective VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
+Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on 2x GTX 1070. Ollama splits model layers across both GPUs (~16GB effective VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
 
 ## Access
 
@@ -61,7 +61,7 @@ docker exec -it ollama ollama pull devstral
 
 ## Resource Notes
 
-- GPU inference across 2x GTX 1070 Ti (~16GB effective VRAM) — expect ~15–30 tokens/sec on small models, slower on 20B+
+- GPU inference across 2x GTX 1070 (~16GB effective VRAM) — expect ~15–30 tokens/sec on small models, slower on 20B+
 - `qwen3-4b-32k` stays loaded in VRAM alongside larger models due to its small footprint — fast responses with no load delay
 - Plex NVENC transcoding and LLM inference share the GPU but rarely overlap in practice
 - Model files are stored in `./data`
