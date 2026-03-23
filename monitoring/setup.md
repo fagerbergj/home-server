@@ -1,17 +1,10 @@
 # Monitoring — Setup
 
-## Start Netdata
+## Start
 
 ```bash
 cd ~/workspace/home-server/monitoring
 docker compose up -d
-```
-
-## Start Uptime Kuma
-
-```bash
-cd ~/workspace/home-server/monitoring
-docker compose -f uptime-kuma.yml up -d
 ```
 
 Then open `http://192.168.50.186:3001` and create your admin account.

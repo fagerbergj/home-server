@@ -23,3 +23,12 @@ services:
       - /mnt/plex02:/mnt/plex02
       - /mnt/personal01:/mnt/personal01
     restart: unless-stopped
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uptime-kuma:/app/data
+    restart: unless-stopped
