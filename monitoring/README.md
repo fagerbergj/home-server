@@ -1,17 +1,13 @@
 # Monitoring
 
-Two monitoring tools:
-
-- **Netdata** — real-time system metrics, Docker container stats, alerts. Accessed via Netdata Cloud.
-- **Uptime Kuma** — service status page showing each container up/down. Accessible at `https://status.jasonfagerberg.duckdns.org`.
+**Uptime Kuma** — service status page showing each container up/down. Accessible at `https://status.jasonfagerberg.duckdns.org`.
 
 ## Access
 
-| Tool | URL |
-|------|-----|
-| Netdata Cloud | `https://app.netdata.cloud` |
-| Uptime Kuma (local) | `http://192.168.50.186:3001` |
-| Uptime Kuma (remote) | `https://status.jasonfagerberg.duckdns.org` |
+| URL | |
+|-----|--|
+| Local | `http://192.168.50.186:3001` |
+| Remote | `https://status.jasonfagerberg.duckdns.org` |
 
 ## Updating
 

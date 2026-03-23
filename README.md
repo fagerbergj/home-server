@@ -11,8 +11,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Immich | Personal photo backup and browsing with ML-powered search |
 | qBittorrent | Download torrents directly to server via web UI |
 | Audiobookshelf | Self-hosted audiobook server |
-| Watchtower | Monitors containers and restarts them if they go down |
-| Netdata | Real-time server and Docker container monitoring (via Netdata Cloud) |
+| Watchtower | Auto-updates containers on a daily schedule |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Ollama + Open WebUI | Local LLM inference via GPU |
 
@@ -34,7 +33,7 @@ home-server/
 ├── qbittorrent/      # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── watchtower/       # Container auto-restart
-├── monitoring/       # Netdata + Uptime Kuma
+├── monitoring/       # Uptime Kuma
 └── README.md
 ```
 
