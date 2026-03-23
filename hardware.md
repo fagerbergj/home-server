@@ -6,7 +6,7 @@
 |-----------|--------|-------|
 | CPU | AMD Ryzen 5 3600 (Matisse, 6c/12t, 3.6GHz, 65W) | ⚠️ Interim — 5000-series replaces this when it cascades from main PC |
 | Motherboard | MSI B350 Tomahawk (AM4, B350 chipset) | ✅ Flashed to latest beta BIOS (Ryzen 5000 ready) |
-| RAM | 16GB DDR4 | ✅ |
+| RAM | 32GB DDR4 | ✅ Upgraded from 16GB |
 | CPU Cooler | Stock AMD Wraith | ✅ |
 | OS Drive | 480GB ADATA SU650 SSD | ✅ |
 | Personal Drive (primary) | 1TB Seagate HDD | ✅ RAID 1 primary |

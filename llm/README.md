@@ -10,18 +10,26 @@ API: `https://llm-api.jasonfagerberg.duckdns.org`
 
 ## Models
 
-| Model | VRAM | Use |
-|-------|------|-----|
-| `qwen2.5-coder:7b` | ~5GB | Small coding tasks |
-| `llama3.1:8b` | ~5GB | Chat |
-| `mistral-nemo:12b` | ~7GB | Large coding tasks |
+| Model | Tier | VRAM | Context Cap | Default For |
+|-------|------|------|-------------|-------------|
+| `qwen3-4b-32k` | Fast | ~2.5GB | 32K | Open WebUI (default) |
+| `gpt-oss-20b-32k` | Middle | ~10.5GB | 32K | OpenCode |
+| `devstral-24b-64k` | Smart | ~13.5GB | 64K | Complex coding tasks |
 
-With ~16GB effective VRAM across both GPUs, models up to ~13B run fully on GPU. Larger models (30B+) will start spilling to CPU.
+### Why context is capped
+
+With ~16GB effective VRAM across both GPUs, model weights leave limited room for the KV cache (which grows with context length):
+
+- **qwen3-4b-32k** — weights only ~2.5GB, 32K fits entirely in VRAM with room to spare. Also small enough to stay loaded in VRAM alongside whichever larger model was last used.
+- **gpt-oss-20b-32k** — weights ~10.5GB, leaving ~5.5GB for KV cache. 32K context (~2.7GB KV) fits fully in VRAM.
+- **devstral-24b-64k** — weights ~13.5GB, leaving only ~2.5GB for KV cache in VRAM. 64K context (~5.4GB KV) intentionally spills ~3GB into RAM (fine with 32GB system RAM). 128K would require ~21GB KV cache — too much.
+
+All three are custom models created via Modelfile — see setup.md.
 
 ## Chat via CLI
 
 ```bash
-docker exec -it ollama ollama run llama3.1:8b
+docker exec -it ollama ollama run qwen3-4b-32k
 ```
 
 ## API
@@ -30,32 +38,31 @@ Ollama exposes an OpenAI-compatible REST API on port 11434:
 
 ```bash
 curl http://192.168.50.186:11434/api/generate \
-  -d '{"model": "qwen3:8b", "prompt": "Hello!", "stream": false}'
+  -d '{"model": "qwen3-4b-32k", "prompt": "Hello!", "stream": false}'
 ```
 
 From outside your network — any tool that supports a custom OpenAI-compatible base URL:
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
 API Key:  <your-key from NPM nginx config>
-Model:    llama3.1:8b  (or qwen2.5-coder:7b, mistral-nemo:12b)
+Model:    gpt-oss-20b-32k  (or qwen3-4b-32k, devstral-24b-64k)
 ```
 
 > Auth is enforced by NPM's nginx config, not Ollama itself.
-
-See [npcsh_setup.md](npcsh_setup.md) for npcsh configuration.
 
 ## Managing Models
 
 ```bash
 docker exec -it ollama ollama list
-docker exec -it ollama ollama pull qwen2.5-coder:7b
-docker exec -it ollama ollama pull llama3.1:8b
-docker exec -it ollama ollama pull mistral-nemo:12b
+docker exec -it ollama ollama pull qwen3:4b
+docker exec -it ollama ollama pull gpt-oss:20b
+docker exec -it ollama ollama pull devstral
 ```
 
 ## Resource Notes
 
-- GPU inference across 2x GTX 1070 Ti (~16GB effective VRAM) — expect ~15–30 tokens/sec on 7–8B models, slower on 12B+
+- GPU inference across 2x GTX 1070 Ti (~16GB effective VRAM) — expect ~15–30 tokens/sec on small models, slower on 20B+
+- `qwen3-4b-32k` stays loaded in VRAM alongside larger models due to its small footprint — fast responses with no load delay
 - Plex NVENC transcoding and LLM inference share the GPU but rarely overlap in practice
 - Model files are stored in `./data`
 
