@@ -2,12 +2,6 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     ports:
       - "11434:11434"
     env_file:
@@ -27,14 +21,8 @@ services:
     restart: unless-stopped
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     ports:
       - "3000:8080"
     env_file:

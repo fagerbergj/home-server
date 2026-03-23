@@ -1,12 +1,7 @@
 services:
   uptime-kuma:
-    image: louislam/uptime-kuma:1
+    image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3001/"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
     ports:
       - "3001:3001"
     volumes:

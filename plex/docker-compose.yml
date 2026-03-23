@@ -15,9 +15,4 @@ services:
       - ./config:/config
       - /mnt/plex01:/mnt/plex01
       - /mnt/plex02:/mnt/plex02
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:32400/"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
     restart: unless-stopped
