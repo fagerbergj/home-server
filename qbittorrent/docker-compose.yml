@@ -2,6 +2,11 @@ services:
   gluetun:
     image: qmcgaw/gluetun:latest
     container_name: gluetun
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/v1/vpn/status"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
     cap_add:
       - NET_ADMIN
     devices:
@@ -38,6 +43,11 @@ services:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       - gluetun
     environment:

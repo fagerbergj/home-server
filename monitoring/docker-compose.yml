@@ -3,6 +3,11 @@ services:
     image: netdata/netdata:latest
     container_name: netdata
     hostname: jason-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19999/api/v1/alive"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN

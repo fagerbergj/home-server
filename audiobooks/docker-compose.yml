@@ -2,6 +2,11 @@ services:
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:latest
     container_name: audiobookshelf
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     user: "993:1002"
     environment:
       - TZ=America/Chicago

@@ -9,6 +9,11 @@ services:
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
   duckdns-updater:
