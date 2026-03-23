@@ -455,4 +455,5 @@ Start services in this order — see each directory's `setup.md` for details:
 5. [`llm/setup.md`](llm/setup.md)
 6. [`audiobooks/setup.md`](audiobooks/setup.md)
 7. [`monitoring/setup.md`](monitoring/setup.md)
-8. [`updater/setup.md`](updater/setup.md) — start this last
+8. [`passwords/setup.md`](passwords/setup.md)
+9. [`updater/setup.md`](updater/setup.md) — start this last

@@ -1,0 +1,13 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    volumes:
+      - ./data:/data
+    environment:
+      - TZ=America/Chicago
+      - DOMAIN=https://passwords.jasonfagerberg.duckdns.org
+      - SIGNUPS_ALLOWED=false   # disable after creating your account
+    ports:
+      - "8888:80"
+    restart: unless-stopped
