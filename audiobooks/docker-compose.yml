@@ -4,7 +4,7 @@ services:
     container_name: audiobookshelf
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/"]
-      interval: 30s
+      interval: 1m
       timeout: 10s
       retries: 3
     user: "993:1002"

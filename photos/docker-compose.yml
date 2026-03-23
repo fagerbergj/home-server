@@ -4,7 +4,7 @@ services:
     container_name: immich-server
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:2283/api/server-info/ping"]
-      interval: 30s
+      interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
@@ -48,7 +48,7 @@ services:
     container_name: immich-redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
     restart: unless-stopped
@@ -58,7 +58,7 @@ services:
     container_name: immich-postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
     env_file:

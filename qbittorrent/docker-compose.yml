@@ -45,7 +45,7 @@ services:
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/"]
-      interval: 30s
+      interval: 1m
       timeout: 10s
       retries: 3
     depends_on:
