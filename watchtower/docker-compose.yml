@@ -6,7 +6,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DOCKER_API_VERSION=1.40
-      - WATCHTOWER_SCHEDULE=0 0 4 * * *  # pull updates daily at 4am
+      - WATCHTOWER_SCHEDULE=0 0 8 * * *  # pull updates daily at 4am CT (8am UTC)
       - WATCHTOWER_CLEANUP=true        # clean up old images after update
       - WATCHTOWER_INCLUDE_STOPPED=false
     restart: unless-stopped
