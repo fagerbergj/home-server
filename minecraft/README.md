@@ -44,7 +44,7 @@ Key settings in `docker-compose.yml`:
 
 Full list of options: https://docker-minecraft-server.readthedocs.io
 
-With 16GB total RAM shared across OS + Plex + Immich, 4G is a reasonable default. If you add more mods and see lag, bump to `6G`.
+With 32GB RAM, 4G is a reasonable default. If you add more mods and see lag, bump to `6G`.
 
 ## Console Access
 

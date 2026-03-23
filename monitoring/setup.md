@@ -7,7 +7,23 @@ cd ~/workspace/home-server/monitoring
 docker compose up -d
 ```
 
-Then open `http://192.168.50.186:3001` and create your admin account.
+## Glances
+
+Web UI available at `http://192.168.50.186:61208`. Start/stop as needed — only uses significant CPU while the page is open.
+
+```bash
+docker compose stop glances   # when done
+docker compose start glances  # when needed
+```
+
+> Do not expose Glances externally — no auth. Use SSH tunnel for remote access:
+> ```bash
+> ssh -L 61208:localhost:61208 jason-server
+> ```
+
+## Uptime Kuma
+
+Open `http://192.168.50.186:3001` and create your admin account.
 
 ### Add Monitors
 
@@ -24,7 +40,7 @@ Add each service as an **HTTP(s)** monitor using the local IP. Do not use extern
 | Audiobookshelf | HTTP | `http://192.168.50.186:13378/` | — |
 | Minecraft | TCP Port | `192.168.50.186` | `25565` |
 
-> Do not add a Minecraft monitor if autopause is enabled — mc-monitor pings will prevent the server from pausing.
+> Do not add a Minecraft monitor if autopause is enabled — pings will prevent the server from pausing.
 
 ## Proxy Hosts
 
@@ -34,10 +50,8 @@ Add in Nginx Proxy Manager — see [`networking/setup.md`](../networking/setup.m
 |---------|--------|------|
 | Uptime Kuma | `status.jasonfagerberg.duckdns.org` | `3001` |
 
-> Netdata is accessed via Netdata Cloud — no proxy host needed.
-
 ## Access
 
+- Glances: `http://192.168.50.186:61208`
 - Uptime Kuma local: `http://192.168.50.186:3001`
 - Uptime Kuma remote: `https://status.jasonfagerberg.duckdns.org`
-- Netdata: `https://app.netdata.cloud`

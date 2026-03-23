@@ -92,4 +92,3 @@ Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do n
 
 > The API key set in `llm/.env` is the only auth layer here — keep it strong.
 
-> Netdata is accessed via Netdata Cloud — no proxy host needed.
