@@ -2,12 +2,6 @@ services:
   minecraft:
     image: itzg/minecraft-server:latest
     container_name: minecraft
-    healthcheck:
-      test: ["CMD", "mc-monitor", "status", "-host", "localhost", "-port", "25565"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 2m
     ports:
       - "0.0.0.0:25565:25565"
     environment:
