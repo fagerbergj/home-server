@@ -7,7 +7,7 @@ services:
     environment:
       - TZ=America/Chicago
       - DOMAIN=https://passwords.jasonfagerberg.duckdns.org
-      - SIGNUPS_ALLOWED=false   # disable after creating your account
+      - SIGNUPS_ALLOWED=true   # disable after creating your account
     ports:
       - "8888:80"
     restart: unless-stopped
