@@ -17,6 +17,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Uptime Kuma | Service status page — shows each container up/down |
 | Ollama + Open WebUI | Local LLM inference via GPU |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
+| AdGuard Home | Network-wide DNS ad blocker |
 
 ## OS
 
@@ -38,6 +39,7 @@ home-server/
 ├── updater/          # Watchtower (auto-updates) + Diun (update notifications)
 ├── monitoring/       # Glances + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
+├── adblock/          # AdGuard Home DNS ad blocker
 └── README.md
 ```
 
