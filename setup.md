@@ -451,8 +451,8 @@ Start services in this order — see each directory's `setup.md` for details:
 1. [`plex/setup.md`](plex/setup.md)
 2. [`minecraft/setup.md`](minecraft/setup.md)
 3. [`photos/setup.md`](photos/setup.md)
-4. [`qbittorrent/setup.md`](qbittorrent/setup.md)
+4. [`qbittorrent/setup.md`](torrent/setup.md)
 5. [`llm/setup.md`](llm/setup.md)
 6. [`audiobooks/setup.md`](audiobooks/setup.md)
 7. [`monitoring/setup.md`](monitoring/setup.md)
-8. [`watchtower/setup.md`](watchtower/setup.md) — start this last
+8. [`watchtower/setup.md`](updater/setup.md) — start this last
