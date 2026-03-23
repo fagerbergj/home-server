@@ -1,21 +1,18 @@
-# Watchtower — Setup
+# Watchtower + Diun — Setup
 
 Start this last, after all other services are up:
 
 ```bash
+cd ~/workspace/home-server/watchtower
 docker compose up -d
 ```
 
 ## Verify
 
 ```bash
-docker compose ps
+docker compose logs watchtower
+docker compose logs diun
 ```
 
-Watchtower should show as `Up`. To confirm it can see other containers:
-
-```bash
-docker logs watchtower
-```
-
-You should see it listing the running containers it's now monitoring.
+Watchtower should show `Using notifications: smtp` and its next scheduled run.
+Diun should show `Starting Diun` and its next scheduled run.

@@ -20,3 +20,26 @@ services:
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=jf.fagerberg@gmail.com
       - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${GMAIL_APP_PASSWORD}
     restart: unless-stopped
+
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    command: serve
+    volumes:
+      - ./diun:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ../.env
+    environment:
+      - TZ=America/Chicago
+      - DIUN_WATCH_SCHEDULE=0 0 8 * * 1  # check every Monday at 4am CT
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
+      - DIUN_NOTIF_MAIL_HOST=smtp.gmail.com
+      - DIUN_NOTIF_MAIL_PORT=587
+      - DIUN_NOTIF_MAIL_SSL=false
+      - DIUN_NOTIF_MAIL_USERNAME=jf.fagerberg@gmail.com
+      - DIUN_NOTIF_MAIL_PASSWORD=${GMAIL_APP_PASSWORD}
+      - DIUN_NOTIF_MAIL_FROM=jf.fagerberg@gmail.com
+      - DIUN_NOTIF_MAIL_TO=jf.fagerberg@gmail.com
+    restart: unless-stopped
