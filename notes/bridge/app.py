@@ -201,13 +201,13 @@ async def webhook(request: Request):
 
 
 @app.post("/jobs/ocr")
-async def trigger_ocr():
+async def trigger_ocr(doc_id: str | None = None):
     if not RMFAKECLOUD_USER or not RMFAKECLOUD_PASSWORD:
         raise HTTPException(
             status_code=503,
             detail="RMFAKECLOUD_USER and RMFAKECLOUD_PASSWORD must be set",
         )
-    await run_sync_and_ocr_job()
+    await run_sync_and_ocr_job(only_doc_id=doc_id)
     return {"status": "ok"}
 
 
@@ -259,7 +259,7 @@ async def download_document(
 # ── main job ──────────────────────────────────────────────────────────────────
 
 
-async def run_sync_and_ocr_job() -> None:
+async def run_sync_and_ocr_job(only_doc_id: str | None = None) -> None:
     if not RMFAKECLOUD_USER or not RMFAKECLOUD_PASSWORD:
         logger.error("RMFAKECLOUD_USER/PASSWORD not set — skipping job")
         return
@@ -286,8 +286,14 @@ async def run_sync_and_ocr_job() -> None:
     new_docs = [
         (doc, path)
         for doc, path in documents_with_paths
-        if doc["id"] not in state
-        or doc.get("lastModified", "") > state[doc["id"]].get("last_modified", "")
+        if (only_doc_id and doc["id"] == only_doc_id)
+        or (
+            not only_doc_id
+            and (
+                doc["id"] not in state
+                or doc.get("lastModified", "") > state[doc["id"]].get("last_modified", "")
+            )
+        )
     ]
 
     if not new_docs:
