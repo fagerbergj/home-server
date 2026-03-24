@@ -49,11 +49,10 @@ In Nginx Proxy Manager, add two proxy hosts:
 ## 6. Initialise CouchDB
 
 ```bash
-# Run the official init script (sets up single-node mode and _users DB)
-curl -s https://raw.githubusercontent.com/vrtmrz/obsidian-livesync/main/utils/couchdb/couchdb-init.sh | bash
+source ../.env
+curl -s https://raw.githubusercontent.com/vrtmrz/obsidian-livesync/main/utils/couchdb/couchdb-init.sh | \
+  hostname="http://localhost:5984" username="$COUCHDB_USER" password="$COUCHDB_PASSWORD" bash
 ```
-
-Or manually: visit `https://obsidian.jasonfagerberg.duckdns.org/_utils`, log in, go to **Setup → Configure as Single Node**.
 
 ## 7. Connect your reMarkable tablet
 
