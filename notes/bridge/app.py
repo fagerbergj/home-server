@@ -59,6 +59,7 @@ async def webhook(request: Request):
 
     form = await request.form()
 
+    logger.info("Headers: %s", dict(request.headers))
     logger.info("Form fields: %s", {k: str(form[k])[:80] for k in form})
     meta_raw = form.get("data") or "{}"
     try:
@@ -68,7 +69,8 @@ async def webhook(request: Request):
 
     title = str(
         meta_json.get("title") or meta_json.get("name")
-        or form.get("title") or form.get("name") or "untitled"
+        or form.get("title") or form.get("name")
+        or datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
     )
     folder_path = str(
         meta_json.get("parent") or meta_json.get("folder")
