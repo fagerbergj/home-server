@@ -56,6 +56,24 @@ services:
       - "8082:8080"
     restart: unless-stopped
 
+  smartctl-exporter:
+    image: prometheuscommunity/smartctl-exporter:latest
+    container_name: smartctl-exporter
+    privileged: true
+    ports:
+      - "9633:9633"
+    restart: unless-stopped
+
+  nvidia-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:latest
+    container_name: nvidia-exporter
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "9835:9835"
+    restart: unless-stopped
+
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
