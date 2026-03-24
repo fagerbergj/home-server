@@ -24,10 +24,34 @@ OCR_PROMPT = (
     "Output only the transcribed text — no commentary, no explanations."
 )
 
+_GENERIC_FILENAMES = {"remarkable", "untitled", "image", "attachment", "document"}
+
 
 def sanitize(name: str) -> str:
     safe = "".join(c if c.isalnum() or c in "_-" else "_" for c in name)
     return safe.strip("_") or "untitled"
+
+
+def extract_title(meta_json: dict, attachment_filename: str | None, ocr_text: str) -> str:
+    # destinations from rmfakecloud data field
+    for dest in meta_json.get("destinations", []):
+        name = str(dest).strip()
+        if name:
+            return name
+
+    # attachment filename (skip generic names)
+    if attachment_filename:
+        stem = Path(attachment_filename).stem
+        if stem and stem.lower() not in _GENERIC_FILENAMES:
+            return stem
+
+    # first line of OCR text
+    for line in ocr_text.splitlines():
+        line = line.strip()
+        if line and len(line) <= 80:
+            return line
+
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
 
 
 @asynccontextmanager
@@ -50,7 +74,7 @@ async def webhook(request: Request):
     """
     Receives a document send from the reMarkable tablet via rmfakecloud integrations.
     rmfakecloud posts multipart/form-data with:
-      - data:       JSON string with document metadata (title, parent/folder)
+      - data:       JSON string with document metadata
       - attachment: rendered PNG image of the current sheet
     """
     content_type = request.headers.get("content-type", "")
@@ -65,19 +89,16 @@ async def webhook(request: Request):
     except json.JSONDecodeError:
         meta_json = {}
 
-    title = str(
-        meta_json.get("title") or meta_json.get("name")
-        or form.get("title") or form.get("name")
-        or datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
-    )
     folder_path = str(
         meta_json.get("parent") or meta_json.get("folder")
         or form.get("parent") or form.get("folder") or ""
     )
 
     attachment = form.get("attachment")
+    attachment_filename: str | None = None
     image_bytes: bytes | None = None
     if attachment and hasattr(attachment, "read"):
+        attachment_filename = getattr(attachment, "filename", None)
         image_bytes = await attachment.read()
     else:
         for key in form:
@@ -85,19 +106,22 @@ async def webhook(request: Request):
             if hasattr(field, "read"):
                 raw = await field.read()
                 if raw:
+                    attachment_filename = getattr(field, "filename", None)
                     image_bytes = raw
                     break
 
     if not image_bytes:
         raise HTTPException(status_code=422, detail="No image attachment found")
 
-    logger.info("Webhook: '%s' in '%s' (%d bytes)", title, folder_path, len(image_bytes))
+    logger.info("Webhook: received %d bytes (folder: '%s')", len(image_bytes), folder_path)
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
-            await ocr_and_write(client, title, folder_path, [image_bytes])
+            title = await ocr_and_write(
+                client, meta_json, attachment_filename, folder_path, [image_bytes]
+            )
         except Exception as exc:
-            logger.error("OCR failed for '%s': %s", title, exc)
+            logger.error("OCR failed: %s", exc)
             raise HTTPException(status_code=500, detail=str(exc))
 
     return {"status": "ok", "title": title}
@@ -105,10 +129,11 @@ async def webhook(request: Request):
 
 async def ocr_and_write(
     client: httpx.AsyncClient,
-    title: str,
+    meta_json: dict,
+    attachment_filename: str | None,
     folder_path: str,
     page_images: list[bytes],
-) -> None:
+) -> str:
     page_texts: list[str] = []
     for i, img_bytes in enumerate(page_images):
         image_b64 = base64.b64encode(img_bytes).decode("utf-8")
@@ -129,6 +154,8 @@ async def ocr_and_write(
         logger.info("  page %d: %d chars", i + 1, len(page_texts[-1]))
 
     ocr_text = "\n\n---\n\n".join(page_texts)
+    title = extract_title(meta_json, attachment_filename, ocr_text)
+    logger.info("Title: '%s'", title)
 
     safe_folder = (
         Path(*[sanitize(part) for part in Path(folder_path).parts])
@@ -140,7 +167,7 @@ async def ocr_and_write(
 
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     md = f"""---
-title: "{sanitize(title)}"
+title: "{title}"
 date: {date_str}
 source: remarkable
 pages: {len(page_images)}
@@ -150,3 +177,4 @@ pages: {len(page_images)}
 """
     (out_dir / f"{sanitize(title)}.md").write_text(md, encoding="utf-8")
     logger.info("Written: %s", out_dir / f"{sanitize(title)}.md")
+    return title
