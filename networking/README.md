@@ -11,8 +11,8 @@ Internet
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich     (2283)
     │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI (3000)
     │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API (11434)
-    │                      ──► books.jasonfagerberg.duckdns.org      ──► Audiobookshelf (13378)
-    │                      ──► status.jasonfagerberg.duckdns.org    ──► Uptime Kuma    (3001)
+    │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf (13378)
+    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma    (3001)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```

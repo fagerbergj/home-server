@@ -33,7 +33,7 @@ After the wizard completes AdGuard moves to port 80 inside the container — the
 | Domain | `adblock.jasonfagerberg.duckdns.org` |
 | Scheme | `http` |
 | Forward Host | `192.168.50.186` |
-| Forward Port | `3002` |
+| Forward Port | `3003` |
 | SSL | `*.jasonfagerberg.duckdns.org`, force SSL |
 | WebSockets | Yes |
 
