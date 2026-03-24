@@ -24,10 +24,11 @@ Steps:
 Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
 
 Drive assignments going into the build:
-- **480GB ADATA SSD** → OS drive (Ubuntu Server 24.04 LTS + Docker)
-- **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01`
-- **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01`
-- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
+- **480GB ADATA SSD** → OS drive (Ubuntu Server 24.04 LTS + Docker) — `sda`
+- **596GB Hitachi HDD** → `/mnt/plex02` (non-critical/re-downloadable media) — `sdb`
+- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV) — `sdc`
+- **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01` — `sdd`
+- **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01` — `sde`
 
 ---
 
