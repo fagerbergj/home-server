@@ -3,14 +3,18 @@ import io
 import json
 import logging
 import os
+import zipfile
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+import cairosvg
 import httpx
 import pypdfium2 as pdfium
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, HTTPException, Request
+from rmscene import read_tree
+from rmc.exporters.svg import tree_to_svg
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,6 +67,52 @@ def pdf_to_images(pdf_bytes: bytes) -> list[bytes]:
         buf = io.BytesIO()
         pil_image.save(buf, format="PNG")
         images.append(buf.getvalue())
+    return images
+
+
+def rm_bytes_to_png(rm_bytes: bytes) -> bytes:
+    """Render a single .rm page to PNG via SVG."""
+    tree = read_tree(io.BytesIO(rm_bytes))
+    svg_buf = io.StringIO()
+    tree_to_svg(tree, svg_buf)
+    return cairosvg.svg2png(bytestring=svg_buf.getvalue().encode(), scale=2.0)
+
+
+def rmdoc_to_images(rmdoc_bytes: bytes) -> list[bytes]:
+    """Extract .rm pages from an rmdoc ZIP and render each to PNG."""
+    with zipfile.ZipFile(io.BytesIO(rmdoc_bytes)) as zf:
+        names = zf.namelist()
+
+        # Determine page order from the .content JSON if present
+        page_ids: list[str] = []
+        content_files = [n for n in names if n.endswith(".content")]
+        if content_files:
+            try:
+                content = json.loads(zf.read(content_files[0]))
+                # Newer format: cPages.pages[].id; older: pages[]
+                cpages = content.get("cPages", {}).get("pages", [])
+                if cpages:
+                    page_ids = [p["id"] for p in cpages if "id" in p]
+                else:
+                    page_ids = content.get("pages", [])
+            except Exception:
+                pass
+
+        rm_files = [n for n in names if n.endswith(".rm")]
+        if page_ids:
+            stem_to_path = {Path(n).stem: n for n in rm_files}
+            ordered = [stem_to_path[pid] for pid in page_ids if pid in stem_to_path]
+            rm_files = ordered if ordered else sorted(rm_files)
+        else:
+            rm_files = sorted(rm_files)
+
+        images = []
+        for rm_name in rm_files:
+            try:
+                images.append(rm_bytes_to_png(zf.read(rm_name)))
+            except Exception as exc:
+                logger.warning("Could not render page %s: %s", rm_name, exc)
+
     return images
 
 
@@ -194,12 +244,12 @@ async def list_documents(client: httpx.AsyncClient, token: str) -> dict:
     return resp.json()
 
 
-async def download_document_pdf(
-    client: httpx.AsyncClient, token: str, doc_id: str
+async def download_document(
+    client: httpx.AsyncClient, token: str, doc_id: str, fmt: str
 ) -> bytes:
     resp = await client.get(
         f"{RMFAKECLOUD_URL}/ui/api/documents/{doc_id}",
-        params={"type": "pdf"},
+        params={"type": fmt},
         headers={"Authorization": f"Bearer {token}"},
     )
     resp.raise_for_status()
@@ -273,9 +323,19 @@ async def process_document(
     folder_path: str,
 ) -> None:
     logger.info("Downloading '%s' as PDF", title)
-    pdf_bytes = await download_document_pdf(client, token, doc_id)
-    logger.info("Converting PDF to images (%d bytes)", len(pdf_bytes))
-    page_images = pdf_to_images(pdf_bytes)
+    pdf_bytes = await download_document(client, token, doc_id, "pdf")
+
+    if pdf_bytes:
+        logger.info("Converting PDF to images (%d bytes)", len(pdf_bytes))
+        page_images = pdf_to_images(pdf_bytes)
+    else:
+        logger.info("PDF empty for '%s', falling back to rmdoc rendering", title)
+        rmdoc_bytes = await download_document(client, token, doc_id, "rmdoc")
+        page_images = rmdoc_to_images(rmdoc_bytes)
+
+    if not page_images:
+        raise ValueError(f"No pages rendered for '{title}'")
+
     await process_document_images(client, title, folder_path, page_images)
 
 
