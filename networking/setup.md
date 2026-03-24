@@ -91,14 +91,13 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Service | Domain | Scheme | Forward Host | Port | Websockets | SSL cert |
 |---------|--------|--------|--------------|------|------------|----------|
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
-
-| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
-| Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Grafana | `dashboard.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3004` | No | `*.jasonfagerberg.duckdns.org` |
 | Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
+| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Uptime Kuma | `status.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3001` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Grafana | `dashboard.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3004` | No | `*.jasonfagerberg.duckdns.org` |
+| Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
