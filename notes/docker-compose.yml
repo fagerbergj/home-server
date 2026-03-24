@@ -27,7 +27,7 @@ services:
     volumes:
       - /mnt/personal01/obsidian-vault:/vault
     networks:
-      - default
+      - notes_default
       - llm_default
     depends_on:
       - rmfakecloud
@@ -49,5 +49,7 @@ services:
     restart: unless-stopped
 
 networks:
+  notes_default:
+    external: false
   llm_default:
     external: true
