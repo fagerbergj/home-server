@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import json
 import logging
 import os
@@ -16,8 +15,9 @@ logger = logging.getLogger(__name__)
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 OCR_MODEL = os.environ.get("OCR_MODEL", "glm-ocr")
 VAULT_PATH = Path(os.environ.get("VAULT_PATH", "/vault"))
-COUCHDB_URL = os.environ.get("COUCHDB_URL", "http://couchdb:5984")
-COUCHDB_DB = os.environ.get("COUCHDB_DB", "obsidian")
+OPENWEBUI_URL = os.environ.get("OPENWEBUI_URL", "http://open-webui:3000")
+OPENWEBUI_API_KEY = os.environ.get("OPENWEBUI_API_KEY", "")
+OPENWEBUI_KNOWLEDGE_ID = os.environ.get("OPENWEBUI_KNOWLEDGE_ID", "")
 
 NOTES_DIR = VAULT_PATH / "remarkable"
 
@@ -38,19 +38,16 @@ def sanitize(name: str) -> str:
 
 
 def extract_title(meta_json: dict, attachment_filename: str | None, ocr_text: str) -> str:
-    # destinations from rmfakecloud data field
     for dest in meta_json.get("destinations", []):
         name = str(dest).strip()
         if name:
             return name
 
-    # attachment filename (skip generic names)
     if attachment_filename:
         stem = Path(attachment_filename).stem
         if stem and stem.lower() not in _GENERIC_FILENAMES:
             return stem
 
-    # first line of OCR text
     for line in ocr_text.splitlines():
         line = line.strip()
         if line and len(line) <= 80:
@@ -59,54 +56,31 @@ def extract_title(meta_json: dict, attachment_filename: str | None, ocr_text: st
     return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
 
 
-def livesync_chunk_id(content: str) -> str:
-    """Compute LiveSync chunk ID: h: + sha1(content + '-' + len(content))"""
-    data = f"{content}-{len(content)}".encode("utf-8")
-    return "h:" + hashlib.sha1(data).hexdigest()
+async def publish_to_openwebui(client: httpx.AsyncClient, filename: str, content: str) -> None:
+    if not OPENWEBUI_API_KEY or not OPENWEBUI_KNOWLEDGE_ID:
+        logger.warning("OPENWEBUI_API_KEY or OPENWEBUI_KNOWLEDGE_ID not set — skipping")
+        return
 
+    headers = {"Authorization": f"Bearer {OPENWEBUI_API_KEY}"}
 
-def livesync_doc_id(vault_path: str) -> str:
-    """Compute LiveSync document _id from vault-relative path."""
-    if vault_path.startswith("_"):
-        return "/" + vault_path
-    return vault_path
+    # Upload file
+    upload = await client.post(
+        f"{OPENWEBUI_URL}/api/v1/files/",
+        headers=headers,
+        files={"file": (filename, content.encode(), "text/markdown")},
+    )
+    upload.raise_for_status()
+    file_id = upload.json()["id"]
+    logger.info("Open WebUI: file uploaded %s -> %s", filename, file_id)
 
-
-async def publish_to_livesync(client: httpx.AsyncClient, vault_path: str, content: str, now_ms: int) -> None:
-    """Push a note into CouchDB in Self-hosted LiveSync format."""
-    cid = livesync_chunk_id(content)
-    doc_id = livesync_doc_id(vault_path)
-    base = f"{COUCHDB_URL}/{COUCHDB_DB}"
-
-    # Upsert chunk (skip if already exists — content-addressed so identical content = same ID)
-    chunk_resp = await client.get(f"{base}/{cid}")
-    if chunk_resp.status_code == 404:
-        r = await client.put(f"{base}/{cid}", json={"_id": cid, "type": "leaf", "data": content})
-        r.raise_for_status()
-        logger.info("CouchDB: chunk %s created", cid[:16])
-    elif chunk_resp.is_error:
-        chunk_resp.raise_for_status()
-
-    # Upsert metadata doc
-    meta_doc: dict = {
-        "_id": doc_id,
-        "path": vault_path,
-        "type": "plain",
-        "children": [cid],
-        "ctime": now_ms,
-        "mtime": now_ms,
-        "size": len(content.encode("utf-8")),
-        "eden": {},
-    }
-    existing = await client.get(f"{base}/{doc_id}")
-    if existing.status_code == 200:
-        meta_doc["_rev"] = existing.json()["_rev"]
-    elif existing.is_error and existing.status_code != 404:
-        existing.raise_for_status()
-
-    r = await client.put(f"{base}/{doc_id}", json=meta_doc)
-    r.raise_for_status()
-    logger.info("CouchDB: %s upserted", vault_path)
+    # Add to knowledge collection
+    add = await client.post(
+        f"{OPENWEBUI_URL}/api/v1/knowledge/{OPENWEBUI_KNOWLEDGE_ID}/file/add",
+        headers={**headers, "Content-Type": "application/json"},
+        json={"file_id": file_id},
+    )
+    add.raise_for_status()
+    logger.info("Open WebUI: added to knowledge collection")
 
 
 @asynccontextmanager
@@ -218,10 +192,7 @@ async def ocr_and_write(
         else Path()
     )
 
-    now = datetime.now(timezone.utc)
-    date_str = now.strftime("%Y-%m-%d")
-    now_ms = int(now.timestamp() * 1000)
-
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     md = f"""---
 title: "{title}"
 date: {date_str}
@@ -232,17 +203,15 @@ pages: {len(page_images)}
 {ocr_text}
 """
 
-    # Write to disk (vault backup)
     out_dir = NOTES_DIR / safe_folder
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"{sanitize(title)}.md").write_text(md, encoding="utf-8")
-    logger.info("Written: %s", out_dir / f"{sanitize(title)}.md")
+    safe_title = sanitize(title)
+    (out_dir / f"{safe_title}.md").write_text(md, encoding="utf-8")
+    logger.info("Written: %s", out_dir / f"{safe_title}.md")
 
-    # Push to CouchDB for LiveSync
-    vault_path = str(Path("remarkable") / safe_folder / f"{sanitize(title)}.md")
     try:
-        await publish_to_livesync(client, vault_path, md, now_ms)
+        await publish_to_openwebui(client, f"{safe_title}.md", md)
     except Exception as exc:
-        logger.error("CouchDB publish failed: %s", exc)
+        logger.error("Open WebUI publish failed: %s", exc)
 
     return title
