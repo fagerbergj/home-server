@@ -24,6 +24,8 @@ services:
     environment:
       - OCR_MODEL=${OCR_MODEL:-glm-ocr}
       - VAULT_PATH=/vault
+      - COUCHDB_URL=http://${COUCHDB_USER}:${COUCHDB_PASSWORD}@couchdb:5984
+      - COUCHDB_DB=obsidian
     volumes:
       - /mnt/personal01/obsidian-vault:/vault
     networks:
@@ -31,6 +33,7 @@ services:
       - llm_default
     depends_on:
       - rmfakecloud
+      - couchdb
     restart: unless-stopped
 
   couchdb:
