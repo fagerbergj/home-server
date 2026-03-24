@@ -12,6 +12,7 @@ audiobooks/config/
 audiobooks/metadata/
 monitoring/grafana/
 monitoring/cache/
+monitoring/lib/
 monitoring/prometheus/data/
 monitoring/uptime-kuma/
 networking/data/
