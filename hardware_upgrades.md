@@ -8,7 +8,7 @@ Replace the Sandy Bridge platform with AM4 hardware already owned.
 | Component | Details |
 |-----------|---------|
 | Motherboard | MSI B350 Tomahawk |
-| RAM | 16GB DDR4 |
+| RAM | 32GB DDR4 | ✅ Upgraded from 16GB |
 | CPU Cooler | Stock AMD Wraith (unused, stored in CPU box) |
 
 ### CPU strategy
