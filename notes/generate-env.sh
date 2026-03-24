@@ -24,4 +24,5 @@ set_secret() {
 touch "$ENV_FILE"
 
 set_secret RMFAKECLOUD_JWT_SECRET_KEY "$(openssl rand -hex 32)"
+set_secret COUCHDB_USER "admin"
 set_secret COUCHDB_PASSWORD "$(openssl rand -hex 24)"
