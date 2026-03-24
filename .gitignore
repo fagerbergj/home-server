@@ -6,3 +6,15 @@ plex/config/
 minecraft/data/
 photos/config/
 llm/config/
+adblock/conf/
+adblock/work/
+audiobooks/config/
+audiobooks/metadata/
+monitoring/grafana/
+monitoring/cache/
+monitoring/prometheus/data/
+monitoring/uptime-kuma/
+networking/data/
+networking/letsencrypt/
+passwords/data/
+updater/diun/
