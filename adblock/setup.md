@@ -18,6 +18,8 @@ cd ~/workspace/home-server/adblock
 docker compose up -d
 ```
 
+> If you see `address already in use` on port 53, `systemd-resolved` wasn't fully stopped — re-run step 1 and try again.
+
 ## 3. Run the setup wizard
 
 Open `http://192.168.50.186:3002` and follow the wizard. Set your admin username and password.
@@ -45,4 +47,14 @@ Leave DNS Server 2 as `1.1.1.1` as a fallback in case AdGuard goes down.
 
 ## 6. Verify
 
-On any device, visit a site that normally shows ads. Check the AdGuard query log to confirm DNS queries are being processed.
+From the server:
+```bash
+dig @192.168.50.186 doubleclick.net
+```
+Should return `0.0.0.0` if blocking is working.
+
+From any device after pointing router DNS at the server:
+```bash
+nslookup doubleclick.net
+```
+Should return `0.0.0.0` or `NXDOMAIN`. Check the AdGuard **Query Log** to confirm DNS queries are flowing through.
