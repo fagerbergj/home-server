@@ -1,6 +1,6 @@
 # Notes — Setup
 
-reMarkable cloud replacement + OCR pipeline + Obsidian sync.
+reMarkable cloud replacement + OCR pipeline + Open WebUI knowledge base.
 
 ## 1. Pull the OCR model into Ollama
 
@@ -25,34 +25,32 @@ sudo chown -R jason-server:personal-rw /mnt/personal01/obsidian-vault
 sudo chmod -R 2775 /mnt/personal01/obsidian-vault
 ```
 
-## 4. Start the stack
+## 4. Set up Open WebUI knowledge collection
+
+1. In Open WebUI → **Workspace → Knowledge** → create a new collection called `remarkable`
+2. Copy the collection ID from the URL
+3. In Open WebUI → **Settings → Account → API Keys** → create an API key
+4. Add to `.env`:
+   ```bash
+   export OPENWEBUI_API_KEY=sk-...
+   export OPENWEBUI_KNOWLEDGE_ID=<id from URL>
+   ```
+
+## 5. Start the stack
 
 ```bash
 cd ~/workspace/home-server/notes
 docker compose up -d
 ```
 
-## 5. Configure NPM proxy hosts
+## 6. Configure NPM proxy host
 
-In Nginx Proxy Manager, add two proxy hosts:
+In Nginx Proxy Manager, add a proxy host:
 
 **reMarkable cloud:**
 - Domain: `remarkable.jasonfagerberg.duckdns.org`
 - Forward Host: `192.168.50.186`, Port: `3005`
 - WebSockets: on, Force SSL: on
-
-**Obsidian sync:**
-- Domain: `obsidian.jasonfagerberg.duckdns.org`
-- Forward Host: `192.168.50.186`, Port: `5984`
-- WebSockets: on, Force SSL: on
-
-## 6. Initialize CouchDB
-
-```bash
-source ../.env
-curl -s https://raw.githubusercontent.com/vrtmrz/obsidian-livesync/main/utils/couchdb/couchdb-init.sh | \
-  hostname="http://localhost:5984" username="$COUCHDB_USER" password="$COUCHDB_PASSWORD" bash
-```
 
 ## 7. Connect your reMarkable tablet
 
@@ -68,34 +66,15 @@ In the rmfakecloud web UI, add a webhook integration pointing to the bridge:
 - URL: `http://remarkable-bridge:8000/webhook`
 - Type: Webhook
 
-On the tablet, tap the **Share** icon on any notebook — the integration will appear as a send target. Tapping it sends the note image to the bridge, which OCRs it via Ollama and writes the result to `/mnt/personal01/obsidian-vault/remarkable/`.
+On the tablet, tap the **Share** icon on any notebook — the integration will appear as a send target. Tapping it sends the note image to the bridge, which OCRs it via Ollama and uploads it to the Open WebUI knowledge collection.
 
-## 9. Set up Obsidian LiveSync
+## 9. Query your notes in Open WebUI
 
-In Obsidian on each device:
-
-1. **Community Plugins** → Browse → search **Self-hosted LiveSync** → Install → Enable
-2. In the plugin settings:
-   - Server URI: `https://obsidian.jasonfagerberg.duckdns.org`
-   - Username / Password: the CouchDB credentials from step 2
-   - Database: `obsidian`
-3. Complete the setup wizard
-
-## 10. Set up the Obsidian Ollama plugin
-
-In Obsidian:
-
-1. **Community Plugins** → Browse → search **Ollama** (by hinterdupfinger) → Install → Enable
-2. In plugin settings, change the URL to:
-   `https://llm-api.jasonfagerberg.duckdns.org`
-3. Set the API key to match `OLLAMA_API_KEY` in your `.env`
+In any Open WebUI chat, click the knowledge icon and select the `remarkable` collection. You can now ask questions or request summaries across all your notes using any Ollama model.
 
 ## Monitoring
 
 ```bash
 # View bridge logs
 docker logs remarkable-bridge -f
-
-# Check CouchDB health
-curl https://obsidian.jasonfagerberg.duckdns.org/
 ```

@@ -8,7 +8,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 |---------|---------|
 | AdGuard Home | Network-wide DNS ad blocker |
 | Audiobookshelf | Self-hosted audiobook server |
-| CouchDB (LiveSync) | Self-hosted Obsidian sync backend |
+| CouchDB | reMarkable notes backup (local vault) |
 | Diun | Watches excluded images and emails when updates are available |
 | Grafana + Prometheus | System and container metrics dashboard |
 | Immich | Personal photo backup and browsing with ML-powered search |
@@ -16,7 +16,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Ollama + Open WebUI | Local LLM inference via GPU |
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
-| remarkable-bridge | Queues note images and OCRs them nightly via Ollama |
+| remarkable-bridge | OCRs reMarkable notes via Ollama and indexes them in Open WebUI |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
@@ -43,7 +43,7 @@ home-server/
 ├── monitoring/       # Grafana + Prometheus + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
-├── notes/            # rmfakecloud + OCR bridge + CouchDB (Obsidian sync)
+├── notes/            # rmfakecloud + OCR bridge + Open WebUI knowledge base
 └── README.md
 ```
 

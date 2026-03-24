@@ -13,6 +13,7 @@ Internet
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
     │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
+    │                      ──► remarkable.jasonfagerberg.duckdns.org  ──► rmfakecloud     (3005)
     │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma     (3001)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
@@ -32,6 +33,7 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 | Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 | Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Plex | `https://plex.jasonfagerberg.duckdns.org` |
+| rmfakecloud | `https://remarkable.jasonfagerberg.duckdns.org` |
 | Uptime Kuma | `https://status.jasonfagerberg.duckdns.org` |
 
 ## Internal Only

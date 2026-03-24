@@ -94,7 +94,6 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Grafana | `dashboard.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3004` | No | `*.jasonfagerberg.duckdns.org` |
 | Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
-| Obsidian sync | `obsidian.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `5984` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |
