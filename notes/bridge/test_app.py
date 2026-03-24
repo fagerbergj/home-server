@@ -288,11 +288,26 @@ async def test_sync_mirrors_folder_structure(tmp_vault, fake_pdf_images):
 
 
 @pytest.mark.asyncio
+async def test_sync_reprocesses_updated_document(tmp_vault, fake_pdf_images):
+    import app as bridge
+
+    bridge.STATE_FILE.write_text(json.dumps({
+        "doc-1": {"title": "Note", "processed_at": "...", "folder_path": "", "last_modified": "2026-01-01T00:00:00Z"},
+    }))
+    doc = {**make_doc("doc-1", "Note"), "lastModified": "2026-06-01T00:00:00Z"}
+    tree = make_tree([doc])
+    with fake_http(tree):
+        await bridge.run_sync_and_ocr_job()
+
+    assert any(bridge.NOTES_DIR.glob("*.md"))
+
+
+@pytest.mark.asyncio
 async def test_sync_skips_already_processed(tmp_vault, fake_pdf_images):
     import app as bridge
 
     bridge.STATE_FILE.write_text(
-        json.dumps({"doc-1": {"title": "Note", "processed_at": "...", "folder_path": ""}})
+        json.dumps({"doc-1": {"title": "Note", "processed_at": "...", "folder_path": "", "last_modified": "2026-06-01T00:00:00Z"}})
     )
     tree = make_tree([make_doc("doc-1", "Note")])
     with fake_http(tree):

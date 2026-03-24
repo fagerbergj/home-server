@@ -233,7 +233,12 @@ async def run_sync_and_ocr_job() -> None:
     state = load_state()
 
     documents_with_paths = flatten_tree(all_entries)
-    new_docs = [(doc, path) for doc, path in documents_with_paths if doc["id"] not in state]
+    new_docs = [
+        (doc, path)
+        for doc, path in documents_with_paths
+        if doc["id"] not in state
+        or doc.get("lastModified", "") > state[doc["id"]].get("last_modified", "")
+    ]
 
     if not new_docs:
         logger.info("Sync+OCR job: no new documents")
@@ -252,6 +257,7 @@ async def run_sync_and_ocr_job() -> None:
                     "title": title,
                     "processed_at": datetime.now(timezone.utc).isoformat(),
                     "folder_path": folder_path,
+                    "last_modified": doc.get("lastModified", ""),
                 }
                 save_state(state)
                 logger.info("Processed: '%s' (%s)", title, doc_id)
