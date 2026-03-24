@@ -18,6 +18,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Ollama + Open WebUI | Local LLM inference via GPU |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
 | AdGuard Home | Network-wide DNS ad blocker |
+| Nextcloud | Self-hosted file storage and sync with AI assistant |
 
 ## OS
 
@@ -40,6 +41,7 @@ home-server/
 ├── monitoring/       # Glances + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
+├── files/            # Nextcloud file storage
 └── README.md
 ```
 

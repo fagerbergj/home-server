@@ -457,4 +457,5 @@ Start services in this order — see each directory's `setup.md` for details:
 7. [`monitoring/setup.md`](monitoring/setup.md)
 8. [`passwords/setup.md`](passwords/setup.md)
 9. [`adblock/setup.md`](adblock/setup.md)
-10. [`updater/setup.md`](updater/setup.md) — start this last
+10. [`files/setup.md`](files/setup.md)
+11. [`updater/setup.md`](updater/setup.md) — start this last

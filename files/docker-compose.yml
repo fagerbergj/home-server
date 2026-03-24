@@ -1,0 +1,40 @@
+services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    depends_on:
+      - nextcloud-db
+      - nextcloud-redis
+    volumes:
+      - ./data:/var/www/html
+    environment:
+      - TZ=America/Chicago
+      - POSTGRES_HOST=nextcloud-db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - REDIS_HOST=nextcloud-redis
+      - NEXTCLOUD_TRUSTED_DOMAINS=files.jasonfagerberg.duckdns.org
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  nextcloud-db:
+    image: postgres:16
+    container_name: nextcloud-db
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+    restart: unless-stopped
+
+  nextcloud-redis:
+    image: redis:alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+
+networks:
+  default:
+    name: files_network
