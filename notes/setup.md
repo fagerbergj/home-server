@@ -6,7 +6,7 @@ reMarkable cloud replacement + OCR pipeline + Obsidian sync.
 
 ```bash
 cd ~/workspace/home-server/llm
-docker compose exec ollama ollama pull richardyoung/olmocr2:7b-q8
+docker compose exec ollama ollama pull qwen2.5vl:7b
 ```
 
 ## 2. Generate secrets
@@ -17,18 +17,7 @@ notes/generate-env.sh
 
 This generates `RMFAKECLOUD_JWT_SECRET_KEY` and `COUCHDB_PASSWORD`. Safe to re-run — skips keys that are already set.
 
-## 3. Set bridge credentials in .env
-
-The bridge polls rmfakecloud using the same account you register on the web UI. Add these to `.env`:
-
-```bash
-export RMFAKECLOUD_USER=your-email@example.com
-export RMFAKECLOUD_PASSWORD=your-chosen-password
-```
-
-These must match the credentials you use to log in at `https://remarkable.jasonfagerberg.duckdns.org`.
-
-## 4. Create the vault directory
+## 3. Create the vault directory
 
 ```bash
 sudo mkdir -p /mnt/personal01/obsidian-vault/remarkable
@@ -36,14 +25,14 @@ sudo chown -R jason-server:personal-rw /mnt/personal01/obsidian-vault
 sudo chmod -R 2775 /mnt/personal01/obsidian-vault
 ```
 
-## 5. Start the stack
+## 4. Start the stack
 
 ```bash
 cd ~/workspace/home-server/notes
 docker compose up -d
 ```
 
-## 6. Configure NPM proxy hosts
+## 5. Configure NPM proxy hosts
 
 In Nginx Proxy Manager, add two proxy hosts:
 
@@ -57,7 +46,7 @@ In Nginx Proxy Manager, add two proxy hosts:
 - Forward Host: `192.168.50.186`, Port: `5984`
 - WebSockets: on, Force SSL: on
 
-## 7. Initialize CouchDB
+## 6. Initialize CouchDB
 
 ```bash
 source ../.env
@@ -65,30 +54,23 @@ curl -s https://raw.githubusercontent.com/vrtmrz/obsidian-livesync/main/utils/co
   hostname="http://localhost:5984" username="$COUCHDB_USER" password="$COUCHDB_PASSWORD" bash
 ```
 
-## 8. Connect your reMarkable tablet
+## 7. Connect your reMarkable tablet
 
 1. Install [rmfakecloud-proxy](https://github.com/ddvk/rmfakecloud-proxy) on your tablet (requires enabling developer mode)
 2. In the proxy config, set the server URL to `https://remarkable.jasonfagerberg.duckdns.org`
 3. Visit `https://remarkable.jasonfagerberg.duckdns.org` — log in and generate a one-time code
 4. On the tablet, enter the code to register
 
-## 9. Test OCR immediately
+## 8. Configure the webhook integration
 
-After syncing a note from the tablet, trigger OCR without waiting for 2am:
+In the rmfakecloud web UI, add a webhook integration pointing to the bridge:
 
-```bash
-curl -X POST http://localhost:3006/jobs/ocr
-```
+- URL: `http://remarkable-bridge:8000/webhook`
+- Type: Webhook
 
-The bridge polls rmfakecloud for any documents not yet processed, downloads each as PDF,
-converts pages to images, and runs olmOCR on each. OCR runs nightly at 2am automatically.
+On the tablet, tap the **Share** icon on any notebook — the integration will appear as a send target. Tapping it sends the note image to the bridge, which OCRs it via Ollama and writes the result to `/mnt/personal01/obsidian-vault/remarkable/`.
 
-Check the output:
-```bash
-ls /mnt/personal01/obsidian-vault/remarkable/
-```
-
-## 10. Set up Obsidian LiveSync
+## 9. Set up Obsidian LiveSync
 
 In Obsidian on each device:
 
@@ -99,7 +81,7 @@ In Obsidian on each device:
    - Database: `obsidian`
 3. Complete the setup wizard
 
-## 11. Set up the Obsidian Ollama plugin
+## 10. Set up the Obsidian Ollama plugin
 
 In Obsidian:
 
@@ -111,9 +93,6 @@ In Obsidian:
 ## Monitoring
 
 ```bash
-# How many documents have been OCR'd
-curl http://localhost:3006/queue
-
 # View bridge logs
 docker logs remarkable-bridge -f
 
