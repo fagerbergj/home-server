@@ -366,6 +366,8 @@ async def process_document_images(
                 "stream": False,
             },
         )
+        if resp.is_error:
+            logger.error("Ollama error %s: %s", resp.status_code, resp.text)
         resp.raise_for_status()
         text = resp.json().get("response", "").strip()
         page_texts.append(text or "(no text recognised)")
