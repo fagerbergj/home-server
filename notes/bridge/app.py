@@ -59,8 +59,6 @@ async def webhook(request: Request):
 
     form = await request.form()
 
-    logger.info("Headers: %s", dict(request.headers))
-    logger.info("Form fields: %s", {k: str(form[k])[:80] for k in form})
     meta_raw = form.get("data") or "{}"
     try:
         meta_json = json.loads(str(meta_raw))
