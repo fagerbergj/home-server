@@ -65,7 +65,7 @@ services:
     restart: unless-stopped
 
   nvidia-exporter:
-    image: utkuozdemir/nvidia_gpu_exporter:latest
+    image: ghcr.io/utkuozdemir/nvidia_gpu_exporter:latest
     container_name: nvidia-exporter
     runtime: nvidia
     environment:
