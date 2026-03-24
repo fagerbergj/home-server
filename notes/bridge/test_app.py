@@ -38,18 +38,17 @@ def client(tmp_vault):
             yield c
 
 
-def make_tree(docs: list[dict], collections: list[dict] | None = None) -> dict:
+def make_tree(entries: list[dict]) -> dict:
     """Build a fake DocumentTree response."""
-    entries = (collections or []) + docs
     return {"Entries": entries, "Trash": []}
 
 
-def make_doc(doc_id: str, name: str, parent: str = "") -> dict:
-    return {"ID": doc_id, "Name": name, "Parent": parent, "Type": "DocumentType"}
+def make_doc(doc_id: str, name: str) -> dict:
+    return {"id": doc_id, "name": name, "type": "notebook"}
 
 
-def make_col(col_id: str, name: str, parent: str = "") -> dict:
-    return {"ID": col_id, "Name": name, "Parent": parent, "Type": "CollectionType"}
+def make_folder(name: str, children: list[dict]) -> dict:
+    return {"name": name, "isFolder": True, "children": children}
 
 
 @pytest.fixture
@@ -170,39 +169,38 @@ def test_sanitize_empty_falls_back():
     assert sanitize("!!!") == "untitled"
 
 
-# ── build_folder_path ─────────────────────────────────────────────────────────
+# ── flatten_tree ──────────────────────────────────────────────────────────────
 
 
-def test_build_folder_path_root():
-    from app import build_folder_path
+def test_flatten_tree_root_doc():
+    from app import flatten_tree
 
     entries = [make_doc("d1", "Note")]
-    assert build_folder_path(entries, "") == ""
+    flat = flatten_tree(entries)
+    assert flat == [({'id': 'd1', 'name': 'Note', 'type': 'notebook'}, "")]
 
 
-def test_build_folder_path_flat():
-    from app import build_folder_path
+def test_flatten_tree_flat_folder():
+    from app import flatten_tree
 
-    entries = [make_col("c1", "Work"), make_doc("d1", "Note", parent="c1")]
-    assert build_folder_path(entries, "c1") == "Work"
-
-
-def test_build_folder_path_nested():
-    from app import build_folder_path
-
-    entries = [
-        make_col("c1", "Work"),
-        make_col("c2", "Q1", parent="c1"),
-        make_doc("d1", "Meeting", parent="c2"),
-    ]
-    assert build_folder_path(entries, "c2") == "Work/Q1"
+    entries = [make_folder("Work", [make_doc("d1", "Note")])]
+    flat = flatten_tree(entries)
+    assert flat[0][1] == "Work"
 
 
-def test_build_folder_path_unknown_parent():
-    from app import build_folder_path
+def test_flatten_tree_nested_folder():
+    from app import flatten_tree
 
-    entries = [make_doc("d1", "Note", parent="unknown-id")]
-    assert build_folder_path(entries, "unknown-id") == ""
+    entries = [make_folder("Work", [make_folder("Q1", [make_doc("d1", "Meeting")])])]
+    flat = flatten_tree(entries)
+    assert flat[0][1] == "Work/Q1"
+
+
+def test_flatten_tree_empty_folder():
+    from app import flatten_tree
+
+    entries = [make_folder("Empty", [])]
+    assert flatten_tree(entries) == []
 
 
 # ── run_sync_and_ocr_job ──────────────────────────────────────────────────────
@@ -276,10 +274,13 @@ async def test_sync_processes_new_document(tmp_vault, fake_pdf_images):
 async def test_sync_mirrors_folder_structure(tmp_vault, fake_pdf_images):
     import app as bridge
 
-    tree = make_tree(
-        docs=[make_doc("doc-1", "Standup", parent="col-2")],
-        collections=[make_col("col-1", "Work"), make_col("col-2", "Q1", parent="col-1")],
-    )
+    tree = make_tree([
+        make_folder("Work", [
+            make_folder("Q1", [
+                make_doc("doc-1", "Standup"),
+            ]),
+        ]),
+    ])
     with fake_http(tree):
         await bridge.run_sync_and_ocr_job()
 
@@ -323,7 +324,6 @@ async def test_sync_leaves_unprocessed_on_failure(tmp_vault):
         with fake_http(tree):
             await bridge.run_sync_and_ocr_job()
 
-    # doc-1 should NOT be in state — will retry next run
     state = bridge.load_state()
     assert "doc-1" not in state
 

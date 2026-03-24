@@ -66,29 +66,17 @@ def pdf_to_images(pdf_bytes: bytes) -> list[bytes]:
     return images
 
 
-def build_folder_path(entries: list[dict], parent_id: str) -> str:
-    """Walk collection entries upward to produce a slash-separated folder path."""
-    id_to_entry = {
-        (e.get("ID") or e.get("id") or ""): e for e in entries
-    }
-    parts: list[str] = []
-    current = parent_id
-    visited: set[str] = set()
-    while current and current not in visited:
-        visited.add(current)
-        entry = id_to_entry.get(current)
-        if not entry:
-            break
-        name = (
-            entry.get("Name")
-            or entry.get("name")
-            or entry.get("VissibleName")
-            or ""
-        )
-        if name:
-            parts.insert(0, name)
-        current = entry.get("Parent") or entry.get("parent") or ""
-    return "/".join(parts)
+def flatten_tree(entries: list[dict], folder_path: str = "") -> list[tuple[dict, str]]:
+    """Recursively flatten the document tree into (entry, folder_path) pairs."""
+    results = []
+    for entry in entries:
+        if entry.get("isFolder"):
+            name = entry.get("name") or ""
+            child_path = f"{folder_path}/{name}" if folder_path else name
+            results.extend(flatten_tree(entry.get("children") or [], child_path))
+        elif entry.get("type") in ("notebook", "pdf"):
+            results.append((entry, folder_path))
+    return results
 
 
 @asynccontextmanager
@@ -241,17 +229,11 @@ async def run_sync_and_ocr_job() -> None:
             logger.error("Failed to list documents: %s", exc)
             return
 
-    all_entries: list[dict] = (tree.get("Entries") or []) + (tree.get("entries") or [])
+    all_entries: list[dict] = tree.get("Entries") or []
     state = load_state()
 
-    documents = [
-        e
-        for e in all_entries
-        if (e.get("Type") or e.get("type") or "") == "DocumentType"
-    ]
-    new_docs = [
-        d for d in documents if (d.get("ID") or d.get("id") or "") not in state
-    ]
+    documents_with_paths = flatten_tree(all_entries)
+    new_docs = [(doc, path) for doc, path in documents_with_paths if doc["id"] not in state]
 
     if not new_docs:
         logger.info("Sync+OCR job: no new documents")
@@ -260,16 +242,9 @@ async def run_sync_and_ocr_job() -> None:
     logger.info("Sync+OCR job: %d new document(s) to process", len(new_docs))
 
     async with httpx.AsyncClient(timeout=300.0) as client:
-        for doc in new_docs:
-            doc_id = doc.get("ID") or doc.get("id") or ""
-            title = (
-                doc.get("Name")
-                or doc.get("name")
-                or doc.get("VissibleName")
-                or "untitled"
-            )
-            parent_id = doc.get("Parent") or doc.get("parent") or ""
-            folder_path = build_folder_path(all_entries, parent_id)
+        for doc, folder_path in new_docs:
+            doc_id = doc["id"]
+            title = doc.get("name") or "untitled"
 
             try:
                 await process_document(client, token, doc_id, title, folder_path)
