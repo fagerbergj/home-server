@@ -20,7 +20,7 @@ docker compose up -d
 | Domain | `files.jasonfagerberg.duckdns.org` |
 | Scheme | `http` |
 | Forward Host | `192.168.50.186` |
-| Forward Port | `8080` |
+| Forward Port | `8090` |
 | SSL | `*.jasonfagerberg.duckdns.org`, force SSL |
 | WebSockets | Yes |
 

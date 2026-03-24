@@ -16,7 +16,7 @@ services:
       - REDIS_HOST=nextcloud-redis
       - NEXTCLOUD_TRUSTED_DOMAINS=files.jasonfagerberg.duckdns.org
     ports:
-      - "8080:80"
+      - "8090:80"
     restart: unless-stopped
 
   nextcloud-db:
