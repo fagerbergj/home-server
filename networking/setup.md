@@ -91,7 +91,7 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Service | Domain | Scheme | Forward Host | Port | Websockets | SSL cert |
 |---------|--------|--------|--------------|------|------------|----------|
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Nextcloud | `files.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
+
 | Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Ollama API | `llm-api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `11434` | No | `*.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |

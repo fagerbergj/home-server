@@ -8,7 +8,6 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 Internet
     │
     ├── :80 / :443 ──► NPM ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
-    │                      ──► files.jasonfagerberg.duckdns.org       ──► Nextcloud       (8080)
     │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
     │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API      (11434)
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
@@ -26,7 +25,7 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 | Service | URL |
 |---------|-----|
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
-| Nextcloud | `https://files.jasonfagerberg.duckdns.org` |
+
 | Minecraft | `jasonfagerberg.duckdns.org:25565` |
 | Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
 | Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
