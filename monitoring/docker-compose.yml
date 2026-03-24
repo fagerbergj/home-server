@@ -60,6 +60,14 @@ services:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
     privileged: true
+    volumes:
+      - /dev:/dev:ro
+    command:
+      - --smartctl.device=/dev/sda
+      - --smartctl.device=/dev/sdb
+      - --smartctl.device=/dev/sdc
+      - --smartctl.device=/dev/sdd
+      - --smartctl.device=/dev/sde
     ports:
       - "9633:9633"
     restart: unless-stopped
