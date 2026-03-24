@@ -7,6 +7,18 @@ cd ~/workspace/home-server/monitoring
 docker compose up -d
 ```
 
+## Grafana
+
+Web UI at `http://192.168.50.186:3004`. Default login: `admin` / `admin` — change on first login.
+
+Dashboards (Node Exporter Full, cAdvisor) are provisioned automatically. If datasource template variables aren't replaced on first run:
+
+```bash
+sed -i 's/${DS_PROMETHEUS}/Prometheus/g' ~/workspace/home-server/monitoring/grafana-dashboards/node-exporter.json
+sed -i 's/${DS_PROMETHEUS}/Prometheus/g' ~/workspace/home-server/monitoring/grafana-dashboards/cadvisor.json
+docker compose restart grafana
+```
+
 ## Glances
 
 Web UI available at `http://192.168.50.186:61208`. Start/stop as needed — only uses significant CPU while the page is open.
