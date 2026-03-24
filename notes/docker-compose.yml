@@ -24,6 +24,9 @@ services:
     environment:
       - OCR_MODEL=${OCR_MODEL:-richardyoung/olmocr2:7b-q8}
       - VAULT_PATH=/vault
+      - RMFAKECLOUD_URL=http://rmfakecloud:3000
+      - RMFAKECLOUD_USER=${RMFAKECLOUD_USER}
+      - RMFAKECLOUD_PASSWORD=${RMFAKECLOUD_PASSWORD}
     volumes:
       - /mnt/personal01/obsidian-vault:/vault
     networks:

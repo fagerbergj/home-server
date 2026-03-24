@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 import logging
 import os
@@ -7,8 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+import pypdfium2 as pdfium
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,9 +18,12 @@ logger = logging.getLogger(__name__)
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
 OCR_MODEL = os.environ.get("OCR_MODEL", "richardyoung/olmocr2:7b-q8")
 VAULT_PATH = Path(os.environ.get("VAULT_PATH", "/vault"))
+RMFAKECLOUD_URL = os.environ.get("RMFAKECLOUD_URL", "http://rmfakecloud:3000")
+RMFAKECLOUD_USER = os.environ.get("RMFAKECLOUD_USER", "")
+RMFAKECLOUD_PASSWORD = os.environ.get("RMFAKECLOUD_PASSWORD", "")
 
-QUEUE_DIR = VAULT_PATH / "remarkable" / ".queue"
 NOTES_DIR = VAULT_PATH / "remarkable"
+STATE_FILE = NOTES_DIR / ".processed.json"
 
 OCR_PROMPT = (
     "You are an OCR engine. Transcribe all handwritten and printed text in this image "
@@ -34,12 +39,68 @@ def sanitize(name: str) -> str:
     return safe.strip("_") or "untitled"
 
 
+def load_state() -> dict:
+    if STATE_FILE.exists():
+        try:
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def save_state(state: dict) -> None:
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def pdf_to_images(pdf_bytes: bytes) -> list[bytes]:
+    """Convert each PDF page to a PNG at 2× scale (better OCR accuracy)."""
+    doc = pdfium.PdfDocument(pdf_bytes)
+    images = []
+    for page in doc:
+        bitmap = page.render(scale=2)
+        pil_image = bitmap.to_pil()
+        buf = io.BytesIO()
+        pil_image.save(buf, format="PNG")
+        images.append(buf.getvalue())
+    return images
+
+
+def build_folder_path(entries: list[dict], parent_id: str) -> str:
+    """Walk collection entries upward to produce a slash-separated folder path."""
+    id_to_entry = {
+        (e.get("ID") or e.get("id") or ""): e for e in entries
+    }
+    parts: list[str] = []
+    current = parent_id
+    visited: set[str] = set()
+    while current and current not in visited:
+        visited.add(current)
+        entry = id_to_entry.get(current)
+        if not entry:
+            break
+        name = (
+            entry.get("Name")
+            or entry.get("name")
+            or entry.get("VissibleName")
+            or ""
+        )
+        if name:
+            parts.insert(0, name)
+        current = entry.get("Parent") or entry.get("parent") or ""
+    return "/".join(parts)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    QUEUE_DIR.mkdir(parents=True, exist_ok=True)
-    scheduler.add_job(run_ocr_job, "cron", hour=2, minute=0)
+    NOTES_DIR.mkdir(parents=True, exist_ok=True)
+    scheduler.add_job(run_sync_and_ocr_job, "cron", hour=2, minute=0)
     scheduler.start()
-    logger.info("remarkable-bridge started. model: %s, queue: %s", OCR_MODEL, QUEUE_DIR)
+    logger.info(
+        "remarkable-bridge started. model: %s, rmfakecloud: %s",
+        OCR_MODEL,
+        RMFAKECLOUD_URL,
+    )
     yield
     scheduler.shutdown()
 
@@ -47,82 +108,21 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="remarkable-bridge", lifespan=lifespan)
 
 
-@app.post("/webhook")
-async def webhook(request: Request):
-    content_type = request.headers.get("content-type", "")
-    if "multipart/form-data" not in content_type:
-        raise HTTPException(status_code=415, detail="Expected multipart/form-data")
-
-    form = await request.form()
-
-    # rmfakecloud sends two fields: "data" (JSON metadata) and "attachment" (PNG image)
-    meta_raw = form.get("data") or "{}"
-    try:
-        meta_json = json.loads(str(meta_raw))
-    except json.JSONDecodeError:
-        meta_json = {}
-
-    title = str(meta_json.get("title") or meta_json.get("name") or
-                form.get("title") or form.get("name") or "untitled")
-    folder_path = str(meta_json.get("parent") or meta_json.get("folder") or
-                      form.get("parent") or form.get("folder") or "")
-    page = int(meta_json.get("page") or meta_json.get("pageNumber") or
-               form.get("page") or form.get("pageNumber") or 0)
-
-    # "attachment" is the known field name; fall back to scanning all upload fields
-    attachment = form.get("attachment")
-    image_bytes: bytes | None = None
-    image_ext = "png"
-    if attachment and hasattr(attachment, "read"):
-        image_bytes = await attachment.read()
-        if hasattr(attachment, "content_type") and attachment.content_type:
-            image_ext = attachment.content_type.split("/")[-1] or "png"
-        logger.info("Image from 'attachment' field, %d bytes", len(image_bytes))
-    else:
-        for key in form:
-            field = form[key]
-            if hasattr(field, "read"):
-                raw = await field.read()
-                if raw:
-                    image_bytes = raw
-                    if hasattr(field, "content_type") and field.content_type:
-                        image_ext = field.content_type.split("/")[-1] or "png"
-                    logger.info("Image from fallback field '%s', %d bytes", key, len(image_bytes))
-                    break
-
-    if not image_bytes:
-        raise HTTPException(status_code=422, detail="No image attachment found in webhook payload")
-
-    # Group pages of the same document into one queue entry by title.
-    # Each page is stored as image_<page>.ext inside the entry directory.
-    queue_entry = QUEUE_DIR / sanitize(title)
-    queue_entry.mkdir(parents=True, exist_ok=True)
-
-    (queue_entry / f"image_{page:04d}.{image_ext}").write_bytes(image_bytes)
-
-    # Write/update meta (safe to overwrite; folder_path and title don't change across pages)
-    (queue_entry / "meta.json").write_text(
-        json.dumps({"title": title, "folder_path": folder_path}),
-        encoding="utf-8",
-    )
-
-    logger.info("Queued note '%s' page %d in folder '%s'", title, page, folder_path)
-    return {"status": "queued", "title": title, "page": page}
-
-
 @app.post("/jobs/ocr")
 async def trigger_ocr():
-    pending = sum(1 for p in QUEUE_DIR.iterdir() if p.is_dir()) if QUEUE_DIR.exists() else 0
-    if pending == 0:
-        return {"status": "ok", "processed": 0, "message": "queue is empty"}
-    await run_ocr_job()
-    return {"status": "ok", "message": f"processed {pending} note(s)"}
+    if not RMFAKECLOUD_USER or not RMFAKECLOUD_PASSWORD:
+        raise HTTPException(
+            status_code=503,
+            detail="RMFAKECLOUD_USER and RMFAKECLOUD_PASSWORD must be set",
+        )
+    await run_sync_and_ocr_job()
+    return {"status": "ok"}
 
 
 @app.get("/queue")
 async def queue_status():
-    count = sum(1 for p in QUEUE_DIR.iterdir() if p.is_dir()) if QUEUE_DIR.exists() else 0
-    return {"pending": count}
+    state = load_state()
+    return {"processed": len(state)}
 
 
 @app.get("/healthz")
@@ -130,60 +130,144 @@ async def healthz():
     return {"status": "ok"}
 
 
-async def run_ocr_job():
-    if not QUEUE_DIR.exists():
+# ── rmfakecloud API helpers ────────────────────────────────────────────────────
+
+
+async def rmfakecloud_login(client: httpx.AsyncClient) -> str:
+    """Authenticate and return the JWT token."""
+    resp = await client.post(
+        f"{RMFAKECLOUD_URL}/ui/api/login",
+        json={"email": RMFAKECLOUD_USER, "password": RMFAKECLOUD_PASSWORD},
+    )
+    resp.raise_for_status()
+    return resp.text.strip()
+
+
+async def list_documents(client: httpx.AsyncClient, token: str) -> dict:
+    resp = await client.get(
+        f"{RMFAKECLOUD_URL}/ui/api/documents",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+async def download_document_pdf(
+    client: httpx.AsyncClient, token: str, doc_id: str
+) -> bytes:
+    resp = await client.get(
+        f"{RMFAKECLOUD_URL}/ui/api/documents/{doc_id}",
+        params={"type": "pdf"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    resp.raise_for_status()
+    return resp.content
+
+
+# ── main job ──────────────────────────────────────────────────────────────────
+
+
+async def run_sync_and_ocr_job() -> None:
+    if not RMFAKECLOUD_USER or not RMFAKECLOUD_PASSWORD:
+        logger.error("RMFAKECLOUD_USER/PASSWORD not set — skipping job")
         return
 
-    entries = [p for p in QUEUE_DIR.iterdir() if p.is_dir()]
-    if not entries:
-        logger.info("OCR job: queue is empty")
-        return
+    logger.info("Sync+OCR job: authenticating with rmfakecloud at %s", RMFAKECLOUD_URL)
 
-    logger.info("OCR job: processing %d note(s)", len(entries))
-
-    for entry in entries:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         try:
-            await process_entry(entry)
+            token = await rmfakecloud_login(client)
         except Exception as exc:
-            logger.error("Failed to process %s: %s", entry.name, exc)
+            logger.error("Login failed: %s", exc)
+            return
 
+        try:
+            tree = await list_documents(client, token)
+        except Exception as exc:
+            logger.error("Failed to list documents: %s", exc)
+            return
 
-async def process_entry(entry: Path):
-    meta_file = entry / "meta.json"
-    if not meta_file.exists():
-        logger.warning("Skipping %s: no meta.json", entry.name)
+    all_entries: list[dict] = (tree.get("Entries") or []) + (tree.get("entries") or [])
+    state = load_state()
+
+    documents = [
+        e
+        for e in all_entries
+        if (e.get("Type") or e.get("type") or "") == "DocumentType"
+    ]
+    new_docs = [
+        d for d in documents if (d.get("ID") or d.get("id") or "") not in state
+    ]
+
+    if not new_docs:
+        logger.info("Sync+OCR job: no new documents")
         return
 
-    meta = json.loads(meta_file.read_text(encoding="utf-8"))
-    title = meta.get("title", "untitled")
-    folder_path = meta.get("folder_path", "")
+    logger.info("Sync+OCR job: %d new document(s) to process", len(new_docs))
 
-    # Sort pages by filename (image_0000.png, image_0001.png, ...)
-    image_files = sorted(entry.glob("image_*.*"))
-    if not image_files:
-        logger.warning("Skipping %s: no image files", entry.name)
-        return
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        for doc in new_docs:
+            doc_id = doc.get("ID") or doc.get("id") or ""
+            title = (
+                doc.get("Name")
+                or doc.get("name")
+                or doc.get("VissibleName")
+                or "untitled"
+            )
+            parent_id = doc.get("Parent") or doc.get("parent") or ""
+            folder_path = build_folder_path(all_entries, parent_id)
 
-    logger.info("OCR: '%s' (%d page(s)) via %s", title, len(image_files), OCR_MODEL)
+            try:
+                await process_document(client, token, doc_id, title, folder_path)
+                state[doc_id] = {
+                    "title": title,
+                    "processed_at": datetime.now(timezone.utc).isoformat(),
+                    "folder_path": folder_path,
+                }
+                save_state(state)
+                logger.info("Processed: '%s' (%s)", title, doc_id)
+            except Exception as exc:
+                logger.error("Failed to process '%s' (%s): %s", title, doc_id, exc)
+
+
+async def process_document(
+    client: httpx.AsyncClient,
+    token: str,
+    doc_id: str,
+    title: str,
+    folder_path: str,
+) -> None:
+    logger.info("Downloading '%s' as PDF", title)
+    pdf_bytes = await download_document_pdf(client, token, doc_id)
+
+    logger.info("Converting PDF to images (%d bytes)", len(pdf_bytes))
+    page_images = pdf_to_images(pdf_bytes)
+    logger.info("'%s': %d page(s)", title, len(page_images))
 
     page_texts: list[str] = []
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        for img_path in image_files:
-            image_b64 = base64.b64encode(img_path.read_bytes()).decode("utf-8")
-            resp = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": OCR_MODEL, "prompt": OCR_PROMPT, "images": [image_b64], "stream": False},
-            )
-            resp.raise_for_status()
-            text = resp.json().get("response", "").strip()
-            page_texts.append(text or "(no text recognised)")
-            logger.info("  page %s done (%d chars)", img_path.name, len(page_texts[-1]))
+    for i, img_bytes in enumerate(page_images):
+        image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+        resp = await client.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": OCR_MODEL,
+                "prompt": OCR_PROMPT,
+                "images": [image_b64],
+                "stream": False,
+            },
+        )
+        resp.raise_for_status()
+        text = resp.json().get("response", "").strip()
+        page_texts.append(text or "(no text recognised)")
+        logger.info("  page %d: %d chars", i + 1, len(page_texts[-1]))
 
-    # Join pages with a separator so multi-page docs read naturally
     ocr_text = "\n\n---\n\n".join(page_texts)
 
-    # Mirror reMarkable folder structure under /vault/remarkable/
-    safe_folder = Path(*[sanitize(part) for part in Path(folder_path).parts]) if folder_path else Path()
+    safe_folder = (
+        Path(*[sanitize(part) for part in Path(folder_path).parts])
+        if folder_path
+        else Path()
+    )
     out_dir = NOTES_DIR / safe_folder
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -192,15 +276,10 @@ async def process_entry(entry: Path):
 title: "{sanitize(title)}"
 date: {date_str}
 source: remarkable
-pages: {len(image_files)}
+pages: {len(page_images)}
 ---
 
 {ocr_text}
 """
     (out_dir / f"{sanitize(title)}.md").write_text(md, encoding="utf-8")
     logger.info("Written: %s", out_dir / f"{sanitize(title)}.md")
-
-    # Remove queue entry on success
-    for f in entry.iterdir():
-        f.unlink()
-    entry.rmdir()
