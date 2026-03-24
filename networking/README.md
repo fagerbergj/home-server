@@ -26,14 +26,14 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 | Service | URL |
 |---------|-----|
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
-| Immich | `https://photos.jasonfagerberg.duckdns.org` |
-| Minecraft | `jasonfagerberg.duckdns.org:25565` |
 | Nextcloud | `https://files.jasonfagerberg.duckdns.org` |
-| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
+| Minecraft | `jasonfagerberg.duckdns.org:25565` |
 | Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
+| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
+| Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
+| Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Plex | `https://plex.jasonfagerberg.duckdns.org` |
 | Uptime Kuma | `https://status.jasonfagerberg.duckdns.org` |
-| Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 
 ## Internal Only
 
