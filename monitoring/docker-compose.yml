@@ -59,6 +59,7 @@ services:
   smartctl-exporter:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
+    user: root
     privileged: true
     security_opt:
       - apparmor:unconfined
