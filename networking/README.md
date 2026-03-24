@@ -7,14 +7,14 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
-    │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
+    ├── :80 / :443 ──► NPM ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
+    │                      ──► files.jasonfagerberg.duckdns.org       ──► Nextcloud       (8080)
     │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
     │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API      (11434)
-    │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
-    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma     (3001)
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
-    │                      ──► files.jasonfagerberg.duckdns.org       ──► Nextcloud       (8080)
+    │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
+    │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
+    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma     (3001)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
