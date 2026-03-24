@@ -2,7 +2,7 @@
   "title": "Home Server",
   "uid": "home-server",
   "schemaVersion": 39,
-  "version": 19,
+  "version": 20,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -151,14 +151,19 @@
           "refId": "A"
         },
         {
-          "expr": "node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Buffers_bytes - node_memory_Cached_bytes",
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemFree_bytes",
           "legendFormat": "Used",
           "refId": "B"
         },
         {
+          "expr": "node_memory_Buffers_bytes + node_memory_Cached_bytes",
+          "legendFormat": "Reclaimable",
+          "refId": "C"
+        },
+        {
           "expr": "node_memory_MemAvailable_bytes",
           "legendFormat": "Available",
-          "refId": "C"
+          "refId": "D"
         }
       ]
     },
