@@ -34,8 +34,8 @@ Open `https://files.jasonfagerberg.duckdns.org` and create your admin account.
 2. Go to **Apps** → search for **OpenAI API integration** → install it
 3. Go to **Administration Settings** → **AI** → **OpenAI API**
 4. Set:
-   - **API endpoint**: `http://192.168.50.186:11434/v1`
-   - **API key**: `ollama` (any non-empty string)
+   - **API endpoint**: `https://llm-api.jasonfagerberg.duckdns.org/v1`
+   - **API key**: value of `OLLAMA_API_KEY` from `.env`
    - **Default model**: `gpt-oss-20b-64k`
 
 ## 6. Install desktop/mobile sync clients
