@@ -1,3 +1,4 @@
+import io
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -68,6 +69,42 @@ def test_healthz(client):
     resp = client.get("/healthz")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
+
+
+# ── /webhook ──────────────────────────────────────────────────────────────────
+
+
+def test_webhook_rejects_non_multipart(client):
+    resp = client.post("/webhook", json={"title": "oops"})
+    assert resp.status_code == 415
+
+
+def test_webhook_rejects_missing_image(client):
+    resp = client.post(
+        "/webhook",
+        files={"dummy": ("", b"")},
+        data={"data": json.dumps({"title": "no image"})},
+    )
+    assert resp.status_code == 422
+
+
+def test_webhook_ocrs_and_writes_md(client, tmp_vault, mock_ollama):
+    import app as bridge
+
+    with patch("app.process_document_images", new_callable=AsyncMock) as mock_process:
+        resp = client.post(
+            "/webhook",
+            files={"attachment": ("sheet.png", io.BytesIO(b"FAKEPNG"), "image/png")},
+            data={"data": json.dumps({"title": "My Sheet", "parent": "Work"})},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["title"] == "My Sheet"
+    mock_process.assert_called_once()
+    call_kwargs = mock_process.call_args
+    assert call_kwargs.args[1] == "My Sheet"
+    assert call_kwargs.args[2] == "Work"
+    assert call_kwargs.args[3] == [b"FAKEPNG"]
 
 
 # ── /queue ────────────────────────────────────────────────────────────────────

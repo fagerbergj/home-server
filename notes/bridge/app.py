@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pypdfium2 as pdfium
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -106,6 +106,60 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="remarkable-bridge", lifespan=lifespan)
+
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    """
+    Receives a document send from the reMarkable tablet via rmfakecloud integrations.
+    rmfakecloud posts multipart/form-data with two fields:
+      - data:       JSON string with document metadata (title, parent/folder)
+      - attachment: rendered PNG image of the current sheet
+    OCR runs immediately on receipt.
+    """
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" not in content_type:
+        raise HTTPException(status_code=415, detail="Expected multipart/form-data")
+
+    form = await request.form()
+
+    meta_raw = form.get("data") or "{}"
+    try:
+        meta_json = json.loads(str(meta_raw))
+    except json.JSONDecodeError:
+        meta_json = {}
+
+    title = str(
+        meta_json.get("title") or meta_json.get("name")
+        or form.get("title") or form.get("name") or "untitled"
+    )
+    folder_path = str(
+        meta_json.get("parent") or meta_json.get("folder")
+        or form.get("parent") or form.get("folder") or ""
+    )
+
+    attachment = form.get("attachment")
+    image_bytes: bytes | None = None
+    if attachment and hasattr(attachment, "read"):
+        image_bytes = await attachment.read()
+    else:
+        for key in form:
+            field = form[key]
+            if hasattr(field, "read"):
+                raw = await field.read()
+                if raw:
+                    image_bytes = raw
+                    break
+
+    if not image_bytes:
+        raise HTTPException(status_code=422, detail="No image attachment found")
+
+    logger.info("Webhook: '%s' in '%s' (%d bytes) — OCR starting", title, folder_path, len(image_bytes))
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        await process_document_images(client, title, folder_path, [image_bytes])
+
+    return {"status": "ok", "title": title}
 
 
 @app.post("/jobs/ocr")
@@ -239,9 +293,18 @@ async def process_document(
 ) -> None:
     logger.info("Downloading '%s' as PDF", title)
     pdf_bytes = await download_document_pdf(client, token, doc_id)
-
     logger.info("Converting PDF to images (%d bytes)", len(pdf_bytes))
     page_images = pdf_to_images(pdf_bytes)
+    await process_document_images(client, title, folder_path, page_images)
+
+
+async def process_document_images(
+    client: httpx.AsyncClient,
+    title: str,
+    folder_path: str,
+    page_images: list[bytes],
+) -> None:
+    """OCR a list of page images and write the result as a Markdown file."""
     logger.info("'%s': %d page(s)", title, len(page_images))
 
     page_texts: list[str] = []
