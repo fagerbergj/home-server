@@ -33,7 +33,21 @@ Avoid 105W chips (5800X, 5900X, 5950X) for 24/7 server use — B350 VRM wasn't d
 
 ---
 
-## Phase 2 — GPU Upgrade
+## Phase 2 — OS Drive Replacement
+
+**Priority:** Low — drive is passing SMART tests and wear is minimal, but worth planning.
+
+The ADATA SU650 480GB (sda) has been running for **4.25 years** (37,304 power-on hours) and has 11 reallocated + 11 pending sectors. Extended SMART test passed clean and remaining lifetime shows 100%, so it's not urgent — but the pending sectors are worth monitoring.
+
+**Watch for:** `Current_Pending_Sector` count climbing above 11. If it grows, replace promptly.
+
+**Replacement target:** Any 500GB–1TB SATA SSD. Nothing special needed — OS + Docker, no heavy write load.
+
+**Migration:** Reinstall Ubuntu Server 24.04 and re-run setup from `setup.md`. All service configs are in Git; the only manual step is restoring `.env`.
+
+---
+
+## Phase 3 — GPU Upgrade
 
 **Priority:** After Phase 1 — more VRAM is the main bottleneck for running larger LLMs.
 
