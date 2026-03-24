@@ -15,15 +15,7 @@ docker compose exec ollama ollama pull richardyoung/olmocr2:7b-q8
 notes/generate-env.sh
 ```
 
-Then open `~/workspace/home-server/.env` and fill in the remaining values:
-
-```bash
-export COUCHDB_PASSWORD=<strong-password>   # required — choose a strong one
-# Optional overrides (defaults already in .env.example):
-# export RMFAKECLOUD_STORAGE_URL=https://remarkable.jasonfagerberg.duckdns.org
-# export OCR_MODEL=richardyoung/olmocr2:7b-q8
-# export COUCHDB_USER=admin
-```
+This generates `RMFAKECLOUD_JWT_SECRET_KEY` and `COUCHDB_PASSWORD`. Safe to re-run — skips keys that are already set.
 
 ## 3. Create the vault directory
 

@@ -24,7 +24,4 @@ set_secret() {
 touch "$ENV_FILE"
 
 set_secret RMFAKECLOUD_JWT_SECRET_KEY "$(openssl rand -hex 32)"
-
-echo ""
-echo "COUCHDB_PASSWORD must be set manually in ../.env — choose a strong password."
-echo "RMFAKECLOUD_STORAGE_URL and OCR_MODEL have defaults in .env.example; update if needed."
+set_secret COUCHDB_PASSWORD "$(openssl rand -hex 24)"
