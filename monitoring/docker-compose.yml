@@ -59,7 +59,7 @@ services:
   smartctl-exporter:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
-    privileged: true
+    user: "990:6"
     volumes:
       - /dev:/dev:ro
     command:

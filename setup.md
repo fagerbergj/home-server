@@ -307,6 +307,7 @@ sudo useradd -r -s /sbin/nologin immich
 sudo useradd -r -s /sbin/nologin minecraft
 sudo useradd -r -s /sbin/nologin qbittorrent
 sudo useradd -r -s /sbin/nologin audiobookshelf
+sudo useradd -r -s /sbin/nologin smartctl
 
 # Create groups
 sudo groupadd plex-rw
@@ -321,6 +322,7 @@ sudo usermod -aG plex-ro plex          # plex reads media
 sudo usermod -aG plex-ro audiobookshelf  # audiobookshelf reads media
 sudo usermod -aG personal-rw immich    # immich writes photos
 sudo usermod -aG personal-rw jason-server  # manage personal drive directly
+sudo usermod -aG disk smartctl            # read raw disk devices for S.M.A.R.T.
 ```
 
 ### Folder Structure and Permissions
