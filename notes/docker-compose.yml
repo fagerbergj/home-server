@@ -22,7 +22,7 @@ services:
     env_file:
       - ../.env
     environment:
-      - OCR_MODEL=${OCR_MODEL:-llava:7b}
+      - OCR_MODEL=${OCR_MODEL:-qwen2.5vl:7b}
       - VAULT_PATH=/vault
     volumes:
       - /mnt/personal01/obsidian-vault:/vault
