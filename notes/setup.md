@@ -6,7 +6,7 @@ reMarkable cloud replacement + OCR pipeline + Obsidian sync.
 
 ```bash
 cd ~/workspace/home-server/llm
-docker compose exec ollama ollama pull qwen2.5vl:7b
+docker compose exec ollama ollama pull glm-ocr
 ```
 
 ## 2. Generate secrets

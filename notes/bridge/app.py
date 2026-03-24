@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434")
-OCR_MODEL = os.environ.get("OCR_MODEL", "qwen2.5vl:7b")
+OCR_MODEL = os.environ.get("OCR_MODEL", "glm-ocr")
 VAULT_PATH = Path(os.environ.get("VAULT_PATH", "/vault"))
 
 NOTES_DIR = VAULT_PATH / "remarkable"

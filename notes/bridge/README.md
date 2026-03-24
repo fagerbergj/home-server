@@ -20,7 +20,7 @@ Webhook receiver and OCR processor for the reMarkable → Obsidian pipeline.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama API base URL |
-| `OCR_MODEL` | `qwen2.5vl:7b` | Ollama vision model to use for OCR |
+| `OCR_MODEL` | `glm-ocr` | Ollama vision model to use for OCR |
 | `VAULT_PATH` | `/vault` | Mount point of the Obsidian vault |
 
 ## Output format
