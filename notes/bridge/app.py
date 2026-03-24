@@ -75,7 +75,7 @@ def rm_bytes_to_png(rm_bytes: bytes) -> bytes:
     tree = read_tree(io.BytesIO(rm_bytes))
     svg_buf = io.StringIO()
     tree_to_svg(tree, svg_buf)
-    return cairosvg.svg2png(bytestring=svg_buf.getvalue().encode(), scale=2.0, background_color="white")
+    return cairosvg.svg2png(bytestring=svg_buf.getvalue().encode(), scale=1.0, background_color="white")
 
 
 def rmdoc_to_images(rmdoc_bytes: bytes) -> list[bytes]:
