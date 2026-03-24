@@ -9,5 +9,6 @@ services:
       - "53:53/tcp"
       - "53:53/udp"
       - "3002:3000/tcp"   # web UI (setup wizard)
+      - "3003:80/tcp"     # web UI (after wizard)
       - "8853:8853/udp"   # DNS-over-QUIC (optional)
     restart: unless-stopped
