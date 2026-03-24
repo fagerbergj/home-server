@@ -75,7 +75,11 @@ def rm_bytes_to_png(rm_bytes: bytes) -> bytes:
     tree = read_tree(io.BytesIO(rm_bytes))
     svg_buf = io.StringIO()
     tree_to_svg(tree, svg_buf)
-    return cairosvg.svg2png(bytestring=svg_buf.getvalue().encode(), scale=1.0, background_color="white")
+    svg = svg_buf.getvalue()
+    logger.debug("SVG length: %d chars, preview: %s", len(svg), svg[:200])
+    png = cairosvg.svg2png(bytestring=svg.encode(), scale=1.0, background_color="white")
+    logger.info("Rendered PNG: %d bytes", len(png))
+    return png
 
 
 def rmdoc_to_images(rmdoc_bytes: bytes) -> list[bytes]:
@@ -107,9 +111,15 @@ def rmdoc_to_images(rmdoc_bytes: bytes) -> list[bytes]:
             rm_files = sorted(rm_files)
 
         images = []
-        for rm_name in rm_files:
+        for i, rm_name in enumerate(rm_files):
             try:
-                images.append(rm_bytes_to_png(zf.read(rm_name)))
+                png = rm_bytes_to_png(zf.read(rm_name))
+                images.append(png)
+                # Save first page for inspection
+                if i == 0:
+                    debug_path = NOTES_DIR / ".debug_last_render.png"
+                    debug_path.write_bytes(png)
+                    logger.info("Debug PNG saved to %s", debug_path)
             except Exception as exc:
                 logger.warning("Could not render page %s: %s", rm_name, exc)
 
