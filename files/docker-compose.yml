@@ -6,7 +6,7 @@ services:
       - nextcloud-db
       - nextcloud-redis
     volumes:
-      - ./data:/var/www/html
+      - /mnt/personal01/nextcloud:/var/www/html
     environment:
       - TZ=America/Chicago
       - POSTGRES_HOST=nextcloud-db
@@ -15,6 +15,7 @@ services:
       - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
       - REDIS_HOST=nextcloud-redis
       - NEXTCLOUD_TRUSTED_DOMAINS=files.jasonfagerberg.duckdns.org
+      - NEXTCLOUD_TRUSTED_PROXIES=192.168.50.186
     ports:
       - "8090:80"
     restart: unless-stopped
