@@ -7,12 +7,14 @@ Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's
 ```
 Internet
     │
-    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.duckdns.org        ──► Plex       (32400)
-    │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich     (2283)
-    │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI (3000)
-    │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API (11434)
-    │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf (13378)
-    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma    (3001)
+    ├── :80 / :443 ──► NPM ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
+    │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
+    │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
+    │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API      (11434)
+    │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
+    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma     (3001)
+    │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
+    │                      ──► files.jasonfagerberg.duckdns.org       ──► Nextcloud       (8080)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
 ```
@@ -23,13 +25,21 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 
 | Service | URL |
 |---------|-----|
-| Plex | `https://plex.jasonfagerberg.duckdns.org` |
-| Immich | `https://photos.jasonfagerberg.duckdns.org` |
-| Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
-| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
+| Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Minecraft | `jasonfagerberg.duckdns.org:25565` |
+| Nextcloud | `https://files.jasonfagerberg.duckdns.org` |
+| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
+| Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
+| Plex | `https://plex.jasonfagerberg.duckdns.org` |
 | Uptime Kuma | `https://status.jasonfagerberg.duckdns.org` |
+| Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
+
+## Internal Only
+
+| Service | URL |
+|---------|-----|
+| AdGuard Home | `http://192.168.50.186:3003` |
 
 ## NPM Admin
 

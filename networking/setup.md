@@ -97,7 +97,6 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Uptime Kuma | `status.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3001` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
-| AdGuard Home | `adblock.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3003` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Nextcloud | `files.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8080` | Yes | `*.jasonfagerberg.duckdns.org` |
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
