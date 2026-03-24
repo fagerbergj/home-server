@@ -13,7 +13,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Audiobookshelf | Self-hosted audiobook server |
 | Watchtower | Auto-updates containers daily, emails on update |
 | Diun | Watches excluded images and emails when updates are available |
-| Glances | Real-time system and Docker container monitoring |
+| Grafana + Prometheus | System and container metrics dashboard |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Ollama + Open WebUI | Local LLM inference via GPU |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
@@ -37,7 +37,7 @@ home-server/
 ├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── updater/          # Watchtower (auto-updates) + Diun (update notifications)
-├── monitoring/       # Glances + Uptime Kuma
+├── monitoring/       # Grafana + Prometheus + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
 └── README.md
