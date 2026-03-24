@@ -24,7 +24,7 @@ services:
     environment:
       - OCR_MODEL=${OCR_MODEL:-glm-ocr}
       - VAULT_PATH=/vault
-      - OPENWEBUI_URL=http://open-webui:3000
+      - OPENWEBUI_URL=http://open-webui:8080
       - OPENWEBUI_API_KEY=${OPENWEBUI_API_KEY}
       - OPENWEBUI_KNOWLEDGE_ID=${OPENWEBUI_KNOWLEDGE_ID}
     volumes:
