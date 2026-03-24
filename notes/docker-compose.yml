@@ -1,0 +1,53 @@
+services:
+  rmfakecloud:
+    image: ddvk/rmfakecloud:latest
+    container_name: rmfakecloud
+    ports:
+      - "3005:3000"
+    env_file:
+      - ../.env
+    environment:
+      - JWT_SECRET_KEY=${RMFAKECLOUD_JWT_SECRET_KEY}
+      - STORAGE_URL=${RMFAKECLOUD_STORAGE_URL}
+      - DATADIR=/data
+    volumes:
+      - ./rmfakecloud-data:/data
+    restart: unless-stopped
+
+  bridge:
+    build: ./bridge
+    container_name: remarkable-bridge
+    ports:
+      - "3006:8000"
+    env_file:
+      - ../.env
+    environment:
+      - OCR_MODEL=${OCR_MODEL:-richardyoung/olmocr2:7b-q8}
+      - VAULT_PATH=/vault
+    volumes:
+      - /mnt/personal01/obsidian-vault:/vault
+    networks:
+      - default
+      - llm_default
+    depends_on:
+      - rmfakecloud
+    restart: unless-stopped
+
+  couchdb:
+    image: couchdb:3.3
+    container_name: couchdb
+    ports:
+      - "5984:5984"
+    env_file:
+      - ../.env
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+    volumes:
+      - ./couchdb-data:/opt/couchdb/data
+      - ./local.ini:/opt/couchdb/etc/local.d/local.ini
+    restart: unless-stopped
+
+networks:
+  llm_default:
+    external: true
