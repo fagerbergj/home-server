@@ -19,8 +19,10 @@ VAULT_PATH = Path(os.environ.get("VAULT_PATH", "/vault"))
 NOTES_DIR = VAULT_PATH / "remarkable"
 
 OCR_PROMPT = (
-    "You are an OCR engine. Transcribe all handwritten and printed text in this image "
-    "exactly as written. Preserve paragraph structure with blank lines between paragraphs. "
+    "You are an OCR engine. Your only job is to copy text character by character exactly "
+    "as it appears in the image. Do NOT paraphrase, interpret, correct, or improve the text. "
+    "Do NOT add words that are not written. If a word is unclear, make your best guess at "
+    "the exact letters written. Preserve paragraph breaks. "
     "Output only the transcribed text — no commentary, no explanations."
 )
 
