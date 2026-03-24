@@ -8,7 +8,7 @@ services:
       - ../.env
     environment:
       - DOCKER_API_VERSION=1.40
-      - WATCHTOWER_SCHEDULE=0 0 8 * * *  # pull updates daily at 4am CT (8am UTC)
+      - WATCHTOWER_SCHEDULE=0 0 8 * * *  # pull updates daily at 8am UTC (2-3am CT)
       - WATCHTOWER_CLEANUP=true        # clean up old images after update
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_EXCLUDE=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft
@@ -32,7 +32,7 @@ services:
       - ../.env
     environment:
       - TZ=America/Chicago
-      - DIUN_WATCH_SCHEDULE=0 0 8 * * 1  # check every Monday at 4am CT
+      - DIUN_WATCH_SCHEDULE=0 0 8 * * 1  # check every Monday at 8am UTC (2-3am CT)
       - DIUN_PROVIDERS_DOCKER=true
       - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
       - DIUN_NOTIF_MAIL_HOST=smtp.gmail.com

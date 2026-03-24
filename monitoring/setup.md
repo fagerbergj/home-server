@@ -19,20 +19,6 @@ sed -i 's/${DS_PROMETHEUS}/Prometheus/g' ~/workspace/home-server/monitoring/graf
 docker compose restart grafana
 ```
 
-## Glances
-
-Web UI available at `http://192.168.50.186:61208`. Start/stop as needed — only uses significant CPU while the page is open.
-
-```bash
-docker compose stop glances   # when done
-docker compose start glances  # when needed
-```
-
-> Do not expose Glances externally — no auth. Use SSH tunnel for remote access:
-> ```bash
-> ssh -L 61208:localhost:61208 jason-server
-> ```
-
 ## Uptime Kuma
 
 Open `http://192.168.50.186:3001` and create your admin account.
@@ -64,6 +50,5 @@ Add in Nginx Proxy Manager — see [`networking/setup.md`](../networking/setup.m
 
 ## Access
 
-- Glances: `http://192.168.50.186:61208`
 - Uptime Kuma local: `http://192.168.50.186:3001`
 - Uptime Kuma remote: `https://status.jasonfagerberg.duckdns.org`

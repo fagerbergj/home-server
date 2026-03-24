@@ -45,7 +45,7 @@ From outside your network — any tool that supports a custom OpenAI-compatible 
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
 API Key:  <your-key from NPM nginx config>
-Model:    gpt-oss-20b-64k  (or qwen3-4b-32k, devstral-24b-64k)
+Model:    gpt-oss-20b-64k  (or qwen3-4b-32k, omnicoder-9b-128k)
 ```
 
 > Auth is enforced by NPM's nginx config, not Ollama itself.
