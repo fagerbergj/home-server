@@ -61,7 +61,7 @@ services:
     container_name: smartctl-exporter
     privileged: true
     volumes:
-      - /dev:/dev:ro
+      - /dev:/dev
     command:
       - --smartctl.device=/dev/sda
       - --smartctl.device=/dev/sdb
