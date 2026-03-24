@@ -339,13 +339,17 @@ async def process_document(
     folder_path: str,
 ) -> None:
     logger.info("Downloading '%s' as PDF", title)
-    pdf_bytes = await download_document(client, token, doc_id, "pdf")
+    try:
+        pdf_bytes = await download_document(client, token, doc_id, "pdf")
+    except httpx.HTTPStatusError as exc:
+        logger.warning("PDF download failed (%s), falling back to rmdoc", exc.response.status_code)
+        pdf_bytes = b""
 
     if pdf_bytes:
         logger.info("Converting PDF to images (%d bytes)", len(pdf_bytes))
         page_images = pdf_to_images(pdf_bytes)
     else:
-        logger.info("PDF empty for '%s', falling back to rmdoc rendering", title)
+        logger.info("Falling back to rmdoc for '%s'", title)
         rmdoc_bytes = await download_document(client, token, doc_id, "rmdoc")
         page_images = rmdoc_to_images(rmdoc_bytes)
 
