@@ -15,7 +15,7 @@ services:
       - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
       - REDIS_HOST=nextcloud-redis
       - NEXTCLOUD_TRUSTED_DOMAINS=files.jasonfagerberg.duckdns.org
-      - NEXTCLOUD_TRUSTED_PROXIES=192.168.50.186
+      - NEXTCLOUD_TRUSTED_PROXIES=172.16.0.0/12
     ports:
       - "8090:80"
     restart: unless-stopped
