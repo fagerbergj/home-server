@@ -60,6 +60,8 @@ services:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
     privileged: true
+    security_opt:
+      - apparmor:unconfined
     volumes:
       - /dev:/dev
     command:
