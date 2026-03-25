@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   bridge:
-    build: ./bridge
+    image: document-pipeline:latest
     container_name: remarkable-bridge
     ports:
       - "3006:8000"
@@ -23,12 +23,12 @@ services:
       - ../.env
     environment:
       - OCR_MODEL=${OCR_MODEL:-glm-ocr}
+      - OLLAMA_BASE_URL=http://ollama:11434
       - VAULT_PATH=/vault
-      - OPENWEBUI_URL=http://open-webui:8080
-      - OPENWEBUI_API_KEY=${OPENWEBUI_API_KEY}
-      - OPENWEBUI_KNOWLEDGE_ID=${OPENWEBUI_KNOWLEDGE_ID}
+      - DB_PATH=/data/pipeline.db
     volumes:
-      - /mnt/personal01/obsidian-vault:/vault
+      - /mnt/personal01/remarkable:/vault
+      - remarkable-bridge-data:/data
     networks:
       - default
       - llm_default
@@ -54,3 +54,6 @@ services:
 networks:
   llm_default:
     external: true
+
+volumes:
+  remarkable-bridge-data:
