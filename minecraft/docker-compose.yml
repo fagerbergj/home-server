@@ -13,7 +13,7 @@ services:
       - DIFFICULTY=normal
       - MAX_PLAYERS=10
       - MOTD=Home Server
-      - ENABLE_AUTOPAUSE=TRUE   # pauses server when no players online to save resources
+      - ENABLE_AUTOPAUSE=FALSE   # pauses server when no players online to save resources
     volumes:
       - ./data:/data
       - ./mods:/data/mods
