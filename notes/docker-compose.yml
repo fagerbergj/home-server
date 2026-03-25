@@ -14,7 +14,7 @@ services:
       - ./rmfakecloud-data:/data
     restart: unless-stopped
 
-  bridge:
+  document-pipeline:
     image: document-pipeline:latest
     container_name: remarkable-bridge
     ports:
