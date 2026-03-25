@@ -36,20 +36,6 @@ services:
       - rmfakecloud
     restart: unless-stopped
 
-  couchdb:
-    image: couchdb:3.3
-    container_name: couchdb
-    ports:
-      - "5984:5984"
-    env_file:
-      - ../.env
-    environment:
-      - COUCHDB_USER=${COUCHDB_USER}
-      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
-    volumes:
-      - ./couchdb-data:/opt/couchdb/data
-      - ./local.ini:/opt/couchdb/etc/local.d/local.ini
-    restart: unless-stopped
 
 networks:
   llm_default:
