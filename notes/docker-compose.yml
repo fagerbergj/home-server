@@ -32,6 +32,9 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-remarkable}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      - OPEN_WEBUI_URL=${OPEN_WEBUI_URL}
+      - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
+      - OPEN_WEBUI_KNOWLEDGE_ID=${OPEN_WEBUI_KNOWLEDGE_ID}
     volumes:
       - /mnt/personal01/remarkable:/vault
       - remarkable-bridge-data:/data
