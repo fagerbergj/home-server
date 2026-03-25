@@ -23,9 +23,15 @@ services:
       - ../.env
     environment:
       - OCR_MODEL=${OCR_MODEL:-glm-ocr}
+      - CLARIFY_MODEL=${CLARIFY_MODEL}
+      - CLASSIFY_MODEL=${CLASSIFY_MODEL}
+      - EMBED_MODEL=${EMBED_MODEL}
       - OLLAMA_BASE_URL=http://ollama:11434
       - VAULT_PATH=/vault
       - DB_PATH=/data/pipeline.db
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-remarkable}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
     volumes:
       - /mnt/personal01/remarkable:/vault
       - remarkable-bridge-data:/data
