@@ -16,7 +16,7 @@ services:
 
   document-pipeline:
     image: document-pipeline:latest
-    container_name: document-pipeline
+    container_name: remarkable-bridge
     ports:
       - "3006:8000"
     env_file:
