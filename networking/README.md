@@ -47,3 +47,12 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 ```
 http://<server-local-ip>:81
 ```
+
+## Updating
+
+NPM is a locally built image (adds `certbot-dns-duckdns`) so Watchtower skips it. To update manually:
+
+```bash
+docker pull jc21/nginx-proxy-manager:latest
+docker compose -f networking/docker-compose.yml build --no-cache && docker compose -f networking/docker-compose.yml up -d
+```
