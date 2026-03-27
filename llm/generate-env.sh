@@ -24,3 +24,5 @@ set_secret() {
 touch "$ENV_FILE"
 
 set_secret OLLAMA_API_KEY "$(openssl rand -hex 32)"
+set_secret OLLAMA_FLASH_ATTENTION 1
+set_secret OLLAMA_KV_CACHE_TYPE q8_0

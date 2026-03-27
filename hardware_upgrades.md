@@ -47,24 +47,10 @@ The ADATA SU650 480GB (sda) has been running for **4.25 years** (37,304 power-on
 
 ---
 
-## Phase 3 — GPU Upgrade
+## Phase 3 — GPU Upgrade ✅ Complete
 
-**Priority:** After Phase 1 — more VRAM is the main bottleneck for running larger LLMs.
+Installed **RTX 3090 24GB** (replacing 2x GTX 1070). Also upgraded PSU to 1200W to support the higher TDP.
 
-### Target: RTX 5060 Ti 16GB
-- 16GB VRAM unlocks larger models (13B+ quantized, potentially 30B at lower quant)
-- Blackwell NVENC is a significant step up for Plex transcoding
-- TDP is ~180W — same as the 1070 Ti, so the 500W PSU doesn't need upgrading
-- Retire the 1070 Ti when this goes in
-
-### LLM upgrade
-With 16GB VRAM, switch from Qwen3 8B to **Qwen3-Coder 30B-A3B** in Ollama:
-```bash
-docker exec -it ollama ollama pull qwen3-coder:30b-a3b
-```
-The MoE architecture keeps active parameters low enough to fit in 16GB despite the 30B total size. Stronger coding capability while staying in the same Qwen3 family.
-
-### Migration notes
-- Reinstall NVIDIA drivers after swap
-- Update `hardware.md` with new GPU specs
-- Update `llm/README.md` with new model recommendations
+- 24GB VRAM comfortably runs 30B+ quantized models
+- Ampere NVENC is a significant step up for Plex transcoding
+- See `llm/README.md` for updated model guidance

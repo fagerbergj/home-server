@@ -24,20 +24,9 @@ docker compose up -d
 
 Open `http://192.168.50.186:3002` and follow the wizard. Set your admin username and password.
 
-After the wizard completes AdGuard moves to port 80 inside the container — the web UI will be accessible via the NPM proxy host.
+After the wizard completes the web UI is accessible at `http://192.168.50.186:3003` (internal only — not exposed via NPM).
 
-## 4. Configure NPM proxy host
-
-| Field | Value |
-|-------|-------|
-| Domain | `adblock.jasonfagerberg.duckdns.org` |
-| Scheme | `http` |
-| Forward Host | `192.168.50.186` |
-| Forward Port | `3003` |
-| SSL | `*.jasonfagerberg.duckdns.org`, force SSL |
-| WebSockets | Yes |
-
-## 5. Point router DNS at the server
+## 4. Point router DNS at the server
 
 In the router UI: **Advanced Settings > LAN > DHCP Server**
 
@@ -45,7 +34,7 @@ Set **DNS Server 1** to `192.168.50.186`.
 
 Leave DNS Server 2 as `1.1.1.1` as a fallback in case AdGuard goes down.
 
-## 6. Verify
+## 5. Verify
 
 From the server:
 ```bash

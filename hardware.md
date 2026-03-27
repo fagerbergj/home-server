@@ -13,8 +13,8 @@
 | Personal Drive (secondary) | 1TB WD HDD | ✅ RAID 1 secondary — 35,648 hrs, healthy SMART |
 | Plex Drive | 4TB Seagate Barracuda HDD | ✅ |
 | Plex Drive (overflow) | 640GB Hitachi Deskstar HDD | ⚠️ Old drive (41k hrs) — non-critical re-downloadable media only |
-| GPU | 2x GTX 1070 (Pascal, 8GB VRAM each) | ✅ Excellent NVENC, ~150W each — no NVLink, Ollama splits layers across both GPUs (~16GB effective for inference) |
-| PSU | EVGA 500W AXI | ✅ Sufficient |
+| GPU | RTX 3090 (Ampere, 24GB VRAM) | ✅ 24GB VRAM for LLM inference, excellent NVENC |
+| PSU | 1200W | ✅ Upgraded from 500W |
 | Network | Realtek Gigabit LAN (onboard, `enp35s0`) | ✅ Gigabit |
 | Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ |
 

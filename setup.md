@@ -171,7 +171,7 @@ nvidia-smi
 nvtop
 ```
 
-You should see the GTX 1070 listed with driver version and VRAM.
+You should see the RTX 3090 listed with driver version and VRAM.
 
 ---
 

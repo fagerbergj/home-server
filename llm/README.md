@@ -1,6 +1,6 @@
 # Local LLM (Ollama)
 
-Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on 2x GTX 1070. Ollama splits model layers across both GPUs (~16GB effective VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
+Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on an RTX 3090 (24GB VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
 
 ## Access
 
@@ -8,28 +8,90 @@ Local: `http://192.168.50.186:3000`
 External: `https://llm.jasonfagerberg.duckdns.org`
 API: `https://llm-api.jasonfagerberg.duckdns.org`
 
-## Models
+## Evaluating a model
 
-| Model | Tier | VRAM | Context Cap | Default For |
-|-------|------|------|-------------|-------------|
-| `qwen3-4b-32k` | Fast | ~2.5GB | 32K | Open WebUI (default) |
-| `gpt-oss-20b-64k` | Middle | ~10.5GB | 64K | OpenCode |
-| `omnicoder-9b-128k` | Smart | ~5.5GB | 128K | Complex coding tasks |
+Before pulling a model, use `check-compaitbility.sh` to estimate VRAM. All parameters come from the model's blob page on ollama.com (navigate to the model → **Files** tab → click the blob hash).
 
-### Why context is capped
+### Reading the blob page
 
-With ~16GB effective VRAM across both GPUs, model weights leave limited room for the KV cache (which grows with context length):
+| Script flag | Ollama blob field | Notes |
+|-------------|-------------------|-------|
+| `-f` | Model size | Convert to GiB — close enough |
+| `-q` | `general.file_type` (e.g. `Q4_K_M`) | Extract the number: `4` |
+| `-e` | `*.embedding_length` | |
+| `-b` | `*.block_count` | |
+| `-k` | `*.attention.head_count_kv` | Different from `*.attention.head_count` — always provide if shown |
+| `-d` | `*.attention.key_length` | Same value as `*.attention.value_length` |
+| `-c` | Your intended context size | See guidance below — NOT the model's `*.context_length` max |
+| `-t` | KV cache type | Match `OLLAMA_KV_CACHE_TYPE` env var (default `f16`, set to `q8_0` in this stack) |
+| `-a` | Architecture type: `transformer`, `ssm` | Use `ssm` when `*.attention.head_count_kv` is an array — see below |
 
-- **qwen3-4b-32k** — weights only ~2.5GB, 32K fits entirely in VRAM with room to spare. Also small enough to stay loaded in VRAM alongside whichever larger model was last used.
-- **gpt-oss-20b-64k** — weights ~10.5GB, leaving ~5.5GB for KV cache. 64K context (~5.4GB KV) fits in VRAM with minimal spill to RAM (fine with 32GB).
-- **omnicoder-9b-128k** — Qwen3.5-9B base with hybrid attention (only 8/32 layers are full attention). Weights ~5.5GB, KV cache ~32KB/token. 128K context uses ~4GB KV cache — fits entirely in VRAM.
+```bash
+./check-compaitbility.sh -f 15 -q 4 -e 5120 -b 40 -k 8 -d 128 -c 32768 -t q8_0
+```
 
-All three are custom models created via Modelfile — see setup.md.
+**RAM spillage is fine.** Ollama automatically spills the KV cache to CPU RAM when VRAM is exhausted. With 32GB system RAM there's plenty of headroom — you'll just see slower inference on very long contexts.
+
+### GQA models
+
+Models where `*.attention.head_count_kv` is lower than `*.attention.head_count` use Grouped Query Attention — their KV cache is much smaller. Always pass `-k` for these or the estimate will be significantly too high. Example: a model with 32 attention heads but 8 KV heads (`-k 8`) has a 4x smaller KV cache.
+
+### MoE models
+
+Models with `*.expert_count` and `*.expert_used_count` fields only activate a fraction of their weights per token. The file size already reflects this (a 30B MoE model with 3B active params has a proportionally smaller file), so `-f` is still correct. The KV cache estimate is also unaffected — it depends on attention heads, not experts. MoE models can handle large context more cheaply than their total parameter count suggests.
+
+### Hybrid SSM/attention models (Mamba, nemotron-cascade, etc.)
+
+These interleave attention layers with state space model (SSM) layers — look for `*.ssm.state_size` or `*.ssm.conv_kernel` fields on the blob page. `*.attention.head_count_kv` will appear as an array of mixed values or zeros rather than a single number.
+
+Pass `-a ssm` and the script will skip the KV cache calculation entirely:
+
+```bash
+./check-compaitbility.sh -f 24 -q 4 -e 2688 -b 52 -a ssm
+```
+
+The KV cache line will show `N/A` and the total will be just weights + overhead. These models handle very long contexts cheaply — that's the point of the architecture.
+
+---
+
+## Model slots
+
+### Coding model
+
+One model, stays loaded. Prioritise **context size** over speed — coding tasks need enough context to hold multiple files or a long back-and-forth. Slow inference is fine. RAM spillage is fine.
+
+**Target:** weights fit within ~20GB VRAM, leaving room for a large KV cache. Use `-c 32768` or higher and check the total.
+
+Good candidates: models tagged `code` or `coding` on Ollama. GQA models (low `-k`) handle long context much more efficiently.
+
+### Chat model
+
+Can be a large, high-quality model — context only needs to cover a conversation (4k–8k is usually enough). Prioritise model quality over context size.
+
+**Target:** total VRAM under ~22GB at 8k context.
+
+```bash
+./check-compaitbility.sh -f <size> -q 4 -e <embedding> -b <blocks> -k <kv_heads> -d <kv_len> -c 8192 -t q8_0
+```
+
+With 24GB VRAM and a small context window, 30B+ Q4 models fit comfortably.
+
+### Specialized models
+
+#### Computer vision
+
+Look for models tagged `vision` on Ollama. The blob page will show additional vision fields (Vision Block Count, Vision Embedding Length, etc.). The vision encoder adds VRAM on top of what the script estimates — typically 1–3GB. Use a modest context (4k) since vision tasks don't need long context.
+
+```bash
+./check-compaitbility.sh -f <size> -q 4 -e <embedding> -b <blocks> -k <kv_heads> -d <kv_len> -c 4096 -t q8_0
+```
+
+---
 
 ## Chat via CLI
 
 ```bash
-docker exec -it ollama ollama run omnicoder-9b-128k
+docker exec -it ollama ollama run <model>
 ```
 
 ## API
@@ -38,14 +100,13 @@ Ollama exposes an OpenAI-compatible REST API on port 11434:
 
 ```bash
 curl http://192.168.50.186:11434/api/generate \
-  -d '{"model": "qwen3-4b-32k", "prompt": "Hello!", "stream": false}'
+  -d '{"model": "<model>", "prompt": "Hello!", "stream": false}'
 ```
 
 From outside your network — any tool that supports a custom OpenAI-compatible base URL:
 ```
 Base URL: https://llm-api.jasonfagerberg.duckdns.org
-API Key:  <your-key from NPM nginx config>
-Model:    gpt-oss-20b-64k  (or qwen3-4b-32k, omnicoder-9b-128k)
+API Key:  <your key from NPM nginx config>
 ```
 
 > Auth is enforced by NPM's nginx config, not Ollama itself.
@@ -54,17 +115,28 @@ Model:    gpt-oss-20b-64k  (or qwen3-4b-32k, omnicoder-9b-128k)
 
 ```bash
 docker exec -it ollama ollama list
-docker exec -it ollama ollama pull qwen3:4b
-docker exec -it ollama ollama pull gpt-oss:20b
-docker exec -it ollama ollama pull carstenuhlig/omnicoder-9b:latest
+docker exec -it ollama ollama pull <model>
+docker exec -it ollama ollama rm <model>
+docker exec -it ollama ollama stop <model>   # unload from VRAM without deleting
 ```
+
+### Setting context length
+
+Ollama defaults to 2048 tokens. To run a model at a specific context size:
+
+```bash
+docker exec -it ollama bash -c 'printf "FROM <model>\nPARAMETER num_ctx 32768" | ollama create <model-name>'
+```
+
+Use the context size you evaluated with `check-compaitbility.sh` — loading a larger context than VRAM can hold will cause spillage to RAM.
 
 ## Resource Notes
 
-- GPU inference across 2x GTX 1070 (~16GB effective VRAM) — expect ~15–30 tokens/sec on small models, slower on 20B+
-- `qwen3-4b-32k` stays loaded in VRAM alongside larger models due to its small footprint — fast responses with no load delay
+- RTX 3090 24GB VRAM — expect ~20–50 tokens/sec on Q4 models depending on size
 - Plex NVENC transcoding and LLM inference share the GPU but rarely overlap in practice
 - Model files are stored in `./data`
+- KV cache quantized to `q8_0` via `OLLAMA_KV_CACHE_TYPE` — halves KV cache VRAM vs default FP16
+- Flash attention enabled via `OLLAMA_FLASH_ATTENTION=1`
 
 ## Updating
 

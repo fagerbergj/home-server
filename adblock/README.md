@@ -2,7 +2,7 @@
 
 Network-wide DNS ad blocker. Blocks ads and trackers at the DNS level for all devices on the network — no client-side setup required.
 
-Admin UI at: https://adblock.jasonfagerberg.duckdns.org
+Admin UI at: `http://192.168.50.186:3003` (internal only)
 
 ## Notes
 
