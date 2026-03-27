@@ -23,5 +23,6 @@ monitoring/uptime-kuma/
 networking/data/
 networking/letsencrypt/
 passwords/data/
-updater/diun/
+torrent/config/
+torrent/jackett/
 installer-rm12.sh

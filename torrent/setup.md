@@ -21,18 +21,18 @@ Go to Tools > Options > Web UI > Authentication and set a strong password.
 ## 4. Copy search plugins
 
 ```bash
-docker cp search/. qbittorrent:/config/torrent/nova3/engines/
+docker cp search/. qbittorrent:/config/qBittorrent/nova3/engines/
 docker restart qbittorrent
 ```
 
 ## 5. Configure Jackett
 
 1. Open `http://192.168.50.186:9117` and set an admin password (wrench icon)
-2. Copy the API key from the top-right corner
+2. Copy the API key from the top of the page
 3. Create the plugin config file (the file may be owned by the container user, so use `tee`):
 
 ```bash
-echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee ~/workspace/home-server/torrent/config/torrent/nova3/engines/jackett.json
+echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee ~/workspace/home-server/torrent/config/qBittorrent/nova3/engines/jackett.json
 ```
 
 4. In qBittorrent, install the Jackett search plugin:
