@@ -47,6 +47,6 @@ services:
       - WEBUI_PORT=8080
     volumes:
       - ./config:/config
-      - ./config/qBittorrent/nova3/engines:/config/qBittorrent/nova3/engines  # search plugins
+      - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
       - /mnt/plex01:/mnt/plex01
     restart: unless-stopped

@@ -35,7 +35,7 @@ EOF
 
     # Copy compose files to temp dir so we don't touch the real ones
     export REPO_ROOT="$TMPDIR/repo"
-    mkdir -p "$REPO_ROOT/plex" "$REPO_ROOT/photos" "$REPO_ROOT/qbittorrent"
+    mkdir -p "$REPO_ROOT/plex" "$REPO_ROOT/photos" "$REPO_ROOT/torrent"
 
     cat > "$REPO_ROOT/plex/docker-compose.yml" <<'EOF'
       - PUID=<plex-uid>    # run: id plex
@@ -47,7 +47,7 @@ EOF
       - PGID=<personal-rw-gid>    # run: getent group personal-rw
 EOF
 
-    cat > "$REPO_ROOT/qbittorrent/docker-compose.yml" <<'EOF'
+    cat > "$REPO_ROOT/torrent/docker-compose.yml" <<'EOF'
       - PUID=<qbittorrent-uid>  # run: id qbittorrent
       - PGID=<plex-rw-gid>      # run: getent group plex-rw
 EOF
@@ -79,12 +79,12 @@ teardown() {
 
 @test "updates qbittorrent PUID" {
     REPO_ROOT="$REPO_ROOT" run bash "$SCRIPT"
-    grep -q "PUID=1004" "$REPO_ROOT/qbittorrent/docker-compose.yml"
+    grep -q "PUID=1004" "$REPO_ROOT/torrent/docker-compose.yml"
 }
 
 @test "updates qbittorrent PGID" {
     REPO_ROOT="$REPO_ROOT" run bash "$SCRIPT"
-    grep -q "PGID=2001" "$REPO_ROOT/qbittorrent/docker-compose.yml"
+    grep -q "PGID=2001" "$REPO_ROOT/torrent/docker-compose.yml"
 }
 
 @test "prints all UIDs and GIDs" {

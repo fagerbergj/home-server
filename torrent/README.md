@@ -24,7 +24,7 @@ Set in Options > Downloads:
 Plugins are in `search/`. To enable them:
 
 ```bash
-docker cp search/. qbittorrent:/config/qBittorrent/nova3/engines/
+docker cp search/. qbittorrent:/config/torrent/nova3/engines/
 docker restart qbittorrent
 ```
 
@@ -40,12 +40,12 @@ Jackett runs alongside qBittorrent and gluetun, routing through the VPN. It prox
 http://192.168.50.186:9117
 ```
 
-Config file for the qBittorrent plugin: `config/qBittorrent/nova3/engines/jackett.json`
+Config file for the qBittorrent plugin: `config/torrent/nova3/engines/jackett.json`
 
 To write the config (file is owned by the container user):
 
 ```bash
-echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee config/qBittorrent/nova3/engines/jackett.json
+echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee config/torrent/nova3/engines/jackett.json
 ```
 
 ## Changing Exit Country

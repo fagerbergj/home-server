@@ -27,7 +27,7 @@ sed -i "s|PGID=<plex-ro-gid>|PGID=$PLEX_RO_GID|" "$REPO_ROOT/plex/docker-compose
 sed -i "s|PUID=<immich-uid>|PUID=$IMMICH_UID|" "$REPO_ROOT/photos/docker-compose.yml"
 sed -i "s|PGID=<personal-rw-gid>|PGID=$PERSONAL_RW_GID|" "$REPO_ROOT/photos/docker-compose.yml"
 
-sed -i "s|PUID=<qbittorrent-uid>|PUID=$QBITTORRENT_UID|" "$REPO_ROOT/qbittorrent/docker-compose.yml"
-sed -i "s|PGID=<plex-rw-gid>|PGID=$PLEX_RW_GID|" "$REPO_ROOT/qbittorrent/docker-compose.yml"
+sed -i "s|PUID=<qbittorrent-uid>|PUID=$QBITTORRENT_UID|" "$REPO_ROOT/torrent/docker-compose.yml"
+sed -i "s|PGID=<plex-rw-gid>|PGID=$PLEX_RW_GID|" "$REPO_ROOT/torrent/docker-compose.yml"
 
 echo "done — compose files updated"
