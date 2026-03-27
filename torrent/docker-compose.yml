@@ -41,8 +41,8 @@ services:
     depends_on:
       - gluetun
     environment:
-      - PUID=<qbittorrent-uid>  # run: id qbittorrent
-      - PGID=<plex-rw-gid>      # run: getent group plex-rw
+      - PUID=994  # run: id qbittorrent
+      - PGID=1001      # run: getent group plex-rw
       - TZ=America/Chicago
       - WEBUI_PORT=8080
     volumes:
