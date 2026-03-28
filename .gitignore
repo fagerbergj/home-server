@@ -26,3 +26,4 @@ passwords/data/
 torrent/config/
 torrent/jackett/
 installer-rm12.sh
+api/data/

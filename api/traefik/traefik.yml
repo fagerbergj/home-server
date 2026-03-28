@@ -1,0 +1,38 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+
+entryPoints:
+  # Receives traffic from NPM (NPM handles TLS, forwards plain HTTP here)
+  api:
+    address: ":8090"
+    forwardedHeaders:
+      # Trust X-Forwarded-* from NPM and local Docker bridge
+      trustedIPs:
+        - "127.0.0.1/32"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+  # Dashboard only — mapped to host port 8091, never forwarded through NPM
+  traefik:
+    address: ":8080"
+
+api:
+  dashboard: true
+  insecure: true   # Dashboard on :8080 is LAN-only; acceptable for home server
+
+providers:
+  # Docker provider: discovers containers on api_gateway that have traefik.enable=true
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    network: api_gateway
+    exposedByDefault: false
+    watch: true
+
+  # File provider: static routes/middleware for services that can't join api_gateway
+  file:
+    directory: /dynamic
+    watch: true

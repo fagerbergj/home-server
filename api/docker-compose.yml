@@ -1,0 +1,159 @@
+services:
+
+  # ── Traefik ──────────────────────────────────────────────────────────────────
+  # API gateway: path-based routing, Authentik forward auth middleware.
+  # NPM proxies api.jasonfagerberg.duckdns.org → :8090.
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    ports:
+      - "8090:8090"   # NPM ingress
+      - "8091:8080"   # Dashboard — http://192.168.50.186:8091/dashboard/ (LAN only)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/dynamic:/dynamic:ro
+    restart: unless-stopped
+    networks:
+      - default
+      - api_gateway
+
+  # ── Authentik server + embedded outpost ───────────────────────────────────────
+  # Identity provider: OAuth2/OIDC, login UI, session management.
+  # The embedded outpost serves /outpost.goauthentik.io/* which Traefik calls
+  # for forward auth on protected routes.
+  #
+  # Initial setup: temporarily uncomment the ports block, complete setup via
+  # http://192.168.50.186:9000/if/flow/initial-setup/, then re-comment it.
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2024.12
+    container_name: authentik-server
+    command: server
+    # ports:
+    #   - "9000:9000"   # TEMPORARY — initial setup only, remove after
+    env_file:
+      - ../.env
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_DB_NAME}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_DB_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED:-false}
+      AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_EMAIL__HOST:-}
+      AUTHENTIK_EMAIL__PORT: ${AUTHENTIK_EMAIL__PORT:-587}
+      AUTHENTIK_EMAIL__USERNAME: ${AUTHENTIK_EMAIL__USERNAME:-}
+      AUTHENTIK_EMAIL__PASSWORD: ${AUTHENTIK_EMAIL__PASSWORD:-}
+      AUTHENTIK_EMAIL__FROM: ${AUTHENTIK_EMAIL__FROM:-}
+    volumes:
+      - ./data/authentik-media:/media
+      - ./data/authentik-certs:/certs
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+    labels:
+      # Route the Authentik outpost endpoint through Traefik so the OIDC
+      # redirect flow works under api.jasonfagerberg.duckdns.org
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik-outpost.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/outpost.goauthentik.io`)"
+      - "traefik.http.routers.authentik-outpost.entrypoints=api"
+      - "traefik.http.services.authentik-outpost.loadbalancer.server.port=9000"
+
+  # ── Authentik worker ──────────────────────────────────────────────────────────
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2024.12
+    container_name: authentik-worker
+    command: worker
+    env_file:
+      - ../.env
+    environment:
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_DB_NAME}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_DB_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_ERROR_REPORTING__ENABLED: ${AUTHENTIK_ERROR_REPORTING__ENABLED:-false}
+    volumes:
+      - ./data/authentik-media:/media
+      - ./data/authentik-certs:/certs
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+      authentik-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+
+  # ── Authentik Postgres ────────────────────────────────────────────────────────
+  authentik-postgres:
+    image: postgres:16-alpine
+    container_name: authentik-postgres
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_DB_NAME}
+      POSTGRES_USER: ${AUTHENTIK_DB_USER}
+      POSTGRES_PASSWORD: ${AUTHENTIK_DB_PASSWORD}
+    volumes:
+      - ./data/authentik-postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_DB_USER} -d ${AUTHENTIK_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Authentik Redis ───────────────────────────────────────────────────────────
+  authentik-redis:
+    image: redis:alpine
+    container_name: authentik-redis
+    volumes:
+      - ./data/authentik-redis:/data
+    restart: unless-stopped
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Swagger UI ────────────────────────────────────────────────────────────────
+  # Public OpenAPI docs at https://api.jasonfagerberg.duckdns.org/docs
+  #
+  # To add a new service's spec, append to URLS and run:
+  #   docker compose up -d swagger-ui
+  #
+  # Example URLS entry:
+  #   {"url": "https://api.jasonfagerberg.duckdns.org/api/v1/documents/openapi.json", "name": "Documents"}
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: swagger-ui
+    environment:
+      BASE_URL: /docs
+      URLS: "[]"
+    restart: unless-stopped
+    networks:
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.swagger-ui.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/docs`)"
+      - "traefik.http.routers.swagger-ui.entrypoints=api"
+      - "traefik.http.services.swagger-ui.loadbalancer.server.port=8080"
+      # Public — no auth middleware
+
+networks:
+  default:
+  api_gateway:
+    name: api_gateway   # explicit name so external services can reference it

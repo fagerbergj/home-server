@@ -16,9 +16,9 @@ services:
 
   document-pipeline:
     image: document-pipeline:latest
-    container_name: remarkable-bridge
+    container_name: document-pipeline
     ports:
-      - "3006:8000"
+      - "3006:8000"   # direct LAN access; remove once API gateway is set up
     env_file:
       - ../.env
     environment:
@@ -41,14 +41,30 @@ services:
     networks:
       - default
       - llm_default
+      - api_gateway
     depends_on:
       - rmfakecloud
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.document-pipeline.loadbalancer.server.port=8000"
+      # Protected: all /api/v1/documents routes require Authentik login
+      - "traefik.http.routers.document-pipeline.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/api/v1/documents`)"
+      - "traefik.http.routers.document-pipeline.entrypoints=api"
+      - "traefik.http.routers.document-pipeline.service=document-pipeline"
+      - "traefik.http.routers.document-pipeline.middlewares=authentik@file"
+      # Public: OpenAPI spec (Swagger UI fetches this without auth)
+      - "traefik.http.routers.document-pipeline-spec.rule=Host(`api.jasonfagerberg.duckdns.org`) && Path(`/api/v1/documents/openapi.json`)"
+      - "traefik.http.routers.document-pipeline-spec.entrypoints=api"
+      - "traefik.http.routers.document-pipeline-spec.service=document-pipeline"
 
 
 networks:
   llm_default:
     external: true
+  api_gateway:
+    external: true
+    name: api_gateway
 
 volumes:
   remarkable-bridge-data:

@@ -90,6 +90,7 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 
 | Service | Domain | Scheme | Forward Host | Port | Websockets | SSL cert |
 |---------|--------|--------|--------------|------|------------|----------|
+| API Gateway | `api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Grafana | `dashboard.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3004` | No | `*.jasonfagerberg.duckdns.org` |
 | Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |

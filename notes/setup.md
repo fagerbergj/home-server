@@ -63,7 +63,7 @@ In Nginx Proxy Manager, add a proxy host:
 
 In the rmfakecloud web UI, add a webhook integration pointing to the bridge:
 
-- URL: `http://remarkable-bridge:8000/webhook`
+- URL: `http://document-pipeline:8000/webhook`
 - Type: Webhook
 
 On the tablet, tap the **Share** icon on any notebook — the integration will appear as a send target. Tapping it sends the note image to the bridge, which OCRs it via Ollama and uploads it to the Open WebUI knowledge collection.
@@ -76,5 +76,5 @@ In any Open WebUI chat, click the knowledge icon and select the `remarkable` col
 
 ```bash
 # View bridge logs
-docker logs remarkable-bridge -f
+docker logs document-pipeline -f
 ```
