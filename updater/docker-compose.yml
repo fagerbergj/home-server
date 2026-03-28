@@ -11,7 +11,7 @@ services:
       - WATCHTOWER_SCHEDULE=0 0 8 * * *  # pull updates daily at 8am UTC (2-3am CT)
       - WATCHTOWER_CLEANUP=true        # clean up old images after update
       - WATCHTOWER_INCLUDE_STOPPED=false
-      - WATCHTOWER_EXCLUDE=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,remarkable-bridge,nginx-proxy-manager
+      - WATCHTOWER_EXCLUDE=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,document-pipeline,nginx-proxy-manager,authentik-server,authentik-worker,authentik-postgres,authentik-redis
       - WATCHTOWER_NOTIFICATIONS=email
       - WATCHTOWER_NOTIFICATION_EMAIL_FROM=jf.fagerberg@gmail.com
       - WATCHTOWER_NOTIFICATION_EMAIL_TO=jf.fagerberg@gmail.com
