@@ -140,7 +140,7 @@ services:
     container_name: swagger-ui
     environment:
       BASE_URL: /docs
-      URLS: "[]"
+      URLS: '[{"url": "https://api.jasonfagerberg.duckdns.org/api/v1/documents/openapi.json", "name": "Documents"}]'
     restart: unless-stopped
     networks:
       - default
@@ -151,7 +151,55 @@ services:
       - "traefik.http.services.swagger-ui.loadbalancer.server.port=8080"
       # Public — no auth middleware
 
+  # ── Document Pipeline ─────────────────────────────────────────────────────────
+  # OCR + classification pipeline for reMarkable documents.
+  # Receives webhook from rmfakecloud (notes stack) on new uploads.
+  document-pipeline:
+    image: document-pipeline:latest
+    container_name: document-pipeline
+    env_file:
+      - ../.env
+    environment:
+      - OCR_MODEL=${OCR_MODEL:-glm-ocr}
+      - CLARIFY_MODEL=${CLARIFY_MODEL}
+      - CLASSIFY_MODEL=${CLASSIFY_MODEL}
+      - EMBED_MODEL=${EMBED_MODEL}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - VAULT_PATH=/vault
+      - DB_PATH=/data/pipeline.db
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-remarkable}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      - OPEN_WEBUI_URL=${OPEN_WEBUI_URL}
+      - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
+      - OPEN_WEBUI_KNOWLEDGE_ID=${OPEN_WEBUI_KNOWLEDGE_ID}
+    volumes:
+      - /mnt/personal01/remarkable:/vault
+      - remarkable-bridge-data:/data
+    networks:
+      - default
+      - api_gateway
+      - llm_default
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.document-pipeline.loadbalancer.server.port=8000"
+      # Protected: all /api/v1/documents routes require Authentik login
+      - "traefik.http.routers.document-pipeline.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/api/v1/documents`)"
+      - "traefik.http.routers.document-pipeline.entrypoints=api"
+      - "traefik.http.routers.document-pipeline.service=document-pipeline"
+      - "traefik.http.routers.document-pipeline.middlewares=authentik@file"
+      # Public: OpenAPI spec (Swagger UI fetches this without auth)
+      - "traefik.http.routers.document-pipeline-spec.rule=Host(`api.jasonfagerberg.duckdns.org`) && Path(`/api/v1/documents/openapi.json`)"
+      - "traefik.http.routers.document-pipeline-spec.entrypoints=api"
+      - "traefik.http.routers.document-pipeline-spec.service=document-pipeline"
+
 networks:
   default:
   api_gateway:
     name: api_gateway   # explicit name so external services can reference it
+  llm_default:
+    external: true
+
+volumes:
+  remarkable-bridge-data:
