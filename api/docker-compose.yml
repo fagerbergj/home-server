@@ -4,7 +4,7 @@ services:
   # API gateway: path-based routing, Authentik forward auth middleware.
   # NPM proxies api.jasonfagerberg.duckdns.org → :8090.
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.6
     container_name: traefik
     ports:
       - "8090:8090"   # NPM ingress
@@ -26,7 +26,7 @@ services:
   # Initial setup: temporarily uncomment the ports block, complete setup via
   # http://192.168.50.186:9000/if/flow/initial-setup/, then re-comment it.
   authentik-server:
-    image: ghcr.io/goauthentik/server:2024.12
+    image: ghcr.io/goauthentik/server:2026.2
     container_name: authentik-server
     command: server
     # ports:

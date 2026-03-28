@@ -12,7 +12,7 @@
 ```bash
 # API Gateway (Traefik)
 TRAEFIK_DASHBOARD_CREDENTIALS=admin:$$apr1$$...   # see below
-AUTHENTIK_SECRET_KEY=                             # openssl rand -base64 36
+AUTHENTIK_SECRET_KEY=                             # openssl rand -hex 32
 AUTHENTIK_ERROR_REPORTING__ENABLED=false
 AUTHENTIK_DB_NAME=authentik
 AUTHENTIK_DB_USER=authentik
@@ -65,6 +65,12 @@ In Nginx Proxy Manager (`http://192.168.50.186:81`), add a new proxy host:
 ---
 
 ## 4. Start Authentik
+
+Fix permissions on the data directories (created by root, Authentik runs as UID 1000):
+
+```bash
+sudo chown -R 1000:1000 api/data/
+```
 
 ```bash
 docker compose -f api/docker-compose.yml up -d authentik-postgres authentik-redis
