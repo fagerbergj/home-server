@@ -93,7 +93,7 @@ services:
 
   # ── Authentik Postgres ────────────────────────────────────────────────────────
   authentik-postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: authentik-postgres
     env_file:
       - ../.env
