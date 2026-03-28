@@ -193,6 +193,12 @@ services:
       - "traefik.http.routers.document-pipeline-spec.rule=Host(`api.jasonfagerberg.duckdns.org`) && Path(`/api/v1/documents/openapi.json`)"
       - "traefik.http.routers.document-pipeline-spec.entrypoints=api"
       - "traefik.http.routers.document-pipeline-spec.service=document-pipeline"
+      # UI: documents.jasonfagerberg.duckdns.org
+      - "traefik.http.services.document-pipeline-ui.loadbalancer.server.port=3006"
+      - "traefik.http.routers.document-pipeline-ui.rule=Host(`documents.jasonfagerberg.duckdns.org`)"
+      - "traefik.http.routers.document-pipeline-ui.entrypoints=api"
+      - "traefik.http.routers.document-pipeline-ui.service=document-pipeline-ui"
+      - "traefik.http.routers.document-pipeline-ui.middlewares=authentik@file"
 
 networks:
   default:

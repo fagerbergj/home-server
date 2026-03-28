@@ -41,6 +41,50 @@ Public routes (e.g., `/api/v1/<service>/openapi.json`) omit the `authentik@file`
 
 See [setup.md](setup.md#adding-a-new-service).
 
+## Adding a UI for a Service
+
+UIs live alongside their API service in the same `docker-compose.yml` and route through the same Traefik instance. Each UI gets its own subdomain covered by the existing `*.jasonfagerberg.duckdns.org` wildcard cert.
+
+### 1. Add an NPM proxy host
+
+In Nginx Proxy Manager, add a new proxy host pointing to the same Traefik port:
+
+| Field | Value |
+|-------|-------|
+| Domain | `<service>.jasonfagerberg.duckdns.org` |
+| Scheme | `http` |
+| Forward Hostname | `192.168.50.186` |
+| Forward Port | `8090` |
+| WebSockets Support | on |
+| SSL Certificate | `*.jasonfagerberg.duckdns.org` (existing wildcard) |
+| Force SSL | on |
+
+### 2. Add Traefik labels to the UI container
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.services.<name>-ui.loadbalancer.server.port=<port>"
+  - "traefik.http.routers.<name>-ui.rule=Host(`<service>.jasonfagerberg.duckdns.org`)"
+  - "traefik.http.routers.<name>-ui.entrypoints=api"
+  - "traefik.http.routers.<name>-ui.middlewares=authentik@file"
+```
+
+Join the `api_gateway` network (same as the API service).
+
+### 3. Add a Proxy Provider in Authentik for the new subdomain
+
+The existing `api-gateway` Proxy Provider only covers `api.jasonfagerberg.duckdns.org`. Each UI subdomain needs its own provider:
+
+1. **Admin → Providers → Create → Proxy Provider**
+   - Authorization flow: `default-provider-authorization-implicit-consent`
+   - Mode: **Forward auth (single application)**
+   - External host: `https://<service>.jasonfagerberg.duckdns.org`
+2. **Applications → Create** — link to the new provider
+3. **Outposts → authentik Embedded Outpost → Edit** — add the new application
+
+Users share the same Authentik session across all subdomains; Authentik just needs a provider registered for each one.
+
 ## Future RBAC
 
 When ready, resource+verb scopes (`documents:read`, `documents:write`, etc.) can be enforced by:
