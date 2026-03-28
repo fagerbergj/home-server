@@ -82,12 +82,6 @@ docker compose -f api/docker-compose.yml up -d authentik-server authentik-worker
 
 ## 5. Initial Authentik setup
 
-Temporarily expose port 9000 — edit `api/docker-compose.yml` and uncomment the `ports` block on `authentik-server`, then:
-
-```bash
-docker compose -f api/docker-compose.yml up -d authentik-server
-```
-
 Visit `http://192.168.50.186:9000/if/flow/initial-setup/` and set the admin password.
 
 ### Create the Proxy Provider
@@ -112,14 +106,6 @@ Visit `http://192.168.50.186:9000/if/flow/initial-setup/` and set the admin pass
    - Applications: `API Gateway`
 
    The embedded outpost activates inside `authentik-server` — no separate container needed.
-
-### Remove the temporary port
-
-Re-comment the `ports` block in `api/docker-compose.yml`, then:
-
-```bash
-docker compose -f api/docker-compose.yml up -d authentik-server
-```
 
 ---
 

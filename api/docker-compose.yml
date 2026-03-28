@@ -23,14 +23,12 @@ services:
   # The embedded outpost serves /outpost.goauthentik.io/* which Traefik calls
   # for forward auth on protected routes.
   #
-  # Initial setup: temporarily uncomment the ports block, complete setup via
-  # http://192.168.50.186:9000/if/flow/initial-setup/, then re-comment it.
   authentik-server:
     image: ghcr.io/goauthentik/server:2026.2
     container_name: authentik-server
     command: server
-    # ports:
-    #   - "9000:9000"   # TEMPORARY — initial setup only, remove after
+    ports:
+      - "9000:9000"   # LAN only — never forward through NPM
     env_file:
       - ../.env
     environment:
