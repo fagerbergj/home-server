@@ -12,8 +12,14 @@ services:
       - DATADIR=/data
     volumes:
       - ./rmfakecloud-data:/data
+    networks:
+      - default
+      - api_gateway
     restart: unless-stopped
 
 
 networks:
   default:
+  api_gateway:
+    external: true
+    name: api_gateway
