@@ -26,7 +26,7 @@ services:
   # Initial setup: temporarily uncomment the ports block, complete setup via
   # http://192.168.50.186:9000/if/flow/initial-setup/, then re-comment it.
   authentik-server:
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2026.02
     container_name: authentik-server
     command: server
     # ports:
@@ -67,7 +67,7 @@ services:
 
   # ── Authentik worker ──────────────────────────────────────────────────────────
   authentik-worker:
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2026.02
     container_name: authentik-worker
     command: worker
     env_file:
