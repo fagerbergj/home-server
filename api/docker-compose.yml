@@ -24,7 +24,7 @@ services:
   # for forward auth on protected routes.
   #
   authentik-server:
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2025.12
     container_name: authentik-server
     command: server
     ports:
@@ -65,7 +65,7 @@ services:
 
   # ── Authentik worker ──────────────────────────────────────────────────────────
   authentik-worker:
-    image: ghcr.io/goauthentik/server:2025.10
+    image: ghcr.io/goauthentik/server:2025.12
     container_name: authentik-worker
     command: worker
     env_file:
