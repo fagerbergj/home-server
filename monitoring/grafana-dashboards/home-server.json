@@ -826,23 +826,23 @@
                     "type": "value",
                     "options": {
                       "sda": {
-                        "text": "OS",
+                        "text": "personal01-a",
                         "index": 0
                       },
                       "sdb": {
-                        "text": "plex02",
+                        "text": "personal01-b",
                         "index": 1
                       },
                       "sdc": {
-                        "text": "plex01",
+                        "text": "plex02",
                         "index": 2
                       },
                       "sdd": {
-                        "text": "personal01-a",
+                        "text": "OS",
                         "index": 3
                       },
                       "sde": {
-                        "text": "personal01-b",
+                        "text": "plex01",
                         "index": 4
                       }
                     }
