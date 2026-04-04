@@ -55,7 +55,7 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     environment:
-      - PUID=<sonarr-uid>  # run: id sonarr
+      - PUID=988  # run: id sonarr
       - PGID=1001 # run: getent group plex-rw
       - TZ=America/Chicago
     volumes:
@@ -70,7 +70,7 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     environment:
-      - PUID=<radarr-uid>  # run: id radarr
+      - PUID=987  # run: id radarr
       - PGID=1001 # run: getent group plex-rw
       - TZ=America/Chicago
     volumes:
