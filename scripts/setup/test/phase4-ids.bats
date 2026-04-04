@@ -17,6 +17,8 @@ case "$2" in
     plex)        echo "1001" ;;
     immich)      echo "1002" ;;
     qbittorrent) echo "1004" ;;
+    sonarr)      echo "1005" ;;
+    radarr)      echo "1006" ;;
     *)           echo "1000" ;;
 esac
 EOF
@@ -49,6 +51,8 @@ EOF
 
     cat > "$REPO_ROOT/torrent/docker-compose.yml" <<'EOF'
       - PUID=<qbittorrent-uid>  # run: id qbittorrent
+      - PUID=<sonarr-uid>       # run: id sonarr
+      - PUID=<radarr-uid>       # run: id radarr
       - PGID=<plex-rw-gid>      # run: getent group plex-rw
 EOF
 }
@@ -82,7 +86,17 @@ teardown() {
     grep -q "PUID=1004" "$REPO_ROOT/torrent/docker-compose.yml"
 }
 
-@test "updates qbittorrent PGID" {
+@test "updates sonarr PUID" {
+    REPO_ROOT="$REPO_ROOT" run bash "$SCRIPT"
+    grep -q "PUID=1005" "$REPO_ROOT/torrent/docker-compose.yml"
+}
+
+@test "updates radarr PUID" {
+    REPO_ROOT="$REPO_ROOT" run bash "$SCRIPT"
+    grep -q "PUID=1006" "$REPO_ROOT/torrent/docker-compose.yml"
+}
+
+@test "updates torrent PGID" {
     REPO_ROOT="$REPO_ROOT" run bash "$SCRIPT"
     grep -q "PGID=2001" "$REPO_ROOT/torrent/docker-compose.yml"
 }
@@ -92,6 +106,8 @@ teardown() {
     [[ "$output" == *"plex uid"*"1001"* ]]
     [[ "$output" == *"immich uid"*"1002"* ]]
     [[ "$output" == *"qbittorrent uid"*"1004"* ]]
+    [[ "$output" == *"sonarr uid"*"1005"* ]]
+    [[ "$output" == *"radarr uid"*"1006"* ]]
     [[ "$output" == *"plex-ro gid"*"2002"* ]]
     [[ "$output" == *"plex-rw gid"*"2001"* ]]
     [[ "$output" == *"personal-rw gid"*"2003"* ]]
