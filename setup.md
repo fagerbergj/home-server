@@ -308,6 +308,8 @@ sudo useradd -r -s /sbin/nologin immich
 sudo useradd -r -s /sbin/nologin minecraft
 sudo useradd -r -s /sbin/nologin qbittorrent
 sudo useradd -r -s /sbin/nologin audiobookshelf
+sudo useradd -r -s /sbin/nologin sonarr
+sudo useradd -r -s /sbin/nologin radarr
 
 # Create groups
 sudo groupadd plex-rw
@@ -317,6 +319,8 @@ sudo groupadd personal-ro
 
 # Assign groups
 sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
+sudo usermod -aG plex-rw sonarr        # moves completed downloads to shows folder
+sudo usermod -aG plex-rw radarr        # moves completed downloads to movies folder
 sudo usermod -aG plex-rw jason-server  # manage plex drive directly
 sudo usermod -aG plex-ro plex          # plex reads media
 sudo usermod -aG plex-ro audiobookshelf  # audiobookshelf reads media
@@ -330,7 +334,7 @@ sudo usermod -aG personal-rw jason-server  # manage personal drive directly
 sudo apt install -y acl
 
 # Plex drive
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks
+sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks /mnt/plex01/downloads
 sudo chown -R root:plex-rw /mnt/plex01
 sudo chmod -R 2775 /mnt/plex01
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex01

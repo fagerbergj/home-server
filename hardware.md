@@ -4,8 +4,8 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| CPU | AMD Ryzen 5 3600 (Matisse, 6c/12t, 3.6GHz, 65W) | ⚠️ Interim — 5000-series replaces this when it cascades from main PC |
-| Motherboard | MSI B350 Tomahawk (AM4, B350 chipset) | ✅ Flashed to latest beta BIOS (Ryzen 5000 ready) |
+| CPU | AMD Ryzen 5 5500 (Cezanne, 6c/12t, 3.6GHz, 65W) | ✅ |
+| Motherboard | GIGABYTE B550 Eagle WIFI6 (AM4, B550 chipset) | ✅ Native Ryzen 5000 support, PCIe 4.0, WIFI6 |
 | RAM | 32GB DDR4 | ✅ Upgraded from 16GB |
 | CPU Cooler | Stock AMD Wraith | ✅ |
 | OS Drive | 480GB ADATA SU650 SSD | ✅ |
@@ -15,7 +15,7 @@
 | Plex Drive (overflow) | 640GB Hitachi Deskstar HDD | ⚠️ Old drive (41k hrs) — non-critical re-downloadable media only |
 | GPU | RTX 3090 (Ampere, 24GB VRAM) | ✅ 24GB VRAM for LLM inference, excellent NVENC |
 | PSU | 1200W | ✅ Upgraded from 500W |
-| Network | Realtek Gigabit LAN (onboard, `enp35s0`) | ✅ Gigabit |
+| Network | Intel GbE LAN (onboard, `enp6s0`) + WIFI6 | ✅ Gigabit |
 | Case | Fractal Design Define R5 (ATX Mid Tower) | ✅ |
 
 ---
@@ -33,5 +33,4 @@
 
 ## Platform Notes
 
-- AM4 / B350 Tomahawk — Ryzen 5 3600 interim, awaiting 5000-series cascade from main PC
-- See [`hardware_upgrades.md`](hardware_upgrades.md) for next steps
+- AM4 / B550 Eagle WIFI6 — Ryzen 5 5500, native Ryzen 5000 support (no BIOS flash workaround needed)

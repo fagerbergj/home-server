@@ -48,6 +48,51 @@ In Options > Downloads, set the default save path and per-category paths:
 | Movies | `/mnt/plex01/movies` |
 | TV | `/mnt/plex01/shows` |
 
+## 7. Configure Sonarr (TV shows)
+
+Open `http://192.168.50.186:8989`.
+
+**Download client:**
+Settings > Download Clients > + > qBittorrent
+- Host: `192.168.50.186`
+- Port: `8080`
+- Username/password: your qBittorrent credentials
+- Category: `sonarr`
+- Test and save.
+
+**Indexer:**
+Settings > Indexers > + > Torznab (Custom)
+- URL: `http://192.168.50.186:9117/api/v2.0/indexers/all/results/torznab/`
+- API key: your Jackett API key (from `http://192.168.50.186:9117`)
+- Test and save.
+
+**Root folders:**
+Settings > Media Management > Root Folders > + `/mnt/plex01/shows`
+
+Optionally add `/mnt/plex02/shows` as a second root folder to allow offloading older shows.
+
+---
+
+## 8. Configure Radarr (movies)
+
+Open `http://192.168.50.186:7878`. Same steps as Sonarr:
+
+**Download client:** same settings, category: `radarr`
+
+**Indexer:** same Jackett Torznab URL and API key
+
+**Root folders:** `/mnt/plex01/movies` (and optionally `/mnt/plex02/movies`)
+
+---
+
+## 9. Update qBittorrent download path
+
+In qBittorrent: Options > Downloads > Default Save Path → `/mnt/plex01/downloads/`
+
+Sonarr and Radarr override this per-category automatically, so existing categories (`movies`, `tv`) don't need manual changes — Sonarr/Radarr will reconfigure them on first use.
+
+---
+
 ## Verify
 
 1. Open `http://192.168.50.186:8080` and confirm you can log in with your new password
@@ -55,4 +100,6 @@ In Options > Downloads, set the default save path and per-category paths:
    ```bash
    docker compose logs gluetun | grep -i "connected\|handshake"
    ```
-3. Add a test torrent and confirm it downloads to `/mnt/plex01/`
+3. In Sonarr: add a TV show and confirm a torrent appears in qBittorrent
+4. In Radarr: add a movie and confirm a torrent appears in qBittorrent
+5. After a download completes, confirm Sonarr/Radarr move it to the correct folder with proper naming

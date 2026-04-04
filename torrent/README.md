@@ -1,23 +1,26 @@
-# qBittorrent
+# Torrent Stack
 
-Downloads torrents directly to `/mnt/plex01`. Managed via web UI — no desktop needed.
+Automated media pipeline: Sonarr/Radarr find and request content → qBittorrent downloads it through Mullvad VPN → files land in the right Plex folder, renamed correctly.
 
-All traffic is routed through Mullvad VPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks.
+All torrent traffic is routed through Mullvad VPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks.
 
 ## Access
 
-```
-http://192.168.50.186:8080
-```
+| Service | URL | Purpose |
+|---------|-----|---------|
+| qBittorrent | `http://192.168.50.186:8080` | Download client |
+| Jackett | `http://192.168.50.186:9117` | Indexer proxy |
+| Sonarr | `http://192.168.50.186:8989` | TV show library manager |
+| Radarr | `http://192.168.50.186:7878` | Movie library manager |
 
 ## Download Paths
 
-Set in Options > Downloads:
+qBittorrent's default save path is `/mnt/plex01/downloads/`. Sonarr and Radarr override this per-category and move completed files to their final locations automatically.
 
-| Content | Path |
-|---------|------|
-| Movies | `/mnt/plex01/movies` |
-| TV | `/mnt/plex01/shows` |
+| Content | Staging | Final |
+|---------|---------|-------|
+| Movies | `/mnt/plex01/downloads/` | `/mnt/plex01/movies` (or `/mnt/plex02/movies`) |
+| TV | `/mnt/plex01/downloads/` | `/mnt/plex01/shows` (or `/mnt/plex02/shows`) |
 
 ## Search Engine Plugins
 
