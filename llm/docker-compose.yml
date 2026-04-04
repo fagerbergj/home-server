@@ -10,6 +10,7 @@ services:
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
       - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION}
       - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE}
+      - OLLAMA_LOAD_TIMEOUT=10m
     volumes:
       - ./data:/root/.ollama
     init: true
