@@ -31,8 +31,9 @@ docker restart qbittorrent
 2. **Add indexers:** Indexers > Add Indexer — add whatever public indexers you want (1337x, YTS, EZTV, etc.)
 3. **FlareSolverr** (needed for Cloudflare-protected indexers): Settings > Indexers > Add FlareSolverr proxy, URL: `http://127.0.0.1:8191`
 4. **Connect to Sonarr/Radarr:** Settings > Apps > + — add both Sonarr and Radarr so Prowlarr syncs indexers to them automatically
-   - Sonarr: `http://192.168.50.186:8989`, API key from Sonarr Settings > General
-   - Radarr: `http://192.168.50.186:7878`, API key from Radarr Settings > General
+   - Sonarr: `http://192.168.32.1:8989`, API key from Sonarr Settings > General
+   - Radarr: `http://192.168.32.1:7878`, API key from Radarr Settings > General
+   - Note: use `192.168.32.1` (Docker host gateway), not the LAN IP — Prowlarr runs on Gluetun's network and can't reach the host directly via `192.168.50.186`
 
 ## 6. Set download paths
 
