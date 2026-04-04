@@ -1,0 +1,224 @@
+# promptfoo config for comparing models on local Ollama
+# Run: npx promptfoo@latest eval
+# View: npx promptfoo@latest view
+#
+# Concurrency 1 = only one model loaded at a time.
+# keep_alive: 0 = unload from VRAM immediately after each model finishes.
+
+commandLineOptions:
+  maxConcurrency: 1
+
+providers:
+  - id: ollama:chat:qwen35-coder:latest
+    config:
+      passthrough:
+        keep_alive: 0
+  - id: ollama:chat:gemma4-26b:latest
+    config:
+      passthrough:
+        keep_alive: 0
+
+prompts:
+  - "{{task}}"
+
+# Claude Sonnet is used as the judge for all tests.
+# Requires ANTHROPIC_API_KEY to be set in the environment.
+# To switch to a local Ollama judge, replace the provider value with e.g.:
+#   ollama:chat:qwen35-coder:latest
+defaultTest:
+  assert:
+    - type: llm-rubric
+      provider: anthropic:claude-sonnet-4-6
+      value: >
+        Does the response go beyond surface-level or obvious points?
+        Does it identify non-obvious trade-offs, edge cases, or scenarios where conventional
+        advice would lead you astray?
+        Does it acknowledge genuine uncertainty rather than projecting false confidence?
+        Does it help the reader make a better decision, not just list information?
+
+tests:
+
+  # ── Language / framework choice ───────────────────────────────────────────
+
+  - description: "REST server: Go vs Python vs Kotlin"
+    vars:
+      task: >
+        I need to build a REST API server. I'm choosing between Go, Python, and Kotlin.
+        What should I consider when making this decision, and what are the main practical
+        differences between each option?
+
+  - description: "Message queue: Kafka vs RabbitMQ vs Redis Streams"
+    vars:
+      task: >
+        I'm adding async messaging to a backend system. What are the key differences between
+        Kafka, RabbitMQ, and Redis Streams, and what should drive the decision between them?
+
+  - description: "Data pipeline: batch vs streaming"
+    vars:
+      task: >
+        I'm designing a data processing pipeline. When does it make sense to build it as a
+        batch pipeline vs. a streaming pipeline, and what are the main trade-offs I'll be
+        living with day-to-day for each approach?
+
+  - description: "Database: PostgreSQL vs MongoDB for a document-heavy app"
+    vars:
+      task: >
+        My application stores semi-structured documents that vary a lot in shape.
+        What are the real trade-offs between using PostgreSQL (with JSONB) vs MongoDB,
+        and what questions should I be asking myself before choosing?
+
+  - description: "Auth: JWT vs session tokens"
+    vars:
+      task: >
+        I'm implementing auth for a web API. What are the practical differences between
+        JWTs and server-side session tokens, and what are the non-obvious trade-offs I
+        should understand before choosing?
+
+  # ── Design decisions ──────────────────────────────────────────────────────
+
+  - description: "When to reach for a message queue vs direct HTTP calls"
+    vars:
+      task: >
+        My services currently call each other over HTTP. When does it actually make sense
+        to introduce a message queue instead, and what are the things I'll give up by doing so?
+
+  - description: "Monolith vs microservices for a new product"
+    vars:
+      task: >
+        I'm starting a new backend product with a small team. What should I consider when
+        deciding between a monolith and microservices, and what are the real costs of getting
+        that decision wrong in either direction?
+
+  - description: "When to write an abstraction vs inline the code"
+    vars:
+      task: >
+        I keep going back and forth on when to extract an abstraction vs just duplicating
+        a bit of logic. What's a good mental model for making that call, and what are the
+        signs that I've abstracted too early or waited too long?
+
+  # ── LLM / prompt engineering (relevant to document-pipeline work) ─────────
+
+  - description: "Structured output: JSON vs XML vs custom delimiters"
+    vars:
+      task: >
+        I'm designing prompts that need to return structured output from an LLM.
+        What are the trade-offs between asking for JSON, XML, and custom delimiters
+        like <tags>? What should I consider when choosing a format?
+
+  - description: "When does chain-of-thought actually help"
+    vars:
+      task: >
+        I've heard that asking an LLM to reason step-by-step before answering improves
+        accuracy. When does that actually hold, and when is it just adding latency and
+        token cost without a real benefit?
+
+  - description: "Single large prompt vs chaining smaller prompts"
+    vars:
+      task: >
+        For a multi-step document processing pipeline, what are the trade-offs between
+        doing everything in one large prompt vs. chaining several smaller focused prompts?
+        What are the failure modes unique to each approach?
+
+  # ── Bug finding / code analysis ───────────────────────────────────────────
+
+  - description: "Go: find all bugs in a concurrent fetch"
+    vars:
+      task: |
+        Find all the bugs in this Go code. Don't stop at the first one — be exhaustive.
+
+        ```go
+        func fetchAll(urls []string) []string {
+            results := make([]string, len(urls))
+            var wg sync.WaitGroup
+            for i, url := range urls {
+                wg.Add(1)
+                go func() {
+                    defer wg.Done()
+                    resp, err := http.Get(url)
+                    if err != nil {
+                        return
+                    }
+                    body, _ := io.ReadAll(resp.Body)
+                    results[i] = string(body)
+                }()
+            }
+            wg.Wait()
+            return results
+        }
+        ```
+    assert:
+      - type: llm-rubric
+        provider: anthropic:claude-sonnet-4-6
+        value: >
+          The response must identify ALL of the following bugs:
+          1. Loop variable capture — i and url are captured by reference, all goroutines may see the last value
+          2. Concurrent write to results slice without synchronisation — data race
+          3. resp.Body is never closed — resource leak on every successful request
+          4. io.ReadAll error is silently ignored with _
+          Does it correctly explain why each is a bug, not just name it?
+
+  - description: "Kotlin: find all bugs in a coroutine snippet"
+    vars:
+      task: |
+        Find all the bugs in this Kotlin code. Consider both correctness and coroutine lifecycle issues.
+
+        ```kotlin
+        class UserService(private val repo: UserRepository) {
+            private val scope = CoroutineScope(Dispatchers.IO)
+
+            fun getUser(id: String): UserProfile {
+                var result: UserProfile? = null
+                scope.launch {
+                    result = repo.findById(id)
+                }
+                Thread.sleep(1000)
+                return result!!
+            }
+
+            fun shutdown() {
+                scope.cancel()
+            }
+        }
+        ```
+    assert:
+      - type: llm-rubric
+        provider: anthropic:claude-sonnet-4-6
+        value: >
+          The response must identify ALL of the following bugs:
+          1. Thread.sleep is a race — the coroutine may not finish in 1000ms, result!! will NPE
+          2. result!! force-unwrap will throw NullPointerException if the coroutine hasn't written yet
+          3. Shared mutable variable result between coroutine and calling thread — no visibility guarantee
+          4. scope is unscoped — leaks if shutdown() is never called; caller has no way to know
+          5. getUser is a blocking function pretending to be safe — should be a suspend fun or return a Deferred
+          Does it correctly explain why each is a bug?
+
+  - description: "TypeScript: find all type and runtime bugs"
+    vars:
+      task: |
+        Find all the bugs in this TypeScript — both type-level and runtime. Include places where
+        the types look safe but aren't.
+
+        ```typescript
+        async function processEvents(events: unknown[]): Promise<void> {
+          const results = await Promise.all(
+            events.map(async (event) => {
+              const e = event as { type: string; userId: string };
+              if (e.type === "delete") {
+                await deleteUser(e.userId);
+              }
+              return e.userId;
+            })
+          );
+          console.log(`Processed ${results.length} events`);
+        }
+        ```
+    assert:
+      - type: llm-rubric
+        provider: anthropic:claude-sonnet-4-6
+        value: >
+          The response must identify ALL of the following bugs:
+          1. `as { type: string; userId: string }` is an unsafe cast — no runtime validation, any shape passes
+          2. Non-delete events still return e.userId which may be undefined at runtime despite the type saying string
+          3. Promise.all fails fast — one rejected deleteUser cancels the rest silently from the caller's perspective
+          4. No handling of the case where event is null, a primitive, or missing the expected fields entirely
+          Does it correctly explain why each is a bug?
