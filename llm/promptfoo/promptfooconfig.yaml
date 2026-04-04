@@ -8,6 +8,9 @@
 commandLineOptions:
   maxConcurrency: 1
 
+evaluateOptions:
+  timeoutMs: 600000  # 10 minutes — allows time for cold model loads
+
 providers:
   - id: ollama:chat:qwen35-coder:latest
     config:
