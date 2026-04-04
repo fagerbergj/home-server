@@ -13,16 +13,16 @@ setup() {
     cat > "$TMPDIR/drives.json" <<'EOF'
 {
   "plex01": {
-    "device": "/dev/sda1",
+    "device": "/dev/sde1",
     "preserve": false
   },
   "plex02": {
-    "device": "/dev/sdd1",
+    "device": "/dev/sdc1",
     "preserve": false
   },
   "personal01": {
-    "raid_primary": "/dev/sdb1",
-    "raid_secondary": "/dev/sdc1"
+    "raid_primary": "/dev/sda1",
+    "raid_secondary": "/dev/sdb1"
   }
 }
 EOF
@@ -119,7 +119,7 @@ run_script() {
 
 @test "formats plex01 when preserve is false" {
     run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mkfs.ext4 called with"*"sda1"* ]]
+    [[ "$output" == *"mkfs.ext4 called with"*"sde1"* ]]
 }
 
 @test "skips formatting plex01 when preserve is true" {
@@ -127,19 +127,19 @@ run_script() {
     mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
     run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"preserving existing data"* ]]
-    [[ "$output" != *"mkfs.ext4 called with"*"sda1"* ]]
+    [[ "$output" != *"mkfs.ext4 called with"*"sde1"* ]]
 }
 
 @test "formats plex02 when present and preserve is false" {
     run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mkfs.ext4 called with"*"sdd1"* ]]
+    [[ "$output" == *"mkfs.ext4 called with"*"sdc1"* ]]
 }
 
 @test "creates RAID with --force using configured devices" {
     run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"mdadm called with"*"--force"* ]]
+    [[ "$output" == *"sda1"* ]]
     [[ "$output" == *"sdb1"* ]]
-    [[ "$output" == *"sdc1"* ]]
 }
 
 @test "prints UID/GID summary at end" {
@@ -163,5 +163,5 @@ run_script() {
     jq 'del(.plex02)' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
     mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
     run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" != *"mkfs.ext4 called with"*"sdd1"* ]]
+    [[ "$output" != *"mkfs.ext4 called with"*"sdc1"* ]]
 }

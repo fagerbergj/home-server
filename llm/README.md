@@ -58,7 +58,7 @@ The KV cache line will show `N/A` and the total will be just weights + overhead.
 
 ### Coding model
 
-One model, stays loaded. Prioritise **context size** over speed — coding tasks need enough context to hold multiple files or a long back-and-forth. Slow inference is fine. RAM spillage is fine.
+One model, stays loaded. Prioritize **context size** over speed — coding tasks need enough context to hold multiple files or a long back-and-forth. Slow inference is fine. RAM spillage is fine.
 
 **Target:** weights fit within ~20GB VRAM, leaving room for a large KV cache. Use `-c 32768` or higher and check the total.
 
