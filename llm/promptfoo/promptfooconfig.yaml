@@ -11,12 +11,10 @@ commandLineOptions:
 providers:
   - id: ollama:chat:qwen35-coder:latest
     config:
-      passthrough:
-        keep_alive: 0
+      keep_alive: 0
   - id: ollama:chat:gemma4-26b:latest
     config:
-      passthrough:
-        keep_alive: 0
+      keep_alive: 0
 
 prompts:
   - "{{task}}"
