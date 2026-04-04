@@ -25,5 +25,8 @@ networking/letsencrypt/
 passwords/data/
 torrent/config/
 torrent/jackett/
+torrent/sonarr/
+torrent/radarr/
+notes/rmfakecloud-data/
 installer-rm12.sh
 api/data/
