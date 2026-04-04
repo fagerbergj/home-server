@@ -24,7 +24,7 @@ networking/data/
 networking/letsencrypt/
 passwords/data/
 torrent/config/
-torrent/jackett/
+torrent/prowlarr/
 torrent/sonarr/
 torrent/radarr/
 notes/rmfakecloud-data/

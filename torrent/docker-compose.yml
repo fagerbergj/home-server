@@ -15,14 +15,25 @@ services:
       - SERVER_COUNTRIES=Netherlands
     ports:
       - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
-      - "9117:9117"   # Jackett web UI (exposed here since jackett shares this network)
+      - "9696:9696"   # Prowlarr web UI (exposed here since prowlarr shares this network)
+      - "8191:8191"   # FlareSolverr (exposed here since flaresolverr shares this network)
       - "6881:6881"
       - "6881:6881/udp"
     restart: unless-stopped
 
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: jackett
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: "service:gluetun"   # all traffic routed through Gluetun
+    depends_on:
+      - gluetun
+    environment:
+      - TZ=America/Chicago
+    restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     depends_on:
       - gluetun
@@ -31,7 +42,7 @@ services:
       - PGID=1000
       - TZ=America/Chicago
     volumes:
-      - ./jackett/config:/config
+      - ./prowlarr/config:/config
     restart: unless-stopped
 
   qbittorrent:

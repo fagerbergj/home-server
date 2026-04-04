@@ -25,19 +25,14 @@ docker cp search/. qbittorrent:/config/qBittorrent/nova3/engines/
 docker restart qbittorrent
 ```
 
-## 5. Configure Jackett
+## 5. Configure Prowlarr
 
-1. Open `http://192.168.50.186:9117` and set an admin password (wrench icon)
-2. Copy the API key from the top of the page
-3. Create the plugin config file (the file may be owned by the container user, so use `tee`):
-
-```bash
-echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee ~/workspace/home-server/torrent/config/qBittorrent/nova3/engines/jackett.json
-```
-
-4. In qBittorrent, install the Jackett search plugin:
-   - Go to the Search tab > **Search plugins…** > **Install a new one** > **Web link**
-   - Paste: `https://raw.githubusercontent.com/torrent/search-plugins/master/nova3/engines/jackett.py`
+1. Open `http://192.168.50.186:9696` and set an admin password
+2. **Add indexers:** Indexers > Add Indexer — add whatever public indexers you want (1337x, YTS, EZTV, etc.)
+3. **FlareSolverr** (needed for Cloudflare-protected indexers): Settings > Indexers > Add FlareSolverr proxy, URL: `http://127.0.0.1:8191`
+4. **Connect to Sonarr/Radarr:** Settings > Apps > + — add both Sonarr and Radarr so Prowlarr syncs indexers to them automatically
+   - Sonarr: `http://192.168.50.186:8989`, API key from Sonarr Settings > General
+   - Radarr: `http://192.168.50.186:7878`, API key from Radarr Settings > General
 
 ## 6. Set download paths
 
@@ -60,16 +55,12 @@ Settings > Download Clients > + > qBittorrent
 - Category: `sonarr`
 - Test and save.
 
-**Indexer:**
-Settings > Indexers > + > Torznab (Custom)
-- URL: `http://192.168.50.186:9117/api/v2.0/indexers/all/results/torznab/`
-- API key: your Jackett API key (from `http://192.168.50.186:9117`)
-- Test and save.
-
 **Root folders:**
 Settings > Media Management > Root Folders > + `/mnt/plex01/shows`
 
 Optionally add `/mnt/plex02/shows` as a second root folder to allow offloading older shows.
+
+Note: indexers are synced automatically from Prowlarr — no need to add them manually here.
 
 ---
 
@@ -79,9 +70,9 @@ Open `http://192.168.50.186:7878`. Same steps as Sonarr:
 
 **Download client:** same settings, category: `radarr`
 
-**Indexer:** same Jackett Torznab URL and API key
-
 **Root folders:** `/mnt/plex01/movies` (and optionally `/mnt/plex02/movies`)
+
+Note: indexers are synced automatically from Prowlarr.
 
 ---
 

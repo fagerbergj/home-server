@@ -9,7 +9,7 @@ All torrent traffic is routed through Mullvad VPN via [Gluetun](https://github.c
 | Service | URL | Purpose |
 |---------|-----|---------|
 | qBittorrent | `http://192.168.50.186:8080` | Download client |
-| Jackett | `http://192.168.50.186:9117` | Indexer proxy |
+| Prowlarr | `http://192.168.50.186:9696` | Indexer manager (syncs to Sonarr/Radarr) |
 | Sonarr | `http://192.168.50.186:8989` | TV show library manager |
 | Radarr | `http://192.168.50.186:7878` | Movie library manager |
 
@@ -35,20 +35,12 @@ In the web UI: View > Search Engine. A Search tab will appear.
 
 Plugins included: `animetosho.py`, `audiobookbay.py`, `kickasstorrents.py`, `solidtorrents.py`, `thepiratebay.py`
 
-## Jackett
+## Prowlarr
 
-Jackett runs alongside qBittorrent and gluetun, routing through the VPN. It proxies searches across many torrent indexers.
+Prowlarr manages indexers and syncs them automatically to Sonarr and Radarr. All indexer traffic routes through the VPN via Gluetun.
 
 ```
-http://192.168.50.186:9117
-```
-
-Config file for the qBittorrent plugin: `config/torrent/nova3/engines/jackett.json`
-
-To write the config (file is owned by the container user):
-
-```bash
-echo '{"api_key":"YOUR_API_KEY_HERE","url":"http://127.0.0.1:9117","tracker_first":false,"thread_count":20}' | sudo tee config/torrent/nova3/engines/jackett.json
+http://192.168.50.186:9696
 ```
 
 ## Changing Exit Country
