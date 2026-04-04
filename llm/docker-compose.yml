@@ -12,6 +12,7 @@ services:
       - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE}
     volumes:
       - ./data:/root/.ollama
+    init: true
     runtime: nvidia
     deploy:
       resources:
