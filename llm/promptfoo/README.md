@@ -13,10 +13,7 @@ node --version   # confirm 18+
 If you don't have Node, install it via your package manager:
 
 ```bash
-# Ubuntu/Debian
-sudo apt install nodejs npm
-
-# or via nvm (recommended — lets you manage versions)
+# via nvm (recommended — lets you manage versions)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install --lts
 ```
@@ -47,7 +44,7 @@ npx promptfoo@latest view
 To run a single test while iterating on a prompt:
 
 ```bash
-npx promptfoo@latest eval --filter-description "REST server"
+npx promptfoo@latest eval --filter-pattern "REST server"
 ```
 
 ## Judging the output
