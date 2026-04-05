@@ -253,11 +253,18 @@ echo "$import_files_json" | jq \
     '{"name": "ManualImport", "files": ., "importMode": $mode}' > "$tmp_payload"
 
 echo "Sending import command to Sonarr..."
-result=$(curl -sf -X POST \
+result=$(curl -s -X POST \
     -H "X-Api-Key: $API_KEY" \
     -H "Content-Type: application/json" \
     --data "@$tmp_payload" \
     "$SONARR_URL/api/v3/command")
-command_id=$(echo "$result" | jq '.id')
-echo "Command queued (id=$command_id)."
-echo "Check Sonarr's Activity > Queue tab for progress."
+
+if echo "$result" | jq -e '.id' &>/dev/null; then
+    command_id=$(echo "$result" | jq '.id')
+    echo "Command queued (id=$command_id)."
+    echo "Check Sonarr's Activity > Queue tab for progress."
+else
+    echo "Error response from Sonarr:"
+    echo "$result" | jq '.' 2>/dev/null || echo "$result"
+    exit 1
+fi
