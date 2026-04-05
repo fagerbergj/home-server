@@ -244,13 +244,21 @@ fi
 # 5. POST import command
 # ---------------------------------------------------------------------------
 
-payload=$(jq -n \
-    --argjson files "$import_files_json" \
+# Write payload to a temp file — 220+ file JSON is too large for a shell argument
+tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
+trap 'rm -f "$tmp_payload"' EXIT
+
+echo "$import_files_json" | jq -n \
+    --argjson files "$(cat)" \
     --arg mode "$IMPORT_MODE" \
-    '{"name": "ManualImport", "files": $files, "importMode": $mode}')
+    '{"name": "ManualImport", "files": $files, "importMode": $mode}' > "$tmp_payload"
 
 echo "Sending import command to Sonarr..."
-result=$(api_post "command" "$payload")
+result=$(curl -sf -X POST \
+    -H "X-Api-Key: $API_KEY" \
+    -H "Content-Type: application/json" \
+    --data "@$tmp_payload" \
+    "$SONARR_URL/api/v3/command")
 command_id=$(echo "$result" | jq '.id')
 echo "Command queued (id=$command_id)."
 echo "Check Sonarr's Activity > Queue tab for progress."
