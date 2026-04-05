@@ -148,14 +148,29 @@ mapping_json=$(echo "$episodes_json" | jq '
 ')
 
 # ---------------------------------------------------------------------------
-# 3. Ask Sonarr to analyze the folder
+# 3. Ask Sonarr to analyze the folder (scan root + all subdirectories)
+#    The manualimport endpoint does not recurse, so we call it once per dir.
 # ---------------------------------------------------------------------------
 
 echo "Scanning folder with Sonarr..."
-manualimport_json=$(api_get "manualimport" \
-    --data-urlencode "folder=$FOLDER" \
-    --data-urlencode "seriesId=$SERIES_ID" \
-    --data-urlencode "filterExistingFiles=false")
+manualimport_json="[]"
+
+scan_folder() {
+    local dir="$1"
+    local result
+    result=$(api_get "manualimport" \
+        --data-urlencode "folder=$dir" \
+        --data-urlencode "seriesId=$SERIES_ID" \
+        --data-urlencode "filterExistingFiles=false")
+    manualimport_json=$(echo "$manualimport_json $result" | jq -s '.[0] + .[1]')
+
+    # Recurse into subdirectories
+    while IFS= read -r subdir; do
+        scan_folder "$subdir"
+    done < <(find "$dir" -mindepth 1 -maxdepth 1 -type d | sort -V)
+}
+
+scan_folder "$FOLDER"
 
 file_count=$(echo "$manualimport_json" | jq 'length')
 echo "Found $file_count video file(s) in folder."
