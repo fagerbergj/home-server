@@ -248,10 +248,9 @@ fi
 tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
 trap 'rm -f "$tmp_payload"' EXIT
 
-echo "$import_files_json" | jq -n \
-    --argjson files "$(cat)" \
+echo "$import_files_json" | jq \
     --arg mode "$IMPORT_MODE" \
-    '{"name": "ManualImport", "files": $files, "importMode": $mode}' > "$tmp_payload"
+    '{"name": "ManualImport", "files": ., "importMode": $mode}' > "$tmp_payload"
 
 echo "Sending import command to Sonarr..."
 result=$(curl -sf -X POST \
