@@ -4,15 +4,14 @@
 # language detection — only the episode mapping is corrected.
 #
 # Usage:
-#   sonarr_import.sh [--apply] [--url URL] [--import-mode MODE] --api-key KEY (--series "Name" | --series-id ID) /path/to/folder
+#   sonarr_import.sh [--apply] [--url URL] --api-key KEY (--series "Name" | --series-id ID) /path/to/folder
 #
 # Options:
-#   --apply             Actually import (default is dry run)
-#   --api-key KEY       Sonarr API key (Settings > General > Security)
-#   --url URL           Sonarr base URL (default: http://localhost:8989)
-#   --series NAME       Series name to search for in Sonarr (picks first match)
-#   --series-id ID      Sonarr series ID (avoids ambiguous name matches)
-#   --import-mode MODE  HardLink, Move, or Copy (default: HardLink)
+#   --apply          Actually import (default is dry run)
+#   --api-key KEY    Sonarr API key (Settings > General > Security)
+#   --url URL        Sonarr base URL (default: http://localhost:8989)
+#   --series NAME    Series name to search for in Sonarr (picks first match)
+#   --series-id ID   Sonarr series ID (avoids ambiguous name matches)
 #
 # Examples:
 #   sonarr_import.sh --api-key abc123 --series "Naruto" /mnt/plex01/downloads/Naruto
@@ -26,7 +25,6 @@ SERIES_NAME=""
 SERIES_ID=""
 FOLDER=""
 DRY_RUN=true
-IMPORT_MODE="HardLink"
 
 usage() {
     echo "Usage: $(basename "$0") [--apply] [--url URL] --api-key KEY (--series \"Name\" | --series-id ID) /path/to/folder"
@@ -48,7 +46,6 @@ while [[ $# -gt 0 ]]; do
         --api-key)      API_KEY="$2"; shift 2 ;;
         --series)       SERIES_NAME="$2"; shift 2 ;;
         --series-id)    SERIES_ID="$2"; shift 2 ;;
-        --import-mode)  IMPORT_MODE="$2"; shift 2 ;;
         --help|-h)      shift ;;
         *)              FOLDER="$1"; shift ;;
     esac
@@ -71,11 +68,6 @@ if [[ ${#errors[@]} -gt 0 ]]; then
     echo ""; usage
     exit 1
 fi
-
-case "$IMPORT_MODE" in
-    HardLink|Move|Copy) ;;
-    *) echo "Error: --import-mode must be HardLink, Move, or Copy"; exit 1 ;;
-esac
 
 # ---------------------------------------------------------------------------
 # API helpers
@@ -263,13 +255,12 @@ fi
 tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
 trap 'rm -f "$tmp_payload"' EXIT
 
-# Add importMode to each file object and write as a plain array
-echo "$import_files_json" | jq \
-    --arg mode "$IMPORT_MODE" \
-    '[.[] | . + {importMode: $mode}]' > "$tmp_payload"
+# Write files array directly — importMode is not part of the API schema,
+# Sonarr uses its own settings (hardlink if possible, else copy)
+echo "$import_files_json" > "$tmp_payload"
 
 echo "Sending import to Sonarr..."
-result=$(curl -s -X PUT \
+result=$(curl -s -X POST \
     -H "X-Api-Key: $API_KEY" \
     -H "Content-Type: application/json" \
     --data "@$tmp_payload" \
