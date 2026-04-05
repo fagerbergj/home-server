@@ -11,7 +11,7 @@
 #   --api-key KEY       Sonarr API key (Settings > General > Security)
 #   --url URL           Sonarr base URL (default: http://localhost:8989)
 #   --series NAME       Series name as it appears in Sonarr
-#   --import-mode MODE  hardlink, move, or copy (default: hardlink)
+#   --import-mode MODE  HardLink, Move, or Copy (default: HardLink)
 #
 # Examples:
 #   sonarr_import.sh --api-key abc123 --series "Naruto" /mnt/plex01/downloads/Naruto
@@ -24,7 +24,7 @@ API_KEY=""
 SERIES_NAME=""
 FOLDER=""
 DRY_RUN=true
-IMPORT_MODE="hardlink"
+IMPORT_MODE="HardLink"
 
 usage() {
     echo "Usage: $(basename "$0") [--apply] [--url URL] --api-key KEY --series \"Name\" /path/to/folder"
@@ -70,8 +70,8 @@ if [[ ${#errors[@]} -gt 0 ]]; then
 fi
 
 case "$IMPORT_MODE" in
-    hardlink|move|copy) ;;
-    *) echo "Error: --import-mode must be hardlink, move, or copy"; exit 1 ;;
+    HardLink|Move|Copy) ;;
+    *) echo "Error: --import-mode must be HardLink, Move, or Copy"; exit 1 ;;
 esac
 
 # ---------------------------------------------------------------------------
