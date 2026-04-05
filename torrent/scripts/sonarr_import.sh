@@ -254,28 +254,31 @@ if $DRY_RUN; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. POST import command
+# 5. POST directly to /api/v3/manualimport
+#    The /command endpoint has enum deserialization issues with importMode.
+#    The direct endpoint accepts the files array with per-file importMode.
 # ---------------------------------------------------------------------------
 
 # Write payload to a temp file — 220+ file JSON is too large for a shell argument
 tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
 trap 'rm -f "$tmp_payload"' EXIT
 
+# Add importMode to each file object and write as a plain array
 echo "$import_files_json" | jq \
     --arg mode "$IMPORT_MODE" \
-    '{"name": "ManualImport", "files": ., "importMode": $mode}' > "$tmp_payload"
+    '[.[] | . + {importMode: $mode}]' > "$tmp_payload"
 
-echo "Sending import command to Sonarr..."
-result=$(curl -s -X POST \
+echo "Sending import to Sonarr..."
+result=$(curl -s -X PUT \
     -H "X-Api-Key: $API_KEY" \
     -H "Content-Type: application/json" \
     --data "@$tmp_payload" \
-    "$SONARR_URL/api/v3/command")
+    "$SONARR_URL/api/v3/manualimport")
 
-if echo "$result" | jq -e '.id' &>/dev/null; then
-    command_id=$(echo "$result" | jq '.id')
-    echo "Command queued (id=$command_id)."
-    echo "Check Sonarr's Activity > Queue tab for progress."
+# Success returns an array (possibly empty)
+if echo "$result" | jq -e 'type == "array"' &>/dev/null; then
+    echo "Import submitted successfully."
+    echo "Check Sonarr's Activity > History tab for results."
 else
     echo "Error response from Sonarr:"
     echo "$result" | jq '.' 2>/dev/null || echo "$result"
