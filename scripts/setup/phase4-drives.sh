@@ -149,7 +149,7 @@ echo ""
 echo "Setting up folder structure and permissions..."
 sudo apt install -y acl
 
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks
+sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks /mnt/plex01/downloads
 sudo chown -R root:plex-rw /mnt/plex01
 sudo chmod -R 2775 /mnt/plex01
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
@@ -159,7 +159,7 @@ sudo chown -R root:personal-rw /mnt/personal01
 sudo chmod -R 2775 /mnt/personal01
 
 if [[ -n "$PLEX02_DEV" ]]; then
-    sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows
+    sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows /mnt/plex02/downloads
     sudo chown -R root:plex-rw /mnt/plex02
     sudo chmod -R 2775 /mnt/plex02
     sudo setfacl -R -m g:plex-ro:rx /mnt/plex02

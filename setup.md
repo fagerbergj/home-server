@@ -259,6 +259,14 @@ UUID=<uuid>   /mnt/plex02   ext4   defaults   0   2
 sudo mount -a
 ```
 
+Set up folder structure and permissions (same pattern as plex01):
+```bash
+sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows /mnt/plex02/downloads
+sudo chown -R root:plex-rw /mnt/plex02
+sudo chmod -R 2775 /mnt/plex02
+sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
+```
+
 ### Set Up RAID 1 for personal01
 
 ```bash
