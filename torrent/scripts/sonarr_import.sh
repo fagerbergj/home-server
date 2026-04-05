@@ -256,10 +256,11 @@ fi
 tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
 trap 'rm -f "$tmp_payload"' EXIT
 
-# importMode is an integer enum: 0=Auto, 1=Move, 2=Copy
-# Auto hardlinks when source and destination are on the same filesystem.
+# importMode: 2=Copy — with "Use Hardlinks instead of Copy" enabled in Sonarr
+# settings, this creates a hardlink without deleting the source, preserving
+# qBittorrent seeding. importMode 0 (Auto) moves the file (hardlink + delete source).
 echo "$import_files_json" | jq \
-    '{"name": "ManualImport", "files": ., "importMode": 0}' > "$tmp_payload"
+    '{"name": "ManualImport", "files": ., "importMode": 2}' > "$tmp_payload"
 
 echo "Sending import to Sonarr..."
 result=$(curl -s -X POST \
@@ -271,7 +272,7 @@ result=$(curl -s -X POST \
 if echo "$result" | jq -e '.id' &>/dev/null; then
     command_id=$(echo "$result" | jq '.id')
     echo "Command queued (id=$command_id)."
-    echo "Check Sonarr's Activity > Queue tab for progress."
+    echo "Check Sonarr's Activity > History tab for results."
 else
     echo "Error response from Sonarr:"
     echo "$result" | jq '.' 2>/dev/null || echo "$result"

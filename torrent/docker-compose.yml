@@ -56,6 +56,7 @@ services:
       - PGID=1001      # run: getent group plex-rw
       - TZ=America/Chicago
       - WEBUI_PORT=8080
+      - UMASK=002  # group-writable files so sonarr/radarr can hardlink and delete
     volumes:
       - ./config:/config
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
