@@ -194,9 +194,13 @@ while IFS= read -r file_obj; do
     path=$(echo "$file_obj" | jq -r '.path')
     filename=$(basename "$path")
 
-    # Extract absolute episode number from filename pattern: " - NNN - " or " - NNN."
+    # Extract absolute episode number from filename patterns:
+    #   " - NNN - "  (e.g. "[Anime Time] Naruto - 001 - Title.mkv")
+    #   " - NNN."    (e.g. "Show - 001.mkv")
+    #   "Episode NNN" (e.g. "Naruto Shippuden Episode 001 Title.mkv")
     if [[ "$filename" =~ [[:space:]]-[[:space:]]([0-9]+)[[:space:]]-[[:space:]] ]] || \
-       [[ "$filename" =~ [[:space:]]-[[:space:]]([0-9]+)\. ]]; then
+       [[ "$filename" =~ [[:space:]]-[[:space:]]([0-9]+)\. ]] || \
+       [[ "$filename" =~ [Ee]pisode[[:space:]]+([0-9]+) ]]; then
         abs_raw="${BASH_REMATCH[1]}"
         abs_num=$(( 10#$abs_raw ))   # strip leading zeros
     else
