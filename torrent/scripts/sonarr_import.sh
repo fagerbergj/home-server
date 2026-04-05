@@ -163,7 +163,7 @@ scan_folder() {
     result=$(api_get "manualimport" \
         --data-urlencode "folder=$dir" \
         --data-urlencode "filterExistingFiles=false")
-    manualimport_json=$(echo "$manualimport_json $result" | jq -s '.[0] + .[1]')
+    manualimport_json=$(echo "$manualimport_json $result" | jq -s '(.[0] + .[1]) | unique_by(.path)')
 
     # Recurse into subdirectories
     while IFS= read -r subdir; do
