@@ -219,11 +219,12 @@ while IFS= read -r file_obj; do
 
     echo "  $label  (abs $abs_raw)  $filename"
 
-    # Build corrected file object: keep quality/languages from Sonarr, override episodeIds
+    # Minimal fields only — extra fields from the GET response (rejections, etc.)
+    # can cause Sonarr to re-run title validation and block the import
     corrected=$(echo "$file_obj" | jq \
         --argjson seriesId "$SERIES_ID" \
         --argjson epId "$ep_id" \
-        '{path, seriesId: $seriesId, episodeIds: [$epId], quality, languages, releaseGroup: (.releaseGroup // ""), downloadId: null}')
+        '{path, seriesId: $seriesId, episodeIds: [$epId], quality, languages, releaseGroup: (.releaseGroup // "")}')
 
     import_files_json=$(echo "$import_files_json" | jq --argjson obj "$corrected" '. + [$obj]')
     (( matched++ )) || true
