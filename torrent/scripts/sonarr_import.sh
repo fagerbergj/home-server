@@ -158,9 +158,10 @@ manualimport_json="[]"
 scan_folder() {
     local dir="$1"
     local result
+    # Do NOT pass seriesId here — Sonarr ignores folder and scans the series'
+    # media root instead, which may not exist yet. We correct the mapping in the POST.
     result=$(api_get "manualimport" \
         --data-urlencode "folder=$dir" \
-        --data-urlencode "seriesId=$SERIES_ID" \
         --data-urlencode "filterExistingFiles=false")
     manualimport_json=$(echo "$manualimport_json $result" | jq -s '.[0] + .[1]')
 
