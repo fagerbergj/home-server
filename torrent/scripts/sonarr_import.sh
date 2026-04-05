@@ -256,11 +256,11 @@ fi
 tmp_payload=$(mktemp /tmp/sonarr_import_XXXXXX.json)
 trap 'rm -f "$tmp_payload"' EXIT
 
-# importMode: 2=Copy — with "Use Hardlinks instead of Copy" enabled in Sonarr
-# settings, this creates a hardlink without deleting the source, preserving
-# qBittorrent seeding. importMode 0 (Auto) moves the file (hardlink + delete source).
+# importMode: 0=Auto — Sonarr hardlinks the file (same filesystem) then deletes the source.
+# Requires plex-rw group write permission on the source directory so Sonarr can delete.
+# Fix existing dirs: sudo chmod -R g+w /mnt/plex01/downloads/ /mnt/plex02/downloads/
 echo "$import_files_json" | jq \
-    '{"name": "ManualImport", "files": ., "importMode": 2}' > "$tmp_payload"
+    '{"name": "ManualImport", "files": ., "importMode": 0}' > "$tmp_payload"
 
 echo "Sending import to Sonarr..."
 result=$(curl -s -X POST \
