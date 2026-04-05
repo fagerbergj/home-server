@@ -91,7 +91,7 @@ api_post() {
 # ---------------------------------------------------------------------------
 
 echo "=== Folder: $FOLDER"
-echo "=== Mode:   $($DRY_RUN && echo 'DRY RUN — pass --apply to import' || echo "IMPORTING ($IMPORT_MODE)")"
+echo "=== Mode:   $($DRY_RUN && echo 'DRY RUN — pass --apply to import' || echo 'IMPORTING')"
 echo ""
 
 if [[ -n "$SERIES_ID" ]]; then
