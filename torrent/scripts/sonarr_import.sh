@@ -4,30 +4,32 @@
 # language detection — only the episode mapping is corrected.
 #
 # Usage:
-#   sonarr_import.sh [--apply] [--url URL] [--import-mode MODE] --api-key KEY --series "Name" /path/to/folder
+#   sonarr_import.sh [--apply] [--url URL] [--import-mode MODE] --api-key KEY (--series "Name" | --series-id ID) /path/to/folder
 #
 # Options:
 #   --apply             Actually import (default is dry run)
 #   --api-key KEY       Sonarr API key (Settings > General > Security)
 #   --url URL           Sonarr base URL (default: http://localhost:8989)
-#   --series NAME       Series name as it appears in Sonarr
+#   --series NAME       Series name to search for in Sonarr (picks first match)
+#   --series-id ID      Sonarr series ID (avoids ambiguous name matches)
 #   --import-mode MODE  HardLink, Move, or Copy (default: HardLink)
 #
 # Examples:
 #   sonarr_import.sh --api-key abc123 --series "Naruto" /mnt/plex01/downloads/Naruto
-#   sonarr_import.sh --apply --api-key abc123 --series "Naruto" /mnt/plex01/downloads/Naruto
+#   sonarr_import.sh --apply --api-key abc123 --series-id 26 /mnt/plex01/downloads/Naruto
 
 set -euo pipefail
 
 SONARR_URL="http://localhost:8989"
 API_KEY=""
 SERIES_NAME=""
+SERIES_ID=""
 FOLDER=""
 DRY_RUN=true
 IMPORT_MODE="HardLink"
 
 usage() {
-    echo "Usage: $(basename "$0") [--apply] [--url URL] --api-key KEY --series \"Name\" /path/to/folder"
+    echo "Usage: $(basename "$0") [--apply] [--url URL] --api-key KEY (--series \"Name\" | --series-id ID) /path/to/folder"
     echo "Run with --help for full usage."
 }
 
@@ -45,6 +47,7 @@ while [[ $# -gt 0 ]]; do
         --url)          SONARR_URL="$2"; shift 2 ;;
         --api-key)      API_KEY="$2"; shift 2 ;;
         --series)       SERIES_NAME="$2"; shift 2 ;;
+        --series-id)    SERIES_ID="$2"; shift 2 ;;
         --import-mode)  IMPORT_MODE="$2"; shift 2 ;;
         --help|-h)      shift ;;
         *)              FOLDER="$1"; shift ;;
@@ -56,8 +59,8 @@ done
 # ---------------------------------------------------------------------------
 
 errors=()
-[[ -z "$API_KEY" ]]     && errors+=("--api-key is required")
-[[ -z "$SERIES_NAME" ]] && errors+=("--series is required")
+[[ -z "$API_KEY" ]]                          && errors+=("--api-key is required")
+[[ -z "$SERIES_NAME" && -z "$SERIES_ID" ]]   && errors+=("--series or --series-id is required")
 [[ -z "$FOLDER" ]]      && errors+=("folder path is required")
 [[ -n "$FOLDER" && ! -d "$FOLDER" ]] && errors+=("folder not found: $FOLDER")
 command -v curl &>/dev/null || errors+=("curl is required")
@@ -95,31 +98,41 @@ api_post() {
 # 1. Find series
 # ---------------------------------------------------------------------------
 
-echo "=== Series: $SERIES_NAME"
 echo "=== Folder: $FOLDER"
 echo "=== Mode:   $($DRY_RUN && echo 'DRY RUN — pass --apply to import' || echo "IMPORTING ($IMPORT_MODE)")"
 echo ""
 
-echo "Looking up series in Sonarr..."
-series_json=$(api_get "series" | jq --arg name "$SERIES_NAME" \
-    '[.[] | select(.title | ascii_downcase | contains($name | ascii_downcase))]')
-count=$(echo "$series_json" | jq 'length')
+if [[ -n "$SERIES_ID" ]]; then
+    echo "Looking up series id=$SERIES_ID in Sonarr..."
+    series_json=$(api_get "series/$SERIES_ID")
+    SERIES_TITLE=$(echo "$series_json" | jq -r '.title')
+    if [[ "$SERIES_TITLE" == "null" || -z "$SERIES_TITLE" ]]; then
+        echo "Error: no series found with id=$SERIES_ID"
+        exit 1
+    fi
+    echo "Found: $SERIES_TITLE (id=$SERIES_ID)"
+else
+    echo "Looking up series: $SERIES_NAME"
+    series_json=$(api_get "series" | jq --arg name "$SERIES_NAME" \
+        '[.[] | select(.title | ascii_downcase | contains($name | ascii_downcase))]')
+    count=$(echo "$series_json" | jq 'length')
 
-if [[ "$count" -eq 0 ]]; then
-    echo "Error: no series found matching '$SERIES_NAME'"
-    echo "Check that the series is added to Sonarr first."
-    exit 1
+    if [[ "$count" -eq 0 ]]; then
+        echo "Error: no series found matching '$SERIES_NAME'"
+        echo "Check that the series is added to Sonarr first."
+        exit 1
+    fi
+
+    if [[ "$count" -gt 1 ]]; then
+        echo "Multiple matches — use --series-id to pick one:"
+        echo "$series_json" | jq -r '.[] | "  \(.id)  \(.title)"'
+        echo ""
+    fi
+
+    SERIES_ID=$(echo "$series_json" | jq '.[0].id')
+    SERIES_TITLE=$(echo "$series_json" | jq -r '.[0].title')
+    echo "Found: $SERIES_TITLE (id=$SERIES_ID)"
 fi
-
-if [[ "$count" -gt 1 ]]; then
-    echo "Multiple matches — using first:"
-    echo "$series_json" | jq -r '.[].title' | sed 's/^/  /'
-    echo ""
-fi
-
-SERIES_ID=$(echo "$series_json" | jq '.[0].id')
-SERIES_TITLE=$(echo "$series_json" | jq -r '.[0].title')
-echo "Found: $SERIES_TITLE (id=$SERIES_ID)"
 echo ""
 
 # ---------------------------------------------------------------------------
