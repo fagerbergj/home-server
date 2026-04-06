@@ -18,7 +18,12 @@ setup() {
     # Canned API responses written to files (avoids sed/quoting nightmares)
     # ---------------------------------------------------------------------------
 
-    # /library/search?...type=2
+    # /library/sections
+    cat > "$TMPDIR/responses/sections.json" <<'JSON'
+{"MediaContainer":{"Directory":[{"key":"1","title":"TV Shows","type":"show"}]}}
+JSON
+
+    # /library/sections/1/all?type=2&title=...
     cat > "$TMPDIR/responses/search.json" <<'JSON'
 {"MediaContainer":{"Metadata":[{"ratingKey":"10","title":"Test Show","type":"show"}]}}
 JSON
@@ -77,8 +82,9 @@ if [[ "\$method" == "PUT" ]]; then
     exit 0
 fi
 
-[[ "\$url" == */library/search*       ]] && cat "$TMPDIR/responses/search.json"  && exit 0
-[[ "\$url" == */metadata/10/children* ]] && cat "$TMPDIR/responses/seasons.json" && exit 0
+[[ "\$url" == */sections/1/all*        ]] && cat "$TMPDIR/responses/search.json"   && exit 0
+[[ "\$url" == */library/sections*      ]] && cat "$TMPDIR/responses/sections.json" && exit 0
+[[ "\$url" == */metadata/10/children*  ]] && cat "$TMPDIR/responses/seasons.json" && exit 0
 [[ "\$url" == */metadata/20/children* ]] && cat "\${MOCK_S1:-$TMPDIR/responses/season1.json}" && exit 0
 [[ "\$url" == */metadata/21/children* ]] && cat "$TMPDIR/responses/season2.json" && exit 0
 

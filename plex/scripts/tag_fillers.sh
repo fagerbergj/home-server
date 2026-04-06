@@ -154,8 +154,17 @@ echo ""
 # ---------------------------------------------------------------------------
 
 echo "Searching Plex for: $SHOW_NAME"
+
+# Find the TV library section (type=show)
+sections_json=$(plex_get "/library/sections")
+tv_section=$(echo "$sections_json" | jq -r '.MediaContainer.Directory[] | select(.type == "show") | .key' | head -1)
+if [[ -z "$tv_section" ]]; then
+    echo "Error: no TV show library found in Plex"
+    exit 1
+fi
+
 encoded_name=$(urlencode "$SHOW_NAME")
-search_json=$(plex_get "/library/search" "query=${encoded_name}&type=2")
+search_json=$(plex_get "/library/sections/${tv_section}/all" "type=2&title=${encoded_name}")
 
 show_key=$(echo "$search_json" | jq -r --arg name "$SHOW_NAME" '
     .MediaContainer.Metadata // [] |
