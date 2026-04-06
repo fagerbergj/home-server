@@ -168,8 +168,11 @@ search_json=$(plex_get "/library/sections/${tv_section}/all" "type=2&title=${enc
 
 show_key=$(echo "$search_json" | jq -r --arg name "$SHOW_NAME" '
     .MediaContainer.Metadata // [] |
-    (map(select(.title == $name)) + map(select(.title | ascii_downcase | contains($name | ascii_downcase)))) |
-    first | .ratingKey // empty
+    (map(select(.title == $name)) +
+     map(select(.title | ascii_downcase | contains($name | ascii_downcase))) +
+     map(select(.title | explode | map(if . > 127 then 63 else . end) | implode | ascii_downcase |
+         contains($name | explode | map(if . > 127 then 63 else . end) | implode | ascii_downcase)))) |
+    unique_by(.ratingKey) | first | .ratingKey // empty
 ')
 
 if [[ -z "$show_key" ]]; then
