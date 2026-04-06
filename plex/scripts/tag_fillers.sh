@@ -2,9 +2,9 @@
 # Tags episode titles in Plex with [Filler] or [Mixed Filler] as a prefix.
 # Updates Plex metadata directly via the Plex API — no files are renamed.
 #
-# Reads filler.txt / mixedfiller.txt from the show directory:
-#   filler.txt       — absolute episode numbers/ranges to tag as [Filler]
-#   mixedfiller.txt  — absolute episode numbers/ranges to tag as [Mixed Filler]
+# Filler lists live in plex/filler-lists/<show-slug>/ (filler.txt, mixedfiller.txt).
+# The show slug is the show name lowercased with spaces replaced by hyphens.
+# Override with --filler-dir if needed.
 #
 # File format (one entry per line, # for comments):
 #   28
@@ -12,28 +12,31 @@
 #   91-112
 #
 # Usage:
-#   tag_fillers.sh [--apply] [--untag] [--url URL] --show "Name" /path/to/show/dir
+#   tag_fillers.sh [--apply] [--untag] [--filler-dir DIR] --show "Name"
 #
 # Options:
-#   --apply          Actually update Plex (default is dry run)
-#   --untag          Remove [Filler] / [Mixed Filler] tags instead of adding
-#   --show NAME      Show title as it appears in Plex
-#   --help, -h       Show this help
+#   --apply            Actually update Plex (default is dry run)
+#   --untag            Remove [Filler] / [Mixed Filler] tags instead of adding
+#   --filler-dir DIR   Directory containing filler.txt / mixedfiller.txt
+#                      (default: <script-dir>/../filler-lists/<show-slug>)
+#   --show NAME        Show title as it appears in Plex
+#   --help, -h         Show this help
 #
 # Environment:
-#   PLEX_TOKEN       Plex auth token (required)
+#   PLEX_TOKEN         Plex auth token (required)
 #
 # Examples:
-#   PLEX_TOKEN=$TOKEN tag_fillers.sh --show "Naruto" /mnt/plex01/shows/Naruto
-#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --show "Naruto" /mnt/plex01/shows/Naruto
-#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --untag --show "Naruto" /mnt/plex01/shows/Naruto
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --show "Naruto"
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --show "Naruto Shippuden"
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --untag --show "Naruto"
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLEX_URL="${PLEX_URL:-https://plex.jasonfagerberg.duckdns.org}"
 PLEX_TOKEN="${PLEX_TOKEN:-}"
 SHOW_NAME=""
-SHOW_DIR=""
+FILLER_DIR=""
 DRY_RUN=true
 UNTAG=false
 
@@ -47,39 +50,44 @@ done
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --apply)   DRY_RUN=false; shift ;;
-        --untag)   UNTAG=true; shift ;;
-        --show)    SHOW_NAME="$2"; shift 2 ;;
-        --help|-h) shift ;;
-        *)         SHOW_DIR="$1"; shift ;;
+        --apply)       DRY_RUN=false; shift ;;
+        --untag)       UNTAG=true; shift ;;
+        --show)        SHOW_NAME="$2"; shift 2 ;;
+        --filler-dir)  FILLER_DIR="$2"; shift 2 ;;
+        --help|-h)     shift ;;
+        *)             shift ;;
     esac
 done
 
 PLEX_URL="${PLEX_URL%/}"  # strip trailing slash
+
+# Compute filler dir from show name slug if not provided
+if [[ -z "$FILLER_DIR" && -n "$SHOW_NAME" ]]; then
+    show_slug=$(echo "$SHOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+    FILLER_DIR="$SCRIPT_DIR/../filler-lists/$show_slug"
+fi
 
 # ---------------------------------------------------------------------------
 # Validate
 # ---------------------------------------------------------------------------
 
 errors=()
-[[ -z "$PLEX_TOKEN" ]]                      && errors+=("PLEX_TOKEN env var is required")
-[[ -z "$SHOW_NAME" ]]                       && errors+=("--show is required")
-[[ -z "$SHOW_DIR" ]]                        && errors+=("show directory path is required")
-[[ -n "$SHOW_DIR" && ! -d "$SHOW_DIR" ]]    && errors+=("directory not found: $SHOW_DIR")
+[[ -z "$PLEX_TOKEN" ]]  && errors+=("PLEX_TOKEN env var is required")
+[[ -z "$SHOW_NAME" ]]   && errors+=("--show is required")
 command -v curl &>/dev/null || errors+=("curl is required")
 command -v jq   &>/dev/null || errors+=("jq is required")
 
 if [[ ${#errors[@]} -gt 0 ]]; then
     for e in "${errors[@]}"; do echo "Error: $e"; done
     echo ""
-    echo "Usage: $(basename "$0") [--apply] [--untag] [--url URL] --show \"Name\" /path/to/show/dir"
+    echo "Usage: $(basename "$0") [--apply] [--untag] --show \"Name\""
     exit 1
 fi
 
-echo "=== Show:   $SHOW_NAME"
-echo "=== Path:   $SHOW_DIR"
-echo "=== Mode:   $( $DRY_RUN && echo 'DRY RUN — pass --apply to update Plex' || echo 'APPLYING CHANGES' )"
-$UNTAG && echo "=== Action: REMOVING tags" || true
+echo "=== Show:        $SHOW_NAME"
+echo "=== Filler dir:  $FILLER_DIR"
+echo "=== Mode:        $( $DRY_RUN && echo 'DRY RUN — pass --apply to update Plex' || echo 'APPLYING CHANGES' )"
+$UNTAG && echo "=== Action:      REMOVING tags" || true
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -130,11 +138,11 @@ load_ranges() {
     done < "$file"
 }
 
-load_ranges "[Filler]"       "$SHOW_DIR/filler.txt"
-load_ranges "[Mixed Filler]" "$SHOW_DIR/mixedfiller.txt"
+load_ranges "[Filler]"       "$FILLER_DIR/filler.txt"
+load_ranges "[Mixed Filler]" "$FILLER_DIR/mixedfiller.txt"
 
 if [[ $ep_tag_count -eq 0 ]]; then
-    echo "Error: no filler.txt or mixedfiller.txt found in $SHOW_DIR"
+    echo "Error: no filler.txt or mixedfiller.txt found in $FILLER_DIR"
     exit 1
 fi
 
