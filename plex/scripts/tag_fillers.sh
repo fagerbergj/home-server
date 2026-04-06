@@ -17,22 +17,20 @@
 # Options:
 #   --apply          Actually update Plex (default is dry run)
 #   --untag          Remove [Filler] / [Mixed Filler] tags instead of adding
-#   --url URL        Plex base URL (default: $PLEX_URL)
 #   --show NAME      Show title as it appears in Plex
 #   --help, -h       Show this help
 #
 # Environment:
 #   PLEX_TOKEN       Plex auth token (required)
-#   PLEX_URL         Plex server URL (can be overridden with --url)
 #
 # Examples:
-#   tag_fillers.sh --show "Naruto" /mnt/plex01/shows/Naruto
-#   tag_fillers.sh --apply --show "Naruto" /mnt/plex01/shows/Naruto
-#   tag_fillers.sh --apply --untag --show "Naruto" /mnt/plex01/shows/Naruto
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --show "Naruto" /mnt/plex01/shows/Naruto
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --show "Naruto" /mnt/plex01/shows/Naruto
+#   PLEX_TOKEN=$TOKEN tag_fillers.sh --apply --untag --show "Naruto" /mnt/plex01/shows/Naruto
 
 set -euo pipefail
 
-PLEX_URL="${PLEX_URL:-}"
+PLEX_URL="${PLEX_URL:-https://plex.jasonfagerberg.duckdns.org}"
 PLEX_TOKEN="${PLEX_TOKEN:-}"
 SHOW_NAME=""
 SHOW_DIR=""
@@ -51,7 +49,6 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --apply)   DRY_RUN=false; shift ;;
         --untag)   UNTAG=true; shift ;;
-        --url)     PLEX_URL="$2"; shift 2 ;;
         --show)    SHOW_NAME="$2"; shift 2 ;;
         --help|-h) shift ;;
         *)         SHOW_DIR="$1"; shift ;;
@@ -66,7 +63,6 @@ PLEX_URL="${PLEX_URL%/}"  # strip trailing slash
 
 errors=()
 [[ -z "$PLEX_TOKEN" ]]                      && errors+=("PLEX_TOKEN env var is required")
-[[ -z "$PLEX_URL" ]]                        && errors+=("--url or PLEX_URL env var is required")
 [[ -z "$SHOW_NAME" ]]                       && errors+=("--show is required")
 [[ -z "$SHOW_DIR" ]]                        && errors+=("show directory path is required")
 [[ -n "$SHOW_DIR" && ! -d "$SHOW_DIR" ]]    && errors+=("directory not found: $SHOW_DIR")
@@ -83,7 +79,7 @@ fi
 echo "=== Show:   $SHOW_NAME"
 echo "=== Path:   $SHOW_DIR"
 echo "=== Mode:   $( $DRY_RUN && echo 'DRY RUN — pass --apply to update Plex' || echo 'APPLYING CHANGES' )"
-$UNTAG && echo "=== Action: REMOVING tags"
+$UNTAG && echo "=== Action: REMOVING tags" || true
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -113,6 +109,7 @@ plex_put() {
 # ---------------------------------------------------------------------------
 
 declare -A ep_tags
+ep_tag_count=0
 
 load_ranges() {
     local tag="$1" file="$2"
@@ -124,9 +121,11 @@ load_ranges() {
         if [[ "$line" =~ ^([0-9]+)-([0-9]+)$ ]]; then
             for (( i=10#${BASH_REMATCH[1]}; i<=10#${BASH_REMATCH[2]}; i++ )); do
                 ep_tags[$i]="$tag"
+                (( ep_tag_count++ )) || true
             done
         elif [[ "$line" =~ ^[0-9]+$ ]]; then
             ep_tags[$((10#$line))]="$tag"
+            (( ep_tag_count++ )) || true
         fi
     done < "$file"
 }
@@ -134,12 +133,12 @@ load_ranges() {
 load_ranges "[Filler]"       "$SHOW_DIR/filler.txt"
 load_ranges "[Mixed Filler]" "$SHOW_DIR/mixedfiller.txt"
 
-if [[ ${#ep_tags[@]} -eq 0 ]]; then
+if [[ $ep_tag_count -eq 0 ]]; then
     echo "Error: no filler.txt or mixedfiller.txt found in $SHOW_DIR"
     exit 1
 fi
 
-echo "Loaded ${#ep_tags[@]} tagged episode entries."
+echo "Loaded $ep_tag_count tagged episode entries."
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -241,4 +240,4 @@ for season_key in "${season_keys[@]}"; do
 done
 
 echo ""
-echo "=== $changes episode(s) $( $DRY_RUN && echo 'would be' || echo '' ) updated. ==="
+$DRY_RUN && echo "=== $changes episode(s) would be updated. ===" || echo "=== $changes episode(s) updated. ==="
