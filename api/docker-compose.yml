@@ -62,6 +62,10 @@ services:
       - "traefik.http.routers.authentik-outpost.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/outpost.goauthentik.io`)"
       - "traefik.http.routers.authentik-outpost.entrypoints=api"
       - "traefik.http.services.authentik-outpost.loadbalancer.server.port=9000"
+      # Public auth UI at auth.jasonfagerberg.duckdns.org
+      - "traefik.http.routers.authentik-ui.rule=Host(`auth.jasonfagerberg.duckdns.org`)"
+      - "traefik.http.routers.authentik-ui.entrypoints=api"
+      - "traefik.http.services.authentik-ui.loadbalancer.server.port=9000"
 
   # ── Authentik worker ──────────────────────────────────────────────────────────
   authentik-worker:

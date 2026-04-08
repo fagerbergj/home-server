@@ -22,7 +22,8 @@ Services register their own routes via Docker labels on the `api_gateway` shared
 | API base | `https://api.jasonfagerberg.duckdns.org` |
 | OpenAPI docs | `https://api.jasonfagerberg.duckdns.org/docs` |
 | Traefik dashboard | `http://192.168.50.186:8091/dashboard/` (LAN only) |
-| Authentik admin | `http://192.168.50.186:9000` (LAN only) |
+| Authentik | `https://auth.jasonfagerberg.duckdns.org` |
+| Authentik admin (LAN) | `http://192.168.50.186:9000` |
 
 ## Auth
 

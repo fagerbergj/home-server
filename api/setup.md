@@ -48,19 +48,14 @@ Verify:
 
 ---
 
-## 3. Add NPM proxy host
+## 3. Add NPM proxy hosts
 
-In Nginx Proxy Manager (`http://192.168.50.186:81`), add a new proxy host:
+In Nginx Proxy Manager (`http://192.168.50.186:81`), add the following proxy hosts:
 
-| Field | Value |
-|-------|-------|
-| Domain | `api.jasonfagerberg.duckdns.org` |
-| Scheme | `http` |
-| Forward Hostname | `192.168.50.186` |
-| Forward Port | `8090` |
-| WebSockets Support | on |
-| SSL Certificate | `*.jasonfagerberg.duckdns.org` (existing wildcard) |
-| Force SSL | on |
+| Domain | Scheme | Forward Hostname | Port | WebSockets | SSL Certificate | Force SSL |
+|--------|--------|-----------------|------|------------|-----------------|-----------|
+| `api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | on | `*.jasonfagerberg.duckdns.org` | on |
+| `auth.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | on | `*.jasonfagerberg.duckdns.org` | on |
 
 ---
 
@@ -82,7 +77,7 @@ docker compose -f api/docker-compose.yml up -d authentik-server authentik-worker
 
 ## 5. Initial Authentik setup
 
-Visit `http://192.168.50.186:9000/if/flow/initial-setup/` and set the admin password.
+Visit `https://auth.jasonfagerberg.duckdns.org/if/flow/initial-setup/` and set the admin password.
 
 ### Create the Proxy Provider
 
