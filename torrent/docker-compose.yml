@@ -62,6 +62,7 @@ services:
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
       - /mnt/plex01:/mnt/plex01
       - /mnt/plex02:/mnt/plex02
+    mem_limit: 4g
     restart: unless-stopped
 
   sonarr:
