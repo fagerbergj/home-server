@@ -18,6 +18,9 @@ providers:
   - id: ollama:chat:gemma4-26b:latest
     config:
       keep_alive: 0
+  - id: ollama:chat:glm-4.7-flash-coder
+    config:
+      keep_alive: 0
 
 prompts:
   - "{{task}}"
