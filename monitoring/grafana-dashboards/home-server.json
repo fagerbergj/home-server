@@ -232,7 +232,7 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(nvidia_smi_utilization_gpu_ratio * 100,\"gpu\",\"GTX 1070 #0\",\"uuid\",\"8ffcf2f0-dc85-be8d-0b7e-dd2a4eef9c83\"),\"gpu\",\"GTX 1070 #1\",\"uuid\",\"b71061eb-f6f0-4d77-990d-962c91d955a4\")",
+          "expr": "label_replace(nvidia_smi_utilization_gpu_ratio * 100,\"gpu\",\"RTX 3090\",\"uuid\",\"32083e34-098e-a5c4-c2c0-f956236c8735\")",
           "legendFormat": "{{gpu}}",
           "refId": "A"
         }
@@ -298,7 +298,7 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes * 100,\"gpu\",\"GTX 1070 #0\",\"uuid\",\"8ffcf2f0-dc85-be8d-0b7e-dd2a4eef9c83\"),\"gpu\",\"GTX 1070 #1\",\"uuid\",\"b71061eb-f6f0-4d77-990d-962c91d955a4\")",
+          "expr": "label_replace(nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes * 100,\"gpu\",\"RTX 3090\",\"uuid\",\"32083e34-098e-a5c4-c2c0-f956236c8735\")",
           "legendFormat": "{{gpu}}",
           "refId": "A"
         }
