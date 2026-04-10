@@ -37,6 +37,8 @@ PLEX01_DEV=$(jq -r '.plex01.device' "$CONFIG")
 PLEX01_PRESERVE=$(jq -r '.plex01.preserve' "$CONFIG")
 PLEX02_DEV=$(jq -r '.plex02.device // empty' "$CONFIG")
 PLEX02_PRESERVE=$(jq -r '.plex02.preserve // "false"' "$CONFIG")
+PLEX03_DEV=$(jq -r '.plex03.device // empty' "$CONFIG")
+PLEX03_PRESERVE=$(jq -r '.plex03.preserve // "false"' "$CONFIG")
 RAID_PRIMARY=$(jq -r '.personal01.raid_primary' "$CONFIG")
 RAID_SECONDARY=$(jq -r '.personal01.raid_secondary' "$CONFIG")
 
@@ -79,6 +81,28 @@ if [[ -n "$PLEX02_DEV" ]]; then
     fi
     sudo mount -a
     echo "plex02 mounted."
+    echo ""
+fi
+
+# ---------------------------------------------------------------------------
+# Mount plex03 (optional — repurposed ADATA SSD)
+# ---------------------------------------------------------------------------
+
+if [[ -n "$PLEX03_DEV" ]]; then
+    if [[ "$PLEX03_PRESERVE" == "true" ]]; then
+        echo "plex03 ($PLEX03_DEV) — preserving existing data, skipping format."
+    else
+        echo "Formatting $PLEX03_DEV as ext4 (plex03)..."
+        sudo mkfs.ext4 -F -L plex03 "$PLEX03_DEV"
+    fi
+
+    PLEX03_UUID=$(sudo blkid -s UUID -o value "$PLEX03_DEV")
+    sudo mkdir -p /mnt/plex03
+    if ! grep -q "/mnt/plex03" /etc/fstab; then
+        echo "UUID=$PLEX03_UUID   /mnt/plex03   ext4   defaults   0   2" | sudo tee -a /etc/fstab
+    fi
+    sudo mount -a
+    echo "plex03 mounted."
     echo ""
 fi
 
@@ -163,6 +187,13 @@ if [[ -n "$PLEX02_DEV" ]]; then
     sudo chown -R root:plex-rw /mnt/plex02
     sudo chmod -R 2775 /mnt/plex02
     sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
+fi
+
+if [[ -n "$PLEX03_DEV" ]]; then
+    sudo mkdir -p /mnt/plex03/movies /mnt/plex03/shows /mnt/plex03/downloads
+    sudo chown -R root:plex-rw /mnt/plex03
+    sudo chmod -R 2775 /mnt/plex03
+    sudo setfacl -R -m g:plex-ro:rx /mnt/plex03
 fi
 
 # ---------------------------------------------------------------------------

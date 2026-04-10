@@ -8,7 +8,8 @@
 | Motherboard | GIGABYTE B550 Eagle WIFI6 (AM4, B550 chipset) | ✅ Native Ryzen 5000 support, PCIe 4.0, WIFI6 |
 | RAM | 32GB DDR4 | ✅ Upgraded from 16GB |
 | CPU Cooler | Stock AMD Wraith | ✅ |
-| OS Drive | 480GB ADATA SU650 SSD | ✅ |
+| OS Drive | 480GB ADATA SU650 SSD | ⚠️ Pending replacement — 37k hrs, 11 bad sectors. See `hardware_upgrades.md` |
+| OS Drive (replacement) | 500GB NVMe (ordered) | 🔜 Will replace ADATA. ADATA repurposed as plex03 |
 | Personal Drive (primary) | 1TB Seagate HDD | ✅ RAID 1 primary |
 | Personal Drive (secondary) | 1TB WD HDD | ✅ RAID 1 secondary — 35,648 hrs, healthy SMART |
 | Plex Drive | 4TB Seagate Barracuda HDD | ✅ |
@@ -28,6 +29,7 @@
 | `/mnt/plex01` | 4TB Seagate Barracuda | Plex movies & shows | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 | `/mnt/personal01` | RAID 1 (1TB Seagate + 1TB WD) | Immich photos & personal videos | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
 | `/mnt/plex02` | 640GB Hitachi Deskstar HDD | Plex overflow — re-downloadable media only | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
+| `/mnt/plex03` | 480GB ADATA SU650 SSD (repurposed) | Plex overflow — re-downloadable media only | `root` | `plex-rw` | `jason` (rw), `qbittorrent` (rw), `plex` (ro) |
 
 ---
 

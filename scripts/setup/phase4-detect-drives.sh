@@ -54,6 +54,10 @@ PLEX02_DEV=""
 if [[ ${#DRIVES[@]} -ge 4 ]]; then
     PLEX02_DEV=$(part_dev "${DRIVES[3]}")
 fi
+PLEX03_DEV=""
+if [[ ${#DRIVES[@]} -ge 5 ]]; then
+    PLEX03_DEV=$(part_dev "${DRIVES[4]}")
+fi
 
 # ---------------------------------------------------------------------------
 # Check for existing filesystems → suggest preserve
@@ -67,6 +71,11 @@ fi
 PLEX02_PRESERVE=false
 if [[ -n "$PLEX02_DEV" ]] && has_filesystem "/dev/$PLEX02_DEV"; then
     PLEX02_PRESERVE=true
+fi
+
+PLEX03_PRESERVE=false
+if [[ -n "$PLEX03_DEV" ]] && has_filesystem "/dev/$PLEX03_DEV"; then
+    PLEX03_PRESERVE=true
 fi
 
 # ---------------------------------------------------------------------------
@@ -85,13 +94,37 @@ printf "  %-16s %-12s %-12s %s\n" "raid secondary" "/dev/$RAID_SECONDARY_DEV" "$
 if [[ -n "$PLEX02_DEV" ]]; then
     printf "  %-16s %-12s %-12s %s\n" "plex02" "/dev/$PLEX02_DEV" "$(size_of "${DRIVES[3]}")" "$PLEX02_PRESERVE"
 fi
+if [[ -n "$PLEX03_DEV" ]]; then
+    printf "  %-16s %-12s %-12s %s\n" "plex03" "/dev/$PLEX03_DEV" "$(size_of "${DRIVES[4]}")" "$PLEX03_PRESERVE"
+fi
 echo ""
 
 # ---------------------------------------------------------------------------
 # Write drives.json
 # ---------------------------------------------------------------------------
 
-if [[ -n "$PLEX02_DEV" ]]; then
+if [[ -n "$PLEX03_DEV" ]]; then
+    cat > "$OUTPUT" <<EOF
+{
+  "plex01": {
+    "device": "/dev/$PLEX01_DEV",
+    "preserve": $PLEX01_PRESERVE
+  },
+  "plex02": {
+    "device": "/dev/$PLEX02_DEV",
+    "preserve": $PLEX02_PRESERVE
+  },
+  "plex03": {
+    "device": "/dev/$PLEX03_DEV",
+    "preserve": $PLEX03_PRESERVE
+  },
+  "personal01": {
+    "raid_primary": "/dev/$RAID_PRIMARY_DEV",
+    "raid_secondary": "/dev/$RAID_SECONDARY_DEV"
+  }
+}
+EOF
+elif [[ -n "$PLEX02_DEV" ]]; then
     cat > "$OUTPUT" <<EOF
 {
   "plex01": {

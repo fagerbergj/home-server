@@ -24,11 +24,14 @@ Steps:
 Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
 
 Drive assignments going into the build:
-- **480GB ADATA SSD** → OS drive (Ubuntu Server 24.04 LTS + Docker) — `sda`
-- **596GB Hitachi HDD** → `/mnt/plex02` (non-critical/re-downloadable media) — `sdb`
-- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV) — `sdc`
-- **1TB Seagate HDD** (new) → RAID 1 primary for `/mnt/personal01` — `sdd`
-- **1TB WD HDD** (from main PC) → RAID 1 secondary for `/mnt/personal01` — `sde`
+- **500GB NVMe** → OS drive (Ubuntu Server 24.04 LTS + Docker) — `nvme0n1`
+- **596GB Hitachi HDD** → `/mnt/plex02` (non-critical/re-downloadable media)
+- **480GB ADATA SSD** → `/mnt/plex03` (non-critical/re-downloadable media — repurposed OS drive)
+- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
+- **1TB Seagate HDD** → RAID 1 primary for `/mnt/personal01`
+- **1TB WD HDD** → RAID 1 secondary for `/mnt/personal01`
+
+> **Original build note:** the server was initially set up with a 480GB ADATA SU650 SATA SSD as the OS drive. This was replaced with a 500GB NVMe in April 2026 after the SSD developed bad sectors. The ADATA was repurposed as plex03. See `hardware_upgrades.md` for the migration steps.
 
 ---
 
@@ -265,6 +268,32 @@ sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows /mnt/plex02/downloads
 sudo chown -R root:plex-rw /mnt/plex02
 sudo chmod -R 2775 /mnt/plex02
 sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
+```
+
+### Mount plex03 (optional — repurposed ADATA SSD)
+
+If the 480GB ADATA SSD is present (repurposed OS drive), mount it as `/mnt/plex03`. Re-downloadable media only — same policy as plex02.
+
+> Before mounting, run `badblocks -w` to force-remap any pending bad sectors (safe since it's freshly wiped):
+> ```bash
+> sudo badblocks -w -v /dev/sdX
+> ```
+
+```bash
+sudo mkfs.ext4 -L plex03 /dev/sdX1
+sudo mkdir -p /mnt/plex03
+sudo blkid /dev/sdX1
+# Add to /etc/fstab:
+UUID=<uuid>   /mnt/plex03   ext4   defaults   0   2
+sudo mount -a
+```
+
+Set up folder structure and permissions:
+```bash
+sudo mkdir -p /mnt/plex03/movies /mnt/plex03/shows /mnt/plex03/downloads
+sudo chown -R root:plex-rw /mnt/plex03
+sudo chmod -R 2775 /mnt/plex03
+sudo setfacl -R -m g:plex-ro:rx /mnt/plex03
 ```
 
 ### Set Up RAID 1 for personal01

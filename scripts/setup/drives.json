@@ -7,6 +7,10 @@
     "device": "/dev/sdc1",
     "preserve": true
   },
+  "plex03": {
+    "device": "/dev/sdd1",
+    "preserve": false
+  },
   "personal01": {
     "raid_primary": "/dev/sda1",
     "raid_secondary": "/dev/sdb1"
