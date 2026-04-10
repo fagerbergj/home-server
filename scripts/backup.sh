@@ -121,3 +121,17 @@ rsync -a --delete "$REPO_ROOT/api/data/authentik-certs/" "$DEST/authentik-certs/
 
 log "Done. Backup size: $(du -sh "$DEST" | cut -f1)"
 ls -lh "$DEST"
+
+# ── Retention — keep only the 3 most recent backups ───────────────────────
+
+BACKUP_ROOT="/mnt/personal01/backups"
+MAX_BACKUPS=3
+
+mapfile -t OLD_BACKUPS < <(ls -1d "$BACKUP_ROOT"/????-??-?? 2>/dev/null | sort | head -n -$MAX_BACKUPS)
+if [[ ${#OLD_BACKUPS[@]} -gt 0 ]]; then
+    log "Pruning ${#OLD_BACKUPS[@]} old backup(s)..."
+    for dir in "${OLD_BACKUPS[@]}"; do
+        log "  Removing $dir"
+        rm -rf "$dir"
+    done
+fi

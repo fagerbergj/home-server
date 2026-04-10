@@ -231,3 +231,36 @@ teardown() {
     run bash "$REPO_ROOT/scripts/backup.sh"
     grep -q "authentik-certs/" "$TEST_DIR/rsync.calls"
 }
+
+# ── Retention ─────────────────────────────────────────────────────────────
+
+@test "keeps only 3 most recent backups" {
+    local base="$TEST_DIR/mnt/personal01/backups"
+    # Pre-create 4 old dated directories
+    mkdir -p "$base/2026-01-01" "$base/2026-01-02" "$base/2026-01-03" "$base/2026-01-04"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    # Today's backup + 2 most recent old ones = 3 total (oldest should be gone)
+    local count
+    count=$(ls -1d "$base"/????-??-?? | wc -l)
+    [ "$count" -le 3 ]
+}
+
+@test "removes oldest backup when over limit" {
+    local base="$TEST_DIR/mnt/personal01/backups"
+    mkdir -p "$base/2026-01-01" "$base/2026-01-02" "$base/2026-01-03"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    # 2026-01-01 should be pruned (oldest)
+    [ ! -d "$base/2026-01-01" ]
+}
+
+@test "does not prune when under limit" {
+    local base="$TEST_DIR/mnt/personal01/backups"
+    mkdir -p "$base/2026-01-01" "$base/2026-01-02"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    # Only 3 total (2 old + today) — nothing should be pruned
+    [ -d "$base/2026-01-01" ]
+    [ -d "$base/2026-01-02" ]
+}
