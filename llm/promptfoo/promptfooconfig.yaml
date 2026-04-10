@@ -26,6 +26,7 @@ prompts:
 # Requires ANTHROPIC_API_KEY in the environment.
 # To switch to a local Ollama judge, change the provider below.
 defaultTest:
+  threshold: 0.66
   options:
     provider: anthropic:claude-sonnet-4-6
 

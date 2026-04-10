@@ -1,4 +1,4 @@
-# Hardware Upgrades
+we # Hardware Upgrades
 
 Planned and completed hardware changes, with steps to execute them.
 
