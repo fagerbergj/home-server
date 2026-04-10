@@ -20,6 +20,8 @@ setup() {
     mkdir -p "$REPO_ROOT/audiobooks/metadata"
     mkdir -p "$REPO_ROOT/torrent/sonarr/config"
     mkdir -p "$REPO_ROOT/torrent/radarr/config"
+    mkdir -p "$REPO_ROOT/torrent/prowlarr/config"
+    mkdir -p "$REPO_ROOT/torrent/config"
     mkdir -p "$REPO_ROOT/api/data/authentik-media"
     mkdir -p "$REPO_ROOT/api/data/authentik-certs"
     touch "$REPO_ROOT/.env"
@@ -58,6 +60,32 @@ mkdir -p "$dest"
 EOF
     chmod +x "$STUB_BIN/rsync"
 
+    # gpg stub — records calls, creates output file
+    cat > "$STUB_BIN/gpg" <<'EOF'
+#!/usr/bin/env bash
+echo "gpg $*" >> "$TEST_DIR/gpg.calls"
+# Parse --output arg and touch it
+for i in "$@"; do
+    if [[ "$PREV" == "--output" ]]; then
+        touch "$i"
+    fi
+    PREV="$i"
+done
+EOF
+    chmod +x "$STUB_BIN/gpg"
+
+    # sudo stub — just run the command without sudo
+    cat > "$STUB_BIN/sudo" <<'EOF'
+#!/usr/bin/env bash
+exec "$@"
+EOF
+    chmod +x "$STUB_BIN/sudo"
+
+    # Fake /etc/fstab and mdadm.conf
+    mkdir -p "$TEST_DIR/etc/mdadm"
+    echo "UUID=fake / ext4 defaults 0 1" > "$TEST_DIR/etc/fstab"
+    echo "ARRAY /dev/md0 metadata=1.2" > "$TEST_DIR/etc/mdadm/mdadm.conf"
+
     export PATH="$STUB_BIN:$PATH"
     export TEST_DIR REPO_ROOT
 
@@ -67,8 +95,10 @@ EOF
     mkdir -p "$REPO_ROOT/scripts"
     cp "$(dirname "$BATS_TEST_FILENAME")/../backup.sh" "$SCRIPT"
 
-    # Patch the two hardcoded paths so tests are hermetic
+    # Patch hardcoded paths so tests are hermetic
     sed -i "s|/mnt/personal01|$TEST_DIR/mnt/personal01|g" "$SCRIPT"
+    sed -i "s|/etc/fstab|$TEST_DIR/etc/fstab|g" "$SCRIPT"
+    sed -i "s|/etc/mdadm/mdadm.conf|$TEST_DIR/etc/mdadm/mdadm.conf|g" "$SCRIPT"
     chmod +x "$SCRIPT"
 }
 
@@ -263,4 +293,59 @@ teardown() {
     # Only 3 total (2 old + today) — nothing should be pruned
     [ -d "$base/2026-01-01" ]
     [ -d "$base/2026-01-02" ]
+}
+
+# ── Prowlarr / qBittorrent ────────────────────────────────────────────────
+
+@test "rsyncs prowlarr config" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    grep -q "prowlarr/config/" "$TEST_DIR/rsync.calls"
+}
+
+@test "rsyncs qbittorrent config" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    grep -q "torrent/config/" "$TEST_DIR/rsync.calls"
+}
+
+# ── .env encryption ───────────────────────────────────────────────────────
+
+@test "skips .env backup when BACKUP_GPG_PASSPHRASE is not set" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    # gpg should not have been called
+    [ ! -f "$TEST_DIR/gpg.calls" ] || ! grep -q "\-\-symmetric" "$TEST_DIR/gpg.calls"
+}
+
+@test "encrypts .env when BACKUP_GPG_PASSPHRASE is set" {
+    echo 'BACKUP_GPG_PASSPHRASE=testpass' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    grep -q "\-\-symmetric" "$TEST_DIR/gpg.calls"
+}
+
+@test "encrypted .env written to backup directory" {
+    echo 'BACKUP_GPG_PASSPHRASE=testpass' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    local today
+    today="$(date +%Y-%m-%d)"
+    [ -f "$TEST_DIR/mnt/personal01/backups/$today/env.gpg" ]
+}
+
+# ── System config ─────────────────────────────────────────────────────────
+
+@test "copies fstab to backup directory" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    local today
+    today="$(date +%Y-%m-%d)"
+    [ -f "$TEST_DIR/mnt/personal01/backups/$today/system/fstab" ]
+}
+
+@test "copies mdadm.conf to backup directory when present" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    local today
+    today="$(date +%Y-%m-%d)"
+    [ -f "$TEST_DIR/mnt/personal01/backups/$today/system/mdadm.conf" ]
 }
