@@ -30,10 +30,10 @@ That's it — `npx` downloads and runs promptfoo on demand. No global install re
 
 ```bash
 cd llm/promptfoo
-npx promptfoo@latest eval
+npx promptfoo@latest eval --no-cache
 ```
 
-This runs all prompts against both models sequentially — one model fully completes before the next loads, so they never compete for VRAM. Expect it to take a while.
+This runs all 14 prompts × 3 models sequentially (one test at a time). Ollama automatically evicts the previous model from VRAM when the next one loads. Expect it to take a while.
 
 Once done, open the results UI:
 
@@ -46,6 +46,21 @@ To run a single test while iterating on a prompt:
 ```bash
 npx promptfoo@latest eval --filter-pattern "REST server"
 ```
+
+To run one provider at a time (useful for debugging empty responses):
+
+```bash
+npx promptfoo@latest eval --filter-providers "gemma4-26b" --no-cache
+docker exec ollama ollama stop gemma4-26b
+
+npx promptfoo@latest eval --filter-providers "qwen35-coder" --no-cache
+docker exec ollama ollama stop qwen35-coder
+
+npx promptfoo@latest eval --filter-providers "glm-4.7-flash-coder" --no-cache
+docker exec ollama ollama stop glm-4.7-flash-coder
+```
+
+Note: each `--filter-providers` run creates a separate eval — use `promptfoo view` to browse them individually.
 
 ## Judging the output
 

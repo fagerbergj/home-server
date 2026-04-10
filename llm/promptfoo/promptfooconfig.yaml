@@ -2,25 +2,17 @@
 # Run: npx promptfoo@latest eval
 # View: npx promptfoo@latest view
 #
-# Concurrency 1 = only one model loaded at a time.
-# keep_alive: 0 = unload from VRAM immediately after each model finishes.
-
-commandLineOptions:
-  maxConcurrency: 1
+# maxConcurrency 1 = one test at a time. Ollama handles VRAM eviction automatically
+# when switching between models — no keep_alive needed.
 
 evaluateOptions:
+  maxConcurrency: 1
   timeoutMs: 600000  # 10 minutes — allows time for cold model loads
 
 providers:
   - id: ollama:chat:qwen35-coder:latest
-    config:
-      keep_alive: 0
   - id: ollama:chat:gemma4-26b:latest
-    config:
-      keep_alive: 0
   - id: ollama:chat:glm-4.7-flash-coder
-    config:
-      keep_alive: 0
 
 prompts:
   - "{{task}}"
