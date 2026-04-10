@@ -15,6 +15,7 @@ evaluateOptions:
   timeoutMs: 600000  # 10 minutes — allows time for cold model loads
 
 providers:
+  - id: anthropic:claude-haiku-4-5-20251001
   - id: ollama:chat:qwen35-coder:latest
   - id: ollama:chat:gemma4-26b:latest
   - id: ollama:chat:glm-4.7-flash-coder
