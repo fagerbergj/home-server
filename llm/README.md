@@ -64,11 +64,15 @@ One model, stays loaded. Prioritize **context size** over speed — coding tasks
 
 Good candidates: models tagged `code` or `coding` on Ollama. GQA models (low `-k`) handle long context much more efficiently.
 
+> **Note on hybrid SSM/attention models** (e.g. Qwen3.5): the script underestimates KV cache because it assumes all blocks use attention. Binary search with `ollama ps` to find the actual 100% GPU context limit. Example: qwen35-coder:latest (27.8B Q4_K_M) hits 100% GPU at **32768** context on a 3090.
+
 ### Chat model
 
 Can be a large, high-quality model — context only needs to cover a conversation (4k–8k is usually enough). Prioritise model quality over context size.
 
 **Target:** total VRAM under ~22GB at 8k context.
+
+> **Example:** gemma4-26b (25.8B Q4_K_M) uses 21GB at 131072 context — 100% GPU.
 
 ```bash
 ./check-compaitbility.sh -f <size> -q 4 -e <embedding> -b <blocks> -k <kv_heads> -d <kv_len> -c 8192 -t q8_0

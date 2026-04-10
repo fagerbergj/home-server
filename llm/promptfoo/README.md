@@ -50,12 +50,15 @@ npx promptfoo@latest eval --filter-pattern "REST server"
 To run one provider at a time (useful for debugging empty responses):
 
 ```bash
+docker exec ollama ollama run gemma4-26b
 npx promptfoo@latest eval --filter-providers "gemma4-26b"
 docker exec ollama ollama stop gemma4-26b
 
+docker exec ollama ollama run qwen35-coder
 npx promptfoo@latest eval --filter-providers "qwen35-coder"
 docker exec ollama ollama stop qwen35-coder
 
+docker exec ollama ollama run glm-4.7-flash-coder
 npx promptfoo@latest eval --filter-providers "glm-4.7-flash-coder"
 docker exec ollama ollama stop glm-4.7-flash-coder
 ```
