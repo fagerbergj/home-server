@@ -93,8 +93,11 @@ tests:
       - type: llm-rubric
         metric: "[baseline] ordering guarantees"
         value: >
-          Does it address ordering guarantees — Kafka orders within partitions, RabbitMQ
-          does not guarantee order with competing consumers?
+          Does it address ordering guarantees in any meaningful way — for example, that
+          Kafka guarantees ordering within a partition, or that RabbitMQ does not guarantee
+          order when multiple consumers compete for the same queue? Either side counts;
+          the point is that ordering behavior differs across these systems and matters for
+          certain workloads.
       - type: llm-rubric
         metric: "[proficient] consumer model differences"
         value: >
@@ -152,8 +155,11 @@ tests:
       - type: llm-rubric
         metric: "[proficient] testing complexity"
         value: >
-          Does it address testing differences — batch pipelines have deterministic inputs and
-          outputs, streaming requires time-aware or watermark-aware test fixtures?
+          Does it address testing differences between batch and streaming — for example,
+          that batch pipelines have fixed, deterministic inputs and outputs that are easy
+          to test, while streaming introduces time-dependent behavior (event ordering,
+          late arrivals, windows) that makes tests harder to write and reproduce? The
+          specific mechanism matters more than the terminology.
       - type: llm-rubric
         metric: "[expert] cost model"
         value: >
@@ -276,8 +282,12 @@ tests:
       - type: llm-rubric
         metric: "[proficient] coupling moves to schema"
         value: >
-          Does it warn that queues don't automatically decouple services — coupling moves
-          to the message schema or contract instead of disappearing?
+          Does it warn that adding a queue doesn't eliminate coupling — the coupling just
+          moves from direct HTTP contracts to the message schema or event contract? Accepts
+          any framing that conveys this: "you still have a contract," "schema becomes the
+          interface," "producers and consumers must agree on message format," etc. The key
+          point is that "decoupling" is often oversold — something still has to agree on
+          the shape of the data.
       - type: llm-rubric
         metric: "[expert] idempotency requirements"
         value: >
@@ -293,7 +303,9 @@ tests:
     vars:
       task: >
         I'm starting a new backend product with a team of four engineers. I need to
-        decide between starting with a monolith or microservices.
+        decide between starting with a monolith or microservices. What are the real
+        costs and failure modes of each approach, including common mistakes teams make
+        when they do choose microservices?
     assert:
       - type: llm-rubric
         metric: "[baseline] small team favors monolith"
@@ -455,8 +467,12 @@ tests:
       - type: llm-rubric
         metric: "[baseline] error propagation in chains"
         value: >
-          Does it explain error propagation in chains — mistakes in early steps compound
-          and are hard to detect or correct downstream?
+          Does it explain the error propagation risk in chains — that a semantically wrong
+          output from an early step (not just a format/parse error, but plausible-looking
+          bad content) flows silently into later steps, corrupting results in ways that
+          are hard to detect? Note: saying chaining is better because you can catch errors
+          between steps is the *opposite* point — that describes the observability advantage,
+          not this risk.
       - type: llm-rubric
         metric: "[baseline] observability advantage of chaining"
         value: >
@@ -480,8 +496,11 @@ tests:
       - type: llm-rubric
         metric: "[expert] interface design between chain steps"
         value: >
-          Does it address the interface design problem in chains — each step must define
-          its input/output contract, and schema mismatches between steps cause silent failures?
+          Does it address the interface contract problem between chain steps — that each
+          step's output becomes the next step's input, and mismatches (wrong field names,
+          missing keys, unexpected types) tend to fail silently rather than loudly? Accepts
+          any framing around step contracts, output schemas, or the difficulty of catching
+          structural mismatches between steps.
       - type: llm-rubric
         metric: "[expert] evaluation difficulty"
         value: >
