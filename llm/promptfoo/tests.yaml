@@ -397,13 +397,6 @@
         Does it explain the cost asymmetry — extracting a service from a well-factored
         monolith is much easier than merging poorly-scoped microservices back together,
         making the monolith-first approach lower risk even if you plan to split later?
-    - type: llm-rubric
-      metric: "[expert] shared database anti-pattern"
-      value: >
-        Does it explain that microservices sharing a database undermine the whole
-        point — you get tight coupling at the data layer (schema changes break
-        multiple services) while still bearing all the distributed systems overhead,
-        giving you the costs of microservices without the independence benefits?
 
 # ── Abstraction vs inline ──────────────────────────────────────────────────
 
@@ -985,6 +978,7 @@
         // Strip markdown code fences if present
         const raw = output.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
         try {
+          if (typeof require === 'undefined') throw Object.assign(new Error('no require'), { code: 'MODULE_NOT_FOUND' });
           const yaml = require('yaml');
           const doc = yaml.parse(raw);
           const db = doc?.services?.db;
@@ -993,7 +987,9 @@
           return true;
         } catch (e) {
           if (e.code === 'MODULE_NOT_FOUND') {
-            return raw.includes('  db:') || raw.includes('\ndb:');
+            if (!raw.match(/^\s+db:/m)) return { pass: false, score: 0, reason: 'services.db key not found' };
+            if (!raw.match(/image:\s*postgres:15/)) return { pass: false, score: 0, reason: 'missing postgres:15 image' };
+            return true;
           }
           return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };
         }
