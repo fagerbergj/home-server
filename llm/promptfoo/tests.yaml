@@ -51,7 +51,8 @@
   vars:
     task: >
       I'm considering Kotlin for a new backend service. What am I committing to
-      beyond the language syntax itself?
+      beyond the language syntax itself — including what the type system enforces
+      at compile time?
   assert:
     - type: llm-rubric
       metric: "[proficient] JVM ecosystem commitment"
@@ -264,7 +265,8 @@
   vars:
     task: >
       Where should I store JWTs or session tokens on the client? What are the
-      security tradeoffs between localStorage and httpOnly cookies?
+      security tradeoffs between localStorage and httpOnly cookies? And what
+      does logout actually mean for a JWT-based system?
   assert:
     - type: llm-rubric
       metric: "[proficient] token storage tradeoffs"
@@ -398,10 +400,10 @@
     - type: llm-rubric
       metric: "[expert] shared database anti-pattern"
       value: >
-        Does it identify the shared database anti-pattern — microservices sharing a
-        database get the worst of both worlds, with tight coupling at the data layer
-        and none of the deployment independence that microservices are supposed to
-        provide?
+        Does it explain that microservices sharing a database undermine the whole
+        point — you get tight coupling at the data layer (schema changes break
+        multiple services) while still bearing all the distributed systems overhead,
+        giving you the costs of microservices without the independence benefits?
 
 # ── Abstraction vs inline ──────────────────────────────────────────────────
 
