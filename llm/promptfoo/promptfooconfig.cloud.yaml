@@ -1,6 +1,6 @@
 # promptfoo config — cloud models (Sonnet/Haiku) judged by Prometheus2
 #
-# Run:  npx promptfoo@latest eval -c promptfooconfig.cloud.yaml -c tests.yaml
+# Run:  npx promptfoo@latest eval -c promptfooconfig.cloud.yaml
 # View: npx promptfoo@latest view
 #
 # Uses Prometheus2 as judge to avoid Claude self-bias when evaluating Sonnet/Haiku.
@@ -21,6 +21,8 @@ providers:
 
 prompts:
   - "{{task}}"
+
+tests: tests.yaml
 
 # Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
 # Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3

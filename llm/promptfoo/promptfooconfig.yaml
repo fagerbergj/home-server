@@ -1,6 +1,6 @@
 # promptfoo config — local Ollama models judged by Claude Sonnet
 #
-# Run:  npx promptfoo@latest eval -c promptfooconfig.yaml -c tests.yaml
+# Run:  npx promptfoo@latest eval
 # View: npx promptfoo@latest view
 #
 # For cloud model calibration (Sonnet/Haiku judged by Prometheus2):
@@ -26,6 +26,8 @@ providers:
 
 prompts:
   - "{{task}}"
+
+tests: tests.yaml
 
 # Judge: Claude Sonnet (requires ANTHROPIC_API_KEY)
 defaultTest:
