@@ -27,7 +27,7 @@ tests: tests.yaml
 # Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
 # Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3
 defaultTest:
-  threshold: 0.66
+  threshold: 0.80
   options:
     provider: ollama:chat:prometheus2-judge
     rubricPrompt: |
