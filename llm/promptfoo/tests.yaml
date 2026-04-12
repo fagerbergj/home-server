@@ -828,3 +828,164 @@
         Does it identify that the results array accumulates e.userId for all events
         including non-delete ones, which may be undefined at runtime despite the type
         claiming string — downstream consumers of this array would trust invalid data?
+
+# ── Structured output and tool use (scripted assertions — no LLM judge) ───
+#
+# These tests use is-json and javascript assertions for deterministic
+# pass/fail validation. The LLM judge is not involved.
+
+- description: "JSON: extract structured data from prose"
+  vars:
+    task: |
+      Extract the following information as a JSON object with exactly these fields:
+        name    (string)
+        age     (integer — not a string)
+        role    (string)
+        city    (string)
+      Return ONLY the JSON object — no markdown fences, no explanation.
+
+      "Sarah Chen is a 28-year-old DevOps engineer based in Austin, Texas."
+  assert:
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON"
+    - type: javascript
+      metric: "[baseline] correct field values and types"
+      value: |
+        const d = JSON.parse(output);
+        if (d.name !== 'Sarah Chen')
+          return { pass: false, score: 0, reason: 'wrong name: ' + d.name };
+        if (d.age !== 28)
+          return { pass: false, score: 0, reason: 'age should be integer 28, got: ' + JSON.stringify(d.age) };
+        if (typeof d.role !== 'string' || !d.role.trim())
+          return { pass: false, score: 0, reason: 'missing or empty role' };
+        if (typeof d.city !== 'string' || !d.city.trim())
+          return { pass: false, score: 0, reason: 'missing or empty city' };
+        return true;
+
+- description: "JSON: generate object satisfying a TypeScript interface"
+  vars:
+    task: |
+      Generate a valid JSON object that satisfies this TypeScript interface.
+      Return ONLY the JSON — no markdown fences, no explanation.
+
+      interface ServiceConfig {
+        name: string;           // non-empty
+        port: number;           // valid port: 1–65535
+        replicas: number;       // at least 1
+        environment: "production" | "staging" | "development";
+        tags: string[];         // at least one entry
+      }
+  assert:
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON"
+    - type: javascript
+      metric: "[baseline] satisfies interface constraints"
+      value: |
+        const d = JSON.parse(output);
+        if (typeof d.name !== 'string' || !d.name)
+          return { pass: false, score: 0, reason: 'name must be non-empty string' };
+        if (typeof d.port !== 'number' || d.port < 1 || d.port > 65535)
+          return { pass: false, score: 0, reason: 'port out of valid range: ' + d.port };
+        if (typeof d.replicas !== 'number' || d.replicas < 1)
+          return { pass: false, score: 0, reason: 'replicas must be >= 1' };
+        if (!['production', 'staging', 'development'].includes(d.environment))
+          return { pass: false, score: 0, reason: 'invalid environment: ' + d.environment };
+        if (!Array.isArray(d.tags) || d.tags.length === 0)
+          return { pass: false, score: 0, reason: 'tags must be a non-empty array' };
+        return true;
+
+- description: "Tool use: select the right tool and format the call as JSON"
+  vars:
+    task: |
+      You have three tools available:
+        search_web(query: string)        — search the internet for current information
+        query_db(sql: string)            — run a read-only SQL query on the local DB
+        send_alert(message: string)      — page the on-call engineer
+
+      User request: "What is the current weather in Tokyo?"
+
+      Respond with a single JSON tool call:
+        {"tool": "<name>", "params": {<args>}}
+      Return ONLY the JSON — no markdown, no explanation.
+  assert:
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON tool call"
+    - type: javascript
+      metric: "[baseline] correct tool selected with required params"
+      value: |
+        const call = JSON.parse(output);
+        if (call.tool !== 'search_web')
+          return { pass: false, score: 0, reason: 'should call search_web for current weather, got: ' + call.tool };
+        if (typeof call.params?.query !== 'string' || !call.params.query.trim())
+          return { pass: false, score: 0, reason: 'params.query must be a non-empty string' };
+        return true;
+
+- description: "Tool use: pick between two plausible tools"
+  vars:
+    task: |
+      You have three tools available:
+        search_web(query: string)        — search the internet for current information
+        query_db(sql: string)            — run a read-only SQL query on the local DB
+        send_alert(message: string)      — page the on-call engineer
+
+      User request: "How many users signed up in the last 7 days?"
+
+      Respond with a single JSON tool call:
+        {"tool": "<name>", "params": {<args>}}
+      Return ONLY the JSON — no markdown, no explanation.
+  assert:
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON tool call"
+    - type: javascript
+      metric: "[baseline] query_db selected with SQL param"
+      value: |
+        const call = JSON.parse(output);
+        if (call.tool !== 'query_db')
+          return { pass: false, score: 0, reason: 'signups data is in the local DB — should call query_db, got: ' + call.tool };
+        if (typeof call.params?.sql !== 'string' || !call.params.sql.trim())
+          return { pass: false, score: 0, reason: 'params.sql must be a non-empty string' };
+        return true;
+
+- description: "YAML: generate a valid Docker Compose service definition"
+  vars:
+    task: |
+      Generate a Docker Compose v3 services block for a PostgreSQL 15 database.
+      Requirements:
+        - service name: db
+        - image: postgres:15
+        - host port 5432 mapped to container port 5432
+        - environment variable POSTGRES_DB set to myapp
+        - named volume pgdata mounted at /var/lib/postgresql/data
+      Return ONLY the YAML starting with "services:" — no markdown fences.
+  assert:
+    - type: javascript
+      metric: "[baseline] required components present"
+      value: |
+        if (!output.trim().startsWith('services:'))
+          return { pass: false, score: 0, reason: 'output must start with "services:"' };
+        if (!output.includes('postgres:15'))
+          return { pass: false, score: 0, reason: 'missing postgres:15 image' };
+        if (!output.includes('5432'))
+          return { pass: false, score: 0, reason: 'missing port 5432' };
+        if (!output.includes('POSTGRES_DB') || !output.includes('myapp'))
+          return { pass: false, score: 0, reason: 'missing POSTGRES_DB=myapp env var' };
+        if (!output.includes('pgdata'))
+          return { pass: false, score: 0, reason: 'missing pgdata volume reference' };
+        return true;
+    - type: javascript
+      metric: "[proficient] parseable YAML with correct structure"
+      value: |
+        try {
+          const yaml = require('yaml');
+          const doc = yaml.parse(output);
+          const db = doc?.services?.db;
+          if (!db) return { pass: false, score: 0, reason: 'services.db not found in parsed YAML' };
+          if (!db.image?.startsWith('postgres:')) return { pass: false, score: 0, reason: 'wrong image: ' + db.image };
+          return true;
+        } catch (e) {
+          if (e.code === 'MODULE_NOT_FOUND') {
+            // yaml package unavailable — fall back to structural string checks
+            return output.includes('  db:') || output.includes('\ndb:');
+          }
+          return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };
+        }
