@@ -33,8 +33,7 @@ defaultTest:
     rubricPrompt: |
       ###Task Description:
       Evaluate the response based on the score rubric below.
-      Write a brief feedback, then output a score from 1 to 5.
-      Format your response exactly as: Feedback: <text> [RESULT] <score>
+      Write a brief feedback, then output a JSON object on the last line.
 
       ###The instruction to evaluate:
       {{prompt}}
@@ -51,3 +50,6 @@ defaultTest:
       Score 5: Fully and accurately satisfies the criterion.
 
       ###Feedback:
+      Write your feedback, then end with ONLY this JSON on the last line:
+      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
+      Score guide: 1.0=fully satisfies, 0.5=partially, 0.0=not addressed. Pass if score >= 0.66.
