@@ -409,7 +409,8 @@
   vars:
     task: >
       What's a concrete heuristic for deciding when to extract a function or
-      abstraction vs leaving code duplicated?
+      abstraction vs leaving code duplicated? And how do you recognize when
+      you've already waited too long to extract it?
   assert:
     - type: llm-rubric
       metric: "[baseline] concrete heuristic"
@@ -923,12 +924,14 @@
 - description: "Tool use: pick between two plausible tools"
   vars:
     task: |
+      You are an assistant with access to an internal analytics database.
       You have three tools available:
         search_web(query: string)        — search the internet for current information
-        query_db(sql: string)            — run a read-only SQL query on the local DB
+        query_db(sql: string)            — run a read-only SQL query on the internal analytics DB
         send_alert(message: string)      — page the on-call engineer
 
       User request: "How many users signed up in the last 7 days?"
+      (User signups are tracked in the internal DB, not on the web.)
 
       Respond with a single JSON tool call:
         {"tool": "<name>", "params": {<args>}}
@@ -961,31 +964,34 @@
     - type: javascript
       metric: "[baseline] required components present"
       value: |
-        if (!output.trim().startsWith('services:'))
-          return { pass: false, score: 0, reason: 'output must start with "services:"' };
-        if (!output.includes('postgres:15'))
+        // Strip markdown code fences if present
+        const yaml = output.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
+        if (!yaml.startsWith('services:'))
+          return { pass: false, score: 0, reason: 'output must start with "services:" (got: ' + yaml.slice(0, 40) + ')' };
+        if (!yaml.includes('postgres:15'))
           return { pass: false, score: 0, reason: 'missing postgres:15 image' };
-        if (!output.includes('5432'))
+        if (!yaml.includes('5432'))
           return { pass: false, score: 0, reason: 'missing port 5432' };
-        if (!output.includes('POSTGRES_DB') || !output.includes('myapp'))
+        if (!yaml.includes('POSTGRES_DB') || !yaml.includes('myapp'))
           return { pass: false, score: 0, reason: 'missing POSTGRES_DB=myapp env var' };
-        if (!output.includes('pgdata'))
+        if (!yaml.includes('pgdata'))
           return { pass: false, score: 0, reason: 'missing pgdata volume reference' };
         return true;
     - type: javascript
       metric: "[proficient] parseable YAML with correct structure"
       value: |
+        // Strip markdown code fences if present
+        const raw = output.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
         try {
           const yaml = require('yaml');
-          const doc = yaml.parse(output);
+          const doc = yaml.parse(raw);
           const db = doc?.services?.db;
           if (!db) return { pass: false, score: 0, reason: 'services.db not found in parsed YAML' };
           if (!db.image?.startsWith('postgres:')) return { pass: false, score: 0, reason: 'wrong image: ' + db.image };
           return true;
         } catch (e) {
           if (e.code === 'MODULE_NOT_FOUND') {
-            // yaml package unavailable — fall back to structural string checks
-            return output.includes('  db:') || output.includes('\ndb:');
+            return raw.includes('  db:') || raw.includes('\ndb:');
           }
           return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };
         }
