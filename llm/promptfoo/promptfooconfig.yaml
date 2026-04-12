@@ -18,7 +18,7 @@ providers:
   - id: anthropic:claude-haiku-4-5-20251001
   - id: ollama:chat:qwen35-coder:latest
   - id: ollama:chat:gemma4-26b:latest
-  - id: ollama:chat:gemma4-31b:latest
+  - id: ollama:chat:gemma4:31b
   - id: ollama:chat:glm-4.7-flash-coder
 
 prompts:
