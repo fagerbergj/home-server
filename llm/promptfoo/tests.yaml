@@ -63,8 +63,8 @@
       metric: "[expert] type system depth"
       value: >
         Does it discuss Kotlin's null safety (nullable vs non-nullable types enforced
-        at compile time) and/or sealed classes as mechanisms for catching bugs earlier,
-        contrasted with Go's deliberate type system minimalism?
+        at compile time) and/or sealed classes as mechanisms for catching a class of
+        bugs at compile time rather than at runtime?
 
 # ── Messaging ─────────────────────────────────────────────────────────────
 
@@ -228,12 +228,6 @@
         common across all records) with only the edges being truly variable — making
         a relational table with fixed columns plus a JSONB column for the variable
         parts a practical middle ground?
-    - type: llm-rubric
-      metric: "[expert] indexing differences"
-      value: >
-        Does it explain that PostgreSQL uses GIN indexes on JSONB columns while
-        MongoDB has native document index support, and what that means for query
-        patterns that filter on fields inside the document?
 
 # ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -295,10 +289,9 @@
     - type: llm-rubric
       metric: "[baseline] sync vs async as primary driver"
       value: >
-        Does it identify whether the caller needs an immediate response as the primary
-        decision factor — if the caller needs a result synchronously, HTTP is usually
-        the right answer and a queue is only appropriate when fire-and-forget semantics
-        are acceptable?
+        Does it identify whether the caller needs an immediate response — synchronous
+        vs asynchronous communication — as the most important factor to resolve first,
+        ahead of throughput, durability, or operational cost considerations?
 
 - description: "Queue vs HTTP: operational costs and failure modes"
   vars:
