@@ -33,8 +33,17 @@ providers:
 prompts:
   - "{{task}}"
 
-# Claude Sonnet judges all assertions.
-# Requires ANTHROPIC_API_KEY in the environment.
+# Judge configuration — uncomment one block at a time.
+#
+# Option A: Claude Sonnet (cloud, requires ANTHROPIC_API_KEY)
+#   Best for calibration runs. Note: self-bias may inflate Sonnet's own scores.
+#
+# Option B: Prometheus2 (local Ollama, no API cost)
+#   Fine-tuned specifically for LLM evaluation. Pull with:
+#     ollama pull tensortemplar/prometheus2:8x7b-Q3_K_S
+#   Uses 1-5 scoring scale normalized to 0.0-1.0. Threshold 0.66 = score ≥ 3.3.
+
+# ── Option A: Sonnet judge ─────────────────────────────────────────────────
 defaultTest:
   threshold: 0.66
   options:
@@ -57,6 +66,33 @@ defaultTest:
       {"pass": true/false, "score": 0.0, "reason": "one sentence"}
 
       Score guide: 1.0 = fully satisfies criterion, 0.5 = partially, 0.0 = not addressed.
+
+# ── Option B: Prometheus2 judge (comment out Option A and uncomment this) ──
+# defaultTest:
+#   threshold: 0.66
+#   options:
+#     provider: ollama:chat:tensortemplar/prometheus2:8x7b-Q3_K_S
+#     rubricPrompt: |
+#       ###Task Description:
+#       Evaluate the response based on the score rubric below.
+#       Write a brief feedback, then output a score from 1 to 5.
+#       Format your response exactly as: Feedback: <text> [RESULT] <score>
+#
+#       ###The instruction to evaluate:
+#       {{prompt}}
+#
+#       ###Response to evaluate:
+#       {{output}}
+#
+#       ###Score Rubrics:
+#       [{{rubric}}]
+#       Score 1: Does not address the criterion at all.
+#       Score 2: Mentions the topic but misses the key point.
+#       Score 3: Partially addresses the criterion with some gaps.
+#       Score 4: Mostly satisfies the criterion with minor gaps.
+#       Score 5: Fully and accurately satisfies the criterion.
+#
+#       ###Feedback:
 
 tests:
 
