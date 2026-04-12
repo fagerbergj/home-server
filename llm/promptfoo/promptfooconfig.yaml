@@ -43,7 +43,7 @@ defaultTest:
       You are grading a technical response against a specific criterion.
 
       Criterion:
-      {{criteria}}
+      {{rubric}}
 
       Response to grade:
       {{output}}
