@@ -27,10 +27,7 @@ prompts:
 defaultTest:
   threshold: 0.66
   options:
-    provider:
-        id: ollama:chat:tensortemplar/prometheus2:8x7b-Q3_K_S
-        config:
-          num_ctx: 4096
+    provider: ollama:chat:tensortemplar/prometheus2:8x7b-Q3_K_S
     rubricPrompt: |
       ###Task Description:
       Evaluate the response based on the score rubric below.
