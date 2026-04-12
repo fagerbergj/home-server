@@ -43,11 +43,11 @@ defaultTest:
 
       ###Score Rubrics:
       [{{rubric}}]
-      Score 1.0: Catches everything in the assertion; response is in-depth, actionable, and clear.
-      Score 0.75: Catches everything in the assertion; response may not be especially clear, actionable, or in-depth.
-      Score 0.5: Misses a few points in the assertion; response is still actionable, clear, and in-depth for the points it does cover.
-      Score 0.25: Misses multiple points from the assertion, or the response is exceptionally unclear and hard to follow.
-      Score 0.0: Incorrect or misleading response.
+      Score 1.0: Addresses all required points in the criterion; explanation is accurate, in-depth, and easy to act on.
+      Score 0.75: Addresses all required points in the criterion; explanation is correct but may lack depth, precision, or clarity.
+      Score 0.5: Addresses most required points but omits one specific point from the criterion; the points it does cover are explained well.
+      Score 0.25: Omits multiple required points from the criterion, or the explanation is so unclear or disorganized it is difficult to follow.
+      Score 0.0: Response is incorrect, misleading, or does not address the criterion at all.
 
       ###Feedback:
       Write your feedback, then end with ONLY this JSON on the last line:
