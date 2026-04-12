@@ -2,6 +2,14 @@
 
 Compares LLM models across coding, architecture decisions, and prompt engineering questions.
 
+## Files
+
+| File | Purpose |
+|---|---|
+| `promptfooconfig.yaml` | Local Ollama models, judged by Claude Sonnet |
+| `promptfooconfig.cloud.yaml` | Cloud models (Sonnet/Haiku), judged by Prometheus2 |
+| `tests.yaml` | All 36 test cases — shared by both configs |
+
 ## Quickstart
 
 No install needed — run via `npx`. You need Node.js 18+.
@@ -10,124 +18,96 @@ No install needed — run via `npx`. You need Node.js 18+.
 node --version   # confirm 18+
 ```
 
-If you don't have Node, install it via your package manager:
+If you don't have Node, install it via nvm:
 
 ```bash
-# via nvm (recommended — lets you manage versions)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install --lts
 ```
 
-Then verify promptfoo works:
-
-```bash
-npx promptfoo@latest --version
-```
-
-That's it — `npx` downloads and runs promptfoo on demand. No global install required.
-
 ## Running
+
+### Local models (qwen35-coder, gemma4:31b, gemma4-26b)
+
+Judged by Claude Sonnet. Requires `ANTHROPIC_API_KEY`.
 
 ```bash
 cd llm/promptfoo
 npx promptfoo@latest eval
 ```
 
-This runs all 14 prompts × 3 models sequentially (one test at a time). Ollama automatically evicts the previous model from VRAM when the next one loads. Expect it to take a while.
+Runs all 36 tests × 3 models sequentially (`maxConcurrency: 1`). Ollama automatically
+evicts the previous model from VRAM when the next one loads. Expect it to take a while.
 
-Once done, open the results UI:
+### Cloud calibration (Sonnet, Haiku)
+
+Judged by Prometheus2 (local Ollama) to avoid Claude self-bias. Runs 2 tests at a time.
+
+```bash
+npx promptfoo@latest eval -c promptfooconfig.cloud.yaml
+```
+
+Requires Prometheus2 to be pulled in Ollama:
+
+```bash
+# One-time setup — creates a 28k-context variant
+docker exec -it ollama sh -c 'printf "FROM tensortemplar/prometheus2:8x7b-Q3_K_S\nPARAMETER num_ctx 28672\n" | ollama create prometheus2-judge -f -'
+```
+
+### View results
 
 ```bash
 npx promptfoo@latest view
 ```
 
-To run a single test while iterating on a prompt:
+### Filtering
+
+Run a single test while iterating on a prompt:
 
 ```bash
-npx promptfoo@latest eval --filter-pattern "REST server"
+npx promptfoo@latest eval --filter-pattern "Kafka"
 ```
 
-To run one provider at a time (useful for debugging empty responses):
+Run one provider at a time:
 
 ```bash
-docker exec ollama ollama run gemma4-26b
-npx promptfoo@latest eval --filter-providers "gemma4-26b"
-docker exec ollama ollama stop gemma4-26b
-
-docker exec ollama ollama run qwen35-coder
 npx promptfoo@latest eval --filter-providers "qwen35-coder"
-docker exec ollama ollama stop qwen35-coder
-
-docker exec ollama ollama run glm-4.7-flash-coder
-npx promptfoo@latest eval --filter-providers "glm-4.7-flash-coder"
-docker exec ollama ollama stop glm-4.7-flash-coder
 ```
 
-Note: each `--filter-providers` run creates a separate eval — use `promptfoo view` to browse them individually.
+## Calibration workflow
 
-## Judging the output
+Before running local models, run the cloud calibration to validate rubrics:
 
-Claude Sonnet acts as the judge — it scores each response automatically using a rubric. Requires your Anthropic API key:
+1. `npx promptfoo@latest eval -c promptfooconfig.cloud.yaml`
+2. Check results — **Sonnet should pass ≥90%, Haiku ≥70%**
+3. If Sonnet fails a test, the prompt or rubric is too narrow — fix it before running local models
+4. Haiku at 70% is the practical bar: a local model beating Haiku is meaningful signal
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-npx promptfoo@latest eval
-```
+## Assertions
 
-The eval table shows pass/fail per assertion. Use `promptfoo view` to read the full responses and judge's reasoning side by side.
+Tests are tiered by depth:
 
-### Switching to a local Ollama judge
+- `[baseline]` — fundamental knowledge; should always pass
+- `[proficient]` — real understanding; distinguishes good from average
+- `[expert]` — deep insight; changes how you think about the problem
 
-The judge provider is a single line in `promptfooconfig.yaml`. To use a local model instead of Claude, change:
-
-```yaml
-defaultTest:
-  assert:
-    - type: llm-rubric
-      provider: anthropic:claude-sonnet-4-6  # change this
-```
-
-The intended long-term approach is a promotion process: whichever model wins an eval run becomes the judge for the next contenders. To do that, update the provider line to point at the current champion before running the next eval.
-
-A local judge works best with a large, capable model — smaller models tend to be inconsistent on nuanced rubrics. The bug-finding tests have explicit checklists in the rubric which are easier for smaller models to evaluate reliably than the open-ended trade-off rubrics.
-
-### What to look for by category
+## What to look for
 
 **Decision/comparison questions** (REST server, Kafka vs RabbitMQ, etc.)
-- Does it go beyond surface-level trade-offs, or just list bullet points you already knew?
-- Does it tell you what *questions to ask yourself* rather than picking a winner?
-- Does it acknowledge when the answer is "it depends" and actually explain what it depends on?
+- Does it go beyond surface-level trade-offs?
+- Does it explain what the answer *depends on*, not just pick a winner?
 - Red flag: confident recommendations with no caveats, or hedging with no substance.
 
-**Deep comparisons** (Go channels vs mutex, JWT vs sessions, etc.)
-- Does it cover the non-obvious cases, or just repeat conventional wisdom?
-- Does it give concrete examples where the "standard advice" would steer you wrong?
-- Can it hold multiple trade-offs in tension without collapsing to a simple answer?
-
-**Bug finding**
+**Bug finding** (Go, Kotlin, TypeScript, SQL, Docker)
 - Did it find all the bugs, or just the obvious one?
 - Does it explain *why* each bug is a bug, not just flag it?
-- Does the fix it proposes actually work, or introduce new issues?
+- Does the proposed fix actually work?
 
-**Structured output / prompt engineering**
+**Prompt engineering** (CoT, structured output, prompt chains)
 - Does it show genuine understanding of LLM behaviour, or just repeat blog-post takes?
-- Useful signal: does it distinguish between tasks where CoT helps vs. doesn't?
 
-### A simple scoring approach
-
-For each prompt, pick a winner or call it a tie. Track it in a tally:
-
-| Prompt | Winner |
-|--------|--------|
-| REST server | qwen35-coder |
-| Kafka vs RabbitMQ | tie |
-| ... | ... |
-
-After going through all prompts, patterns usually emerge — one model might be stronger on open-ended decisions while the other is more precise on code analysis.
-
-### Things that aren't meaningful signal
+## Things that aren't meaningful signal
 
 - Length — longer isn't better
 - Formatting — nice headers don't mean correct content
 - Confidence — a model that sounds sure isn't more likely to be right
-- Whether it agrees with your existing opinion

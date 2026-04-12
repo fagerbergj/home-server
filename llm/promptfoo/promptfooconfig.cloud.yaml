@@ -12,7 +12,7 @@
 # running local models — don't adjust for Haiku failures alone.
 
 evaluateOptions:
-  maxConcurrency: 1
+  maxConcurrency: 2
   timeoutMs: 120000  # 2 minutes — cloud models are fast
 
 providers:
