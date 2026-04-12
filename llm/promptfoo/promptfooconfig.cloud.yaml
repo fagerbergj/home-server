@@ -43,13 +43,13 @@ defaultTest:
 
       ###Score Rubrics:
       [{{rubric}}]
-      Score 0.0: Does not address the criterion at all.
-      Score 0.25: Mentions the topic but misses the key point.
-      Score 0.5: Partially addresses the criterion with some gaps.
-      Score 0.75: Mostly satisfies the criterion with minor gaps.
-      Score 1.0: Fully and accurately satisfies the criterion.
+      Score 1.0: Catches everything in the assertion; response is in-depth, actionable, and clear.
+      Score 0.75: Catches everything in the assertion; response may not be especially clear, actionable, or in-depth.
+      Score 0.5: Misses a few points in the assertion; response is still actionable, clear, and in-depth for the points it does cover.
+      Score 0.25: Misses multiple points from the assertion, or the response is exceptionally unclear and hard to follow.
+      Score 0.0: Incorrect or misleading response.
 
       ###Feedback:
       Write your feedback, then end with ONLY this JSON on the last line:
       {"pass": true/false, "score": 0.0, "reason": "one sentence"}
-      Score must be between 0.0 and 1.0. Pass if score >= 0.75.
+      Score must be one of: 0.0, 0.25, 0.5, 0.75, 1.0. Pass if score >= 0.75.
