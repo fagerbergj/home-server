@@ -1,0 +1,51 @@
+# promptfoo config — cloud models (Sonnet/Haiku) judged by Prometheus2
+#
+# Run:  npx promptfoo@latest eval -c promptfooconfig.cloud.yaml -c tests.yaml
+# View: npx promptfoo@latest view
+#
+# Uses Prometheus2 as judge to avoid Claude self-bias when evaluating Sonnet/Haiku.
+# Pull the judge model first:
+#   ollama pull tensortemplar/prometheus2:8x7b-Q3_K_S
+#
+# Targets: Sonnet ≥90%, Haiku ≥70%.
+# If a test fails for Sonnet, the prompt or rubric needs revision before
+# running local models — don't adjust for Haiku failures alone.
+
+evaluateOptions:
+  maxConcurrency: 1
+  timeoutMs: 120000  # 2 minutes — cloud models are fast
+
+providers:
+  - id: anthropic:claude-sonnet-4-6
+  - id: anthropic:claude-haiku-4-5-20251001
+
+prompts:
+  - "{{task}}"
+
+# Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
+# Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3
+defaultTest:
+  threshold: 0.66
+  options:
+    provider: ollama:chat:tensortemplar/prometheus2:8x7b-Q3_K_S
+    rubricPrompt: |
+      ###Task Description:
+      Evaluate the response based on the score rubric below.
+      Write a brief feedback, then output a score from 1 to 5.
+      Format your response exactly as: Feedback: <text> [RESULT] <score>
+
+      ###The instruction to evaluate:
+      {{prompt}}
+
+      ###Response to evaluate:
+      {{output}}
+
+      ###Score Rubrics:
+      [{{rubric}}]
+      Score 1: Does not address the criterion at all.
+      Score 2: Mentions the topic but misses the key point.
+      Score 3: Partially addresses the criterion with some gaps.
+      Score 4: Mostly satisfies the criterion with minor gaps.
+      Score 5: Fully and accurately satisfies the criterion.
+
+      ###Feedback:
