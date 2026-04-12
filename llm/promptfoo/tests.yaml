@@ -315,12 +315,19 @@
         Does it explain that HTTP failures are immediate and visible to the caller
         (error codes, timeouts) while queue failures are deferred and harder to
         detect — dead letter queues, silent drops, or unbounded consumer lag?
+    - type: llm-rubric
+      metric: "[expert] idempotency requirements"
+      value: >
+        Does it explain that message queues introduce at-least-once delivery
+        semantics, meaning consumers must handle duplicate messages idempotently —
+        a design constraint that HTTP calls don't impose by default?
 
 - description: "Queue vs HTTP: coupling and idempotency"
   vars:
     task: >
       I keep hearing that message queues "decouple" services. Is that actually
-      true? What stays coupled when you add a queue?
+      true? What stays coupled when you add a queue, and what new design
+      constraints does the queue introduce on the consumer side?
   assert:
     - type: llm-rubric
       metric: "[proficient] coupling moves to schema"
@@ -408,9 +415,10 @@
       metric: "[baseline] concrete heuristic"
       value: >
         Does it give a concrete, actionable heuristic — such as the rule of three
-        (wait until you see the pattern three times), only when callers don't need to
-        know the internals, or only when you can give the abstraction a meaningful
-        domain name that captures what it represents?
+        (wait until the pattern appears three times), only when you can give the
+        abstraction a meaningful domain name, only when the duplicated code
+        represents the same concept (not just the same structure), or only when
+        callers don't need to know the internals?
     - type: llm-rubric
       metric: "[proficient] signs of waiting too long"
       value: >
