@@ -46,8 +46,8 @@ defaultTest:
       Score 1.0: Addresses all required points in the criterion; explanation is accurate, in-depth, and easy to act on.
       Score 0.9: Addresses all required points in the criterion; explanation is correct but may lack depth, precision, or clarity.
       Score 0.75: Addresses almost all required points but omits one minor detail; the points it covers are explained clearly and thoroughly.
-      Score 0.5: Omits one specific required point from the criterion; the points it does cover are explained well.
-      Score 0.25: Omits multiple required points from the criterion, or the explanation is so unclear or disorganized it is difficult to follow.
+      Score 0.5: Omits multiple required points from the criterion; the points it does cover are explained reasonably well.
+      Score 0.25: Addresses very few required points from the criterion, or the explanation is so unclear or disorganized it is difficult to follow.
       Score 0.0: Response is incorrect, misleading, or does not address the criterion at all.
 
       ###Feedback:
