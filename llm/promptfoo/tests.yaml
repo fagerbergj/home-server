@@ -56,9 +56,10 @@
     - type: llm-rubric
       metric: "[proficient] JVM ecosystem commitment"
       value: >
-        Does it explain that choosing Kotlin means choosing the JVM ecosystem —
-        Spring Boot, mature Java libraries, JVM operational tooling — not just a
-        language preference?
+        Does it explain that choosing Kotlin means committing to the JVM — its startup
+        characteristics, memory model, GC tuning, and the Java library ecosystem —
+        not just a syntax preference? (Specific frameworks like Spring Boot are
+        illustrative, not required.)
     - type: llm-rubric
       metric: "[expert] type system depth"
       value: >
@@ -103,9 +104,10 @@
     - type: llm-rubric
       metric: "[proficient] consumer group model"
       value: >
-        Does it explain Kafka's offset-based consumer groups — each group maintains
-        its own offset, consumers within a group each own a subset of partitions, and
-        a new consumer in the group resumes from the stored offset?
+        Does it explain that Kafka consumer groups are offset-based — each group
+        independently tracks its own position in the topic, so multiple groups can
+        each read the full message stream independently, and consumers within a group
+        divide the partitions among themselves?
     - type: llm-rubric
       metric: "[expert] consumer lag and backpressure"
       value: >
@@ -283,15 +285,17 @@
 - description: "Queue vs HTTP: sync vs async is the primary question"
   vars:
     task: >
-      My services call each other over HTTP. What's the most important question
-      to answer before deciding whether to introduce a message queue?
+      My services currently call each other synchronously over HTTP. What
+      fundamentally changes about how services communicate when you introduce
+      a message queue, and why does that matter for whether to use one?
   assert:
     - type: llm-rubric
       metric: "[baseline] sync vs async as primary driver"
       value: >
-        Does it identify whether the caller needs an immediate response — synchronous
-        vs asynchronous communication — as the most important factor to resolve first,
-        ahead of throughput, durability, or operational cost considerations?
+        Does it explain that the fundamental shift is from synchronous to asynchronous
+        communication — the sender no longer waits for a response — and that this is
+        the central question: does the caller actually need an immediate result, or is
+        fire-and-forget acceptable?
 
 - description: "Queue vs HTTP: operational costs and failure modes"
   vars:
