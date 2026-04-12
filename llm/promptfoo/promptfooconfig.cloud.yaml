@@ -27,7 +27,7 @@ tests: tests.yaml
 # Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
 # Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3
 defaultTest:
-  threshold: 0.80
+  threshold: 0.66
   options:
     provider: ollama:chat:prometheus2-judge
     rubricPrompt: |
@@ -43,13 +43,13 @@ defaultTest:
 
       ###Score Rubrics:
       [{{rubric}}]
-      Score 1: Does not address the criterion at all.
-      Score 2: Mentions the topic but misses the key point.
-      Score 3: Partially addresses the criterion with some gaps.
-      Score 4: Mostly satisfies the criterion with minor gaps.
-      Score 5: Fully and accurately satisfies the criterion.
+      Score 0.0: Does not address the criterion at all.
+      Score 0.25: Mentions the topic but misses the key point.
+      Score 0.5: Partially addresses the criterion with some gaps.
+      Score 0.75: Mostly satisfies the criterion with minor gaps.
+      Score 1.0: Fully and accurately satisfies the criterion.
 
       ###Feedback:
       Write your feedback, then end with ONLY this JSON on the last line:
       {"pass": true/false, "score": 0.0, "reason": "one sentence"}
-      Score guide: 1.0=fully satisfies, 0.5=partially, 0.0=not addressed. Pass if score >= 0.66.
+      Score must be between 0.0 and 1.0. Pass if score >= 0.80.
