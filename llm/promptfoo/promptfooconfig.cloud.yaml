@@ -29,7 +29,7 @@ tests: tests.yaml
 defaultTest:
   threshold: 0.75
   options:
-    provider: ollama:chat:prometheus2-judge
+    provider: anthropic:claude-sonnet-4-6
     rubricPrompt: |
       ###Task Description:
       Evaluate the response based on the score rubric below.
