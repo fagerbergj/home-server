@@ -27,7 +27,7 @@ tests: tests.yaml
 # Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
 # Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3
 defaultTest:
-  threshold: 0.66
+  threshold: 0.75
   options:
     provider: ollama:chat:prometheus2-judge
     rubricPrompt: |
@@ -52,4 +52,4 @@ defaultTest:
       ###Feedback:
       Write your feedback, then end with ONLY this JSON on the last line:
       {"pass": true/false, "score": 0.0, "reason": "one sentence"}
-      Score must be between 0.0 and 1.0. Pass if score >= 0.80.
+      Score must be between 0.0 and 1.0. Pass if score >= 0.75.
