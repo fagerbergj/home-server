@@ -55,7 +55,7 @@ fi
 # --- Audiobookshelf ---
 echo ""
 echo "=== Audiobookshelf ==="
-connections=$(ss -tn 2>/dev/null | grep -c 'ESTAB.*13378\|13378.*ESTAB' || echo 0)
+connections=$(ss -tn 2>/dev/null | grep -c 'ESTAB.*13378\|13378.*ESTAB' || true)
 if [[ "$connections" -gt 0 ]]; then
     echo "${connections} active connection(s)"
     any_active=true
