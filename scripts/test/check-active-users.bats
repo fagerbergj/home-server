@@ -1,14 +1,14 @@
 #!/usr/bin/env bats
 # Tests for scripts/check-active-users.sh
 #
-# Stubs docker, curl, and ss so nothing touches a real server.
+# Stubs docker and curl so nothing touches a real server.
 
 setup() {
     TEST_DIR="$(mktemp -d)"
     STUB_BIN="$TEST_DIR/bin"
     mkdir -p "$STUB_BIN"
 
-    # Copy script under test and patch nothing — stubs handle isolation
+    # Copy script under test — stubs handle isolation
     SCRIPT="$TEST_DIR/check-active-users.sh"
     cp "$(dirname "$BATS_TEST_FILENAME")/../check-active-users.sh" "$SCRIPT"
     chmod +x "$SCRIPT"
@@ -26,19 +26,16 @@ fi
 EOF
     chmod +x "$STUB_BIN/docker"
 
+    # Default curl stub: routes by URL pattern
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-# Default: 0 Plex sessions
-echo '<MediaContainer size="0"></MediaContainer>'
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="0"></MediaContainer>'
+fi
 EOF
     chmod +x "$STUB_BIN/curl"
-
-    cat > "$STUB_BIN/ss" <<'EOF'
-#!/usr/bin/env bash
-# Default: no established connections
-echo "Netid State  Recv-Q Send-Q Local Address:Port Peer Address:Port"
-EOF
-    chmod +x "$STUB_BIN/ss"
 
     export PATH="$STUB_BIN:$PATH"
     export TEST_DIR SCRIPT
@@ -51,12 +48,12 @@ teardown() {
 # ── All clear ─────────────────────────────────────────────────────────────
 
 @test "exits 0 when no active users on any service" {
-    run bash "$SCRIPT" <<< ""
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 
 @test "prints all clear message when no active users" {
-    run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     [[ "$output" == *"All clear"* ]]
 }
@@ -75,7 +72,7 @@ fi
 EOF
     chmod +x "$STUB_BIN/docker"
 
-    run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
@@ -116,7 +113,7 @@ echo ""
 EOF
     chmod +x "$STUB_BIN/docker"
 
-    run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 
@@ -128,24 +125,22 @@ EOF
 }
 
 @test "exits 0 with no Plex streams when token is provided" {
-    cat > "$STUB_BIN/curl" <<'EOF'
-#!/usr/bin/env bash
-echo '<MediaContainer size="0"></MediaContainer>'
-EOF
-    chmod +x "$STUB_BIN/curl"
-
-    PLEX_TOKEN=faketoken run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 
 @test "detects active Plex streams" {
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-echo '<MediaContainer size="2"><Video title="Breaking Bad" grandparentTitle="Breaking Bad"/><Video title="Inception"/></MediaContainer>'
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="2"><Video title="Breaking Bad"/><Video title="Inception"/></MediaContainer>'
+fi
 EOF
     chmod +x "$STUB_BIN/curl"
 
-    PLEX_TOKEN=faketoken run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
@@ -153,55 +148,90 @@ EOF
 @test "prints active Plex stream count" {
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-echo '<MediaContainer size="1"><Video title="Inception"/></MediaContainer>'
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="1"><Video title="Inception"/></MediaContainer>'
+fi
 EOF
     chmod +x "$STUB_BIN/curl"
 
-    PLEX_TOKEN=faketoken run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [[ "$output" == *"1 active stream"* ]]
 }
 
 @test "handles Plex being unreachable" {
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-exit 1
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    exit 1
+fi
 EOF
     chmod +x "$STUB_BIN/curl"
 
-    PLEX_TOKEN=faketoken run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [[ "$output" == *"Could not reach Plex"* ]]
 }
 
 # ── Audiobookshelf ────────────────────────────────────────────────────────
 
-@test "detects active Audiobookshelf connections" {
-    cat > "$STUB_BIN/ss" <<'EOF'
-#!/usr/bin/env bash
-echo "tcp   ESTAB  0  0  0.0.0.0:13378  192.168.1.5:51234"
-EOF
-    chmod +x "$STUB_BIN/ss"
-
+@test "skips ABS check when ABS_API_KEY is not set" {
     run bash "$SCRIPT"
+    [[ "$output" == *"ABS_API_KEY not set"* ]]
+}
+
+@test "detects active Audiobookshelf streams" {
+    cat > "$STUB_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[{"id":"abc123","displayTitle":"Morning Star"}]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="0"></MediaContainer>'
+fi
+EOF
+    chmod +x "$STUB_BIN/curl"
+
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
 
-@test "prints Audiobookshelf connection count" {
-    cat > "$STUB_BIN/ss" <<'EOF'
+@test "prints active Audiobookshelf stream title" {
+    cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-echo "tcp   ESTAB  0  0  0.0.0.0:13378  192.168.1.5:51234"
-echo "tcp   ESTAB  0  0  0.0.0.0:13378  192.168.1.6:51235"
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[{"id":"abc123","displayTitle":"Morning Star"}]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="0"></MediaContainer>'
+fi
 EOF
-    chmod +x "$STUB_BIN/ss"
+    chmod +x "$STUB_BIN/curl"
 
-    run bash "$SCRIPT"
-    [[ "$output" == *"2 active connection"* ]]
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
+    [[ "$output" == *"Morning Star"* ]]
 }
 
-@test "exits 0 when Audiobookshelf has no connections" {
-    run bash "$SCRIPT"
+@test "exits 0 when Audiobookshelf has no active streams" {
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"No active connections"* ]]
+    [[ "$output" == *"No active streams"* ]]
+}
+
+@test "handles Audiobookshelf being unreachable" {
+    cat > "$STUB_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    exit 1
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="0"></MediaContainer>'
+fi
+EOF
+    chmod +x "$STUB_BIN/curl"
+
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
+    [[ "$output" == *"Could not reach Audiobookshelf"* ]]
 }
 
 # ── Multi-service ─────────────────────────────────────────────────────────
@@ -214,12 +244,16 @@ if [[ "$*" == *"rcon-cli list"* ]]; then echo "1 of a max 10 players online: Ali
 EOF
     chmod +x "$STUB_BIN/docker"
 
-    cat > "$STUB_BIN/ss" <<'EOF'
+    cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
-echo "tcp   ESTAB  0  0  0.0.0.0:13378  192.168.1.5:51234"
+if [[ "$*" == *"/api/sessions/open"* ]]; then
+    echo '{"sessions":[{"id":"abc123","displayTitle":"Morning Star"}]}'
+elif [[ "$*" == *"status/sessions"* ]]; then
+    echo '<MediaContainer size="0"></MediaContainer>'
+fi
 EOF
-    chmod +x "$STUB_BIN/ss"
+    chmod +x "$STUB_BIN/curl"
 
-    PLEX_TOKEN=faketoken run bash "$SCRIPT"
+    PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
 }

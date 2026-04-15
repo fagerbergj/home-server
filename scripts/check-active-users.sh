@@ -8,6 +8,7 @@
 # Environment:
 #   PLEX_TOKEN   Plex auth token (required for Plex check)
 #   PLEX_URL     Plex base URL (default: http://localhost:32400)
+#   ABS_API_KEY  Audiobookshelf API token (required for ABS check)
 #   ABS_URL      Audiobookshelf base URL (default: http://localhost:13378)
 
 set -euo pipefail
@@ -55,12 +56,23 @@ fi
 # --- Audiobookshelf ---
 echo ""
 echo "=== Audiobookshelf ==="
-connections=$(ss -tn 2>/dev/null | grep -c 'ESTAB.*13378\|13378.*ESTAB' || true)
-if [[ "$connections" -gt 0 ]]; then
-    echo "${connections} active connection(s)"
-    any_active=true
+if [[ -z "${ABS_API_KEY:-}" ]]; then
+    echo "Skipped (ABS_API_KEY not set)"
 else
-    echo "No active connections"
+    abs_sessions=$(curl -sf "${ABS_URL}/api/sessions/open" \
+        -H "Authorization: Bearer ${ABS_API_KEY}" 2>/dev/null || echo "")
+    if [[ -z "$abs_sessions" ]]; then
+        echo "Could not reach Audiobookshelf"
+    else
+        abs_count=$(echo "$abs_sessions" | grep -oP '"id"\s*:\s*"\K[^"]+' | wc -l || true)
+        if [[ "$abs_count" -gt 0 ]]; then
+            echo "${abs_count} active stream(s)"
+            echo "$abs_sessions" | grep -oP '"displayTitle"\s*:\s*"\K[^"]+' | head -20
+            any_active=true
+        else
+            echo "No active streams"
+        fi
+    fi
 fi
 
 # --- Summary ---
