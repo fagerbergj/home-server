@@ -54,11 +54,13 @@ if not videos:
     print('  No active streams')
 else:
     for v in videos:
-        user_el  = v.find('User');   user   = user_el.get('title', 'unknown')   if user_el   is not None else 'unknown'
+        user_el   = v.find('User');   user   = user_el.get('title', 'unknown')   if user_el   is not None else 'unknown'
         player_el = v.find('Player'); player = player_el.get('title', 'unknown') if player_el is not None else 'unknown'
+        state     = player_el.get('state', 'unknown') if player_el is not None else 'unknown'
         show    = v.get('grandparentTitle', '')
         title   = v.get('title', 'Unknown')
-        content = f'{show}: {title}' if show else title
+        label   = '' if state == 'playing' else f'[{state}] '
+        content = f'{label}{show}: {title}' if show else f'{label}{title}'
         offset  = int(v.get('viewOffset', 0)) // 60000
         print(f'  {user:<20} {content:<45} {player:<20} {offset}m in')
 " 2>/dev/null
