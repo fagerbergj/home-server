@@ -39,7 +39,8 @@ else
     if [[ -z "$sessions" ]]; then
         echo "Could not reach Plex"
     else
-        count=$(echo "$sessions" | grep -o 'size="[0-9]*"' | grep -o '[0-9]*' | head -1 || echo 0)
+        count=$(echo "$sessions" | grep -oP '(?<=size=")[0-9]+' | head -1)
+        count=${count:-0}
         if [[ "$count" -gt 0 ]]; then
             echo "${count} active stream(s)"
             # Print user + title for each session
