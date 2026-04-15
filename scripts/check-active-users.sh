@@ -119,7 +119,6 @@ fi
 # --- Summary ---
 echo ""
 if $any_active; then
-    echo "ACTIVE USERS DETECTED — do not take the server down yet"
     exit 1
 else
     echo "All clear — safe to take the server down"

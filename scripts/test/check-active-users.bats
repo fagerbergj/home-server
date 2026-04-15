@@ -74,7 +74,6 @@ EOF
 
     PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
 
 @test "prints Minecraft player count in output" {
@@ -142,7 +141,6 @@ EOF
 
     PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
 
 @test "prints Plex stream title and time in" {
@@ -197,7 +195,6 @@ EOF
 
     PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
 
 @test "prints active Audiobookshelf stream title" {
