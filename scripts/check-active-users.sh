@@ -64,10 +64,21 @@ else
     if [[ -z "$abs_sessions" ]]; then
         echo "Could not reach Audiobookshelf"
     else
-        abs_count=$(echo "$abs_sessions" | grep -oP '"id"\s*:\s*"\K[^"]+' | wc -l || true)
+        abs_count=$(echo "$abs_sessions" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+sessions = data if isinstance(data, list) else data.get('sessions', [])
+print(len(sessions))
+" 2>/dev/null || echo 0)
         if [[ "$abs_count" -gt 0 ]]; then
             echo "${abs_count} active stream(s)"
-            echo "$abs_sessions" | grep -oP '"displayTitle"\s*:\s*"\K[^"]+' | head -20
+            echo "$abs_sessions" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+sessions = data if isinstance(data, list) else data.get('sessions', [])
+for s in sessions:
+    print(s.get('displayTitle', 'Unknown'))
+" 2>/dev/null
             any_active=true
         else
             echo "No active streams"
