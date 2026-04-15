@@ -145,19 +145,21 @@ EOF
     [[ "$output" == *"ACTIVE USERS DETECTED"* ]]
 }
 
-@test "prints active Plex stream count" {
+@test "prints Plex stream title and time in" {
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
 if [[ "$*" == *"/api/sessions/open"* ]]; then
     echo '{"sessions":[]}'
 elif [[ "$*" == *"status/sessions"* ]]; then
-    echo '<MediaContainer size="1"><Video title="Inception"/></MediaContainer>'
+    echo '<MediaContainer size="1"><Video title="Inception" viewOffset="720000"><User title="jason"/><Player title="Apple TV"/></Video></MediaContainer>'
 fi
 EOF
     chmod +x "$STUB_BIN/curl"
 
     PLEX_TOKEN=faketoken ABS_API_KEY=fakekey run bash "$SCRIPT"
-    [[ "$output" == *"1 active stream"* ]]
+    [[ "$output" == *"Inception"* ]]
+    [[ "$output" == *"Apple TV"* ]]
+    [[ "$output" == *"12m in"* ]]
 }
 
 @test "handles Plex being unreachable" {
