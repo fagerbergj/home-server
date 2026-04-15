@@ -100,12 +100,13 @@ for s in sessions:
     device  = s.get('deviceInfo', {}).get('deviceName', 'unknown device')
     age_sec = (now_ms - s.get('updatedAt', 0)) / 1000
     if age_sec < 120:
-        status = 'playing'
+        label, age = '', 'now'
     elif age_sec < 3600:
-        status = f'paused {int(age_sec // 60)}m ago'
+        label, age = 'paused', f'{int(age_sec // 60)}m ago'
     else:
-        status = f'idle {int(age_sec // 3600)}h {int((age_sec % 3600) // 60)}m ago'
-    print(f'  {user:<20} {title:<45} {device:<20} {status}')
+        label, age = 'idle', f'{int(age_sec // 3600)}h {int((age_sec % 3600) // 60)}m ago'
+    content = f'[{label}] {title}' if label else title
+    print(f'  {user:<20} {content:<45} {device:<20} {age}')
 " 2>/dev/null
         else
             echo "  No active streams"
