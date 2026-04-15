@@ -81,6 +81,7 @@ for s in sessions:
     title    = s.get('displayTitle', 'Unknown')
     updated  = s.get('updatedAt', 0)
     device   = s.get('deviceInfo', {}).get('deviceName', 'unknown device')
+    user     = s.get('user', {}).get('username', 'unknown')
     age_sec  = (now_ms - updated) / 1000
     if age_sec < 120:
         status = 'playing'
@@ -88,7 +89,7 @@ for s in sessions:
         status = f'paused {int(age_sec // 60)}m ago'
     else:
         status = f'idle {int(age_sec // 3600)}h {int((age_sec % 3600) // 60)}m ago'
-    print(f'  {title} — {status} [{device}]')
+    print(f'  {title} — {status} [{user} on {device}]')
 " 2>/dev/null
             any_active=true
         else
