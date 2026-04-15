@@ -62,7 +62,7 @@ else:
         label   = '' if state == 'playing' else f'[{state}] '
         content = f'{label}{show}: {title}' if show else f'{label}{title}'
         offset  = int(v.get('viewOffset', 0)) // 60000
-        print(f'  {user:<20} {content:<45} {player:<20} {offset}m in')
+        print(f'  {user:<28} {content[:48]:<48} {player:<20} {offset}m in')
 " 2>/dev/null
         count=$(echo "$sessions" | grep -oP '(?<=size=")[0-9]+' | head -1)
         count=${count:-0}
@@ -108,7 +108,7 @@ for s in sessions:
     else:
         label, age = 'idle', f'{int(age_sec // 3600)}h {int((age_sec % 3600) // 60)}m ago'
     content = f'[{label}] {title}' if label else title
-    print(f'  {user:<20} {content:<45} {device:<20} {age}')
+    print(f'  {user:<28} {content[:48]:<48} {device:<20} {age}')
 " 2>/dev/null
         else
             echo "  No active streams"
