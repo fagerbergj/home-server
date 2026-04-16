@@ -673,7 +673,7 @@
     {
       "id": 13,
       "type": "table",
-      "title": "Drive Health (S.M.A.R.T.)",
+      "title": "SATA Drive Health (S.M.A.R.T.)",
       "datasource": {
         "type": "prometheus",
         "uid": "Prometheus"
@@ -855,21 +855,21 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
+          "expr": "smartctl_device_temperature{device!~\"nvme.*\"}",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_temperature{device!~\"nvme.*\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
           "refId": "C",
           "instant": true,
           "format": "table",
@@ -894,9 +894,9 @@
           "options": {
             "renameByName": {
               "device": "Drive",
-              "Value #A": "Reallocated Sectors",
-              "Value #B": "Pending Sectors",
-              "Value #C": "Temp (\u00b0C)"
+              "Value #A": "Temp (\u00b0C)",
+              "Value #B": "Reallocated Sectors",
+              "Value #C": "Pending Sectors"
             }
           }
         }
