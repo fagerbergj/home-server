@@ -74,6 +74,7 @@ services:
       - --smartctl.device=/dev/sdc
       - --smartctl.device=/dev/sdd
       - --smartctl.device=/dev/sde
+      - --smartctl.device=/dev/nvme0n1
     ports:
       - "9633:9633"
     restart: unless-stopped
