@@ -873,7 +873,7 @@
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Temperature_Celsius\", attribute_value_type=\"raw\"} % 256",
+          "expr": "smartctl_device_temperature",
           "refId": "C",
           "instant": true,
           "format": "table",
