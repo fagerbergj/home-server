@@ -680,7 +680,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 41
       },
@@ -844,10 +844,6 @@
                       "sde": {
                         "text": "plex01",
                         "index": 4
-                      },
-                      "nvme0n1": {
-                        "text": "OS",
-                        "index": 5
                       }
                     }
                   }
@@ -859,21 +855,21 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_temperature",
+          "expr": "smartctl_device_temperature{device!~\"nvme.*\"}",
           "refId": "C",
           "instant": true,
           "format": "table",
@@ -954,64 +950,269 @@
     },
     {
       "id": 15,
-      "type": "timeseries",
-      "title": "NVMe Media Errors (OS Drive)",
+      "type": "table",
+      "title": "NVMe Health (S.M.A.R.T.)",
       "datasource": {
         "type": "prometheus",
         "uid": "Prometheus"
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 49
+        "w": 12,
+        "x": 12,
+        "y": 41
       },
       "options": {
-        "tooltip": {
-          "mode": "multi"
+        "sortBy": [
+          {
+            "displayName": "Drive",
+            "desc": false
+          }
+        ],
+        "footer": {
+          "show": false
         },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
+        "frameIndex": 0,
+        "showHeader": true
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          },
           "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "spanNulls": false,
-            "thresholdsStyle": {
-              "mode": "line+area"
-            }
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temp (°C)"
+            },
+            "properties": [
               {
-                "color": "green",
-                "value": null
+                "id": "unit",
+                "value": "celsius"
               },
               {
-                "color": "red",
-                "value": 1
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 60
+                    },
+                    {
+                      "color": "red",
+                      "value": 75
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Media Errors"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Available Spare %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 25
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Life Used %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Drive"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "nvme0n1": {
+                        "text": "OS",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
               }
             ]
           }
-        },
-        "overrides": []
+        ]
       },
       "targets": [
         {
-          "expr": "smartctl_device_media_errors{device=\"nvme0n1\"}",
-          "legendFormat": "Media Errors",
-          "refId": "A"
+          "expr": "smartctl_device_temperature{device=~\"nvme.*\"}",
+          "refId": "A",
+          "instant": true,
+          "format": "table",
+          "legendFormat": ""
+        },
+        {
+          "expr": "smartctl_device_media_errors{device=~\"nvme.*\"}",
+          "refId": "B",
+          "instant": true,
+          "format": "table",
+          "legendFormat": ""
+        },
+        {
+          "expr": "smartctl_device_available_spare{device=~\"nvme.*\"}",
+          "refId": "C",
+          "instant": true,
+          "format": "table",
+          "legendFormat": ""
+        },
+        {
+          "expr": "smartctl_device_percentage_used{device=~\"nvme.*\"}",
+          "refId": "D",
+          "instant": true,
+          "format": "table",
+          "legendFormat": ""
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "^(device|Value.*)$"
+            }
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "device": "Drive",
+              "Value #A": "Temp (°C)",
+              "Value #B": "Media Errors",
+              "Value #C": "Available Spare %",
+              "Value #D": "Life Used %"
+            }
+          }
         }
       ]
     }
