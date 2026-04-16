@@ -58,22 +58,18 @@ sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
 <details>
 <summary>If GRUB fails to find the OS</summary>
 
-Boot from the Clonezilla USB, then chroot into the NVMe install and reinstall GRUB:
+No live USB needed — do this from the running system on sdd. This is a BIOS (not EFI)
+system, and the NVMe's LVM PV will have a duplicate UUID from the clone, so don't try
+to mount it. Just reinstall GRUB via the `/boot` partition directly:
+
 ```bash
-sudo mount /dev/nvme0n1p2 /mnt          # adjust partition as needed
-sudo mount /dev/nvme0n1p1 /mnt/boot/efi
-sudo chroot /mnt
-grub-install /dev/nvme0n1
-update-grub
-exit
+sudo mkdir -p /mnt/nvme-boot
+sudo mount /dev/nvme0n1p2 /mnt/nvme-boot
+sudo grub-install --boot-directory=/mnt/nvme-boot /dev/nvme0n1
+sudo umount /mnt/nvme-boot
 ```
 
-Then verify UUIDs in `/etc/fstab` match the NVMe:
-```bash
-blkid | grep nvme
-cat /etc/fstab
-# Update any UUIDs that reference the old sdd partitions
-```
+Then reboot and select the NVMe in BIOS again.
 </details>
 
 ---
