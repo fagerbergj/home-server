@@ -618,7 +618,7 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_read_bytes_total{device=~\"sd[a-e]\"}[5m]),\"device\",\"OS\",\"device\",\"sda\"),\"device\",\"plex02\",\"device\",\"sdb\"),\"device\",\"plex01\",\"device\",\"sdc\"),\"device\",\"personal01-a\",\"device\",\"sdd\"),\"device\",\"personal01-b\",\"device\",\"sde\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_read_bytes_total{device=~\"sd[a-e]|nvme0n1\"}[5m]),\"device\",\"personal01-a\",\"device\",\"sda\"),\"device\",\"personal01-b\",\"device\",\"sdb\"),\"device\",\"plex02\",\"device\",\"sdc\"),\"device\",\"plex03\",\"device\",\"sdd\"),\"device\",\"plex01\",\"device\",\"sde\"),\"device\",\"OS\",\"device\",\"nvme0n1\")",
           "legendFormat": "{{device}}",
           "refId": "A"
         }
@@ -664,7 +664,7 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_written_bytes_total{device=~\"sd[a-e]\"}[5m]),\"device\",\"OS\",\"device\",\"sda\"),\"device\",\"plex02\",\"device\",\"sdb\"),\"device\",\"plex01\",\"device\",\"sdc\"),\"device\",\"personal01-a\",\"device\",\"sdd\"),\"device\",\"personal01-b\",\"device\",\"sde\")",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_written_bytes_total{device=~\"sd[a-e]|nvme0n1\"}[5m]),\"device\",\"personal01-a\",\"device\",\"sda\"),\"device\",\"personal01-b\",\"device\",\"sdb\"),\"device\",\"plex02\",\"device\",\"sdc\"),\"device\",\"plex03\",\"device\",\"sdd\"),\"device\",\"plex01\",\"device\",\"sde\"),\"device\",\"OS\",\"device\",\"nvme0n1\")",
           "legendFormat": "{{device}}",
           "refId": "A"
         }
@@ -838,12 +838,16 @@
                         "index": 2
                       },
                       "sdd": {
-                        "text": "OS",
+                        "text": "plex03",
                         "index": 3
                       },
                       "sde": {
                         "text": "plex01",
                         "index": 4
+                      },
+                      "nvme0n1": {
+                        "text": "OS",
+                        "index": 5
                       }
                     }
                   }
