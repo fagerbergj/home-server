@@ -82,8 +82,10 @@ lsblk
 df -h /
 
 # Confirm all Docker services are healthy
-cd ~/workspace/home-server
-docker compose ps   # run in each service directory as needed
+for d in audiobooks networking passwords adblock photos plex notes updater llm monitoring torrent minecraft api; do
+  echo "=== $d ==="
+  docker compose -f ~/workspace/home-server/$d/docker-compose.yml ps --format "table {{.Name}}\t{{.Status}}"
+done
 
 # Check dmesg for any I/O errors
 sudo dmesg | grep -i "error\|fail" | grep -v ACPI
