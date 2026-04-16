@@ -55,16 +55,11 @@ sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
 sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
 ```
 
----
+<details>
+<summary>If GRUB fails to find the OS</summary>
 
-### Step 2 — Update GRUB to boot from NVMe
-
-After cloning, the NVMe has a copy of GRUB pointing at the old drive's UUIDs.
-Boot from the NVMe (select it in the BIOS boot order) and verify it works.
-
-If GRUB fails to find the OS:
+Boot from the Clonezilla USB, then chroot into the NVMe install and reinstall GRUB:
 ```bash
-# From the live USB, chroot into the NVMe install and reinstall GRUB
 sudo mount /dev/nvme0n1p2 /mnt          # adjust partition as needed
 sudo mount /dev/nvme0n1p1 /mnt/boot/efi
 sudo chroot /mnt
@@ -73,16 +68,17 @@ update-grub
 exit
 ```
 
-Check UUIDs are correct in `/etc/fstab` after booting:
+Then verify UUIDs in `/etc/fstab` match the NVMe:
 ```bash
 blkid | grep nvme
 cat /etc/fstab
 # Update any UUIDs that reference the old sdd partitions
 ```
+</details>
 
 ---
 
-### Step 3 — Verify the system boots cleanly from NVMe
+### Step 2 — Verify the system boots cleanly from NVMe
 
 ```bash
 # Confirm OS is running from NVMe
@@ -99,7 +95,7 @@ sudo dmesg | grep -i "error\|fail" | grep -v ACPI
 
 ---
 
-### Step 4 — Wipe the ADATA SSD and set up as plex03
+### Step 3 — Wipe the ADATA SSD and set up as plex03
 
 Once the system is confirmed healthy on the NVMe, wipe and reformat the old drive.
 
@@ -131,7 +127,7 @@ df -h /mnt/plex03
 
 ---
 
-### Step 5 — Set ownership and permissions for Plex
+### Step 4 — Set ownership and permissions for Plex
 
 Match the existing plex01/plex02 permission model:
 ```bash
@@ -143,7 +139,7 @@ Add to `hardware.md` drive layout table once complete.
 
 ---
 
-### Step 6 — Update hardware.md
+### Step 5 — Update hardware.md
 
 Update the hardware table to reflect:
 - OS drive → 500GB NVMe
