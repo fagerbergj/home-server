@@ -168,7 +168,32 @@ sudo smartctl -i /dev/disk/by-id/ata-* | grep -E "Model|Family"
     sudo badblocks -b 4096 -wsv -o /root/bb-ST26000-A.log /dev/disk/by-id/ata-ST26000NM000C-XXXX
     ```
 
-**3. Evaluation**
+**3. HBA Temperature Check**
+The LSI 9300-16i runs hot (SAS3008 die routinely hits 70–85 °C; 95 °C is the throttle threshold). Monitor controller temperature during burn-in — this is when the bottom intake fan's placement gets validated under sustained parallel drive I/O.
+
+`storcli` does not apply here — it's a MegaRAID tool. For an IT-mode 9300, use one of:
+
+*   **`lm-sensors` (preferred — no external download):** the `mpt3sas` kernel driver exposes the die temp directly.
+    ```bash
+    sudo apt install -y lm-sensors
+    sudo sensors-detect --auto
+    sensors | grep -A2 mpt3sas
+    # Expect: temp1: +NN.0°C (reading from the SAS3008 die)
+    ```
+    One-liner for periodic sampling during burn-in:
+    ```bash
+    watch -n 30 'sensors | grep -A2 mpt3sas'
+    ```
+
+*   **`sas3ircu` (Broadcom's IR config utility):** gives more detail (firmware version, topology, per-port status) alongside the temp. Not in apt; download from Broadcom's support portal, search "SAS3IRCU P16".
+    ```bash
+    sudo sas3ircu LIST              # find controller index (usually 0)
+    sudo sas3ircu 0 DISPLAY | grep -iE "Temperature|Firmware"
+    ```
+
+**Guidance:** sustained reads above 85 °C during burn-in → add airflow (reseat in a slot with more clearance, add a 40mm fan directly on the HBA heatsink, or increase bottom-fan RPM). Thermal throttling on an HBA manifests as dropped drives and CRC errors, not graceful slowdown.
+
+**4. Evaluation**
 Any drive with reallocated sectors, pending sectors, or UDMA CRC errors after burn-in → **RMA immediately** before building the pool.
 
 ### M2 — Build `media` pool (RAIDZ2, 4× 26TB)
