@@ -155,6 +155,22 @@ services:
       - "traefik.http.services.swagger-ui.loadbalancer.server.port=8080"
       # Public — no auth middleware
 
+  # ── OpenSearch ────────────────────────────────────────────────────────────────
+  # Single-node full-text search index for document-pipeline Lucene queries.
+  # Other services can create their own indices on the same instance.
+  opensearch:
+    image: opensearchproject/opensearch:2
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    restart: unless-stopped
+    networks:
+      - default
+
   # ── Document Pipeline ─────────────────────────────────────────────────────────
   # OCR + classification pipeline for reMarkable documents.
   # Receives webhook from rmfakecloud (notes stack) on new uploads.
@@ -178,6 +194,8 @@ services:
       - OPEN_WEBUI_URL=${OPEN_WEBUI_URL}
       - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
       - OPEN_WEBUI_KNOWLEDGE_ID=${OPEN_WEBUI_KNOWLEDGE_ID}
+      - OPENSEARCH_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=${OPENSEARCH_INDEX:-documents}
     volumes:
       - /mnt/personal01/documents:/vault
       - remarkable-bridge-data:/data
@@ -214,3 +232,4 @@ networks:
 
 volumes:
   remarkable-bridge-data:
+  opensearch-data:
