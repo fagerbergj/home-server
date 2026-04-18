@@ -12,6 +12,16 @@ services:
     environment:
       - PUID=996         # run: id immich
       - PGID=1003    # run: getent group personal-rw
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, video]
     volumes:
       - /mnt/personal01/photos:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
