@@ -440,9 +440,24 @@ sudo crontab -e
 
 ### Monthly scrubs
 
+To avoid contention on the PCIe x1 bottleneck, stagger these scrubs (e.g., 1st vs 15th of the month) and schedule them for low-usage hours.
+
 ```bash
 sudo systemctl enable --now zfs-scrub-monthly@media.timer
 sudo systemctl enable --now zfs-scrub-monthly@personal.timer
+
+# Stagger 'personal' scrub to the 15th to avoid PCIe bottleneck during 'media' scrub
+sudo mkdir -p /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/
+sudo tee /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/override.conf > /dev/null <<'EOF'
+[Timer]
+OnCalendar=
+OnCalendar=*-*-15 03:00:00
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart zfs-scrub-monthly@personal.timer
+
+# Verify both timers show the expected next-fire times
+systemctl list-timers 'zfs-scrub-monthly@*.timer'
 ```
 
 ### Snapshots for personal (not media)

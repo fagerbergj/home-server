@@ -6,6 +6,8 @@ Configures [OpenCode](https://opencode.ai) to use the local Ollama instance as i
 
 Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a project root (per-project):
 
+> Context length can be found by doing `docker exec ollama ollama show <model>`
+
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
