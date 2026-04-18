@@ -73,18 +73,6 @@ Final state: 4× 26TB + 2× 8TB = **6 drives in 6 HDD bays, 2 bays free, 6 of 16
 
 Note: the ADATA SSD is retired during shutdown #1 (no data). The cheap SATA card is also removed during shutdown #1 — existing 4 HDDs fit on the 4 MOBO SATA ports directly.
 
-## Budget
-
-| Item | Qty | Unit | Subtotal |
-|---|---|---|---|
-| Seagate Exos 26TB recertified (`ST26000NM000C`) | 4 | $489.99 | $1,959.96 |
-| Dell G14 `J7W80` 8TB enterprise (new) | 2 | $249.00 | $498.00 |
-| LSI 9300-16i HBA (IT mode) | 1 | ~$100 | ~$100 |
-| SFF-8643 → 4× SATA forward breakout cable | 2 | $15 | $30 |
-| SATA power splitter (if PSU bag runs short) | 0–2 | $10 | $0–20 |
-| **Drives subtotal (SPD cart)** | | | **$2,457.96** |
-| **Total with HBA + cables** | | | **~$2,590** |
-
 ## Pre-work
 
 ### Install ZFS tooling
@@ -106,18 +94,6 @@ cp /etc/mdadm/mdadm.conf ~/preupgrade-mdadm.conf.txt
 ```
 
 Copy these to your phone or another machine — recovery reference if something goes wrong during shutdown #1.
-
-### Pre-check SATA power capacity
-
-Count SATA power connectors on your PSU cables (routed + in the bag). You need:
-- 4 for existing internal drives (2×1TB + 4TB + 640GB — the ADATA SSD will be removed during shutdown #1)
-- 6 for new external drives (4× 26TB + 2× 8TB)
-
-Most 1200W PSUs ship with 2–3 SATA power cables at 3–4 connectors each = 6–12 connectors. Likely fine, but verify before shutdown #1.
-
-Daisy-chain rule: **max 4 drives per SATA power cable** (~120W per cable at spin-up peak).
-
----
 
 ## Shutdown #1 — Install HBA, connect new drives externally
 
@@ -161,34 +137,39 @@ If any check fails, stop and diagnose. Do not proceed to burn-in or pool creatio
 
 ### M1 — Burn in all 6 new drives
 
-Run in parallel across all new drives, in tmux/screen so sessions survive disconnects.
+Run these in parallel across all new drives. **Use `tmux` or `screen`** so processes survive SSH disconnects.
 
-First, figure out what the J7W80 actually is — Dell OEM drives are typically rebadged Seagate Exos or HGST Ultrastar. Check the underlying model:
+**1. Identify Drive Models**
+Dell OEM drives are typically rebadged. Check the underlying model to refine your glob patterns:
 ```bash
 sudo smartctl -i /dev/disk/by-id/ata-* | grep -E "Model|Family"
 ```
-Adjust the glob patterns below based on what model string shows up for the J7W80 drives.
 
-**Option A (fast, ~20h total):** SMART long self-test only
-```bash
-for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
-  sudo smartctl -t long $d
-done
-# Check back after ~20h (26TB) / ~12h (8TB):
-for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
-  sudo smartctl -a $d | grep -E "Reallocated_Sector|Current_Pending|Offline_Uncorrectable|UDMA_CRC_Error|self-test"
-done
-# All counters should be 0; self-test result should be "Completed without error"
-```
+**2. Burn-in Options**
 
-**Option B (thorough, ~3–4 days for 26TB drives):** full `badblocks -wsv` destructive write-read-verify
-```bash
-# Per drive, in separate tmux windows
-sudo badblocks -b 4096 -wsv -o /root/bb-ST26000-A.log /dev/disk/by-id/ata-ST26000NM000C-XXXX
-```
-Worth the extra time for the recertified Exos drives (they've already had a previous life). The Dell J7W80 drives are new stock so Option A is sufficient for them.
+*   **Option A: SMART Long Self-Test (Fast, ~20h total)**
+    *Recommended for: New Dell J7W80 drives.*
+    ```bash
+    for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
+      sudo smartctl -t long $d
+    done
+    
+    # Check status after ~20h (26TB) / ~12h (8TB):
+    for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
+      sudo smartctl -a $d | grep -E "Reallocated_Sector|Current_Pending|Offline_Uncorrectable|UDMA_CRC_Error|self-test"
+    done
+    # All counters should be 0; self-test result must be "Completed without error"
+    ```
 
-Any drive with reallocated sectors, pending sectors, or UDMA CRC errors after burn-in → RMA it before building the pool.
+*   **Option B: `badblocks` Write-Read-Verify (Thorough, ~3–4 days)**
+    *Recommended for: Recertified Seagate Exos drives.*
+    Run in separate `tmux` windows per drive:
+    ```bash
+    sudo badblocks -b 4096 -wsv -o /root/bb-ST26000-A.log /dev/disk/by-id/ata-ST26000NM000C-XXXX
+    ```
+
+**3. Evaluation**
+Any drive with reallocated sectors, pending sectors, or UDMA CRC errors after burn-in → **RMA immediately** before building the pool.
 
 ### M2 — Build `media` pool (RAIDZ2, 4× 26TB)
 
@@ -533,3 +514,51 @@ None of these block the migration. Prioritize in this order after shutdown #2 st
 - [x] ~~HBA slot~~ — PCIEX1_4 (bottom x16-physical chipset slot, above bottom intake fan). All 4 chipset slots on this board are x1 electrical, so slot choice is driven by cooling, not bandwidth. HBA negotiates PCIe 3.0 x1 ≈ 985 MB/s — acceptable bottleneck.
 - [x] ~~Burn-in depth~~ — Option B (`badblocks -wsv`, ~3–4 days) for the 4 recertified Exos drives; Option A (SMART long self-test, ~12h) for the 2 new Dell J7W80s
 - [x] ~~Special vdev~~ — **not including**. Immich thumbnail workload doesn't justify the added complexity and extra drives. Defer indefinitely.
+
+## Drive sanitization
+
+**Prerequisite:** only run after M8 verification has passed and the new pools have been stable for ≥48h. Until then, the retired drives are your rollback safety net.
+
+**Safety:** triple-check the target device before any destructive command. Confirm by serial:
+```bash
+lsblk -o NAME,SIZE,MODEL,SERIAL
+sudo smartctl -i /dev/sdX | grep -iE "Serial|Model"
+```
+Running `dd` on the wrong device wipes it instantly with no recovery.
+
+### HDDs (1TB Seagate, 1TB WD, 4TB Barracuda, 640GB Hitachi)
+
+Via USB dock:
+```bash
+sudo wipefs -a /dev/sdX                                       # clear filesystem/RAID signatures
+sudo dd if=/dev/zero of=/dev/sdX bs=4M status=progress conv=fsync  # single-pass zero overwrite
+```
+A single zero pass is considered sufficient for modern magnetic media — Gutmann's 35-pass is obsolete. Expect ~2-4 hours for the 1TB drives, ~8 hours for the 4TB.
+
+Alternative one-liner using `shred`:
+```bash
+sudo shred -vzn1 /dev/sdX     # 1 random pass + final zero pass
+```
+
+### SSD (480GB ADATA SU650)
+
+`dd if=/dev/zero` does **not** reliably wipe SSDs due to wear leveling — the physical NAND may still hold the original data even after logical zeros are written. Use SSD-specific methods:
+
+Preferred — ATA Secure Erase (fastest, wipes at the firmware level):
+```bash
+sudo hdparm -I /dev/sdX | grep -A1 "Security:"   # confirm "supported: enhanced erase"
+sudo hdparm --user-master u --security-set-pass p /dev/sdX
+sudo hdparm --user-master u --security-erase p /dev/sdX
+```
+
+Simpler alternative — `blkdiscard` (TRIMs every block, very fast):
+```bash
+sudo blkdiscard /dev/sdX
+```
+
+### Verify
+
+```bash
+sudo hexdump -C /dev/sdX | head -20     # should show all zeros or no readable structure
+sudo wipefs /dev/sdX                    # should report no signatures
+```
