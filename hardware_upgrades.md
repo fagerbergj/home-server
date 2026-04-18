@@ -80,8 +80,10 @@ Note: the ADATA SSD is retired during shutdown #1 (no data). The cheap SATA card
 ```bash
 sudo apt update
 sudo apt install -y zfsutils-linux smartmontools
-zfs version   # must be >= 2.2
+zfs version
 ```
+
+**Note:** `zfs version` must report >= 2.2 before proceeding.
 
 ### Snapshot current disk layout
 
@@ -111,23 +113,23 @@ Copy these to your phone or another machine — recovery reference if something 
 ### After boot — verify before doing anything destructive
 
 ```bash
-# HBA visible, in IT mode
 lspci | grep -i sas
-sudo dmesg | grep -iE "mpt3sas|firmware version"   # firmware string should end in "-IT"
+sudo dmesg | grep -iE "mpt3sas|firmware version"
 
-# Pre-existing mounts returned
 df -h /mnt/personal01 /mnt/plex01 /mnt/plex02
-cat /proc/mdstat                                    # personal01 clean?
+cat /proc/mdstat
 
-# All 6 new drives visible via HBA
 lsblk -o NAME,SIZE,MODEL,SERIAL | grep -iE "ST26000|J7W80|HUS728T8"
 
-# SMART works on every new drive
 for d in /dev/sd{a..z}; do
   sudo smartctl -i $d 2>/dev/null | grep -E "Device Model|Serial"
   echo "---"
 done
 ```
+
+**Notes:**
+- Firmware string should end in "-IT" for HBA to be in IT mode
+- personal01 should be clean
 
 If any check fails, stop and diagnose. Do not proceed to burn-in or pool creation.
 
@@ -154,11 +156,9 @@ sudo smartctl -i /dev/disk/by-id/ata-* | grep -E "Model|Family"
       sudo smartctl -t long $d
     done
     
-    # Check status after ~20h (26TB) / ~12h (8TB):
     for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
       sudo smartctl -a $d | grep -E "Reallocated_Sector|Current_Pending|Offline_Uncorrectable|UDMA_CRC_Error|self-test"
     done
-    # All counters should be 0; self-test result must be "Completed without error"
     ```
 
 *   **Option B: `badblocks` Write-Read-Verify (Thorough, ~3–4 days)**
@@ -199,7 +199,6 @@ Any drive with reallocated sectors, pending sectors, or UDMA CRC errors after bu
 ### M2 — Build `media` pool (RAIDZ2, 4× 26TB)
 
 ```bash
-# Get stable device IDs — NEVER use /dev/sdX in zpool create
 ls -l /dev/disk/by-id/ | grep -i ST26000
 
 sudo zpool create -o ashift=12 \
@@ -218,18 +217,19 @@ sudo zpool create -o ashift=12 \
 sudo zpool status media
 sudo zfs list media
 
-# Datasets matching existing layout — keeps compose-file diffs minimal
 sudo zfs create media/plex01
 sudo zfs create media/plex02
 sudo chown -R root:plex-rw /mnt/media/plex01 /mnt/media/plex02
 sudo chmod -R 2775 /mnt/media/plex01 /mnt/media/plex02
 ```
 
+**Notes:**
+- Get stable device IDs — NEVER use /dev/sdX in zpool create
+- Datasets matching existing layout — keeps compose-file diffs minimal
+
 ### M3 — Build `personal` pool (single 2-way mirror, 2× 8TB)
 
 ```bash
-# Confirm device IDs for the Dell drives — J7W80 is typically a rebadged
-# Seagate Exos or HGST Ultrastar; use whichever model string shows up.
 ls -l /dev/disk/by-id/ | grep -iE "J7W80|8TB|HUS728|ST8000"
 
 sudo zpool create -o ashift=12 \
@@ -250,11 +250,17 @@ sudo chmod -R 2775 /mnt/personal
 sudo zpool status personal
 ```
 
+**Notes:**
+- Confirm device IDs for the Dell drives — J7W80 is typically a rebadged
+- Seagate Exos or HGST Ultrastar; use whichever model string shows up.
+
 **Future expansion note:** To promote to striped mirrors (RAID 10-equivalent) later, buy 2 more matching 8TB drives, burn them in, then:
+
 ```bash
 sudo zpool add personal mirror /dev/disk/by-id/ata-DELL-8TB-J7W80-C /dev/disk/by-id/ata-DELL-8TB-J7W80-D
 ```
-New writes stripe across both vdevs; existing data stays on the first mirror until ZFS rebalances naturally over writes.
+
+**Note:** New writes stripe across both vdevs; existing data stays on the first mirror until ZFS rebalances naturally over writes.
 
 ### M4 — Migrate Plex / audiobooks / torrent data (Plex still running)
 
@@ -325,7 +331,7 @@ sudo rsync -aHAXx --info=progress2 /mnt/personal01/backups/   /mnt/personal/back
 
 ```bash
 cd ~/workspace/home-server/photos && docker compose stop
-cd ~/workspace/home-server/api    && docker compose stop   # document-pipeline
+cd ~/workspace/home-server/api    && docker compose stop   # api/ hosts document-pipeline
 sudo crontab -e   # comment out the backup.sh cron line
 
 # Final incremental rsync with --delete
@@ -344,6 +350,7 @@ Sweep `/mnt/personal01` → `/mnt/personal`.
 | `api/docker-compose.yml` | 200 | document-pipeline `/vault` bind mount |
 | `scripts/backup.sh` | 2, 23, 38, 46, 162 | comment + `DEST` + preflight + `BACKUP_ROOT` |
 | `scripts/test/backup.bats` | 36, 99, 112, 137, 186, 252, 268, 280, 289, 332, 342, 350 | test fixture paths — update in lockstep with `backup.sh` so tests still pass |
+| `scripts/test/backup.bats` | - | **Required:** Test fixtures must be updated to match new paths (`/mnt/media`, `/mnt/personal`) |
 
 **Documentation edits (non-blocking — can defer until after the verification window):**
 
@@ -370,8 +377,9 @@ Let the new pools run with real workload for 1–2 days before shutdown #2. Chec
 
 ```bash
 sudo zpool status media personal
-# Look for: state ONLINE, no errors, no degraded vdevs
 ```
+
+**Note:** Look for: state ONLINE, no errors, no degraded vdevs
 
 Smoke-test daily:
 - Upload a photo → confirm it appears
@@ -391,6 +399,7 @@ This is the invasive shutdown. You're unplugging and re-seating ~11 drives.
 cd ~/workspace/home-server && for d in plex torrent audiobooks photos api notes; do
   (cd $d && docker compose stop)
 done
+
 sudo crontab -e   # comment out backup.sh cron again
 
 # Unmount and stop the old personal01 array cleanly
@@ -426,14 +435,13 @@ sudo shutdown now
 ### After boot
 
 ```bash
-# Pools should auto-import; if not:
 sudo zpool import -a
 sudo zpool status media personal
 
 # Confirm all services come up
 docker ps --format '{{.Names}}\t{{.Status}}' | grep -E "immich|document|plex|audiobook|qbit|sonarr|radarr"
 
-# Smoke-test Immich photo load, Plex playback, backup run
+# Smoke-test: Immich photo load, Plex playback, backup run
 ./scripts/backup.sh
 
 # Re-enable cron
@@ -452,7 +460,6 @@ To avoid contention on the PCIe x1 bottleneck, stagger these scrubs (e.g., 1st v
 sudo systemctl enable --now zfs-scrub-monthly@media.timer
 sudo systemctl enable --now zfs-scrub-monthly@personal.timer
 
-# Stagger 'personal' scrub to the 15th to avoid PCIe bottleneck during 'media' scrub
 sudo mkdir -p /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/
 sudo tee /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/override.conf > /dev/null <<'EOF'
 [Timer]
@@ -462,18 +469,22 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl restart zfs-scrub-monthly@personal.timer
 
-# Verify both timers show the expected next-fire times
 systemctl list-timers 'zfs-scrub-monthly@*.timer'
 ```
+
+**Notes:**
+- Stagger 'personal' scrub to the 15th to avoid PCIe bottleneck during 'media' scrub
+- Verify both timers show the expected next-fire times
 
 ### Snapshots for personal (not media)
 
 ```bash
 sudo apt install -y zfs-auto-snapshot
-# Default policy: 4 hourly + 24 daily + 4 weekly + 12 monthly
-# Disable on media to avoid snapshot bloat from Plex writes:
+# Disable on media to avoid snapshot bloat from Plex writes
 sudo zfs set com.sun:auto-snapshot=false media
 ```
+
+**Note:** Default `zfs-auto-snapshot` policy is 4 hourly + 24 daily + 4 weekly + 12 monthly.
 
 ### Prometheus ZFS metrics
 
