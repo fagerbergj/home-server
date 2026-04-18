@@ -11,6 +11,9 @@ services:
       - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION}
       - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE}
       - OLLAMA_LOAD_TIMEOUT=10m
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=-1
     volumes:
       - ./data:/root/.ollama
     init: true
