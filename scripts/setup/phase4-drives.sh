@@ -88,28 +88,19 @@ echo ""
 sudo zfs list -r media
 echo ""
 
-# Datasets — idempotent: `zfs create` errors if it exists, so skip first.
-for ds in media/plex01 media/plex02; do
-    if ! sudo zfs list -H -o name "$ds" &>/dev/null; then
-        sudo zfs create "$ds"
-    fi
-done
-
 # Content subdirs the services expect (see docker-compose bind mounts).
-#   plex01 — primary media tier (movies/shows/audiobooks/downloads)
-#   plex02 — secondary tier (movies/shows/downloads; no audiobooks)
-sudo mkdir -p \
-    /mnt/media/plex01/{movies,shows,audiobooks,downloads} \
-    /mnt/media/plex02/{movies,shows,downloads}
+# Flat layout on RAIDZ2 — the legacy plex01/plex02 split existed only because
+# the old setup had two separate ext4 drives.
+sudo mkdir -p /mnt/media/{movies,shows,audiobooks,downloads}
 
-sudo chown -R root:plex-rw /mnt/media/plex01 /mnt/media/plex02
-sudo chmod -R 2775         /mnt/media/plex01 /mnt/media/plex02
+sudo chown -R root:plex-rw /mnt/media
+sudo chmod -R 2775         /mnt/media
 
 # plex-ro is the read-only access group for the Plex server itself — it can
 # read media without being able to write/delete. posix ACL so new files
 # created by plex-rw members automatically inherit r-x for plex-ro.
-sudo setfacl -R -m   g:plex-ro:rx /mnt/media/plex01 /mnt/media/plex02
-sudo setfacl -R -d -m g:plex-ro:rx /mnt/media/plex01 /mnt/media/plex02
+sudo setfacl -R -m    g:plex-ro:rx /mnt/media
+sudo setfacl -R -d -m g:plex-ro:rx /mnt/media
 
 echo "Media pool datasets and permissions set."
 echo ""

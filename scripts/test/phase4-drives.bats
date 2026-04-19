@@ -184,27 +184,30 @@ run_script() {
     grep -E 'create .* personal mirror /dev/disk/by-id/ata-E /dev/disk/by-id/ata-F' "$TEST_DIR/zpool.calls"
 }
 
-@test "creates expected datasets" {
+@test "creates expected personal datasets" {
     run run_script
     [ "$status" -eq 0 ]
-    grep -q 'create media/plex01'       "$TEST_DIR/zfs.calls"
-    grep -q 'create media/plex02'       "$TEST_DIR/zfs.calls"
     grep -q 'create personal/photos'    "$TEST_DIR/zfs.calls"
     grep -q 'create personal/documents' "$TEST_DIR/zfs.calls"
     grep -q 'create personal/backups'   "$TEST_DIR/zfs.calls"
 }
 
-@test "creates plex content subdirectories" {
+@test "does not create legacy plex01/plex02 datasets" {
+    run run_script
+    [ "$status" -eq 0 ]
+    ! grep -q 'create media/plex01' "$TEST_DIR/zfs.calls"
+    ! grep -q 'create media/plex02' "$TEST_DIR/zfs.calls"
+}
+
+@test "creates flat content subdirectories under /mnt/media" {
     run run_script
     [ "$status" -eq 0 ]
     for d in movies shows audiobooks downloads; do
-        [ -d "$TEST_DIR/mnt/media/plex01/$d" ] || fail "missing plex01/$d"
+        [ -d "$TEST_DIR/mnt/media/$d" ] || fail "missing /mnt/media/$d"
     done
-    for d in movies shows downloads; do
-        [ -d "$TEST_DIR/mnt/media/plex02/$d" ] || fail "missing plex02/$d"
-    done
-    # plex02 does NOT get audiobooks
-    [ ! -d "$TEST_DIR/mnt/media/plex02/audiobooks" ]
+    # No legacy plex01/plex02 split remains
+    [ ! -d "$TEST_DIR/mnt/media/plex01" ]
+    [ ! -d "$TEST_DIR/mnt/media/plex02" ]
 }
 
 @test "sets plex-ro read ACL on media directories" {
@@ -265,10 +268,8 @@ run_script() {
 }
 
 @test "skips dataset creation when dataset already exists" {
-    mkdir -p "$TEST_DIR/datasets/media" "$TEST_DIR/datasets/personal"
-    touch "$TEST_DIR/datasets/media/plex01" \
-          "$TEST_DIR/datasets/media/plex02" \
-          "$TEST_DIR/datasets/personal/photos" \
+    mkdir -p "$TEST_DIR/datasets/personal"
+    touch "$TEST_DIR/datasets/personal/photos" \
           "$TEST_DIR/datasets/personal/documents" \
           "$TEST_DIR/datasets/personal/backups"
     run run_script

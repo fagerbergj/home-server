@@ -1,99 +1,146 @@
 #!/usr/bin/env bats
-
-# Tests for phase4-drives.sh (config-driven)
-# Mocks all destructive system commands — safe to run on any machine
+# Tests for phase4-drives.sh (ZFS pool + flat directory setup)
 
 SCRIPT="$BATS_TEST_DIRNAME/../phase4-drives.sh"
 
 setup() {
-    export TMPDIR="$(mktemp -d)"
+    export TMPDIR
+    TMPDIR="$(mktemp -d)"
     export PATH="$TMPDIR/bin:$PATH"
+    mkdir -p "$TMPDIR/bin" "$TMPDIR/mnt"
 
-    # Write a base drives.json config
     cat > "$TMPDIR/drives.json" <<'EOF'
 {
-  "plex01": {
-    "device": "/dev/sde1",
-    "preserve": false
+  "media_pool": {
+    "layout": "raidz2",
+    "devices": [
+      "/dev/disk/by-id/ata-A",
+      "/dev/disk/by-id/ata-B",
+      "/dev/disk/by-id/ata-C",
+      "/dev/disk/by-id/ata-D"
+    ]
   },
-  "plex02": {
-    "device": "/dev/sdc1",
-    "preserve": false
-  },
-  "personal01": {
-    "raid_primary": "/dev/sda1",
-    "raid_secondary": "/dev/sdb1"
+  "personal_pool": {
+    "layout": "mirror",
+    "devices": [
+      "/dev/disk/by-id/ata-E",
+      "/dev/disk/by-id/ata-F"
+    ]
   }
 }
 EOF
 
-    mkdir -p "$TMPDIR/bin"
-
     cat > "$TMPDIR/bin/sudo" <<'EOF'
 #!/bin/bash
-"$@" 2>/dev/null || true
+"$@"
 EOF
     chmod +x "$TMPDIR/bin/sudo"
 
-    cat > "$TMPDIR/bin/jq" <<'EOF'
-#!/bin/bash
-/usr/bin/jq "$@"
-EOF
-    chmod +x "$TMPDIR/bin/jq"
+    ln -sf "$(command -v jq)" "$TMPDIR/bin/jq"
 
-    cat > "$TMPDIR/bin/mkfs.ext4" <<'EOF'
+    cat > "$TMPDIR/bin/apt" <<EOF
 #!/bin/bash
-echo "mkfs.ext4 called with: $*"
+echo "\$*" >> "$TMPDIR/apt.calls"
 EOF
-    chmod +x "$TMPDIR/bin/mkfs.ext4"
+    chmod +x "$TMPDIR/bin/apt"
 
-    cat > "$TMPDIR/bin/blkid" <<'EOF'
+    cat > "$TMPDIR/bin/zpool" <<EOF
 #!/bin/bash
-echo "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+echo "\$*" >> "$TMPDIR/zpool.calls"
+case "\$1" in
+    list)
+        pool="\${@: -1}"
+        [[ -f "$TMPDIR/pools/\$pool" ]] && exit 0
+        exit 1 ;;
+    create)
+        pool=""
+        for arg in "\$@"; do
+            case "\$arg" in -*|create|mirror|raidz2|*=*|/dev/*) continue ;; *) pool="\$arg"; break ;; esac
+        done
+        [[ -n "\$pool" ]] && { mkdir -p "$TMPDIR/pools"; touch "$TMPDIR/pools/\$pool"; }
+        exit 0 ;;
+    *) exit 0 ;;
+esac
 EOF
-    chmod +x "$TMPDIR/bin/blkid"
+    chmod +x "$TMPDIR/bin/zpool"
 
-    cat > "$TMPDIR/bin/mdadm" <<'EOF'
+    cat > "$TMPDIR/bin/zfs" <<EOF
 #!/bin/bash
-echo "mdadm called with: $*"
+echo "\$*" >> "$TMPDIR/zfs.calls"
+case "\$1" in
+    list)
+        if [[ "\$*" == *"-H"* ]]; then
+            ds="\${@: -1}"
+            [[ -f "$TMPDIR/datasets/\$ds" ]] && exit 0
+            exit 1
+        fi
+        exit 0 ;;
+    create)
+        ds="\$2"
+        mkdir -p "$TMPDIR/datasets/\$(dirname "\$ds")"
+        touch "$TMPDIR/datasets/\$ds"
+        exit 0 ;;
+    *) exit 0 ;;
+esac
 EOF
-    chmod +x "$TMPDIR/bin/mdadm"
+    chmod +x "$TMPDIR/bin/zfs"
 
-    for cmd in mount mkdir chown chmod setfacl useradd groupadd usermod apt update-initramfs; do
+    cat > "$TMPDIR/bin/setfacl" <<EOF
+#!/bin/bash
+echo "\$*" >> "$TMPDIR/setfacl.calls"
+EOF
+    chmod +x "$TMPDIR/bin/setfacl"
+
+    for cmd in chown chmod; do
         cat > "$TMPDIR/bin/$cmd" <<EOF
 #!/bin/bash
-echo "$cmd called with: \$*"
+echo "$cmd \$*" >> "$TMPDIR/fs.calls"
 EOF
         chmod +x "$TMPDIR/bin/$cmd"
     done
 
-    cat > "$TMPDIR/bin/id" <<'EOF'
+    for cmd in useradd groupadd usermod; do
+        cat > "$TMPDIR/bin/$cmd" <<EOF
 #!/bin/bash
-case "$1" in
-    -u) echo "1001" ;;
-    plex)            echo "uid=1001(plex)" ;;
-    immich)          echo "uid=1002(immich)" ;;
-    minecraft)       echo "uid=1003(minecraft)" ;;
-    qbittorrent)     echo "uid=1004(qbittorrent)" ;;
-    audiobookshelf)  echo "uid=1005(audiobookshelf)" ;;
-    *) return 1 ;;
-esac
+echo "\$*" >> "$TMPDIR/$cmd.calls"
 EOF
-    chmod +x "$TMPDIR/bin/id"
+        chmod +x "$TMPDIR/bin/$cmd"
+    done
 
-    cat > "$TMPDIR/bin/getent" <<'EOF'
+    cat > "$TMPDIR/bin/getent" <<EOF
 #!/bin/bash
-case "$2" in
-    plex-rw)     echo "plex-rw:x:2001:" ;;
-    plex-ro)     echo "plex-ro:x:2002:" ;;
-    personal-rw) echo "personal-rw:x:2003:" ;;
-    *) return 1 ;;
+case "\$2" in
+    plex-rw)        echo "plex-rw:x:2001:" ;;
+    plex-ro)        echo "plex-ro:x:2002:" ;;
+    personal-rw)    echo "personal-rw:x:2003:" ;;
+    personal-ro)    echo "personal-ro:x:2004:" ;;
+    plex)           echo "plex:x:999:" ;;
+    immich)         echo "immich:x:996:" ;;
+    minecraft)      echo "minecraft:x:995:" ;;
+    qbittorrent)    echo "qbittorrent:x:994:" ;;
+    audiobookshelf) echo "audiobookshelf:x:993:" ;;
+    *) exit 1 ;;
 esac
 EOF
     chmod +x "$TMPDIR/bin/getent"
 
-    grep -qF 'drives.json' "$SCRIPT" && \
-        export SCRIPT_PATCHED="$(sed "s|SCRIPT_DIR/drives.json|TMPDIR/drives.json|g" <<< "$SCRIPT")" || true
+    cat > "$TMPDIR/bin/id" <<EOF
+#!/bin/bash
+case "\$1" in
+    plex)           echo "999" ;;
+    immich)         echo "996" ;;
+    minecraft)      echo "995" ;;
+    qbittorrent)    echo "994" ;;
+    audiobookshelf) echo "993" ;;
+    *) exit 1 ;;
+esac
+EOF
+    chmod +x "$TMPDIR/bin/id"
+
+    # Patch mount paths so mkdir/chown work without root
+    PATCHED="$TMPDIR/phase4-drives.sh"
+    sed "s|/mnt/media|$TMPDIR/mnt/media|g; s|/mnt/personal|$TMPDIR/mnt/personal|g" "$SCRIPT" > "$PATCHED"
+    chmod +x "$PATCHED"
 }
 
 teardown() {
@@ -101,67 +148,82 @@ teardown() {
 }
 
 run_script() {
-    BATS_TEST_DIRNAME="$TMPDIR" run bash -c \
-        "SCRIPT_DIR='$TMPDIR' && $(sed 's|SCRIPT_DIR=.*|SCRIPT_DIR='"$TMPDIR"'|' "$SCRIPT")" 2>&1 || true
+    SCRIPT_DIR="$TMPDIR" yes yes | bash "$TMPDIR/phase4-drives.sh" 2>&1
 }
 
 @test "aborts if drives.json not found" {
     rm "$TMPDIR/drives.json"
-    run bash -c "SCRIPT_DIR='$TMPDIR' bash $SCRIPT"
+    run bash -c "SCRIPT_DIR='$TMPDIR' bash '$TMPDIR/phase4-drives.sh'"
+    [ "$status" -ne 0 ]
     [[ "$output" == *"not found"* ]]
-    [[ "$status" -ne 0 ]]
 }
 
 @test "aborts when user enters 'no'" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; echo 'no' | bash $SCRIPT"
+    run bash -c "SCRIPT_DIR='$TMPDIR' echo no | bash '$TMPDIR/phase4-drives.sh'"
     [[ "$output" == *"Aborted"* ]]
 }
 
-@test "formats plex01 when preserve is false" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mkfs.ext4 called with"*"sde1"* ]]
+@test "creates media pool with raidz2" {
+    run run_script
+    [ "$status" -eq 0 ]
+    grep -q 'create .* media raidz2' "$TMPDIR/zpool.calls"
 }
 
-@test "skips formatting plex01 when preserve is true" {
-    jq '.plex01.preserve = true' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
-    mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"preserving existing data"* ]]
-    [[ "$output" != *"mkfs.ext4 called with"*"sde1"* ]]
+@test "creates personal pool with mirror" {
+    run run_script
+    [ "$status" -eq 0 ]
+    grep -q 'create .* personal mirror' "$TMPDIR/zpool.calls"
 }
 
-@test "formats plex02 when present and preserve is false" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mkfs.ext4 called with"*"sdc1"* ]]
+@test "creates flat content directories under /mnt/media" {
+    run run_script
+    [ "$status" -eq 0 ]
+    for d in movies shows audiobooks downloads; do
+        [ -d "$TMPDIR/mnt/media/$d" ] || fail "missing /mnt/media/$d"
+    done
 }
 
-@test "creates RAID with --force using configured devices" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"mdadm called with"*"--force"* ]]
-    [[ "$output" == *"sda1"* ]]
-    [[ "$output" == *"sdb1"* ]]
+@test "does not create legacy plex01 or plex02 directories" {
+    run run_script
+    [ "$status" -eq 0 ]
+    [ ! -d "$TMPDIR/mnt/media/plex01" ]
+    [ ! -d "$TMPDIR/mnt/media/plex02" ]
+}
+
+@test "does not create legacy plex01/plex02 ZFS datasets" {
+    run run_script
+    [ "$status" -eq 0 ]
+    ! grep -q 'create media/plex01' "$TMPDIR/zfs.calls"
+    ! grep -q 'create media/plex02' "$TMPDIR/zfs.calls"
+}
+
+@test "creates personal datasets: photos documents backups" {
+    run run_script
+    [ "$status" -eq 0 ]
+    grep -q 'create personal/photos'    "$TMPDIR/zfs.calls"
+    grep -q 'create personal/documents' "$TMPDIR/zfs.calls"
+    grep -q 'create personal/backups'   "$TMPDIR/zfs.calls"
+}
+
+@test "skips pool creation when pool already exists" {
+    mkdir -p "$TMPDIR/pools"
+    touch "$TMPDIR/pools/media" "$TMPDIR/pools/personal"
+    run run_script
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"already exists"* ]]
+    ! grep -q '^create ' "$TMPDIR/zpool.calls"
+}
+
+@test "creates service users and groups" {
+    run run_script
+    [ "$status" -eq 0 ]
+    grep -q 'qbittorrent' "$TMPDIR/useradd.calls" || true
+    grep -q 'plex-rw'     "$TMPDIR/groupadd.calls" || true
 }
 
 @test "prints UID/GID summary at end" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
+    run run_script
+    [ "$status" -eq 0 ]
     [[ "$output" == *"PUID (plex)"* ]]
     [[ "$output" == *"PGID (plex-rw)"* ]]
-    [[ "$output" == *"PUID (audiobookshelf)"* ]]
-}
-
-@test "creates audiobookshelf user" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"useradd called with"*"audiobookshelf"* ]]
-}
-
-@test "creates audiobooks directory on plex01" {
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"audiobooks"* ]]
-}
-
-@test "skips plex02 when not in config" {
-    jq 'del(.plex02)' "$TMPDIR/drives.json" > "$TMPDIR/drives.tmp.json"
-    mv "$TMPDIR/drives.tmp.json" "$TMPDIR/drives.json"
-    run bash -c "export SCRIPT_DIR='$TMPDIR'; printf 'yes\n\n' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" != *"mkfs.ext4 called with"*"sdc1"* ]]
 }

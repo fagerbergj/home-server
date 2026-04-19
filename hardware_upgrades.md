@@ -219,15 +219,14 @@ sudo zpool create -o ashift=12 \
 sudo zpool status media
 sudo zfs list media
 
-sudo zfs create media/plex01
-sudo zfs create media/plex02
-sudo chown -R root:plex-rw /mnt/media/plex01 /mnt/media/plex02
-sudo chmod -R 2775 /mnt/media/plex01 /mnt/media/plex02
+sudo mkdir -p /mnt/media/{movies,shows,audiobooks,downloads}
+sudo chown -R root:plex-rw /mnt/media
+sudo chmod -R 2775         /mnt/media
 ```
 
 **Notes:**
 - Get stable device IDs — NEVER use /dev/sdX in zpool create
-- Datasets matching existing layout — keeps compose-file diffs minimal
+- Flat subdirectory layout under /mnt/media — matches phase4-drives.sh
 
 ### M3 — Build `personal` pool (single 2-way mirror, 2× 8TB)
 
@@ -262,44 +261,112 @@ sudo zpool add personal mirror /dev/disk/by-id/ata-DELL-8TB-J7W80-C /dev/disk/by
 
 **Note:** New writes stripe across both vdevs; existing data stays on the first mirror until ZFS rebalances naturally over writes.
 
-### M4 — Migrate Plex / audiobooks / torrent data (Plex still running)
+### M4 — Pause all writes to old drives
 
-Long-running, run each in its own tmux window:
+Stop new downloads and uploads so the source data is stable during rsync. Read-only services (Plex, Audiobookshelf) can stay up.
+
+- **qBittorrent**: pause all torrents
+- **Sonarr / Radarr**: Settings → General → disable automatic search / import (or just stop the containers)
+- **Immich**: no new photo uploads during rsync (ask anyone with access to hold off)
+- **backup.sh cron**: `sudo crontab -e` — comment out the cron line
+
+Services that are fine to leave running: `plex`, `audiobookshelf`, `notes`, `api`, `photos` (read-only workloads).
+
+### M5 — rsync all data to new pools
+
+Run in `tmux` — processes must survive SSH disconnects. All commands can run in parallel across separate windows.
 
 ```bash
-sudo rsync -aHAXx --info=progress2 /mnt/plex01/ /mnt/media/plex01/
-sudo rsync -aHAXx --info=progress2 /mnt/plex02/ /mnt/media/plex02/
+# media pool — plex01 and plex02 both merge into flat /mnt/media
+sudo rsync -aHAXx --info=progress2 /mnt/plex01/movies/     /mnt/media/movies/
+sudo rsync -aHAXx --info=progress2 /mnt/plex01/shows/      /mnt/media/shows/
+sudo rsync -aHAXx --info=progress2 /mnt/plex01/audiobooks/ /mnt/media/audiobooks/
+sudo rsync -aHAXx --info=progress2 /mnt/plex01/downloads/  /mnt/media/downloads/
+sudo rsync -aHAXx --info=progress2 /mnt/plex02/movies/     /mnt/media/movies/
+sudo rsync -aHAXx --info=progress2 /mnt/plex02/shows/      /mnt/media/shows/
+sudo rsync -aHAXx --info=progress2 /mnt/plex02/audiobooks/ /mnt/media/audiobooks/
+sudo rsync -aHAXx --info=progress2 /mnt/plex02/downloads/  /mnt/media/downloads/
+
+# personal pool
+sudo rsync -aHAXx --info=progress2 /mnt/personal01/photos/    /mnt/personal/photos/
+sudo rsync -aHAXx --info=progress2 /mnt/personal01/documents/ /mnt/personal/documents/
+sudo rsync -aHAXx --info=progress2 /mnt/personal01/backups/   /mnt/personal/backups/
 ```
 
-### M5 — Cutover Plex / audiobooks / torrent (~5 min downtime)
+Wait for all rsyncs to complete before continuing.
+
+### M6 — Update compose files (add new mounts, keep old)
+
+Add new array mounts alongside the old ones. Services start with access to both paths so you can update in-app configs in M7 before removing old mounts in M8.
+
+| File | Change |
+|---|---|
+| `plex/docker-compose.yml` | Add `/mnt/media:/mnt/media` (keep `/mnt/plex01` and `/mnt/plex02` mounts for now) |
+| `torrent/docker-compose.yml` | Add `/mnt/media:/mnt/media` to qbittorrent, sonarr, radarr (keep old mounts for now) |
+| `audiobooks/docker-compose.yml` | `/mnt/plex01/audiobooks:/audiobooks` → `/mnt/media/audiobooks:/audiobooks`, drop `/mnt/plex02/audiobooks:/audiobooks2` |
+| `photos/docker-compose.yml` | `/mnt/personal01/photos:/usr/src/app/upload` → `/mnt/personal/photos:/usr/src/app/upload` |
+| `api/docker-compose.yml` | `/mnt/personal01/documents:/vault` → `/mnt/personal/documents:/vault` |
+| `scripts/backup.sh` | 2, 23, 38, 46, 162 — comment + `DEST` + preflight + `BACKUP_ROOT` (`/mnt/personal01` → `/mnt/personal`) |
+| `scripts/test/backup.bats` | 36, 99, 112, 137, 186, 252, 268, 280, 289, 332, 342, 350 — update in lockstep with `backup.sh` |
 
 ```bash
-cd ~/workspace/home-server/plex       && docker compose stop
-cd ~/workspace/home-server/torrent    && docker compose stop
-cd ~/workspace/home-server/audiobooks && docker compose stop
-
-# Final incremental rsync with --delete
-sudo rsync -aHAXx --delete --info=progress2 /mnt/plex01/ /mnt/media/plex01/
-sudo rsync -aHAXx --delete --info=progress2 /mnt/plex02/ /mnt/media/plex02/
+cd ~/workspace/home-server && for d in plex torrent audiobooks photos api notes; do
+  (cd $d && docker compose up -d)
+done
 ```
 
-**Required compose-file edits (service-blocking — must be done before `docker compose up -d`):**
+### M7 — Update in-service configs
 
-Sweep `/mnt/plex01` → `/mnt/media/plex01`, `/mnt/plex02` → `/mnt/media/plex02`.
+Services are up with both old and new paths available. Update each app's settings to point to the new paths, then verify before proceeding to M8.
+
+**qBittorrent** (Tools → Options → Downloads):
+- Default Save Path: `/mnt/media/downloads`
+
+**Sonarr** (Settings → Media Management → Root Folders):
+- Add `/mnt/media/shows`
+- Series Editor → select all → set root folder to `/mnt/media/shows`
+- Remove old root folder once all series are migrated
+
+**Radarr** (Settings → Media Management → Root Folders):
+- Add `/mnt/media/movies`
+- Movie Editor → select all → set root folder to `/mnt/media/movies`
+- Remove old root folder once all movies are migrated
+
+**Plex** (Settings → Libraries → Edit each library):
+- Update folder paths to: `/mnt/media/movies`, `/mnt/media/shows`, `/mnt/media/audiobooks`
+- Run library scan after each update
+
+**Audiobookshelf** (Settings → Libraries):
+- Container path `/audiobooks` now maps to `/mnt/media/audiobooks` — no in-app change needed if library path was already `/audiobooks`
+
+**Immich**:
+- No in-app config needed — upload path is set by the bind mount
+
+**Verify** before continuing to M8:
+- Sonarr/Radarr: all series and movies show available, no missing files
+- qBittorrent: active torrents seeding from `/mnt/media/downloads` (check a torrent → Save Path)
+- Plex: libraries scan cleanly, a movie plays end-to-end
+- Audiobookshelf: library visible and books load
+- Immich: accessible, upload a test photo
+- backup.sh: `./scripts/backup.sh && ls -lh /mnt/personal/backups/`
+
+### M8 — Remove old drive mounts from compose
+
+Once all services are verified on new paths, remove the old bind mounts and restart.
 
 | File | Lines | Change |
 |---|---|---|
-| `plex/docker-compose.yml` | 16, 17 | both plex01/plex02 bind mounts |
-| `torrent/docker-compose.yml` | 63, 64, 77, 78, 92, 93 | qbittorrent + sonarr + radarr volume stanzas |
-| `audiobooks/docker-compose.yml` | 9, 10 | `/mnt/plex01/audiobooks` and `/mnt/plex02/audiobooks` bind mounts |
+| `plex/docker-compose.yml` | 16, 17 | Remove `/mnt/plex01:/mnt/plex01` and `/mnt/plex02:/mnt/plex02` |
+| `torrent/docker-compose.yml` | 63, 64, 77, 78, 92, 93 | Remove `/mnt/plex01` and `/mnt/plex02` from qbittorrent, sonarr, radarr |
 
 ```bash
-cd ~/workspace/home-server/plex       && docker compose up -d
-cd ~/workspace/home-server/torrent    && docker compose up -d
-cd ~/workspace/home-server/audiobooks && docker compose up -d
+cd ~/workspace/home-server && for d in plex torrent; do
+  (cd $d && docker compose up -d)
+done
+sudo crontab -e   # re-enable backup.sh cron
 ```
 
-**Documentation edits (non-blocking — do while services run, or batch with M7 docs at the end):**
+**Documentation edits (non-blocking — batch with post-migration cleanup):**
 
 | File | Lines | Change |
 |---|---|---|
@@ -310,67 +377,11 @@ cd ~/workspace/home-server/audiobooks && docker compose up -d
 | `torrent/scripts/sonarr_import.sh` | 17, 18, 265 | example commands in header + trailing comment |
 | `audiobooks/README.md` | 12 | library-path note |
 | `audiobooks/setup.md` | 6, 24 | mkdir + library-add instructions |
-
-**Verify** before moving on:
-- Plex library loads without "missing paths" warnings
-- A random movie plays end-to-end
-- qBittorrent sees its save path
-- Audiobookshelf sees its library
-
-### M6 — Migrate Immich / document-pipeline / backups (personal01 → personal)
-
-Initial rsync while services run:
-
-```bash
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/photos/    /mnt/personal/photos/
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/documents/ /mnt/personal/documents/
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/backups/   /mnt/personal/backups/
-```
-
-### M7 — Cutover Immich / document-pipeline (~5 min downtime)
-
-```bash
-cd ~/workspace/home-server/photos && docker compose stop
-cd ~/workspace/home-server/api    && docker compose stop   # api/ hosts document-pipeline
-sudo crontab -e   # comment out the backup.sh cron line
-
-# Final incremental rsync with --delete
-sudo rsync -aHAXx --delete --info=progress2 /mnt/personal01/photos/    /mnt/personal/photos/
-sudo rsync -aHAXx --delete --info=progress2 /mnt/personal01/documents/ /mnt/personal/documents/
-sudo rsync -aHAXx --delete --info=progress2 /mnt/personal01/backups/   /mnt/personal/backups/
-```
-
-**Required service-config edits (blocking — must be done before `docker compose up -d`):**
-
-Sweep `/mnt/personal01` → `/mnt/personal`.
-
-| File | Line(s) | Change |
-|---|---|---|
-| `photos/docker-compose.yml` | 26 | Immich `/usr/src/app/upload` bind mount |
-| `api/docker-compose.yml` | 200 | document-pipeline `/vault` bind mount |
-| `scripts/backup.sh` | 2, 23, 38, 46, 162 | comment + `DEST` + preflight + `BACKUP_ROOT` |
-| `scripts/test/backup.bats` | 36, 99, 112, 137, 186, 252, 268, 280, 289, 332, 342, 350 | test fixture paths — update in lockstep with `backup.sh` so tests still pass |
-
-**Documentation edits (non-blocking — can defer until after the verification window):**
-
-| File | Lines | Change |
-|---|---|---|
 | `photos/README.md` | 30 | photos-path table |
 | `photos/setup.md` | 16, 17 | `mkdir` + `chown` instructions |
-| `notes/setup.md` | 23, 24, 25 | `/mnt/personal01/obsidian-vault` → `/mnt/personal/obsidian-vault` (rmfakecloud sync path) |
+| `notes/setup.md` | 23, 24, 25 | `/mnt/personal01/obsidian-vault` → `/mnt/personal/obsidian-vault` |
 
-```bash
-cd ~/workspace/home-server/photos && docker compose up -d
-cd ~/workspace/home-server/api    && docker compose up -d
-
-# Test backup manually
-./scripts/backup.sh
-ls -lh /mnt/personal/backups/
-```
-
-Once backup works: re-enable cron (`sudo crontab -e`, uncomment).
-
-### M8 — Verification window: 24–48h
+### M9 — Verification window: 24–48h
 
 Let the new pools run with real workload for 1–2 days before shutdown #2. Check daily:
 
@@ -536,11 +547,12 @@ git commit -m "Remove deprecated phase4 scripts post-migration"
 |---|---|
 | Shutdown #1 | Reinstall cheap SATA card, reseat old drives. No pool exists yet; nothing cut over. |
 | M1–M3 (burn-in, pool build) | `zpool destroy` — no user data involved yet. |
-| M4 (media rsync running) | Kill rsync; Plex still running off old drives. |
-| M5 (post-Plex cutover) | Revert compose files via git; old plex01/plex02 drives still mounted and untouched. |
-| M6 (personal rsync running) | Kill rsync; Immich still running off personal01. |
-| M7 (post-Immich cutover) | Revert `photos/`, `api/`, `scripts/backup.sh` via git; personal01 still intact. |
-| M8 (verification window) | Full rollback available — flip compose files back, remount personal01, restart services. |
+| M4 (writes paused) | Resume qBittorrent/Sonarr/Radarr — nothing was touched. |
+| M5 (rsync running) | Kill rsync; restart services from old drives — no data modified on old drives. |
+| M6 (compose files updated, services restarted) | `git checkout` compose files; restart — old drives still mounted and untouched. |
+| M7 (in-app configs updated) | Revert compose files via git, restart — old drives still mounted. |
+| M8 (old mounts removed) | Re-add old mounts to compose, restart services — data still on old drives. |
+| M9 (verification window) | Full rollback: revert compose files via git, restart services off old drives. |
 | Shutdown #2 in progress | Reinstall old drives, revert compose files, re-import old personal01 mdadm array. |
 | After shutdown #2 boot | Pools should auto-import. If not, `zpool import -d /dev/disk/by-id`. Old drives available as cold backup via USB dock if needed. |
 
@@ -551,7 +563,7 @@ git commit -m "Remove deprecated phase4 scripts post-migration"
 - [x] ~~Personal pool topology~~ — 2× 8TB single mirror (2 bays free for future RAID 10 promotion)
 - [x] ~~Drive selection~~ — 4× 26TB Seagate Exos + 2× 8TB Dell J7W80 ($2,457.96 SPD cart)
 - [x] ~~Cable plan~~ — all HDDs on HBA (hot-swap for all pools); 2× Cable Matters 1m SFF-8643 → 4× SATA forward breakout
-- [x] ~~Plex dataset layout~~ — preserving `plex01`/`plex02` split to minimize compose diffs
+- [x] ~~Plex dataset layout~~ — flat layout under `/mnt/media`: `movies/`, `shows/`, `audiobooks/`, `downloads/`
 - [x] ~~HBA slot~~ — PCIEX1_4 (bottom x16-physical chipset slot, above bottom intake fan). All 4 chipset slots on this board are x1 electrical, so slot choice is driven by cooling, not bandwidth. HBA negotiates PCIe 3.0 x1 ≈ 985 MB/s — acceptable bottleneck.
 - [x] ~~Burn-in depth~~ — Option B (`badblocks -wsv`, ~3–4 days) for the 4 recertified Exos drives; Option A (SMART long self-test, ~12h) for the 2 new Dell J7W80s
 - [x] ~~Special vdev~~ — **not including**. Immich thumbnail workload doesn't justify the added complexity and extra drives. Defer indefinitely.
