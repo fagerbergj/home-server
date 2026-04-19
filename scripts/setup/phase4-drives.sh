@@ -1,22 +1,36 @@
 #!/bin/bash
-# Phase 4 — Mount Drives, RAID 1, Users, and Permissions
-# Reads drives.json — run phase4-detect-drives.sh first to generate it.
+# Phase 4 — Create ZFS pools and mount points.
+#
+# Reads the device lists from drives.json (produced by phase4-detect-drives.sh)
+# and creates:
+#   media    — RAIDZ2 across 4× ~26 TB HDDs, mounted at /mnt/media
+#   personal — 2-way mirror across 2× ~8 TB HDDs, mounted at /mnt/personal
+#
+# Also creates the service users, posix groups, and permission layout that the
+# docker-compose services rely on (plex-rw/plex-ro/personal-rw).
+#
+# Idempotent: skips zpool creation if a pool of the same name already exists.
 set -euo pipefail
 
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
-CONFIG="$SCRIPT_DIR/drives.json"
+CONFIG="${CONFIG:-$SCRIPT_DIR/drives.json}"
 
 if [[ ! -f "$CONFIG" ]]; then
-    echo "Error: $CONFIG not found. Run phase4-detect-drives.sh first."
+    echo "Error: $CONFIG not found. Run phase4-detect-drives.sh first." >&2
     exit 1
 fi
 
 if ! command -v jq &>/dev/null; then
-    echo "Error: jq is required. Install with: sudo apt install -y jq"
+    echo "Error: jq is required. Install with: sudo apt install -y jq" >&2
     exit 1
 fi
 
-echo "=== Phase 4: Drive Setup ==="
+if ! command -v zpool &>/dev/null; then
+    echo "Error: ZFS tools are required. Install with: sudo apt install -y zfsutils-linux" >&2
+    exit 1
+fi
+
+echo "=== Phase 4: ZFS Pool Setup ==="
 echo ""
 echo "Config ($CONFIG):"
 cat "$CONFIG"
@@ -30,108 +44,111 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# Read config
+# Read config — devices into bash arrays so word splitting is explicit.
 # ---------------------------------------------------------------------------
 
-PLEX01_DEV=$(jq -r '.plex01.device' "$CONFIG")
-PLEX01_PRESERVE=$(jq -r '.plex01.preserve' "$CONFIG")
-PLEX02_DEV=$(jq -r '.plex02.device // empty' "$CONFIG")
-PLEX02_PRESERVE=$(jq -r '.plex02.preserve // "false"' "$CONFIG")
-PLEX03_DEV=$(jq -r '.plex03.device // empty' "$CONFIG")
-PLEX03_PRESERVE=$(jq -r '.plex03.preserve // "false"' "$CONFIG")
-RAID_PRIMARY=$(jq -r '.personal01.raid_primary' "$CONFIG")
-RAID_SECONDARY=$(jq -r '.personal01.raid_secondary' "$CONFIG")
+mapfile -t MEDIA_DEVICES    < <(jq -r '.media_pool.devices[]'    "$CONFIG")
+mapfile -t PERSONAL_DEVICES < <(jq -r '.personal_pool.devices[]' "$CONFIG")
+
+if (( ${#MEDIA_DEVICES[@]} != 4 )); then
+    echo "Error: media_pool must have exactly 4 devices, got ${#MEDIA_DEVICES[@]}." >&2
+    exit 1
+fi
+if (( ${#PERSONAL_DEVICES[@]} != 2 )); then
+    echo "Error: personal_pool must have exactly 2 devices, got ${#PERSONAL_DEVICES[@]}." >&2
+    exit 1
+fi
+
+# Install acl now — needed for setfacl below. Harmless if already present.
+sudo apt install -y acl
 
 # ---------------------------------------------------------------------------
-# Mount plex01
+# Create media pool (RAIDZ2)
 # ---------------------------------------------------------------------------
 
-if [[ "$PLEX01_PRESERVE" == "true" ]]; then
-    echo "plex01 ($PLEX01_DEV) — preserving existing data, skipping format."
+if sudo zpool list -H -o name media &>/dev/null; then
+    echo "media pool already exists — skipping creation."
 else
-    echo "Formatting $PLEX01_DEV as ext4..."
-    sudo mkfs.ext4 -F "$PLEX01_DEV"
+    echo "Creating media pool with RAIDZ2 layout..."
+    printf "  %s\n" "${MEDIA_DEVICES[@]}"
+    sudo zpool create -o ashift=12 \
+        -O compression=lz4 \
+        -O atime=off \
+        -O xattr=sa \
+        -O acltype=posixacl \
+        -O recordsize=1M \
+        -O mountpoint=/mnt/media \
+        media raidz2 \
+        "${MEDIA_DEVICES[@]}"
+    echo "Media pool created."
 fi
+echo ""
+sudo zpool status media
+echo ""
+sudo zfs list -r media
+echo ""
 
-PLEX01_UUID=$(sudo blkid -s UUID -o value "$PLEX01_DEV")
-sudo mkdir -p /mnt/plex01
-if ! grep -q "/mnt/plex01" /etc/fstab; then
-    echo "UUID=$PLEX01_UUID   /mnt/plex01   ext4   defaults   0   2" | sudo tee -a /etc/fstab
-fi
-sudo mount -a
-echo "plex01 mounted."
+# Datasets — idempotent: `zfs create` errors if it exists, so skip first.
+for ds in media/plex01 media/plex02; do
+    if ! sudo zfs list -H -o name "$ds" &>/dev/null; then
+        sudo zfs create "$ds"
+    fi
+done
+
+# Content subdirs the services expect (see docker-compose bind mounts).
+#   plex01 — primary media tier (movies/shows/audiobooks/downloads)
+#   plex02 — secondary tier (movies/shows/downloads; no audiobooks)
+sudo mkdir -p \
+    /mnt/media/plex01/{movies,shows,audiobooks,downloads} \
+    /mnt/media/plex02/{movies,shows,downloads}
+
+sudo chown -R root:plex-rw /mnt/media/plex01 /mnt/media/plex02
+sudo chmod -R 2775         /mnt/media/plex01 /mnt/media/plex02
+
+# plex-ro is the read-only access group for the Plex server itself — it can
+# read media without being able to write/delete. posix ACL so new files
+# created by plex-rw members automatically inherit r-x for plex-ro.
+sudo setfacl -R -m   g:plex-ro:rx /mnt/media/plex01 /mnt/media/plex02
+sudo setfacl -R -d -m g:plex-ro:rx /mnt/media/plex01 /mnt/media/plex02
+
+echo "Media pool datasets and permissions set."
 echo ""
 
 # ---------------------------------------------------------------------------
-# Mount plex02 (optional)
+# Create personal pool (mirror)
 # ---------------------------------------------------------------------------
 
-if [[ -n "$PLEX02_DEV" ]]; then
-    if [[ "$PLEX02_PRESERVE" == "true" ]]; then
-        echo "plex02 ($PLEX02_DEV) — preserving existing data, skipping format."
-    else
-        echo "Formatting $PLEX02_DEV as ext4 (plex02)..."
-        sudo mkfs.ext4 -F "$PLEX02_DEV"
-    fi
-
-    PLEX02_UUID=$(sudo blkid -s UUID -o value "$PLEX02_DEV")
-    sudo mkdir -p /mnt/plex02
-    if ! grep -q "/mnt/plex02" /etc/fstab; then
-        echo "UUID=$PLEX02_UUID   /mnt/plex02   ext4   defaults   0   2" | sudo tee -a /etc/fstab
-    fi
-    sudo mount -a
-    echo "plex02 mounted."
-    echo ""
+if sudo zpool list -H -o name personal &>/dev/null; then
+    echo "personal pool already exists — skipping creation."
+else
+    echo "Creating personal pool with 2-way mirror..."
+    printf "  %s\n" "${PERSONAL_DEVICES[@]}"
+    sudo zpool create -o ashift=12 \
+        -O compression=lz4 \
+        -O atime=off \
+        -O xattr=sa \
+        -O acltype=posixacl \
+        -O mountpoint=/mnt/personal \
+        personal \
+        mirror "${PERSONAL_DEVICES[@]}"
+    echo "Personal pool created."
 fi
-
-# ---------------------------------------------------------------------------
-# Mount plex03 (optional — repurposed ADATA SSD)
-# ---------------------------------------------------------------------------
-
-if [[ -n "$PLEX03_DEV" ]]; then
-    if [[ "$PLEX03_PRESERVE" == "true" ]]; then
-        echo "plex03 ($PLEX03_DEV) — preserving existing data, skipping format."
-    else
-        echo "Formatting $PLEX03_DEV as ext4 (plex03)..."
-        sudo mkfs.ext4 -F -L plex03 "$PLEX03_DEV"
-    fi
-
-    PLEX03_UUID=$(sudo blkid -s UUID -o value "$PLEX03_DEV")
-    sudo mkdir -p /mnt/plex03
-    if ! grep -q "/mnt/plex03" /etc/fstab; then
-        echo "UUID=$PLEX03_UUID   /mnt/plex03   ext4   defaults   0   2" | sudo tee -a /etc/fstab
-    fi
-    sudo mount -a
-    echo "plex03 mounted."
-    echo ""
-fi
-
-# ---------------------------------------------------------------------------
-# Create RAID 1 for personal01
-# ---------------------------------------------------------------------------
-
-echo "Creating RAID 1 array from $RAID_PRIMARY (primary) and $RAID_SECONDARY (secondary)..."
-# --force overwrites any existing RAID metadata or filesystem signatures on the drives
-sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 "$RAID_PRIMARY" "$RAID_SECONDARY"
-
 echo ""
-echo "RAID sync started. This takes ~2 hours for 1TB drives."
-echo "Monitor progress with: watch cat /proc/mdstat"
+sudo zpool status personal
 echo ""
-read -rp "Press ENTER once sync is complete to continue..."
+sudo zfs list -r personal
+echo ""
 
-sudo mkfs.ext4 /dev/md0
-sudo mkdir -p /mnt/personal01
-sudo mount /dev/md0 /mnt/personal01
+for ds in personal/photos personal/documents personal/backups; do
+    if ! sudo zfs list -H -o name "$ds" &>/dev/null; then
+        sudo zfs create "$ds"
+    fi
+done
 
-sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
-sudo update-initramfs -u
+sudo chown -R root:personal-rw /mnt/personal
+sudo chmod -R 2775             /mnt/personal
 
-MD0_UUID=$(sudo blkid -s UUID -o value /dev/md0)
-if ! grep -q "/mnt/personal01" /etc/fstab; then
-    echo "UUID=$MD0_UUID   /mnt/personal01   ext4   defaults   0   2" | sudo tee -a /etc/fstab
-fi
-echo "personal01 mounted."
+echo "Personal pool datasets and permissions set."
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -158,43 +175,13 @@ for group in plex-rw plex-ro personal-rw personal-ro; do
     fi
 done
 
-sudo usermod -aG plex-rw qbittorrent
-sudo usermod -aG plex-rw jason-server
-sudo usermod -aG plex-ro plex
-sudo usermod -aG plex-ro audiobookshelf
+sudo usermod -aG plex-rw     qbittorrent
+sudo usermod -aG plex-rw     jason-server
+sudo usermod -aG plex-ro     plex
+sudo usermod -aG plex-ro     audiobookshelf
 sudo usermod -aG personal-rw immich
 sudo usermod -aG personal-rw jason-server
 echo ""
-
-# ---------------------------------------------------------------------------
-# Folder structure and permissions
-# ---------------------------------------------------------------------------
-
-echo "Setting up folder structure and permissions..."
-sudo apt install -y acl
-
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks /mnt/plex01/downloads
-sudo chown -R root:plex-rw /mnt/plex01
-sudo chmod -R 2775 /mnt/plex01
-sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
-
-sudo mkdir -p /mnt/personal01/photos
-sudo chown -R root:personal-rw /mnt/personal01
-sudo chmod -R 2775 /mnt/personal01
-
-if [[ -n "$PLEX02_DEV" ]]; then
-    sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows /mnt/plex02/downloads
-    sudo chown -R root:plex-rw /mnt/plex02
-    sudo chmod -R 2775 /mnt/plex02
-    sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
-fi
-
-if [[ -n "$PLEX03_DEV" ]]; then
-    sudo mkdir -p /mnt/plex03/movies /mnt/plex03/shows /mnt/plex03/downloads
-    sudo chown -R root:plex-rw /mnt/plex03
-    sudo chmod -R 2775 /mnt/plex03
-    sudo setfacl -R -m g:plex-ro:rx /mnt/plex03
-fi
 
 # ---------------------------------------------------------------------------
 # Summary
@@ -203,13 +190,18 @@ fi
 echo ""
 echo "=== Phase 4 complete ==="
 echo ""
-echo "Update these values in each docker-compose.yml:"
+echo "ZFS pools created:"
+echo "  - media    (RAIDZ2 with 4 drives)  → /mnt/media"
+echo "  - personal (mirror  with 2 drives) → /mnt/personal"
 echo ""
-printf "  %-20s %s\n" "PUID (plex):"        "$(id -u plex)"
-printf "  %-20s %s\n" "PUID (immich):"      "$(id -u immich)"
-printf "  %-20s %s\n" "PUID (minecraft):"   "$(id -u minecraft)"
-printf "  %-20s %s\n" "PUID (qbittorrent):" "$(id -u qbittorrent)"
-printf "  %-20s %s\n" "PGID (plex-rw):"     "$(getent group plex-rw | cut -d: -f3)"
-printf "  %-20s %s\n" "PGID (plex-ro):"     "$(getent group plex-ro | cut -d: -f3)"
-printf "  %-20s %s\n" "PGID (personal-rw):" "$(getent group personal-rw | cut -d: -f3)"
-printf "  %-20s %s\n" "PUID (audiobookshelf):" "$(id -u audiobookshelf)"
+echo "Next: run scripts/setup/phase4-ids.sh to patch PUID/PGID into compose files."
+echo ""
+echo "Current IDs (for reference):"
+printf "  %-22s %s\n" "PUID (plex):"           "$(id -u plex)"
+printf "  %-22s %s\n" "PUID (immich):"         "$(id -u immich)"
+printf "  %-22s %s\n" "PUID (minecraft):"      "$(id -u minecraft)"
+printf "  %-22s %s\n" "PUID (qbittorrent):"    "$(id -u qbittorrent)"
+printf "  %-22s %s\n" "PUID (audiobookshelf):" "$(id -u audiobookshelf)"
+printf "  %-22s %s\n" "PGID (plex-rw):"        "$(getent group plex-rw     | cut -d: -f3)"
+printf "  %-22s %s\n" "PGID (plex-ro):"        "$(getent group plex-ro     | cut -d: -f3)"
+printf "  %-22s %s\n" "PGID (personal-rw):"    "$(getent group personal-rw | cut -d: -f3)"

@@ -1,162 +1,197 @@
 #!/bin/bash
-# Detects connected drives, assigns roles, and writes drives.json.
-# Review and edit drives.json before running phase4-drives.sh.
+# Detects HDDs, buckets by size, resolves to stable /dev/disk/by-id/ata-*
+# paths, and writes drives.json describing the two ZFS pools the next
+# script (phase4-drives.sh) will create.
+#
+# Detection rules — match the hardware documented in hardware_upgrades.md:
+#   media_pool    (RAIDZ2):  4 HDDs in the 24-28 TB range  (Seagate Exos 26TB)
+#   personal_pool (mirror):  2 HDDs in the 7-9 TB range    (Dell J7W80 8TB)
+#
+# Environment overrides:
+#   DRYRUN=1   — print the detected assignments; do not write drives.json.
+#
+# After running, review drives.json by hand before invoking phase4-drives.sh.
 set -euo pipefail
 
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 OUTPUT="$SCRIPT_DIR/drives.json"
+DRYRUN="${DRYRUN:-0}"
+
+MEDIA_MIN_GB=$((24 * 1000))
+MEDIA_MAX_GB=$((28 * 1000))
+PERSONAL_MIN_GB=$((7 * 1000))
+PERSONAL_MAX_GB=$((9 * 1000))
+EXPECTED_MEDIA=4
+EXPECTED_PERSONAL=2
 
 echo "=== Phase 4: Drive Detection ==="
 echo ""
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-part_dev() {
-    local dev="$1"
-    if [[ "$dev" == *nvme* ]]; then
-        echo "${dev}p1"
-    else
-        echo "${dev}1"
-    fi
-}
-
-has_filesystem() {
-    local part="$1"
-    local fs
-    fs=$(blkid -s TYPE -o value "$part" 2>/dev/null || true)
-    [[ -n "$fs" ]]
-}
-
-# ---------------------------------------------------------------------------
-# Detect drives
+# Enumerate HDDs, skipping the OS drive
 # ---------------------------------------------------------------------------
 
 OS_DEV=$(lsblk -no pkname "$(findmnt -n -o SOURCE /)")
 
-DRIVES=()
+# lsblk gives us: name size-bytes type
+#   TYPE=disk filters out partitions and loops.
+MEDIA_DEVICES=()
+PERSONAL_DEVICES=()
+OTHER_DEVICES=()
+
 while IFS= read -r line; do
-    dev=$(echo "$line" | awk '{print $1}')
+    dev=$(awk '{print $1}' <<<"$line")
+    size_b=$(awk '{print $2}' <<<"$line")
+    type=$(awk '{print $3}' <<<"$line")
+
+    [[ "$type" != "disk" ]] && continue
     [[ "$dev" == "$OS_DEV" ]] && continue
-    DRIVES+=("$dev")
-done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort --stable -k2 -rn)
 
-if [[ ${#DRIVES[@]} -lt 3 ]]; then
-    echo "Error: expected at least 3 non-OS drives (plex01, raid primary, raid secondary), found ${#DRIVES[@]}."
-    exit 1
-fi
+    # Size in GB (base-10) — matches how disk manufacturers advertise.
+    size_gb=$((size_b / 1000 / 1000 / 1000))
 
-PLEX01_DEV=$(part_dev "${DRIVES[0]}")
-RAID_PRIMARY_DEV=$(part_dev "${DRIVES[1]}")
-RAID_SECONDARY_DEV=$(part_dev "${DRIVES[2]}")
-PLEX02_DEV=""
-if [[ ${#DRIVES[@]} -ge 4 ]]; then
-    PLEX02_DEV=$(part_dev "${DRIVES[3]}")
-fi
-PLEX03_DEV=""
-if [[ ${#DRIVES[@]} -ge 5 ]]; then
-    PLEX03_DEV=$(part_dev "${DRIVES[4]}")
-fi
+    if (( size_gb >= MEDIA_MIN_GB && size_gb <= MEDIA_MAX_GB )); then
+        MEDIA_DEVICES+=("$dev:$size_gb")
+    elif (( size_gb >= PERSONAL_MIN_GB && size_gb <= PERSONAL_MAX_GB )); then
+        PERSONAL_DEVICES+=("$dev:$size_gb")
+    else
+        OTHER_DEVICES+=("$dev:$size_gb")
+    fi
+done < <(lsblk -d -b -n -o NAME,SIZE,TYPE)
 
 # ---------------------------------------------------------------------------
-# Check for existing filesystems → suggest preserve
+# Resolve /dev/sdX → /dev/disk/by-id/ata-*
 # ---------------------------------------------------------------------------
 
-PLEX01_PRESERVE=false
-if has_filesystem "/dev/$PLEX01_DEV"; then
-    PLEX01_PRESERVE=true
-fi
+# Prefer ata-* over wwn-*: human-readable (model + serial) and stable.
+by_id_for() {
+    local dev="$1"
+    local link target found=""
+    for link in /dev/disk/by-id/ata-*; do
+        [[ -e "$link" ]] || continue
+        target=$(readlink -f "$link")
+        if [[ "$target" == "/dev/$dev" ]]; then
+            # Skip -partN symlinks, we want the whole-disk one.
+            [[ "$link" == *-part* ]] && continue
+            found="$link"
+            break
+        fi
+    done
+    echo "$found"
+}
 
-PLEX02_PRESERVE=false
-if [[ -n "$PLEX02_DEV" ]] && has_filesystem "/dev/$PLEX02_DEV"; then
-    PLEX02_PRESERVE=true
-fi
+resolve_devices() {
+    local -n src="$1"
+    local -n dest="$2"
+    local entry dev size_gb by_id
+    for entry in "${src[@]}"; do
+        dev="${entry%:*}"
+        size_gb="${entry#*:}"
+        by_id=$(by_id_for "$dev")
+        if [[ -z "$by_id" ]]; then
+            echo "Warning: no /dev/disk/by-id/ata-* symlink for /dev/$dev — using /dev/$dev" >&2
+            by_id="/dev/$dev"
+        fi
+        dest+=("$by_id:$size_gb")
+    done
+}
 
-PLEX03_PRESERVE=false
-if [[ -n "$PLEX03_DEV" ]] && has_filesystem "/dev/$PLEX03_DEV"; then
-    PLEX03_PRESERVE=true
-fi
+MEDIA_RESOLVED=()
+PERSONAL_RESOLVED=()
+resolve_devices MEDIA_DEVICES MEDIA_RESOLVED
+resolve_devices PERSONAL_DEVICES PERSONAL_RESOLVED
 
 # ---------------------------------------------------------------------------
 # Print summary
 # ---------------------------------------------------------------------------
 
-size_of() { lsblk -d -o NAME,SIZE | awk -v d="$1" '$1==d {print $2}'; }
-
-echo "Detected assignments (OS drive /dev/$OS_DEV excluded):"
+printf "OS drive (excluded):  /dev/%s\n" "$OS_DEV"
 echo ""
-printf "  %-16s %-12s %-12s %s\n" "role" "device" "size" "preserve"
-printf "  %-16s %-12s %-12s %s\n" "----" "------" "----" "--------"
-printf "  %-16s %-12s %-12s %s\n" "plex01" "/dev/$PLEX01_DEV" "$(size_of "${DRIVES[0]}")" "$PLEX01_PRESERVE"
-printf "  %-16s %-12s %-12s %s\n" "raid primary" "/dev/$RAID_PRIMARY_DEV" "$(size_of "${DRIVES[1]}")" "n/a"
-printf "  %-16s %-12s %-12s %s\n" "raid secondary" "/dev/$RAID_SECONDARY_DEV" "$(size_of "${DRIVES[2]}")" "n/a"
-if [[ -n "$PLEX02_DEV" ]]; then
-    printf "  %-16s %-12s %-12s %s\n" "plex02" "/dev/$PLEX02_DEV" "$(size_of "${DRIVES[3]}")" "$PLEX02_PRESERVE"
-fi
-if [[ -n "$PLEX03_DEV" ]]; then
-    printf "  %-16s %-12s %-12s %s\n" "plex03" "/dev/$PLEX03_DEV" "$(size_of "${DRIVES[4]}")" "$PLEX03_PRESERVE"
-fi
+printf "media_pool candidates (%d found, expected %d):\n" \
+    "${#MEDIA_RESOLVED[@]}" "$EXPECTED_MEDIA"
+for entry in "${MEDIA_RESOLVED[@]:-}"; do
+    [[ -z "$entry" ]] && continue
+    printf "  %s  (%s GB)\n" "${entry%:*}" "${entry#*:}"
+done
 echo ""
+printf "personal_pool candidates (%d found, expected %d):\n" \
+    "${#PERSONAL_RESOLVED[@]}" "$EXPECTED_PERSONAL"
+for entry in "${PERSONAL_RESOLVED[@]:-}"; do
+    [[ -z "$entry" ]] && continue
+    printf "  %s  (%s GB)\n" "${entry%:*}" "${entry#*:}"
+done
+echo ""
+if (( ${#OTHER_DEVICES[@]} > 0 )); then
+    echo "Unassigned drives (neither size bucket matched):"
+    for entry in "${OTHER_DEVICES[@]}"; do
+        printf "  /dev/%s  (%s GB)\n" "${entry%:*}" "${entry#*:}"
+    done
+    echo ""
+fi
 
 # ---------------------------------------------------------------------------
-# Write drives.json
+# Write drives.json — still emit even if counts don't match, so the user
+# can hand-edit it. The phase4-drives.sh consumer will preflight-check
+# before creating any pools.
 # ---------------------------------------------------------------------------
 
-if [[ -n "$PLEX03_DEV" ]]; then
-    cat > "$OUTPUT" <<EOF
-{
-  "plex01": {
-    "device": "/dev/$PLEX01_DEV",
-    "preserve": $PLEX01_PRESERVE
-  },
-  "plex02": {
-    "device": "/dev/$PLEX02_DEV",
-    "preserve": $PLEX02_PRESERVE
-  },
-  "plex03": {
-    "device": "/dev/$PLEX03_DEV",
-    "preserve": $PLEX03_PRESERVE
-  },
-  "personal01": {
-    "raid_primary": "/dev/$RAID_PRIMARY_DEV",
-    "raid_secondary": "/dev/$RAID_SECONDARY_DEV"
-  }
+emit_json_array() {
+    local -n arr="$1"
+    local entry first=1
+    printf '[\n'
+    for entry in "${arr[@]:-}"; do
+        [[ -z "$entry" ]] && continue
+        if (( first )); then
+            first=0
+        else
+            printf ',\n'
+        fi
+        printf '      "%s"' "${entry%:*}"
+    done
+    printf '\n    ]'
 }
-EOF
-elif [[ -n "$PLEX02_DEV" ]]; then
-    cat > "$OUTPUT" <<EOF
-{
-  "plex01": {
-    "device": "/dev/$PLEX01_DEV",
-    "preserve": $PLEX01_PRESERVE
-  },
-  "plex02": {
-    "device": "/dev/$PLEX02_DEV",
-    "preserve": $PLEX02_PRESERVE
-  },
-  "personal01": {
-    "raid_primary": "/dev/$RAID_PRIMARY_DEV",
-    "raid_secondary": "/dev/$RAID_SECONDARY_DEV"
-  }
-}
-EOF
+
+if [[ "$DRYRUN" == "1" ]]; then
+    echo "DRYRUN=1 — skipping drives.json write."
 else
-    cat > "$OUTPUT" <<EOF
-{
-  "plex01": {
-    "device": "/dev/$PLEX01_DEV",
-    "preserve": $PLEX01_PRESERVE
-  },
-  "personal01": {
-    "raid_primary": "/dev/$RAID_PRIMARY_DEV",
-    "raid_secondary": "/dev/$RAID_SECONDARY_DEV"
-  }
-}
-EOF
+    {
+        printf '{\n'
+        printf '  "media_pool": {\n'
+        printf '    "layout": "raidz2",\n'
+        printf '    "devices": '
+        emit_json_array MEDIA_RESOLVED
+        printf '\n  },\n'
+        printf '  "personal_pool": {\n'
+        printf '    "layout": "mirror",\n'
+        printf '    "devices": '
+        emit_json_array PERSONAL_RESOLVED
+        printf '\n  }\n'
+        printf '}\n'
+    } > "$OUTPUT"
+    echo "Written to $OUTPUT"
 fi
 
-echo "Written to $OUTPUT"
-echo ""
-echo "Review the config — especially 'preserve' flags — then run:"
-echo "  scripts/setup/phase4-drives.sh"
+# ---------------------------------------------------------------------------
+# Exit with a non-zero status if the detected counts are wrong, so CI or
+# careless re-runs notice. The file is still on disk for manual fixup.
+# ---------------------------------------------------------------------------
+
+status=0
+if (( ${#MEDIA_RESOLVED[@]} != EXPECTED_MEDIA )); then
+    echo "ERROR: expected $EXPECTED_MEDIA media_pool drives, found ${#MEDIA_RESOLVED[@]}." >&2
+    status=1
+fi
+if (( ${#PERSONAL_RESOLVED[@]} != EXPECTED_PERSONAL )); then
+    echo "ERROR: expected $EXPECTED_PERSONAL personal_pool drives, found ${#PERSONAL_RESOLVED[@]}." >&2
+    status=1
+fi
+
+if (( status == 0 )); then
+    echo ""
+    echo "Review the config — then run:"
+    echo "  scripts/setup/phase4-drives.sh"
+else
+    echo ""
+    echo "Hand-edit $OUTPUT to correct the device list before running phase4-drives.sh." >&2
+fi
+exit "$status"

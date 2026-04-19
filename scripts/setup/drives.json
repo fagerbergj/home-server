@@ -1,18 +1,18 @@
 {
-  "plex01": {
-    "device": "/dev/sde1",
-    "preserve": false
+  "media_pool": {
+    "layout": "raidz2",
+    "devices": [
+      "/dev/disk/by-id/ata-ST26000NM000C-SERIAL1",
+      "/dev/disk/by-id/ata-ST26000NM000C-SERIAL2",
+      "/dev/disk/by-id/ata-ST26000NM000C-SERIAL3",
+      "/dev/disk/by-id/ata-ST26000NM000C-SERIAL4"
+    ]
   },
-  "plex02": {
-    "device": "/dev/sdc1",
-    "preserve": true
-  },
-  "plex03": {
-    "device": "/dev/sdd1",
-    "preserve": false
-  },
-  "personal01": {
-    "raid_primary": "/dev/sda1",
-    "raid_secondary": "/dev/sdb1"
+  "personal_pool": {
+    "layout": "mirror",
+    "devices": [
+      "/dev/disk/by-id/ata-DELL-J7W80-SERIAL1",
+      "/dev/disk/by-id/ata-DELL-J7W80-SERIAL2"
+    ]
   }
 }
