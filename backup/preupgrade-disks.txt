@@ -1,0 +1,30 @@
+NAME                        SIZE MODEL                      SERIAL          WWN                                  MOUNTPOINT
+sda                       931.5G ST1000DM014-2UB1           ZFL8ZF8T        0x5000c500ebf684b4                   
+└─sda1                    931.5G                                            0x5000c500ebf684b4                   
+  └─md0                   931.4G                                                                                 /mnt/personal01
+sdb                       931.5G WDC WD10EZEX-75M           WD-WCC3F6XU4DLX 0x50014ee260f14aa5                   
+└─sdb1                    931.5G                                            0x50014ee260f14aa5                   
+  └─md0                   931.4G                                                                                 /mnt/personal01
+sdc                       596.2G Hitachi HDT72106           STFD07MG1H0HVK  0x5000cca348d4eafd                   
+└─sdc1                    596.2G                                            0x5000cca348d4eafd                   /mnt/plex02
+sdd                       447.1G ADATA SU650                2I1620027992                                         
+└─sdd1                    447.1G                                                                                 /mnt/plex03
+sde                         3.6T ST4000DM004-2U91           WFN98WNA        0x5000c500ebdcfde0                   
+└─sde1                      3.6T                                            0x5000c500ebdcfde0                   /mnt/plex01
+nvme0n1                   465.8G SanDisk SSD Plus 500GB A3N 25302M803237    eui.e8238fa6bf530001001b448b42c6b39a 
+├─nvme0n1p1                   1M                                            eui.e8238fa6bf530001001b448b42c6b39a 
+├─nvme0n1p2                 2.1G                                            eui.e8238fa6bf530001001b448b42c6b39a /boot
+└─nvme0n1p3               463.7G                                            eui.e8238fa6bf530001001b448b42c6b39a 
+  └─ubuntu--vg-ubuntu--lv 445.1G                                                                                 /
+/dev/sda -d scsi # /dev/sda, SCSI device
+/dev/sdb -d scsi # /dev/sdb, SCSI device
+/dev/sdc -d scsi # /dev/sdc, SCSI device
+/dev/sdd -d scsi # /dev/sdd, SCSI device
+/dev/sde -d scsi # /dev/sde, SCSI device
+/dev/nvme0 -d nvme # /dev/nvme0, NVMe device
+Personalities : [raid1] [raid0] [raid6] [raid5] [raid4] [raid10] 
+md0 : active raid1 sdb1[0] sda1[1]
+      976628736 blocks super 1.2 [2/2] [UU]
+      bitmap: 0/8 pages [0KB], 65536KB chunk
+
+unused devices: <none>
