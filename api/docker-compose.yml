@@ -171,6 +171,28 @@ services:
     networks:
       - default
 
+  # ── Shared PostgreSQL ─────────────────────────────────────────────────────────
+  # Single Postgres instance for all services; each service uses its own schema.
+  shared-postgres:
+    image: postgres:17-alpine
+    container_name: shared-postgres
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: ${SHARED_DB_USER}
+      POSTGRES_PASSWORD: ${SHARED_DB_PASSWORD}
+      POSTGRES_DB: shared
+    volumes:
+      - ./data/shared-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SHARED_DB_USER} -d shared"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - default
+
   # ── Document Pipeline ─────────────────────────────────────────────────────────
   # OCR + classification pipeline for reMarkable documents.
   # Receives webhook from rmfakecloud (notes stack) on new uploads.
@@ -187,7 +209,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_URL=http://ollama:11434
       - VAULT_PATH=/vault
-      - DB_PATH=/data/pipeline.db
+      - DATABASE_URL=postgresql://${SHARED_DB_USER}:${SHARED_DB_PASSWORD}@shared-postgres:5432/shared?search_path=document_pipeline
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-remarkable}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
@@ -196,6 +218,9 @@ services:
       - OPEN_WEBUI_KNOWLEDGE_ID=${OPEN_WEBUI_KNOWLEDGE_ID}
       - OPENSEARCH_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=${OPENSEARCH_INDEX:-documents}
+    depends_on:
+      shared-postgres:
+        condition: service_healthy
     volumes:
       - /mnt/personal01/documents:/vault
       - remarkable-bridge-data:/data
