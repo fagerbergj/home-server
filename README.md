@@ -8,6 +8,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 |---------|---------|
 | AdGuard Home | Network-wide DNS ad blocker |
 | Audiobookshelf | Self-hosted audiobook server |
+| faster-whisper | GPU-accelerated speech-to-text for audio transcription |
 | CouchDB | reMarkable notes backup (local vault) |
 | Diun | Watches excluded images and emails when updates are available |
 | Grafana + Prometheus | System and container metrics dashboard |
@@ -44,6 +45,7 @@ home-server/
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
 ├── notes/            # rmfakecloud + OCR bridge + Open WebUI knowledge base
+├── audio/            # faster-whisper GPU transcription
 └── README.md
 ```
 

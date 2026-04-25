@@ -501,4 +501,5 @@ Start services in this order — see each directory's `setup.md` for details:
 9. [`adblock/setup.md`](adblock/setup.md)
 10. [`notes/setup.md`](notes/setup.md)
 11. [`api/setup.md`](api/setup.md)
-12. [`updater/setup.md`](updater/setup.md) — start this last
+12. [`audio/setup.md`](audio/setup.md)
+13. [`updater/setup.md`](updater/setup.md) — start this last
