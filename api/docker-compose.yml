@@ -228,6 +228,7 @@ services:
       - default
       - api_gateway
       - llm_default
+      - audio_default
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
@@ -253,6 +254,8 @@ networks:
   api_gateway:
     name: api_gateway   # explicit name so external services can reference it
   llm_default:
+    external: true
+  audio_default:
     external: true
 
 volumes:
