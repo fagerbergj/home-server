@@ -47,6 +47,16 @@ http://192.168.50.186:9696
 
 Edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [Mullvad server list](https://mullvad.net/servers) for options.
 
+## Configarr (TRaSH-Guides sync)
+
+[Configarr](https://github.com/raydak-labs/configarr) keeps Sonarr/Radarr quality profiles and custom formats in sync with TRaSH-Guides. Config lives in `configarr/config/config.yml` (templates: all English profiles + anime for both).
+
+```bash
+docker compose run --rm configarr
+```
+
+Runs once and exits. Re-run to pick up upstream changes.
+
 ## Updating
 
 ```bash

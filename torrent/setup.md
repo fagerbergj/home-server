@@ -85,6 +85,23 @@ Sonarr and Radarr override this per-category automatically, so existing categori
 
 ---
 
+## 10. Configure Configarr (TRaSH-Guides sync)
+
+Configarr pushes TRaSH-Guides quality profiles and custom formats into Sonarr and Radarr. Templates enabled in `configarr/config/config.yml`: all English profiles (WEB-1080p, WEB-2160p for TV; HD Bluray+WEB, UHD Bluray+WEB, Remux+WEB 1080p/2160p for movies) plus anime for both.
+
+1. Copy the secrets file and fill in API keys (Sonarr/Radarr Settings > General):
+   ```bash
+   cp configarr/config/secrets.yml.example configarr/config/secrets.yml
+   $EDITOR configarr/config/secrets.yml
+   ```
+2. Run it (one-shot — runs, syncs, exits):
+   ```bash
+   docker compose run --rm configarr
+   ```
+3. Re-run any time to resync against upstream TRaSH/recyclarr changes.
+
+---
+
 ## Verify
 
 1. Open `http://192.168.50.186:8080` and confirm you can log in with your new password

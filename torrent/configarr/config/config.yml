@@ -1,0 +1,63 @@
+trashGuideUrl: https://github.com/TRaSH-Guides/Guides
+recyclarrConfigUrl: https://github.com/recyclarr/config-templates
+
+sonarr:
+  series:
+    base_url: http://sonarr:8989
+    api_key: !secret SONARR_API_KEY
+
+    # series quality definition covers anime profiles too in a single instance
+    quality_definition:
+      type: series
+
+    include:
+      # Quality definition
+      - template: sonarr-quality-definition-series
+
+      # English: WEB-1080p
+      - template: sonarr-v4-quality-profile-web-1080p
+      - template: sonarr-v4-custom-formats-web-1080p
+
+      # English: WEB-2160p
+      - template: sonarr-v4-quality-profile-web-2160p
+      - template: sonarr-v4-custom-formats-web-2160p
+
+      # Anime
+      - template: sonarr-v4-quality-profile-anime
+      - template: sonarr-v4-custom-formats-anime
+
+    custom_formats: []
+
+radarr:
+  movies:
+    base_url: http://radarr:7878
+    api_key: !secret RADARR_API_KEY
+
+    quality_definition:
+      type: movie
+
+    include:
+      # Quality definition
+      - template: radarr-quality-definition-movie
+
+      # English: HD Bluray + WEB
+      - template: radarr-quality-profile-hd-bluray-web
+      - template: radarr-custom-formats-hd-bluray-web
+
+      # English: UHD Bluray + WEB
+      - template: radarr-quality-profile-uhd-bluray-web
+      - template: radarr-custom-formats-uhd-bluray-web
+
+      # English: Remux + WEB 1080p
+      - template: radarr-quality-profile-remux-web-1080p
+      - template: radarr-custom-formats-remux-web-1080p
+
+      # English: Remux + WEB 2160p
+      - template: radarr-quality-profile-remux-web-2160p
+      - template: radarr-custom-formats-remux-web-2160p
+
+      # Anime
+      - template: radarr-quality-profile-anime
+      - template: radarr-custom-formats-anime
+
+    custom_formats: []

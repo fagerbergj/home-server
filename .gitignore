@@ -27,6 +27,8 @@ torrent/config/
 torrent/prowlarr/
 torrent/sonarr/
 torrent/radarr/
+torrent/configarr/dockerrepos/
+torrent/configarr/config/secrets.yml
 notes/rmfakecloud-data/
 installer-rm12.sh
 api/data/

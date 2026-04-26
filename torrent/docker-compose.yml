@@ -94,3 +94,16 @@ services:
     ports:
       - "7878:7878"
     restart: unless-stopped
+
+  configarr:
+    image: ghcr.io/raydak-labs/configarr:latest
+    container_name: configarr
+    user: "1000:1000"
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - ./configarr/config:/app/config
+      - ./configarr/dockerrepos:/app/repos
+      - ./configarr/custom/cfs:/app/cfs
+      - ./configarr/custom/templates:/app/templates
+    restart: "no"
