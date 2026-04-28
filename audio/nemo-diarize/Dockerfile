@@ -5,17 +5,21 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/root/.cache/huggingface \
     NEMO_CACHE_DIR=/root/.cache/nemo
 
+# sox + libsox-fmt-all: needed at build time by the python `sox` package
+# (NeMo ASR extras) and at runtime for audio decoding.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip ffmpeg libsndfile1 git \
+        python3 python3-pip ffmpeg sox libsox-fmt-all libsndfile1 git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Pre-install numpy so the python `sox` package's setup.py (which imports
+# numpy at metadata generation time) can build. NeMo will resolve a compatible
+# torch >= 2.6 against CUDA 12.1 on its own.
+RUN pip3 install --no-cache-dir numpy
+
 COPY requirements.txt .
-# Pin torch to a CUDA 12.1 build so it matches the base image. NeMo pulls torch
-# transitively but defaults to CPU wheels on some indexes.
-RUN pip3 install --no-cache-dir torch==2.3.1 torchaudio==2.3.1 \
-        --index-url https://download.pytorch.org/whl/cu121 \
-    && pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 
