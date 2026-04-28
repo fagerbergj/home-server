@@ -154,10 +154,33 @@ def _report_failure(stage: str, ctx: int, err: Exception, api: str) -> None:
         pass
 
 
+# If the fastest usable context is at least this many times faster than the
+# largest usable one, surface it as a separate "best speed" recommendation
+# and treat it as the default to apply.
+SPEED_OVER_CTX_RATIO = 2.0
+
+
 def recommend_ctx(rows: list[dict]) -> dict | None:
     """Largest context whose real tok/s is still at or above the usability threshold."""
     usable = [r for r in rows if r["real_tok_s"] >= MIN_USABLE_TOK_S]
     return max(usable, key=lambda r: r["ctx"]) if usable else None
+
+
+def recommend_two(rows: list[dict]) -> tuple[dict | None, dict | None]:
+    """Return (largest_usable, fastest_better_alternative).
+
+    The second is None unless it's at a smaller context AND meaningfully faster
+    (>= SPEED_OVER_CTX_RATIO×) than the largest usable. Use it as the default
+    apply target when present — it's almost always the better real-world pick.
+    """
+    largest = recommend_ctx(rows)
+    if not largest:
+        return None, None
+    usable = [r for r in rows if r["real_tok_s"] >= MIN_USABLE_TOK_S]
+    fastest = max(usable, key=lambda r: r["real_tok_s"])
+    if fastest["ctx"] < largest["ctx"] and fastest["real_tok_s"] >= largest["real_tok_s"] * SPEED_OVER_CTX_RATIO:
+        return largest, fastest
+    return largest, None
 
 
 def pick_ctxs(m: Model, hw, n: int = 3) -> list[int]:
@@ -343,24 +366,37 @@ def main():
             write_csv(args.csv, results)
 
         for name, rows in results:
-            best = recommend_ctx(rows)
-            if not best:
+            largest, fastest = recommend_two(rows)
+            if not largest:
                 print(f"\n→ {name}: no context met the {MIN_USABLE_TOK_S} tok/s usability threshold.")
                 continue
-            print(f"\n→ {name}: recommended num_ctx={best['ctx']} "
-                  f"(measured {best['real_tok_s']:.1f} tok/s, "
-                  f"{best['real_layers_ram']}/{best['blocks']} layers in RAM)")
+
+            def fmt(r: dict) -> str:
+                return (f"num_ctx={r['ctx']:>7} ({r['real_tok_s']:5.1f} tok/s, "
+                        f"{r['real_layers_ram']}/{r['blocks']} layers in RAM)")
+
+            if fastest:
+                # Two candidates — fastest is the recommended default
+                print(f"\n→ {name}:")
+                print(f"  Largest usable:  {fmt(largest)}")
+                print(f"  Best speed/ctx:  {fmt(fastest)}  ← recommended "
+                      f"({fastest['real_tok_s']/largest['real_tok_s']:.1f}x faster)")
+                apply_target = fastest
+            else:
+                print(f"\n→ {name}: recommended {fmt(largest)}")
+                apply_target = largest
+
             if args.apply:
-                print(f"  Applying...", flush=True)
+                print(f"  Applying num_ctx={apply_target['ctx']}...", flush=True)
                 try:
-                    apply_context(name, best["ctx"], args.container)
-                    print(f"  ✓ {name} now uses num_ctx={best['ctx']}")
+                    apply_context(name, apply_target["ctx"], args.container)
+                    print(f"  ✓ {name} now uses num_ctx={apply_target['ctx']}")
                 except Exception as e:
                     print(f"  ! apply failed: {e}", file=sys.stderr)
             else:
                 print(f"  Apply with:  ./bench.py ... --apply")
                 print(f"  Or manually: docker exec -i {args.container} bash -c "
-                      f"'printf \"FROM {name}\\nPARAMETER num_ctx {best['ctx']}\" "
+                      f"'printf \"FROM {name}\\nPARAMETER num_ctx {apply_target['ctx']}\" "
                       f"| ollama create {name} -f /dev/stdin'")
 
 
