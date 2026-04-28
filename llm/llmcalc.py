@@ -273,7 +273,8 @@ def fetch_blob(url: str) -> dict:
     field_re = re.compile(
         r"([a-z0-9_]+\.(?:embedding_length|block_count|"
         r"attention\.head_count_kv|attention\.head_count|"
-        r"attention\.key_length|attention\.value_length|"
+        r"attention\.key_length_swa|attention\.key_length|"
+        r"attention\.value_length|attention\.sliding_window|"
         r"context_length|expert_count|expert_used_count|"
         r"ssm\.state_size|ssm\.inner_size))[^\d\[-]*([\d]+)",
         re.IGNORECASE,
@@ -300,6 +301,10 @@ def fetch_blob(url: str) -> dict:
             out["ssm_state_size"] = int(val)
         elif k.endswith(".ssm.inner_size") and "ssm_inner_size" not in out:
             out["ssm_inner_size"] = int(val)
+        elif k.endswith(".attention.sliding_window") and "sliding_window" not in out:
+            out["sliding_window"] = int(val)
+        elif k.endswith(".attention.key_length_swa") and "kv_len_swa" not in out:
+            out["kv_len_swa"] = int(val)
 
     # head_count_kv as array — could be uniform (e.g. gemma "[16, 16, ...]")
     # or mixed with zeros indicating hybrid SSM (e.g. qwen3.6 "[0, 0, 0, 4, 0, ...]")
@@ -327,6 +332,19 @@ def fetch_blob(url: str) -> dict:
         if out["_head_count"] > 0 and out["embedding"] % out["_head_count"] == 0:
             out["kv_len"] = out["embedding"] // out["_head_count"]
     out.pop("_head_count", None)
+
+    # Sliding window attention (Gemma) — count SWA blocks from the pattern array.
+    # The blob page truncates it ("[true, true, true, true, true, ...]") so we
+    # need the GGUF header to count true vs false entries.
+    if out.get("sliding_window") and "swa_blocks" not in out:
+        meta = fetch_gguf_metadata(url)
+        if meta:
+            pat_key = next((k for k in meta if k.endswith(".attention.sliding_window_pattern")), None)
+            if pat_key and isinstance(meta[pat_key], list):
+                pat = meta[pat_key]
+                out["swa_blocks"] = sum(1 for x in pat if x)
+                print(f"  ✓ Sliding window: {out['swa_blocks']}/{len(pat)} SWA blocks "
+                      f"(window={out['sliding_window']})")
 
     # For hybrid SSM, the displayed head_count_kv array is usually truncated (and
     # may even start with all zeros, hiding the attention blocks entirely). Always
@@ -372,6 +390,9 @@ class Model:
     ssm_inner_size: int = 0    # SSM inner projection dim per layer
     experts: int = 0           # MoE total experts (0 = dense model)
     experts_used: int = 0      # MoE active experts per token
+    sliding_window: int = 0    # Gemma-style SWA window size (0 = no SWA)
+    swa_blocks: int = 0        # how many blocks use sliding window attention
+    kv_len_swa: int = 0        # head dim for SWA layers (often != global kv_len)
 
 # Rough fraction of weights that are NOT expert (attention, embeddings, layer norms,
 # router). Calibrated against gpt-oss:20b's flat 154 t/s across all contexts.
@@ -457,6 +478,9 @@ def collect_model(prefilled: dict) -> Model:
         ssm_inner_size=int(prefilled.get("ssm_inner_size", 0)),
         experts=int(prefilled.get("experts", 0)),
         experts_used=int(prefilled.get("experts_used", 0)),
+        sliding_window=int(prefilled.get("sliding_window", 0)),
+        swa_blocks=int(prefilled.get("swa_blocks", 0)),
+        kv_len_swa=int(prefilled.get("kv_len_swa", 0)),
     )
 
 
@@ -473,12 +497,21 @@ def kv_cache_gib(m: Model, hw: Hardware, ctx: int) -> float:
         att_blocks = m.attention_blocks
         ssm_blocks = max(0, m.blocks - att_blocks)
         kv = 2 * att_blocks * ctx * heads * m.kv_len * bpe / (1024 ** 3)
-        # Fixed SSM state: ~inner_size × state_size × 2 bytes (fp16) per SSM block
         if m.ssm_state_size and m.ssm_inner_size:
             ssm_state = ssm_blocks * m.ssm_inner_size * m.ssm_state_size * 2 / (1024 ** 3)
         else:
             ssm_state = 0.0
         return kv + ssm_state
+
+    # Sliding window attention (Gemma-style): SWA layers cap KV at the window size,
+    # global layers grow with context. SWA layers can also use a smaller head dim.
+    if m.sliding_window > 0 and m.swa_blocks > 0:
+        global_blocks = max(0, m.blocks - m.swa_blocks)
+        swa_kv_len = m.kv_len_swa or m.kv_len
+        swa_ctx = min(ctx, m.sliding_window)
+        kv_global = 2 * global_blocks * ctx     * heads * m.kv_len  * bpe / (1024 ** 3)
+        kv_swa    = 2 * m.swa_blocks  * swa_ctx * heads * swa_kv_len * bpe / (1024 ** 3)
+        return kv_global + kv_swa
 
     return 2 * m.blocks * ctx * heads * m.kv_len * bpe / (1024 ** 3)
 
@@ -568,6 +601,8 @@ def report(m: Model, hw: Hardware):
         arch_note += f", hybrid SSM ({m.attention_blocks}/{m.blocks} attention blocks)"
     if m.experts > 0:
         arch_note += f", MoE ({m.experts_used}/{m.experts} experts active)"
+    if m.sliding_window > 0 and m.swa_blocks > 0:
+        arch_note += f", SWA ({m.swa_blocks}/{m.blocks} layers, window={m.sliding_window})"
     print(f"  {m.name}  ({m.file_gib:.1f} GiB, Q{m.quant_bits}, "
           f"{m.blocks} blocks, KV={m.kv_heads or 'embed'}, kv_type={hw.kv_cache_type}{arch_note})")
     print(f"  Hardware: {hw.gpu_name} {hw.vram_gib:.0f}GiB @ {hw.vram_bw_gbs:.0f}GB/s | "

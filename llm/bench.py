@@ -76,6 +76,9 @@ def model_from_prefilled(pf: dict) -> Model:
         ssm_inner_size=int(pf.get("ssm_inner_size", 0)),
         experts=int(pf.get("experts", 0)),
         experts_used=int(pf.get("experts_used", 0)),
+        sliding_window=int(pf.get("sliding_window", 0)),
+        swa_blocks=int(pf.get("swa_blocks", 0)),
+        kv_len_swa=int(pf.get("kv_len_swa", 0)),
     )
 
 
