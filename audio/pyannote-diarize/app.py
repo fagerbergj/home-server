@@ -140,15 +140,35 @@ async def transcribe(file: UploadFile, model: str = Form(DEFAULT_WHISPER_MODEL))
 
         logger.info("transcribing model=%s", model)
         whisper = WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
-        segments, _ = whisper.transcribe(wav_path, word_timestamps=True)
+        segments, info = whisper.transcribe(wav_path, word_timestamps=True)
+        # The generator must be drained to materialize segments. Collecting
+        # eagerly so we can log counts and fall back if word-level is empty.
+        seg_list = list(segments)
         words: list[dict] = []
-        for seg in segments:
-            for w in (seg.words or []):
+        for seg in seg_list:
+            seg_words = list(seg.words or [])
+            if seg_words:
+                for w in seg_words:
+                    words.append({
+                        "start": float(w.start),
+                        "end": float(w.end),
+                        "word": w.word,
+                    })
+            elif (seg.text or "").strip():
+                # word_timestamps yielded no words for this segment — fall back
+                # to segment-level so we don't lose transcription.
                 words.append({
-                    "start": float(w.start),
-                    "end": float(w.end),
-                    "word": w.word,
+                    "start": float(seg.start),
+                    "end": float(seg.end),
+                    "word": seg.text,
                 })
+        logger.info(
+            "transcribed lang=%s duration=%.1fs segments=%d words=%d",
+            getattr(info, "language", "?"),
+            getattr(info, "duration", 0.0),
+            len(seg_list),
+            len(words),
+        )
         del whisper
         _free()
 
