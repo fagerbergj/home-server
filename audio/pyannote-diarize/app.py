@@ -58,7 +58,10 @@ def _diarize(wav_path: str) -> list[dict]:
     from pyannote.audio import Pipeline
 
     logger.info("loading diarization pipeline=%s", DIARIZATION_MODEL)
-    pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, token=HF_TOKEN)
+    # pyannote.audio 3.3.x takes `use_auth_token`. 3.4+ renamed it to `token`.
+    # We're pinned to 3.3.2 in requirements.txt — verified via
+    #   inspect.signature(Pipeline.from_pretrained)
+    pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, use_auth_token=HF_TOKEN)
     if pipeline is None:
         raise RuntimeError(
             f"Pipeline.from_pretrained returned None — check HF_TOKEN and that "
