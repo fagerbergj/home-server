@@ -1,15 +1,16 @@
 services:
   faster-whisper:
-    image: fedirz/faster-whisper-server:latest-cuda
+    build: ./nemo-diarize
+    image: nemo-diarize:latest
     container_name: faster-whisper
     ports:
       - "8005:8000"
     env_file:
       - ../.env
     environment:
-      - WHISPER__MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
+      - DEFAULT_WHISPER_MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
     volumes:
-      - ./model-cache:/root/.cache/huggingface
+      - ./model-cache:/root/.cache
     runtime: nvidia
     deploy:
       resources:
