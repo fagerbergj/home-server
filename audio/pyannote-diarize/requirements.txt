@@ -20,3 +20,8 @@ fastapi
 uvicorn[standard]
 python-multipart
 faster-whisper
+
+# pyannote 3.3.2 imports matplotlib at module load (for training-time
+# visualization paths) even though we only use inference. Not declared as a
+# runtime dep, so we add it explicitly.
+matplotlib
