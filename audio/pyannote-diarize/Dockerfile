@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -10,10 +11,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
+# Use BuildKit cache mounts for pip — wheels persist between builds, so
+# incremental changes to requirements.txt only re-download what actually
+# changed instead of the full torch + pyannote tree.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --upgrade pip setuptools wheel
+
+# Pin torch + torchaudio to 2.3.1 (cu121). pyannote.audio 3.3 imports
+# torchaudio.AudioMetaData which was removed in torchaudio 2.4+. Installing
+# torch first so pip's resolver treats it as fixed when handling pyannote.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install \
+        torch==2.3.1 torchaudio==2.3.1 \
+        --index-url https://download.pytorch.org/whl/cu121
 
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install -r requirements.txt
 
 COPY app.py .
 
