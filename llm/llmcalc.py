@@ -394,9 +394,14 @@ class Model:
     swa_blocks: int = 0        # how many blocks use sliding window attention
     kv_len_swa: int = 0        # head dim for SWA layers (often != global kv_len)
 
-# Rough fraction of weights that are NOT expert (attention, embeddings, layer norms,
-# router). Calibrated against gpt-oss:20b's flat 154 t/s across all contexts.
-MOE_SHARED_FRAC = 0.30
+# Fraction of weights that are NOT expert (attention, embeddings, layer norms, router).
+# Empirically scales with active ratio — sparser MoE has a smaller "shared" fraction:
+#   gpt-oss:20b   (4/32 active = 12.5%) → 0.26
+#   qwen3:30b     (8/128 = 6.25%)       → 0.20
+#   qwen3-vl:30b  (8/128 = 6.25%)       → 0.21
+# Linear fit on those data points:
+def moe_shared_frac(experts_used: int, experts: int) -> float:
+    return 0.14 + 0.96 * (experts_used / experts)
 
 
 def parse_quant(s: str) -> int:
@@ -539,7 +544,8 @@ def plan(m: Model, hw: Hardware, ctx: int) -> dict:
     # KV cache is excluded: with flash attention it's tiled and contributes negligibly
     # to the per-token bandwidth budget (verified empirically — flat tok/s across ctx).
     if m.experts > 0 and m.experts_used > 0:
-        active_frac = MOE_SHARED_FRAC + (1 - MOE_SHARED_FRAC) * (m.experts_used / m.experts)
+        shared = moe_shared_frac(m.experts_used, m.experts)
+        active_frac = shared + (1 - shared) * (m.experts_used / m.experts)
         weight_bytes_gib = m.file_gib * active_frac
     else:
         weight_bytes_gib = m.file_gib
