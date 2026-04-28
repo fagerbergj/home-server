@@ -11,6 +11,9 @@ services:
       - DEFAULT_WHISPER_MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
     volumes:
       - ./model-cache:/root/.cache
+    # NeMo's DataLoader workers exchange tensors via /dev/shm. Docker's default
+    # 64 MB is way too small and fails with "Resource temporarily unavailable".
+    shm_size: '2gb'
     runtime: nvidia
     deploy:
       resources:
