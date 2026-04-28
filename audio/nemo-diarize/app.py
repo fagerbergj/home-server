@@ -117,6 +117,8 @@ def _diarize(wav_path: str, work_dir: str) -> list[dict]:
         "num_workers": 1,
         "sample_rate": 16000,
         "batch_size": 64,
+        "device": DEVICE,
+        "verbose": False,
     })
 
     diarizer = NeuralDiarizer(cfg=cfg)
