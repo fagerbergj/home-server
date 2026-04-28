@@ -1,52 +1,56 @@
 # Audio Setup
 
-GPU-accelerated speech-to-text via [faster-whisper-server](https://github.com/fedirz/faster-whisper-server).
+One-time setup for the audio stack (faster-whisper + pyannote diarization).
 
 ## Prerequisites
 
-- NVIDIA GPU with CUDA support (Phase 3 complete)
-- NVIDIA Container Toolkit installed (Phase 5 complete)
+- NVIDIA GPU with driver supporting CUDA 12.1+ (565+ recommended)
+- NVIDIA Container Toolkit installed
 
-## Start
+## Hugging Face token (required)
+
+pyannote's diarization model is open-source but gated for usage tracking. One-time:
+
+1. Create a Hugging Face account: https://huggingface.co/join
+2. Accept the licenses (click "Agree and access" on each — instant approval):
+   - https://huggingface.co/pyannote/speaker-diarization-3.1
+   - https://huggingface.co/pyannote/segmentation-3.0
+3. Generate a **read** token: https://huggingface.co/settings/tokens
+   - Type: Read
+   - Name: anything (e.g. `home-server-audio`)
+   - Copy the `hf_...` string immediately (it won't show again)
+4. Add to the root `.env`:
+   ```
+   HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
+   ```
+
+The token is used only on the first model download. After that the cache is offline.
+
+## Build and start
 
 ```bash
 cd ~/workspace/home-server/audio
-docker compose up -d
-```
-
-On first start the container downloads the model (~3GB for large-v3). Check progress:
-
-```bash
+docker compose build faster-whisper
+docker compose up -d faster-whisper
 docker logs -f faster-whisper
 ```
 
-## Configuration
+The first transcription request downloads pyannote models (~500 MB) into `./model-cache/`.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `WHISPER_MODEL` | `Systran/faster-whisper-large-v3` | HuggingFace model ID |
-
-Set `WHISPER_MODEL` in your root `.env` to override. Smaller/faster alternatives:
-- `Systran/faster-whisper-medium` — good accuracy, lower VRAM
-- `Systran/faster-whisper-base` — fast, lower accuracy
-
-## API
-
-Exposes an OpenAI-compatible transcription endpoint on port 8005:
+## Verify
 
 ```bash
-curl http://192.168.50.186:8005/v1/audio/transcriptions \
-  -F "file=@recording.webm" \
+curl http://localhost:8005/health
+# {"status": "ok"}
+
+curl http://localhost:8005/v1/audio/transcriptions \
+  -F "file=@some-recording.webm" \
   -F "model=Systran/faster-whisper-large-v3"
 ```
 
-## Integration
+## Troubleshooting
 
-The document pipeline (audio-bridge) will call this service at `http://faster-whisper:8000` internally. Wire it into the `api_gateway` network when ready:
-
-```yaml
-networks:
-  api_gateway:
-    external: true
-    name: api_gateway
-```
+- **`HF_TOKEN not set`** — token missing from `.env` or env not picked up. `docker compose config` to verify it's in the rendered service env.
+- **`Pipeline.from_pretrained returned None`** — token is set but you haven't accepted the pyannote license. Visit the model pages above and click Agree.
+- **CUDA driver too old** — `nvidia-smi` reports `CUDA Version: 12.2` or lower. Upgrade host driver to 565+ (`sudo apt install nvidia-driver-590` and reboot).
+- **`Resource temporarily unavailable` on `/dev/shm`** — already mitigated by `shm_size: 2gb` in compose.

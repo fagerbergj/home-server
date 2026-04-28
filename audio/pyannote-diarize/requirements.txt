@@ -2,5 +2,4 @@ fastapi
 uvicorn[standard]
 python-multipart
 faster-whisper
-nemo_toolkit[asr]
-omegaconf
+pyannote.audio>=3.1

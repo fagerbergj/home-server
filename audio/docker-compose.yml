@@ -1,7 +1,7 @@
 services:
   faster-whisper:
-    build: ./nemo-diarize
-    image: nemo-diarize:latest
+    build: ./pyannote-diarize
+    image: pyannote-diarize:latest
     container_name: faster-whisper
     ports:
       - "8005:8000"
@@ -9,6 +9,8 @@ services:
       - ../.env
     environment:
       - DEFAULT_WHISPER_MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
+      # HF_TOKEN must be set in ../.env. See README for setup.
+      - HF_TOKEN=${HF_TOKEN}
     volumes:
       - ./model-cache:/root/.cache
     # NeMo's DataLoader workers exchange tensors via /dev/shm. Docker's default
