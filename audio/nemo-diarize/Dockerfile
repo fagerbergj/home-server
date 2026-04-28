@@ -13,10 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Pre-install numpy so the python `sox` package's setup.py (which imports
-# numpy at metadata generation time) can build. NeMo will resolve a compatible
-# torch >= 2.6 against CUDA 12.1 on its own.
-RUN pip3 install --no-cache-dir numpy
+# Pre-install numpy + typing_extensions: the python `sox` package's setup.py
+# (pulled in by NeMo's ASR extras) imports both at metadata-gen time, before
+# pip has installed the rest of requirements.txt. Upgrade pip itself too —
+# the system pip on jammy is old enough to choke on some modern wheels.
+RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel \
+    && pip3 install --no-cache-dir numpy typing_extensions
 
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
