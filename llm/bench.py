@@ -166,6 +166,35 @@ def recommend_ctx(rows: list[dict]) -> dict | None:
     return max(usable, key=lambda r: r["ctx"]) if usable else None
 
 
+def suggest_rerun(rows: list[dict], m: Model, url: str) -> str | None:
+    """If the bench under- or over-shot the usable range, suggest a re-run with
+    a different context band."""
+    if not rows:
+        return None
+    smallest = min(r["ctx"] for r in rows)
+    largest  = max(r["ctx"] for r in rows)
+
+    all_too_slow    = all(r["real_tok_s"] < MIN_USABLE_TOK_S for r in rows)
+    all_fast_enough = all(r["real_tok_s"] >= MIN_USABLE_TOK_S for r in rows)
+
+    if all_too_slow and smallest > 4096:
+        # Walk down the standard ladder to pick three smaller contexts
+        smaller = [c for c in CTX_LADDER if c < smallest][-3:]
+        if smaller:
+            return (f"All tested contexts were below {MIN_USABLE_TOK_S} tok/s. "
+                    f"Re-run with smaller contexts:\n"
+                    f"      ./bench.py {url} --ctxs {','.join(str(c) for c in smaller)}")
+
+    if all_fast_enough and (not m.ctx_max or largest < m.ctx_max):
+        cap = m.ctx_max if m.ctx_max else CTX_LADDER[-1]
+        bigger = [c for c in CTX_LADDER if largest < c <= cap][:3]
+        if bigger:
+            return (f"All tested contexts cleared {MIN_USABLE_TOK_S} tok/s with headroom. "
+                    f"Re-run with larger contexts to find the cliff:\n"
+                    f"      ./bench.py {url} --ctxs {','.join(str(c) for c in bigger)}")
+    return None
+
+
 def recommend_two(rows: list[dict]) -> tuple[dict | None, dict | None]:
     """Return (largest_usable, fastest_better_alternative).
 
@@ -231,7 +260,7 @@ def model_from_prefilled(pf: dict) -> Model:
     )
 
 
-def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) -> tuple[str, list[dict]]:
+def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) -> tuple[str, list[dict], Model]:
     pf = fetch_blob(url)
     m = model_from_prefilled(pf)
     ensure_pulled(api, m.name, container)
@@ -297,7 +326,7 @@ def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) ->
               f"layers_ram={real_layers_ram}/{m.blocks}")
         print(f"    pred: {pred['tok_s']:5.1f} t/s  vram={pred['vram']:.1f}G ram={pred['ram']:.1f}G "
               f"layers_ram={pred['layers_ram']}/{m.blocks}")
-    return m.name, rows
+    return m.name, rows, m
 
 
 def print_table(model_results: list[tuple[str, list[dict]]]) -> None:
@@ -352,23 +381,31 @@ def main():
           f"RAM {hw.ram_gib:.0f}G @ {hw.ram_bw_gbs:.0f}GB/s | kv={hw.kv_cache_type}")
 
     results = []
+    url_by_name: dict[str, str] = {}
     for url in args.urls:
         try:
-            name, rows = bench_url(url, ctxs, args.api, hw, args.container)
+            name, rows, m = bench_url(url, ctxs, args.api, hw, args.container)
             if rows:
-                results.append((name, rows))
+                results.append((name, rows, m))
+                url_by_name[name] = url
         except Exception as e:
             print(f"! {url}: {e}", file=sys.stderr)
 
     if results:
-        print_table(results)
+        # print_table / write_csv only need (name, rows) — strip the Model
+        print_table([(n, r) for n, r, _ in results])
         if args.csv:
-            write_csv(args.csv, results)
+            write_csv(args.csv, [(n, r) for n, r, _ in results])
 
-        for name, rows in results:
+        for name, rows, m in results:
             largest, fastest = recommend_two(rows)
+            url = url_by_name.get(name, "<url>")
+            hint = suggest_rerun(rows, m, url)
+
             if not largest:
                 print(f"\n→ {name}: no context met the {MIN_USABLE_TOK_S} tok/s usability threshold.")
+                if hint:
+                    print(f"  → {hint}")
                 continue
 
             def fmt(r: dict) -> str:
@@ -398,6 +435,9 @@ def main():
                 print(f"  Or manually: docker exec -i {args.container} bash -c "
                       f"'printf \"FROM {name}\\nPARAMETER num_ctx {apply_target['ctx']}\" "
                       f"| ollama create {name} -f /dev/stdin'")
+
+            if hint:
+                print(f"  → {hint}")
 
 
 if __name__ == "__main__":
