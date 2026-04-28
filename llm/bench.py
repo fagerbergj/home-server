@@ -38,13 +38,27 @@ TARGET_GEN = 300       # request at least this many tokens for a stable measurem
 WARMUP_GEN = 8
 
 
+class OllamaError(RuntimeError):
+    """Carries the parsed Ollama error message from a non-2xx response."""
+
+
 def http_post(url: str, body: dict, timeout: int = 600) -> dict:
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"},
     )
-    return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    try:
+        return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    except urllib.error.HTTPError as e:
+        # Ollama returns JSON like {"error": "..."} for 4xx/5xx
+        body_text = ""
+        try:
+            payload = json.loads(e.read().decode("utf-8", errors="replace"))
+            body_text = payload.get("error", "") or json.dumps(payload)
+        except Exception:
+            body_text = "<no parseable body>"
+        raise OllamaError(f"HTTP {e.code}: {body_text}") from None
 
 
 def http_get(url: str, timeout: int = 10) -> dict:
@@ -106,6 +120,38 @@ def apply_context(model: str, ctx: int, container: str) -> None:
     )
     if r.returncode != 0:
         raise RuntimeError(f"failed to apply num_ctx={ctx} (exit {r.returncode})")
+
+
+def _report_failure(stage: str, ctx: int, err: Exception, api: str) -> None:
+    """Print a useful error line for a failed warm-up/generate, with hints when possible."""
+    msg = str(err)
+    print(f"    ! {stage} failed at ctx={ctx}: {msg}")
+
+    # Heuristic OOM detection — Ollama usually surfaces this in the error string
+    low = msg.lower()
+    if any(s in low for s in ("memory", "ggml_backend_alloc", "alloc", "cuda",
+                              "out of memory", "model requires more system memory")):
+        print(f"      → looks like out-of-memory at this context. Lower num_ctx, "
+              f"use a smaller quant, or accept layer spill to RAM.")
+    elif "timeout" in low:
+        print(f"      → request timed out; the model may still be loading. "
+              f"Try again, or pre-load with: docker exec ollama ollama run {{model}} ''")
+
+    # Best-effort: pull the most recent error from server logs for additional context.
+    # Only prints if docker is available AND the container exists.
+    try:
+        r = subprocess.run(
+            ["docker", "logs", "--tail", "40", "ollama"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r.returncode != 0:
+            return
+        relevant = [l for l in r.stderr.splitlines()
+                    if any(k in l.lower() for k in ("error", "fail", "memory", "panic"))][-3:]
+        for l in relevant:
+            print(f"      log: {l.strip()[:200]}")
+    except Exception:
+        pass
 
 
 def recommend_ctx(rows: list[dict]) -> dict | None:
@@ -188,7 +234,7 @@ def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) ->
         try:
             generate(api, m.name, ctx, WARMUP_GEN)
         except Exception as e:
-            print(f"    ! warm-up failed: {e}")
+            _report_failure("warm-up", ctx, e, api)
             continue
 
         print(f"    measuring (target {TARGET_GEN} tokens)...", flush=True)
@@ -196,7 +242,7 @@ def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) ->
         try:
             resp = generate(api, m.name, ctx, TARGET_GEN)
         except Exception as e:
-            print(f"    ! generate failed: {e}")
+            _report_failure("generate", ctx, e, api)
             continue
         wall = time.time() - t0
 
