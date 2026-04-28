@@ -11,6 +11,11 @@ torchaudio==2.3.1
 # Ubuntu 22.04 doesn't ship. 3.3.2 uses torchaudio for decoding.
 pyannote.audio==3.3.2
 
+# huggingface_hub 1.0 removed `use_auth_token` (only `token` remains), but
+# pyannote 3.3.2 still calls hf_hub_download(use_auth_token=...) internally.
+# Pin <1.0 so the deprecated kwarg keeps working.
+huggingface_hub<1.0
+
 fastapi
 uvicorn[standard]
 python-multipart
