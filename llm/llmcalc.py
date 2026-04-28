@@ -22,9 +22,12 @@ from pathlib import Path
 
 CONFIG_PATH = Path(os.path.expanduser("~/.config/llmcalc.json"))
 
-# Realistic bandwidth derate vs. theoretical peak (kernel launch, attention, etc.)
-DERATE = 0.6
-GPU_OVERHEAD_GIB = {4: 2.0, 8: 2.0, 16: 3.0, 32: 4.0}
+# Realistic bandwidth derate vs. theoretical peak. Calibrated against measured
+# Ollama tok/s on RTX 3090 across qwen2.5:7b, devstral-small-2:24b, gpt-oss:20b.
+DERATE = 0.82
+# Fraction of VRAM that's actually usable for model+KV. Ollama reserves the rest
+# for compute graph, CUDA scratch, OS, etc. Calibrated empirically.
+USABLE_VRAM_FRAC = 0.80
 KV_BYTES = {"f16": 2.0, "q8_0": 1.0, "q4_0": 0.5}
 
 # Context ladder — powers of 2 with 1.5x half-steps for granularity, up to 1M
@@ -371,8 +374,8 @@ class Model:
     experts_used: int = 0      # MoE active experts per token
 
 # Rough fraction of weights that are NOT expert (attention, embeddings, layer norms,
-# router). Typical MoE models land near 0.10–0.20; 0.15 is a reasonable midpoint.
-MOE_SHARED_FRAC = 0.15
+# router). Calibrated against gpt-oss:20b's flat 154 t/s across all contexts.
+MOE_SHARED_FRAC = 0.30
 
 
 def parse_quant(s: str) -> int:
@@ -482,8 +485,7 @@ def kv_cache_gib(m: Model, hw: Hardware, ctx: int) -> float:
 
 def plan(m: Model, hw: Hardware, ctx: int) -> dict:
     """Greedy layer placement: VRAM → RAM → swap. KV cache rides with its layer."""
-    overhead = GPU_OVERHEAD_GIB.get(m.quant_bits, 2.0)
-    vram_avail = max(0.0, hw.vram_gib - overhead)
+    vram_avail = hw.vram_gib * USABLE_VRAM_FRAC
     weight_per_layer = m.file_gib / m.blocks
     kv_per_layer = kv_cache_gib(m, hw, ctx) / max(m.blocks, 1)
     per_layer = weight_per_layer + kv_per_layer
@@ -495,18 +497,20 @@ def plan(m: Model, hw: Hardware, ctx: int) -> dict:
     layers_swap = min(rem, int(hw.swap_gib // per_layer)) if per_layer > 0 and hw.swap_gib > 0 else 0
     layers_unfit = rem - layers_swap
 
-    vram_used = layers_vram * per_layer + overhead
+    vram_used = layers_vram * per_layer + (hw.vram_gib - vram_avail)
     ram_used  = layers_ram  * per_layer
     swap_used = layers_swap * per_layer
 
     # tok/s: time per token = sum over tiers of bytes_read / bandwidth.
     # Dense: every weight is read per token. MoE: shared weights + active experts only.
+    # KV cache is excluded: with flash attention it's tiled and contributes negligibly
+    # to the per-token bandwidth budget (verified empirically — flat tok/s across ctx).
     if m.experts > 0 and m.experts_used > 0:
         active_frac = MOE_SHARED_FRAC + (1 - MOE_SHARED_FRAC) * (m.experts_used / m.experts)
         weight_bytes_gib = m.file_gib * active_frac
     else:
         weight_bytes_gib = m.file_gib
-    bytes_per_token_gib = weight_bytes_gib + kv_cache_gib(m, hw, ctx)
+    bytes_per_token_gib = weight_bytes_gib
     if layers_unfit > 0 or bytes_per_token_gib == 0:
         tok_s = 0.0
     else:
@@ -594,9 +598,9 @@ def report(m: Model, hw: Hardware):
         best = max(usable, key=lambda p: p["ctx"])
         print(f"\n  → Recommended context: {best['ctx']} (~{best['tok_s']:.0f} tok/s)")
         print(f"\n  Apply with:")
-        print(f"    docker exec -it ollama bash -c \\")
+        print(f"    docker exec -i ollama bash -c \\")
         print(f"      'printf \"FROM {m.name}\\nPARAMETER num_ctx {best['ctx']}\" "
-              f"| ollama create {m.name}'")
+              f"| ollama create {m.name} -f /dev/stdin'")
     else:
         print("\n  → No tested context is fast enough — consider a smaller/quantized model.")
 
