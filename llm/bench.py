@@ -372,7 +372,10 @@ def main():
     ap.add_argument("--container", default="ollama",
                     help="Ollama docker container name (for pull/apply)")
     ap.add_argument("--apply", action="store_true",
-                    help="Apply the recommended context to the model after benchmarking")
+                    help="Apply a recommended context to the model after benchmarking. "
+                         "Prompts you to pick when there are two candidates.")
+    ap.add_argument("--yes", "-y", action="store_true",
+                    help="Skip the apply prompt; use the speed-preferred default.")
     args = ap.parse_args()
 
     ctxs = [int(c.strip()) for c in args.ctxs.split(",") if c.strip()] if args.ctxs else None
@@ -413,23 +416,34 @@ def main():
                         f"{r['real_layers_ram']}/{r['blocks']} layers in RAM)")
 
             if fastest:
-                # Two candidates — fastest is the recommended default
                 print(f"\n→ {name}:")
-                print(f"  Largest usable:  {fmt(largest)}")
-                print(f"  Best speed/ctx:  {fmt(fastest)}  ← recommended "
+                print(f"  [s] Best speed/ctx:  {fmt(fastest)}  "
                       f"({fastest['real_tok_s']/largest['real_tok_s']:.1f}x faster)")
-                apply_target = fastest
+                print(f"  [l] Largest usable:  {fmt(largest)}")
+                apply_target = fastest  # default
             else:
                 print(f"\n→ {name}: recommended {fmt(largest)}")
                 apply_target = largest
 
             if args.apply:
-                print(f"  Applying num_ctx={apply_target['ctx']}...", flush=True)
-                try:
-                    apply_context(name, apply_target["ctx"], args.container)
-                    print(f"  ✓ {name} now uses num_ctx={apply_target['ctx']}")
-                except Exception as e:
-                    print(f"  ! apply failed: {e}", file=sys.stderr)
+                if fastest and not args.yes:
+                    choice = input(
+                        f"  Apply which? [s]peed={fastest['ctx']} / "
+                        f"[l]argest={largest['ctx']} / [n]one [s]: "
+                    ).strip().lower()
+                    if choice in ("l", "largest"):
+                        apply_target = largest
+                    elif choice in ("n", "none", "skip"):
+                        apply_target = None
+                if apply_target:
+                    print(f"  Applying num_ctx={apply_target['ctx']}...", flush=True)
+                    try:
+                        apply_context(name, apply_target["ctx"], args.container)
+                        print(f"  ✓ {name} now uses num_ctx={apply_target['ctx']}")
+                    except Exception as e:
+                        print(f"  ! apply failed: {e}", file=sys.stderr)
+                else:
+                    print(f"  (skipped)")
             else:
                 print(f"  Apply with:  ./bench.py ... --apply")
                 print(f"  Or manually: docker exec -i {args.container} bash -c "
