@@ -78,9 +78,14 @@ def _diarize(wav_path: str, work_dir: str) -> list[dict]:
             "vad": {
                 "model_path": "vad_multilingual_marblenet",
                 "parameters": {
+                    "window_length_in_sec": 0.15,
+                    "shift_length_in_sec": 0.01,
+                    "smoothing": "median",
+                    "overlap": 0.5,
                     "onset": 0.8, "offset": 0.6,
                     "pad_onset": 0.05, "pad_offset": -0.1,
                     "min_duration_on": 0.2, "min_duration_off": 0.2,
+                    "filter_speech_first": True,
                 },
             },
             "speaker_embeddings": {
