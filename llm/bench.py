@@ -17,15 +17,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 from llmcalc import (
     fetch_blob, Model, plan, load_hardware,
+    MIN_USABLE_TOK_S, WARN_TOK_S, CTX_LADDER,
 )
 
-DEFAULT_CTXS = [4096, 16384, 32768, 65536]
 LONG_PROMPT = (
     "Write a detailed technical essay (target around 800 words) about distributed "
     "systems. Cover the CAP theorem, common consensus algorithms (Paxos, Raft), "
@@ -63,6 +65,84 @@ def get_loaded(api: str, model: str) -> dict | None:
     return next((x for x in ps if x["name"] == model or x["model"] == model), None)
 
 
+def model_exists(api: str, model: str) -> bool:
+    """Check if a model is locally available via /api/show."""
+    try:
+        urllib.request.urlopen(
+            urllib.request.Request(
+                f"{api}/api/show",
+                data=json.dumps({"name": model}).encode(),
+                headers={"Content-Type": "application/json"},
+            ),
+            timeout=10,
+        )
+        return True
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return False
+        raise
+
+
+def ensure_pulled(api: str, model: str, container: str) -> None:
+    """Pull the model via docker exec if it's not already present."""
+    if model_exists(api, model):
+        return
+    print(f"  Model {model} not found locally — pulling...", flush=True)
+    r = subprocess.run(
+        ["docker", "exec", "-i", container, "ollama", "pull", model],
+        check=False,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"failed to pull {model} (exit {r.returncode})")
+    print(f"  ✓ pulled {model}")
+
+
+def apply_context(model: str, ctx: int, container: str) -> None:
+    """Recreate the model with a new num_ctx parameter."""
+    modelfile = f"FROM {model}\nPARAMETER num_ctx {ctx}\n"
+    r = subprocess.run(
+        ["docker", "exec", "-i", container, "ollama", "create", model, "-f", "/dev/stdin"],
+        input=modelfile.encode(), check=False,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"failed to apply num_ctx={ctx} (exit {r.returncode})")
+
+
+def recommend_ctx(rows: list[dict]) -> dict | None:
+    """Largest context whose real tok/s is still at or above the usability threshold."""
+    usable = [r for r in rows if r["real_tok_s"] >= MIN_USABLE_TOK_S]
+    return max(usable, key=lambda r: r["ctx"]) if usable else None
+
+
+def pick_ctxs(m: Model, hw, n: int = 3) -> list[int]:
+    """Use llmcalc predictions to pick n contexts that bracket the recommendation:
+    one step smaller (safe), the predicted recommended, one step larger (push the cliff)."""
+    cap = m.ctx_max if m.ctx_max > 0 else CTX_LADDER[-1]
+    ladder = sorted({c for c in CTX_LADDER if c <= cap} | ({m.ctx_max} if m.ctx_max else set()))
+    plans = [(c, plan(m, hw, c)) for c in ladder]
+    usable = [(c, p) for c, p in plans if p["tok_s"] >= MIN_USABLE_TOK_S
+              and p["layers_unfit"] == 0]
+
+    if not usable:
+        # Nothing predicted as usable — pick the 3 with highest predicted tok/s
+        plans.sort(key=lambda x: -x[1]["tok_s"])
+        return sorted({c for c, _ in plans[:n]})
+
+    rec_ctx = max(c for c, _ in usable)
+    rec_idx = ladder.index(rec_ctx)
+    picks = {rec_ctx}
+    # one step smaller (safety)
+    if rec_idx > 0:
+        picks.add(ladder[rec_idx - 1])
+    # one step larger (push the cliff)
+    if rec_idx + 1 < len(ladder):
+        picks.add(ladder[rec_idx + 1])
+    # if we still need a 3rd (e.g. recommendation is already at the top), step further down
+    if len(picks) < n and rec_idx > 1:
+        picks.add(ladder[rec_idx - 2])
+    return sorted(picks)[:n]
+
+
 def model_from_prefilled(pf: dict) -> Model:
     return Model(
         name=pf["name"],
@@ -82,9 +162,13 @@ def model_from_prefilled(pf: dict) -> Model:
     )
 
 
-def bench_url(url: str, ctxs: list[int], api: str, hw) -> tuple[str, list[dict]]:
+def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) -> tuple[str, list[dict]]:
     pf = fetch_blob(url)
     m = model_from_prefilled(pf)
+    ensure_pulled(api, m.name, container)
+    if not ctxs:
+        ctxs = pick_ctxs(m, hw, n=3)
+        print(f"  Auto-picked contexts to bench: {ctxs}")
     extras = []
     if m.experts > 0:
         extras.append(f"MoE {m.experts_used}/{m.experts}")
@@ -183,13 +267,17 @@ def write_csv(path: str, model_results: list[tuple[str, list[dict]]]) -> None:
 def main():
     ap = argparse.ArgumentParser(description="Benchmark Ollama vs llmcalc predictions")
     ap.add_argument("urls", nargs="+", help="Ollama blob URLs")
-    ap.add_argument("--ctxs", default=",".join(str(c) for c in DEFAULT_CTXS),
-                    help=f"Comma-separated context sizes (default: {DEFAULT_CTXS})")
+    ap.add_argument("--ctxs", default=None,
+                    help="Comma-separated context sizes. Default: auto-pick 3 around llmcalc's recommendation.")
     ap.add_argument("--api", default="http://localhost:11434", help="Ollama API URL")
     ap.add_argument("--csv", help="Optional CSV output path")
+    ap.add_argument("--container", default="ollama",
+                    help="Ollama docker container name (for pull/apply)")
+    ap.add_argument("--apply", action="store_true",
+                    help="Apply the recommended context to the model after benchmarking")
     args = ap.parse_args()
 
-    ctxs = [int(c.strip()) for c in args.ctxs.split(",") if c.strip()]
+    ctxs = [int(c.strip()) for c in args.ctxs.split(",") if c.strip()] if args.ctxs else None
     hw = load_hardware()
     print(f"Hardware: {hw.gpu_name} {hw.vram_gib:.0f}G @ {hw.vram_bw_gbs:.0f}GB/s | "
           f"RAM {hw.ram_gib:.0f}G @ {hw.ram_bw_gbs:.0f}GB/s | kv={hw.kv_cache_type}")
@@ -197,7 +285,7 @@ def main():
     results = []
     for url in args.urls:
         try:
-            name, rows = bench_url(url, ctxs, args.api, hw)
+            name, rows = bench_url(url, ctxs, args.api, hw, args.container)
             if rows:
                 results.append((name, rows))
         except Exception as e:
@@ -207,6 +295,27 @@ def main():
         print_table(results)
         if args.csv:
             write_csv(args.csv, results)
+
+        for name, rows in results:
+            best = recommend_ctx(rows)
+            if not best:
+                print(f"\n→ {name}: no context met the {MIN_USABLE_TOK_S} tok/s usability threshold.")
+                continue
+            print(f"\n→ {name}: recommended num_ctx={best['ctx']} "
+                  f"(measured {best['real_tok_s']:.1f} tok/s, "
+                  f"{best['real_layers_ram']}/{best['blocks']} layers in RAM)")
+            if args.apply:
+                print(f"  Applying...", flush=True)
+                try:
+                    apply_context(name, best["ctx"], args.container)
+                    print(f"  ✓ {name} now uses num_ctx={best['ctx']}")
+                except Exception as e:
+                    print(f"  ! apply failed: {e}", file=sys.stderr)
+            else:
+                print(f"  Apply with:  ./bench.py ... --apply")
+                print(f"  Or manually: docker exec -i {args.container} bash -c "
+                      f"'printf \"FROM {name}\\nPARAMETER num_ctx {best['ctx']}\" "
+                      f"| ollama create {name} -f /dev/stdin'")
 
 
 if __name__ == "__main__":
