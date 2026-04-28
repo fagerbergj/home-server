@@ -85,7 +85,15 @@ def model_from_prefilled(pf: dict) -> Model:
 def bench_url(url: str, ctxs: list[int], api: str, hw) -> tuple[str, list[dict]]:
     pf = fetch_blob(url)
     m = model_from_prefilled(pf)
-    print(f"\n=== {m.name} ({m.file_gib:.1f} GiB Q{m.quant_bits}, {m.blocks} blocks) ===")
+    extras = []
+    if m.experts > 0:
+        extras.append(f"MoE {m.experts_used}/{m.experts}")
+    if m.arch == "ssm":
+        extras.append(f"hybrid SSM {m.attention_blocks}/{m.blocks}")
+    if m.sliding_window > 0 and m.swa_blocks > 0:
+        extras.append(f"SWA {m.swa_blocks}/{m.blocks} window={m.sliding_window}")
+    extra_str = ", " + ", ".join(extras) if extras else ""
+    print(f"\n=== {m.name} ({m.file_gib:.1f} GiB Q{m.quant_bits}, {m.blocks} blocks{extra_str}) ===")
 
     rows = []
     for ctx in ctxs:
