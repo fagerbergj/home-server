@@ -11,19 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Use BuildKit cache mounts for pip — wheels persist between builds, so
-# incremental changes to requirements.txt only re-download what actually
-# changed instead of the full torch + pyannote tree.
+# BuildKit cache mounts persist pip wheels across builds, so requirements
+# changes only re-download what actually changed. torch + torchaudio + pyannote
+# are pinned together in requirements.txt so pip's resolver can't silently
+# upgrade torchaudio past our pin.
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install --upgrade pip setuptools wheel
-
-# Pin torch + torchaudio to 2.3.1 (cu121). pyannote.audio 3.3 imports
-# torchaudio.AudioMetaData which was removed in torchaudio 2.4+. Installing
-# torch first so pip's resolver treats it as fixed when handling pyannote.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install \
-        torch==2.3.1 torchaudio==2.3.1 \
-        --index-url https://download.pytorch.org/whl/cu121
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
