@@ -15,6 +15,7 @@ pyannote's diarization model is open-source but gated for usage tracking. One-ti
 2. Accept the licenses (click "Agree and access" on each — instant approval):
    - https://huggingface.co/pyannote/speaker-diarization-3.1
    - https://huggingface.co/pyannote/segmentation-3.0
+   - https://huggingface.co/pyannote/speaker-diarization-community-1 (transitive dep — pyannote pulls this for the PLDA backend)
 3. Generate a **read** token: https://huggingface.co/settings/tokens
    - Type: Read
    - Name: anything (e.g. `home-server-audio`)
