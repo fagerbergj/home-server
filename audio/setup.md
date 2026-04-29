@@ -49,6 +49,36 @@ curl http://localhost:8005/v1/audio/transcriptions \
   -F "model=Systran/faster-whisper-large-v3"
 ```
 
+## Speaker enrollment (optional, recommended)
+
+By default the service returns generic `[SPEAKER_00]`, `[SPEAKER_01]` labels and pyannote chooses them inconsistently across recordings (Pat may be `SPEAKER_00` one session and `SPEAKER_02` the next). To get stable real names:
+
+1. Record a clean ~10-30 second sample of each recurring speaker (one person talking, no crosstalk).
+2. Enroll once per person:
+   ```bash
+   curl -F "file=@pat-sample.wav" -F "name=Pat" http://localhost:8005/v1/speakers/enroll
+   curl -F "file=@sam-sample.wav" -F "name=Sam" http://localhost:8005/v1/speakers/enroll
+   ```
+3. Future transcriptions match each pyannote `SPEAKER_XX` against enrolled voiceprints. Above the similarity threshold (default 0.5), the label becomes the real name; otherwise it stays `SPEAKER_XX`.
+
+Inspect / manage enrollments:
+
+```bash
+curl http://localhost:8005/v1/speakers              # list
+curl -X DELETE http://localhost:8005/v1/speakers/Pat # remove
+```
+
+Tunable env vars:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `SPEAKER_MATCH_THRESHOLD` | `0.5` | Higher = stricter (fewer false matches, more `SPEAKER_XX`) |
+| `MIN_ENROLL_SEG_SEC` | `1.0` | Minimum segment duration to attempt voiceprint matching |
+| `EMBEDDING_MODEL` | `pyannote/embedding` | Override if you've enrolled with a different model |
+| `VOICEPRINTS_PATH` | `/root/.cache/voiceprints.json` | Lives in the persistent model-cache volume |
+
+You can re-enroll the same name multiple times — additional samples accumulate and improve match robustness.
+
 ## Troubleshooting
 
 - **`HF_TOKEN not set`** — token missing from `.env` or env not picked up. `docker compose config` to verify it's in the rendered service env.

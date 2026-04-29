@@ -10,12 +10,14 @@ calls — the GPU is shared with Ollama in this setup.
 from __future__ import annotations
 
 import gc
+import json
 import logging
 import os
 import shutil
 import subprocess
 import tempfile
 
+import numpy as np
 import torch
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from faster_whisper import WhisperModel
@@ -28,9 +30,13 @@ DEFAULT_WHISPER_MODEL = os.environ.get(
 DIARIZATION_MODEL = os.environ.get(
     "DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1"
 )
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "pyannote/embedding")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 MIN_SPEAKERS = int(os.environ.get("MIN_SPEAKERS", "1"))
 MAX_SPEAKERS = int(os.environ.get("MAX_SPEAKERS", "8"))
+SPEAKER_MATCH_THRESHOLD = float(os.environ.get("SPEAKER_MATCH_THRESHOLD", "0.5"))
+VOICEPRINTS_PATH = os.environ.get("VOICEPRINTS_PATH", "/root/.cache/voiceprints.json")
+MIN_ENROLL_SEG_SEC = float(os.environ.get("MIN_ENROLL_SEG_SEC", "1.0"))
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn.error")
@@ -40,6 +46,66 @@ def _free():
     gc.collect()
     if DEVICE == "cuda":
         torch.cuda.empty_cache()
+
+
+def _load_voiceprints() -> dict[str, list[list[float]]]:
+    if not os.path.exists(VOICEPRINTS_PATH):
+        return {}
+    try:
+        with open(VOICEPRINTS_PATH) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        logger.warning("voiceprints.json corrupt or unreadable; starting fresh")
+        return {}
+
+
+def _save_voiceprints(prints: dict) -> None:
+    os.makedirs(os.path.dirname(VOICEPRINTS_PATH), exist_ok=True)
+    tmp = VOICEPRINTS_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(prints, f)
+    os.replace(tmp, VOICEPRINTS_PATH)
+
+
+def _cosine(a, b) -> float:
+    av = np.asarray(a, dtype=np.float32).flatten()
+    bv = np.asarray(b, dtype=np.float32).flatten()
+    denom = float(np.linalg.norm(av) * np.linalg.norm(bv)) + 1e-10
+    return float(np.dot(av, bv) / denom)
+
+
+def _embed_audio(wav_path: str, start: float | None = None, end: float | None = None) -> list[float]:
+    """Compute a speaker embedding for the whole file or a [start, end] segment."""
+    from pyannote.audio import Inference
+    from pyannote.core import Segment
+
+    inference = Inference(
+        EMBEDDING_MODEL,
+        window="whole",
+        use_auth_token=HF_TOKEN,
+        device=torch.device(DEVICE) if DEVICE == "cuda" else torch.device("cpu"),
+    )
+    if start is None:
+        emb = inference(wav_path)
+    else:
+        emb = inference.crop(wav_path, Segment(start, end))
+    del inference
+    return np.asarray(emb).flatten().tolist()
+
+
+def _match_voiceprint(embedding, voiceprints: dict) -> tuple[str, float] | None:
+    """Find the enrolled name with highest cosine similarity, if it crosses
+    SPEAKER_MATCH_THRESHOLD."""
+    best_name, best_sim = None, 0.0
+    for name, embs in voiceprints.items():
+        for e in embs:
+            sim = _cosine(embedding, e)
+            if sim > best_sim:
+                best_sim = sim
+                best_name = name
+    if best_name and best_sim >= SPEAKER_MATCH_THRESHOLD:
+        return best_name, best_sim
+    return None
 
 
 def _to_mono16k(src: str, dst_dir: str) -> str:
@@ -84,6 +150,47 @@ def _diarize(wav_path: str) -> list[dict]:
         })
     segs.sort(key=lambda s: s["start"])
     del pipeline
+    _free()
+
+    # Voiceprint relabeling: if any speakers are enrolled, compute an embedding
+    # for each pyannote SPEAKER_XX (using their longest segment) and replace the
+    # label with the closest enrolled name when similarity crosses the threshold.
+    voiceprints = _load_voiceprints()
+    if not voiceprints or not segs:
+        return segs
+
+    by_speaker: dict[str, list[dict]] = {}
+    for s in segs:
+        by_speaker.setdefault(s["speaker"], []).append(s)
+
+    relabel: dict[str, str] = {}
+    for speaker, sps in by_speaker.items():
+        longest = max(sps, key=lambda s: s["end"] - s["start"])
+        dur = longest["end"] - longest["start"]
+        if dur < MIN_ENROLL_SEG_SEC:
+            logger.info("voiceprint: skip %s, longest segment %.2fs < %.2fs",
+                        speaker, dur, MIN_ENROLL_SEG_SEC)
+            continue
+        try:
+            emb = _embed_audio(wav_path, longest["start"], longest["end"])
+        except Exception as e:
+            logger.warning("voiceprint: embedding failed for %s: %s", speaker, e)
+            continue
+        match = _match_voiceprint(emb, voiceprints)
+        if match:
+            name, sim = match
+            logger.info("voiceprint: %s -> %s (sim=%.3f)", speaker, name, sim)
+            relabel[speaker] = name
+        else:
+            logger.info("voiceprint: no match for %s above threshold %.2f",
+                        speaker, SPEAKER_MATCH_THRESHOLD)
+    _free()
+
+    if relabel:
+        for s in segs:
+            if s["speaker"] in relabel:
+                s["speaker"] = relabel[s["speaker"]]
+
     return segs
 
 
@@ -148,6 +255,53 @@ def _format(words: list[dict]) -> str:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/v1/speakers")
+def list_speakers():
+    """List enrolled speaker names and how many samples each has."""
+    voiceprints = _load_voiceprints()
+    return {name: len(embs) for name, embs in voiceprints.items()}
+
+
+@app.delete("/v1/speakers/{name}")
+def delete_speaker(name: str):
+    voiceprints = _load_voiceprints()
+    if name not in voiceprints:
+        raise HTTPException(404, f"no speaker named {name!r}")
+    del voiceprints[name]
+    _save_voiceprints(voiceprints)
+    return {"deleted": name}
+
+
+@app.post("/v1/speakers/enroll")
+async def enroll_speaker(file: UploadFile, name: str = Form(...)):
+    """Enroll a voice sample for `name`. Multiple samples per name accumulate
+    and are all matched against during transcription. 10-30 seconds of clean
+    single-speaker audio is the sweet spot."""
+    if not HF_TOKEN:
+        raise HTTPException(500, "HF_TOKEN not set — pyannote embedding requires it")
+    name = (name or "").strip()
+    if not name:
+        raise HTTPException(400, "name is required")
+
+    suffix = os.path.splitext(file.filename or "audio.wav")[1] or ".wav"
+    work_dir = tempfile.mkdtemp(prefix="enroll-")
+    upload_path = os.path.join(work_dir, "upload" + suffix)
+    with open(upload_path, "wb") as f:
+        f.write(await file.read())
+
+    try:
+        wav_path = _to_mono16k(upload_path, work_dir)
+        emb = _embed_audio(wav_path)
+        voiceprints = _load_voiceprints()
+        voiceprints.setdefault(name, []).append(emb)
+        _save_voiceprints(voiceprints)
+        logger.info("enrolled %s — now %d sample(s)", name, len(voiceprints[name]))
+        return {"name": name, "sample_count": len(voiceprints[name])}
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+        _free()
 
 
 @app.post("/v1/audio/transcriptions")
