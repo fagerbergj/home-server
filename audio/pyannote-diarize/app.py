@@ -88,16 +88,42 @@ def _diarize(wav_path: str) -> list[dict]:
 
 
 def _assign_speakers(words: list[dict], segs: list[dict]) -> list[dict]:
-    """Pick the speaker whose diarization segment overlaps each word most."""
+    """Assign each word to a diarized speaker.
+
+    First pass: pick the segment with the largest overlap. If there is no
+    overlap (the word fell in a gap between diarization segments — pyannote
+    occasionally leaves short silences unattributed), fall back to the
+    speaker of the nearest segment by time distance. As a last resort
+    (no segments at all), inherit the previous word's speaker.
+    """
+    if not segs:
+        return [{**w, "speaker": "SPEAKER_??"} for w in words]
+
     out = []
+    last_speaker = segs[0]["speaker"]
     for w in words:
-        best, best_overlap = None, 0.0
+        best_speaker, best_overlap = None, 0.0
+        nearest_speaker, nearest_dist = None, float("inf")
         for s in segs:
             ov = max(0.0, min(w["end"], s["end"]) - max(w["start"], s["start"]))
             if ov > best_overlap:
                 best_overlap = ov
-                best = s["speaker"]
-        out.append({**w, "speaker": best or "SPEAKER_??"})
+                best_speaker = s["speaker"]
+            # Distance from word's midpoint to segment's nearest edge.
+            mid = (w["start"] + w["end"]) / 2
+            if mid < s["start"]:
+                dist = s["start"] - mid
+            elif mid > s["end"]:
+                dist = mid - s["end"]
+            else:
+                dist = 0.0
+            if dist < nearest_dist:
+                nearest_dist = dist
+                nearest_speaker = s["speaker"]
+
+        speaker = best_speaker or nearest_speaker or last_speaker
+        last_speaker = speaker
+        out.append({**w, "speaker": speaker})
     return out
 
 
