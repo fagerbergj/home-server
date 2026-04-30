@@ -1,12 +1,13 @@
 # RAM Upgrade Plan — Threadripper 1950X / X399-E
 
-Migration from a mixed 6× 8GB kit at 2400 MT/s (flex-mode quad-channel) to a balanced 8× 8GB or 4× 16GB layout in true quad-channel.
+Migration from a mixed 6× 8GB kit at 2400 MT/s (flex-mode quad-channel) to a balanced **8× 8GB layout running at ~2933 MT/s** in true quad-channel.
 
 ## Goals
 
 - Full symmetric quad-channel (every channel populated equally) so the entire RAM range gets 4-way interleave instead of dropping to dual-channel for the unbalanced portion
-- Eliminate the 2400 MT/s ceiling forced by the slowest kit
+- Lift the 2400 MT/s floor forced by the slowest kit; target **2933 MT/s** (the realistic 8-DIMM ceiling on Threadripper 1950X with DOCP)
 - 64 GB capacity (sized for ZFS ARC headroom + Postgres + future LLM context buffers)
+- Stay at 8 DIMMs — capacity per channel matters more than chasing 4-DIMM 3200 MT/s for this workload
 
 ## Current State
 
@@ -35,63 +36,83 @@ The Threadripper 1950X memory controller runs at JEDEC speed of the slowest inst
 
 ## Target State
 
-Two viable paths, depending on budget and how much performance matters.
+The 8-DIMM platform ceiling on Threadripper 1950X is ~2933 MT/s with DOCP. Going from current 2400 to 2933 unlocks ~22% more aggregate bandwidth — and balancing the channel config on top adds another ~25% by eliminating flex-mode. Combined uplift: **~50% more usable memory bandwidth** vs the current state.
 
-### Option A — Cheapest path: add 2× 8GB DDR4-2400 (≈$30–40)
+### Recommended — Replace the 2400 kit + add 2 more (≈$80–120)
 
-Buy 2 more 8GB DDR4-2400 sticks (any reputable brand) and slot them into Channel B DIMM 0 and Channel D DIMM 0.
+The two `CMK16GX4M2A2400C16` sticks are what's locking the entire system to 2400 MT/s. Pulling them and swapping in faster sticks unlocks the platform ceiling.
+
+1. Pull both `CMK16GX4M2A2400C16` Corsair 2400 sticks
+2. Buy **4× 8GB DDR4-3000+** sticks — matching the existing Crucial Ballistix Sport LT (`BLS8G4D30AESEK.M8FE1`) is ideal but not required; any 3000–3200 single-rank 8GB stick works
+3. Populate all 8 slots:
 
 | Channel | DIMM 0 | DIMM 1 | Channel total |
 |---------|--------|--------|---------------|
-| A | 8 GB | 8 GB | 16 GB |
-| B | **8 GB (new)** | 8 GB | 16 GB |
-| C | 8 GB | 8 GB | 16 GB |
-| D | **8 GB (new)** | 8 GB | 16 GB |
+| A | 8 GB (existing) | 8 GB (existing) | 16 GB |
+| B | **8 GB (new)** | **8 GB (new, replacing 2400)** | 16 GB |
+| C | 8 GB (existing) | 8 GB (existing) | 16 GB |
+| D | **8 GB (new)** | **8 GB (new, replacing 2400)** | 16 GB |
 
-Result: **64 GB, true quad-channel, 2400 MT/s**. Bandwidth jumps from flex (~60 GB/s effective) to full quad (~76 GB/s) and capacity goes up 33%. Speed unchanged — the 2400 kit still floors it.
+4. Enable **DOCP** in BIOS. System negotiates down from each kit's 3000–3200 rating to ~2933 — the realistic 8-DIMM ceiling on the Zen 1 IMC.
 
-### Option B — Cleanest path: replace the Corsair 2400 kit + add 2 more (≈$80–120)
+Result: **64 GB, true quad-channel, ~2933 MT/s** → ~94 GB/s aggregate.
 
-Pull the 2× `CMK16GX4M2A2400C16` sticks (the bottleneck), buy 4× 8GB DDR4-3000 (matching the existing Crucial Ballistix Sport LT spec is ideal — same SKU `BLS8G4D30AESEK.M8FE1` if still available), populate all 8 slots.
+### Fallback — Add 2× 2400 sticks if budget is tight (≈$30–40)
 
-Result: **64 GB, true quad-channel, 2933 MT/s** (Threadripper 1950X tops out at 2933 with DOCP on a balanced 2-DIMM-per-channel config; 3000-rated sticks will run at 2933).
+If you don't want to spend on the kit replacement now, just add 2× 8GB DDR4-2400 in the empty B0 / D0 slots. You get true quad-channel (eliminates flex-mode) but stay capped at 2400 MT/s.
 
-Memory bandwidth jumps from ~76 GB/s (Option A) to ~94 GB/s — ~24% more for ~3× the cost.
+Result: **64 GB, true quad-channel, 2400 MT/s** → ~76 GB/s aggregate.
 
-### Option C — Future / extreme: 8× 16GB matched kit (≈$300+)
+This is a stepping stone — you can do the full kit swap later without wasting hardware (the new 2400 sticks won't fit the final 2933 plan since they'd re-introduce the bottleneck, so this path only makes sense if cost is the constraint and the upgrade window is long).
 
-128 GB, true quad-channel, 2933+ MT/s. Overkill for current workloads but useful if LLM context windows grow or Postgres datasets exceed 32 GB working set. Defer indefinitely.
+### Defer — 8× 16GB at 2933 MT/s (≈$300+)
+
+128 GB, true quad-channel, ~2933 MT/s. Defer indefinitely. Useful only if LLM context windows grow or Postgres working set exceeds 32 GB. ZFS ARC will happily consume any extra RAM but with diminishing returns past 32 GB ARC for media-mostly workloads.
 
 ## Recommended Path
 
-**Option A now, Option B if/when capacity or LLM workloads demand it.** The marginal bandwidth gain from B vs A doesn't move the needle for Plex/Immich/torrents/Docker — those are I/O bound. LLM inference is GPU-bound on the RTX 3090, not CPU-memory-bound. ZFS ARC scales by capacity, not bandwidth.
+**Replace the 2400 kit + add 2 more.** Bandwidth uplift is significant (~50% over current state when you combine the channel-balance fix with the speed uplift), cost is modest, and you avoid wasted hardware spend on the fallback.
 
-If you ever notice the system stalling on memory pressure (high `kswapd0` activity, swap thrashing during LLM loads), that's the signal to jump to B or C.
+The fallback only makes sense if you literally have $30 to spend right now and not $100. Plex/Immich/torrents/Docker won't notice the difference, but LLM token throughput on CPU and Postgres analytical queries do measurably scale with memory bandwidth.
 
-## Implementation — Option A
+## Implementation
 
 ### Pre-purchase checklist
 
 ```bash
-# Confirm the bottleneck kit's exact SKU
-sudo dmidecode -t 17 | grep -E "Manufacturer|Part Number|Speed:"
+# Snapshot current SKUs and serials so you can confirm which sticks to pull
+sudo dmidecode -t 17 | grep -E "Manufacturer|Part Number|Serial Number|Speed:"
 
-# Confirm slot layout (which DIMMs are empty)
+# Confirm slot layout
 sudo dmidecode -t 17 | grep -E "Bank Locator|Locator|Size" | grep -v "No Module"
 ```
 
-Order 2× 8GB DDR4-2400 — anything reputable. Doesn't need to match the existing kits' brand; only the **rated speed and capacity** matter for system-wide compatibility. Reasonable picks:
+Order 4× 8GB DDR4-3000+ single-rank sticks. Matching the existing Crucial Ballistix Sport LT SKU is the cleanest option:
 
-- Corsair Vengeance LPX `CMV8GX4M1A2400C16` (single 8GB, 2400)
-- Crucial Ballistix `BLS8G4D240FSB`
-- Kingston ValueRAM `KVR24N17S8/8`
+- **Crucial Ballistix Sport LT `BLS8G4D30AESEK.M8FE1`** (matches existing 2 sticks)
+
+If unavailable, any reputable 8GB DDR4-3000 or DDR4-3200 single-rank kit works — the system runs at the lowest common denominator's rated speed (2933 max on Threadripper). Reasonable alternatives:
+
+- G.Skill Ripjaws V `F4-3200C16D-16GVKB` (16GB kit = 2 sticks)
+- Corsair Vengeance LPX `CMK16GX4M2D3000C16` (16GB kit = 2 sticks, 3000 MT/s)
+
+Avoid dual-rank sticks (typically 16GB+ in a single stick) — they'll force the IMC to clock down further when paired 2-per-channel.
 
 ### Install
 
 1. Power down. Unplug.
-2. Open the case, locate empty slots: **DIMM_B1** (Channel B DIMM 0) and **DIMM_D1** (Channel D DIMM 0). Refer to the X399-E manual for slot labels — ASUS conventionally labels them `DIMM_A1, DIMM_A2, DIMM_B1, DIMM_B2, ...` where A1 is closer to the CPU.
-3. Insert sticks, ensure both retention clips snap closed.
-4. Boot.
+2. Open the case. Identify the 2× `CMK16GX4M2A2400C16` Corsair sticks by serial — match against the dmidecode snapshot. They're in the populated DIMM_1 slots of two channels (probably B and D given the current layout).
+3. Pull the 2 Corsair 2400 sticks. Set aside or sell.
+4. Install the 4 new sticks into all empty slots: **DIMM_B1, DIMM_B2, DIMM_D1, DIMM_D2** (or wherever the empties + the 2 you just pulled live). Reference the X399-E manual for slot labels — ASUS conventionally labels them `DIMM_A1, DIMM_A2, DIMM_B1, DIMM_B2, ...`.
+5. Ensure all retention clips snap closed.
+6. Boot into BIOS.
+
+### BIOS
+
+1. **Load Optimized Defaults** first to clear any stale memory training from the old config.
+2. Navigate to **Ai Tweaker → Ai Overclock Tuner → DOCP** (or DOCP Standard / DOCP I, depending on BIOS version). DOCP is ASUS's name for XMP.
+3. The BIOS will read the SPD profile from one of the new sticks and propose a frequency. With 8 DIMMs populated and Zen 1 IMC, expect it to land at **2666–2933**. Save and exit.
+4. First boot after enabling DOCP can take 30–90 seconds while the IMC retrains. If it fails to POST, the board will fall back to JEDEC defaults (2133) — re-enter BIOS, drop the target speed by 1 step (e.g., 2933 → 2666), retry.
 
 ### Verify
 
@@ -99,42 +120,51 @@ Order 2× 8GB DDR4-2400 — anything reputable. Doesn't need to match the existi
 free -h
 # Total should now read ~58.6 GiB (i.e., 64 GB raw)
 
-sudo dmidecode -t 17 | grep -E "Bank Locator|Size" | grep -v "No Module"
-# Every channel should now show 2 sticks
+sudo dmidecode -t 17 | grep -E "Bank Locator|Size|Configured Memory Speed" | grep -v "No Module"
+# Every channel should show 2 populated sticks; Configured Memory Speed should be 2666 or 2933 MT/s
 ```
 
-Look at every motherboard channel light during POST — ASUS X399 boards show DRAM POST LEDs; if any flash red on boot the new sticks aren't seated or are incompatible. Reseat or pull and try one at a time to isolate.
+### Confirm true quad-channel + speed uplift
 
-### Confirm true quad-channel
-
-Memory bandwidth benchmark:
+Memory bandwidth benchmarks:
 
 ```bash
-sudo apt install -y mbw
+sudo apt install -y mbw sysbench
+
+# Sequential memcpy throughput
 mbw -n 5 1024
-# Look at AVG MEMCPY — should be roughly:
-#   ~50 GB/s flex-mode (current)
-#   ~70+ GB/s true quad-channel @ 2400
-```
+# Expected AVG MEMCPY:
+#   ~50 GB/s  current (flex-mode @ 2400)
+#   ~70 GB/s  true quad-channel @ 2400 (fallback path)
+#   ~85+ GB/s true quad-channel @ 2933 (recommended path)
 
-Or with `sysbench`:
-
-```bash
-sudo apt install -y sysbench
+# Synthetic memory benchmark
 sysbench memory --memory-block-size=1M --memory-total-size=64G --threads=8 run
 # Look at "transferred" rate in MB/sec
 ```
 
+Stability check after BIOS tuning:
+
+```bash
+sudo apt install -y stress-ng
+sudo stress-ng --vm 8 --vm-bytes 80% --timeout 600s --metrics
+# 10 minutes of memory pressure — if the system survives without errors or
+# corrected ECC events, the new clock is stable.
+```
+
 ## Risks & Notes
 
-- **Mixed-rank or mixed-density sticks**: as long as all sticks are 8GB single-rank DDR4-2400, the controller will run all of them at the same timings. Mixing single-rank and dual-rank in the same channel can cause boot failures.
-- **DOCP/XMP**: with the 2400 kit installed, DOCP doesn't help — the 2400 kit's SPD has no DOCP profile above 2400. After Option B (2400 kit removed), enable DOCP in BIOS to push the remaining sticks to their rated 3000 (which Threadripper will clock down to 2933).
-- **POST instability**: 8 DIMMs populated is the most demanding config for the memory controller. If POST takes longer or RAM training fails on first boot, increase **DRAM Voltage** by +0.05V (1.20 → 1.25) in BIOS or run **Memory Context Restore** to skip retraining on subsequent boots.
-- **No DDR5 path**: Threadripper 1950X is DDR4 only. Any future jump to DDR5 means a platform change (Threadripper 7000 / sTR5 or Ryzen 9000 / AM5) — defer indefinitely.
+- **Why 2933 and not 3000+ with 8 DIMMs**: the Zen 1 (Whitehaven) IMC degrades with rank load. 1 DIMM per channel can hit 3200; 2 DIMMs per channel realistically tops out at 2933 even with 3200-rated sticks. Don't waste money on 3600 kits — the IMC won't run them at rated speed in this config.
+- **Mixed-rank or mixed-density sticks**: keep all sticks at 8GB single-rank for predictable behavior. Mixing single-rank and dual-rank in the same channel can cause boot failures or force the IMC to drop another notch.
+- **DOCP/XMP**: with the 2400 kit removed, enable DOCP in BIOS. The 3000–3200 kits will clock down to 2933 (Zen 1 8-DIMM ceiling) automatically — that's normal, not a failure mode.
+- **POST instability**: 8 DIMMs is the most demanding config for the memory controller. If POST takes longer or RAM training fails on first boot, drop the target frequency one step (2933 → 2666) or bump **DRAM Voltage** to 1.35V in BIOS. **Memory Context Restore** = ON skips retraining on subsequent boots once stable.
+- **No DDR5 path**: Threadripper 1950X is DDR4 only. Future DDR5 means a platform change (Threadripper 7000 / sTR5 or Ryzen 9000 / AM5) — defer indefinitely.
 
 ## Decisions
 
-- [ ] Purchase 2× 8GB DDR4-2400 sticks (Option A)
-- [ ] Schedule a 30-minute power-down window to install
-- [ ] Verify true quad-channel via `mbw` or `sysbench memory`
-- [ ] Update `hardware.md` to reflect 64 GB / 8 sticks / true quad-channel
+- [ ] Purchase 4× 8GB DDR4-3000+ single-rank sticks (matching `BLS8G4D30AESEK.M8FE1` ideally)
+- [ ] Schedule a 30-minute power-down window to install + tune BIOS
+- [ ] Pull the 2× `CMK16GX4M2A2400C16` Corsair sticks
+- [ ] Enable DOCP in BIOS, verify ~2933 MT/s under load
+- [ ] Verify true quad-channel via `mbw` and run `stress-ng` for 10 min stability soak
+- [ ] Update `hardware.md` to reflect 64 GB / 8 sticks / 2933 MT/s / true quad-channel
