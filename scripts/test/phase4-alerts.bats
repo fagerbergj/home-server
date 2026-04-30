@@ -70,7 +70,7 @@ teardown() {
 # Package install
 # ---------------------------------------------------------------------------
 
-@test "installs msmtp, msmtp-mta, and zfs-zed" {
+@test "installs msmtp, msmtp-mta, mailutils, and zfs-zed" {
     run "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q 'install -y msmtp msmtp-mta zfs-zed' "$TEST_DIR/apt.calls"

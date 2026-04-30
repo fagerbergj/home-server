@@ -13,7 +13,5 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
     volumes:
       - ./config:/config
-      - /mnt/plex01:/mnt/plex01
-      - /mnt/plex02:/mnt/plex02
       - /mnt/media:/mnt/media
     restart: unless-stopped

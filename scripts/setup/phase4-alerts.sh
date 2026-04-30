@@ -18,8 +18,11 @@ EMAIL="jf.fagerberg@gmail.com"
 # Install packages
 # ---------------------------------------------------------------------------
 
-echo "Installing msmtp and zfs-zed..."
-sudo apt install -y msmtp msmtp-mta zfs-zed
+echo "Installing msmtp, mailutils, and zfs-zed..."
+# mailutils provides the `mail` command for system-mail testing and any
+# script-generated alerts that pipe to `mail`. msmtp-mta wires sendmail
+# compatibility under the hood.
+sudo apt install -y msmtp msmtp-mta mailutils zfs-zed
 
 # ---------------------------------------------------------------------------
 # msmtp (Gmail relay)
