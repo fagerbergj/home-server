@@ -75,7 +75,8 @@ ZED_USE_ENCLOSURE_LEDS=1
 ZED_SCRUB_AFTER_RESILVER=1
 EOF
 
-sudo systemctl enable --now zed
+# On Ubuntu, `zed.service` is a systemd alias — must enable the real unit name.
+sudo systemctl enable --now zfs-zed.service
 echo "ZED enabled."
 
 # ---------------------------------------------------------------------------

@@ -113,7 +113,9 @@ teardown() {
 @test "enables zed systemd unit" {
     run "$SCRIPT"
     [ "$status" -eq 0 ]
-    grep -q 'enable --now zed' "$TEST_DIR/systemctl.calls"
+    # Must use the real unit name, not the `zed.service` alias — Ubuntu
+    # systemctl refuses to enable aliased/linked unit names.
+    grep -q 'enable --now zfs-zed.service' "$TEST_DIR/systemctl.calls"
 }
 
 # ---------------------------------------------------------------------------
