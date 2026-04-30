@@ -390,6 +390,7 @@ teardown() {
     grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "authentik-postgres.dump"
     grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "vaultwarden"
     grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "rmfakecloud"
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "minecraft"
 }
 
 @test "offsite calls restic forget for retention" {
@@ -401,6 +402,40 @@ teardown() {
     grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-daily 7"
     grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-weekly 4"
     grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-monthly 12"
+}
+
+@test "offsite calls restic prune separately from forget" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    # forget and prune are now distinct invocations, not combined
+    grep -q "^restic forget" "$TEST_DIR/restic.calls"
+    grep -q "^restic prune" "$TEST_DIR/restic.calls"
+    # forget should NOT carry --prune flag (we run prune separately)
+    ! grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--prune"
+}
+
+@test "offsite treats Object Lock prune failures as expected" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    # Override restic stub to make prune fail with Object Lock message
+    cat > "$STUB_BIN/restic" <<'EOF'
+#!/usr/bin/env bash
+echo "restic $*" >> "$TEST_DIR/restic.calls"
+case "$1" in
+    prune)
+        echo "remove 1 of 5 pack files: access denied due to legal hold or retention"
+        exit 1
+        ;;
+    snapshots) echo "stub snapshot ID 12345678 1 file 0 B"; exit 0 ;;
+    *) exit 0 ;;
+esac
+EOF
+    chmod +x "$STUB_BIN/restic"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Object Lock"* ]] || [[ "$output" == *"expected behavior"* ]]
 }
 
 @test "offsite warns if restic binary missing" {

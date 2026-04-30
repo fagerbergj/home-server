@@ -26,7 +26,7 @@ Offsite is opt-in — set `RESTIC_REPOSITORY` + `RESTIC_PASSWORD` (and provider 
 | Plex config (excludes Cache) | `plex/config/` | ✓ | — |
 | Audiobookshelf config + metadata | `audiobooks/{config,metadata}/` | ✓ | — |
 | Sonarr / Radarr / Prowlarr / qBittorrent configs | service dirs | ✓ | — |
-| Minecraft world | `minecraft/data/` | ✓ | — |
+| Minecraft world | `minecraft/data/` | ✓ | ✓ |
 | Grafana / Prometheus | `monitoring/` | ✓ | — |
 | System config | `/etc/fstab`, `/etc/mdadm/mdadm.conf` | ✓ | — |
 | Root crontab | `crontab -l` | ✓ | — |

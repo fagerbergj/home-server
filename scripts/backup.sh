@@ -196,22 +196,59 @@ if [[ -n "${RESTIC_REPOSITORY:-}" && -n "${RESTIC_PASSWORD:-}" ]]; then
             "$DEST/authentik-postgres.dump"
             "$DEST/vaultwarden"
             "$DEST/rmfakecloud"
+            "$DEST/minecraft"
         )
         [[ -f "$DEST/env.gpg" ]] && OFFSITE_SOURCES+=("$DEST/env.gpg")
 
+        log "  Sources (size each):"
+        for src in "${OFFSITE_SOURCES[@]}"; do
+            if [[ -e "$src" ]]; then
+                log "    $(du -sh "$src" 2>/dev/null | cut -f1)\t$src"
+            else
+                log "    (missing)\t$src"
+            fi
+        done
+
+        # Backup with verbose progress so cron logs show what's happening
+        # during long initial uploads. --verbose=1 shows the per-stage
+        # progress (Files/Dirs/Added) without per-file noise.
+        START=$SECONDS
+        log "  Starting restic backup..."
         if restic backup \
-            --quiet \
+            --verbose=1 \
             --tag automated \
             --tag "$(date +%Y-%m-%d)" \
             "${OFFSITE_SOURCES[@]}"; then
-            log "  Restic backup ok. Pruning snapshots (keep daily-7, weekly-4, monthly-12)..."
+            ELAPSED=$((SECONDS - START))
+            log "  Restic backup ok in ${ELAPSED}s."
+
+            # Forget: drop old snapshot references. Always safe (only edits
+            # repo metadata, never deletes pack files). Should always succeed.
+            log "  Forgetting old snapshots (keep daily-7, weekly-4, monthly-12)..."
             restic forget \
-                --quiet \
                 --keep-daily 7 \
                 --keep-weekly 4 \
                 --keep-monthly 12 \
-                --prune \
-                || log "  WARNING: restic forget --prune failed (Object Lock retention may block delete)"
+                || log "  WARNING: restic forget failed (this is unusual — investigate)"
+
+            # Prune: delete pack files no longer referenced by any snapshot.
+            # With B2 Object Lock enabled, packs younger than the lock window
+            # (typically 3 days) cannot be deleted yet — restic logs warnings
+            # but the operation still partially succeeds. Older packs are
+            # freed; locked ones get cleaned up on subsequent prune runs once
+            # their lock expires. Net effect: ~3 days of "extra" data lingers.
+            log "  Pruning unreferenced data (locked packs will be skipped)..."
+            if restic prune 2>&1 | tee /tmp/restic-prune-$$.log; then
+                : # prune cleanly succeeded
+            elif grep -qi "legal hold\|retention\|object lock\|access denied" /tmp/restic-prune-$$.log; then
+                log "  Note: some packs still under Object Lock — will be pruned on a future run (expected behavior)"
+            else
+                log "  WARNING: restic prune failed for non-Object-Lock reason — check above output"
+            fi
+            rm -f /tmp/restic-prune-$$.log
+
+            log "  Repo stats after run:"
+            restic stats latest --mode raw-data 2>/dev/null | sed 's/^/    /' || true
             log "  Latest offsite snapshot:"
             restic snapshots --latest 1 2>/dev/null | tail -3 || true
         else
