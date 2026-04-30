@@ -6,8 +6,7 @@ services:
     environment:
       - TZ=America/Chicago
     volumes:
-      - /mnt/plex01/audiobooks:/audiobooks
-      - /mnt/plex02/audiobooks:/audiobooks2
+      - /mnt/media/audiobooks:/audiobooks
       - ./config:/config
       - ./metadata:/metadata
     ports:

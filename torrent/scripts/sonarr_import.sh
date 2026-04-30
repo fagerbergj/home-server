@@ -14,8 +14,8 @@
 #   --series-id ID   Sonarr series ID (avoids ambiguous name matches)
 #
 # Examples:
-#   sonarr_import.sh --api-key abc123 --series "Naruto" /mnt/plex01/downloads/Naruto
-#   sonarr_import.sh --apply --api-key abc123 --series-id 26 /mnt/plex01/downloads/Naruto
+#   sonarr_import.sh --api-key abc123 --series "Naruto" /mnt/media/downloads/Naruto
+#   sonarr_import.sh --apply --api-key abc123 --series-id 26 /mnt/media/downloads/Naruto
 
 set -euo pipefail
 
@@ -262,7 +262,7 @@ trap 'rm -f "$tmp_payload"' EXIT
 
 # importMode: 0=Auto — Sonarr hardlinks the file (same filesystem) then deletes the source.
 # Requires plex-rw group write permission on the source directory so Sonarr can delete.
-# Fix existing dirs: sudo chmod -R g+w /mnt/plex01/downloads/ /mnt/plex02/downloads/
+# Fix existing dirs: sudo chmod -R g+w /mnt/media/downloads/
 echo "$import_files_json" | jq \
     '{"name": "ManualImport", "files": ., "importMode": 0}' > "$tmp_payload"
 

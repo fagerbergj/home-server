@@ -618,9 +618,14 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_read_bytes_total{device=~\"sd[a-e]|nvme0n1\"}[5m]),\"device\",\"personal01-a\",\"device\",\"sda\"),\"device\",\"personal01-b\",\"device\",\"sdb\"),\"device\",\"plex02\",\"device\",\"sdc\"),\"device\",\"plex03\",\"device\",\"sdd\"),\"device\",\"plex01\",\"device\",\"sde\"),\"device\",\"OS\",\"device\",\"nvme0n1\")",
-          "legendFormat": "{{device}}",
+          "expr": "rate(node_zfs_zpool_nread[5m])",
+          "legendFormat": "{{zpool}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(node_disk_read_bytes_total{device=\"nvme0n1\"}[5m])",
+          "legendFormat": "OS",
+          "refId": "B"
         }
       ]
     },
@@ -664,9 +669,14 @@
       },
       "targets": [
         {
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(rate(node_disk_written_bytes_total{device=~\"sd[a-e]|nvme0n1\"}[5m]),\"device\",\"personal01-a\",\"device\",\"sda\"),\"device\",\"personal01-b\",\"device\",\"sdb\"),\"device\",\"plex02\",\"device\",\"sdc\"),\"device\",\"plex03\",\"device\",\"sdd\"),\"device\",\"plex01\",\"device\",\"sde\"),\"device\",\"OS\",\"device\",\"nvme0n1\")",
-          "legendFormat": "{{device}}",
+          "expr": "rate(node_zfs_zpool_nwritten[5m])",
+          "legendFormat": "{{zpool}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(node_disk_written_bytes_total{device=\"nvme0n1\"}[5m])",
+          "legendFormat": "OS",
+          "refId": "B"
         }
       ]
     },
@@ -826,24 +836,28 @@
                     "type": "value",
                     "options": {
                       "sda": {
-                        "text": "personal01-a",
+                        "text": "media-1",
                         "index": 0
                       },
                       "sdb": {
-                        "text": "personal01-b",
+                        "text": "media-2",
                         "index": 1
                       },
                       "sdc": {
-                        "text": "plex02",
+                        "text": "media-3",
                         "index": 2
                       },
                       "sdd": {
-                        "text": "plex03",
+                        "text": "media-4",
                         "index": 3
                       },
                       "sde": {
-                        "text": "plex01",
+                        "text": "personal-a",
                         "index": 4
+                      },
+                      "sdf": {
+                        "text": "personal-b",
+                        "index": 5
                       }
                     }
                   }

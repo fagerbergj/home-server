@@ -3,7 +3,7 @@
 ## First Run
 
 ```bash
-mkdir -p /mnt/plex01/audiobooks
+mkdir -p /mnt/media/audiobooks
 docker compose up -d
 ```
 
@@ -21,4 +21,4 @@ Add a proxy host in NPM (http://\<server-local-ip\>:81):
 
 ## Adding Audiobooks
 
-Drop files into `/mnt/plex01/audiobooks` then add the library in the UI at `https://books.jasonfagerberg.duckdns.org`.
+Drop files into `/mnt/media/audiobooks` then add the library in the UI at `https://books.jasonfagerberg.duckdns.org`.

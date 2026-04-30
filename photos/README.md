@@ -27,8 +27,8 @@ GPU is only used during indexing (initial library scan and new photo processing)
 
 | Data | Location | Notes |
 |------|----------|-------|
-| Photos | `/mnt/personal01/photos` | On RAID — protected against single drive failure |
-| Database | `photos/postgres/` | On OS SSD — fast, acceptable to lose (rebuilds from photos) |
+| Photos | `/mnt/personal/photos` | ZFS mirror — protected against single drive failure, snapshotted by `zfs-auto-snapshot` |
+| Database | `photos/postgres/` | On OS NVMe — fast, acceptable to lose (rebuilds from photos) |
 
 ## Backups
 

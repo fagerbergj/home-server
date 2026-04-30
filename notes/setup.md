@@ -20,9 +20,9 @@ This generates `RMFAKECLOUD_JWT_SECRET_KEY` and `COUCHDB_PASSWORD`. Safe to re-r
 ## 3. Create the vault directory
 
 ```bash
-sudo mkdir -p /mnt/personal01/obsidian-vault/remarkable
-sudo chown -R jason-server:personal-rw /mnt/personal01/obsidian-vault
-sudo chmod -R 2775 /mnt/personal01/obsidian-vault
+sudo mkdir -p /mnt/personal/obsidian-vault/remarkable
+sudo chown -R jason-server:personal-rw /mnt/personal/obsidian-vault
+sudo chmod -R 2775 /mnt/personal/obsidian-vault
 ```
 
 ## 4. Set up Open WebUI knowledge collection

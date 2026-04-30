@@ -62,6 +62,7 @@ services:
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
       - /mnt/plex01:/mnt/plex01
       - /mnt/plex02:/mnt/plex02
+      - /mnt/media:/mnt/media
     mem_limit: 4g
     restart: unless-stopped
 
@@ -76,6 +77,7 @@ services:
       - ./sonarr/config:/config
       - /mnt/plex01:/mnt/plex01
       - /mnt/plex02:/mnt/plex02
+      - /mnt/media:/mnt/media
     ports:
       - "8989:8989"
     restart: unless-stopped
@@ -91,6 +93,7 @@ services:
       - ./radarr/config:/config
       - /mnt/plex01:/mnt/plex01
       - /mnt/plex02:/mnt/plex02
+      - /mnt/media:/mnt/media
     ports:
       - "7878:7878"
     restart: unless-stopped

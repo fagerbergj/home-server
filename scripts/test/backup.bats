@@ -32,8 +32,8 @@ setup() {
     echo 'AUTHENTIK_DB_NAME=authentik' >> "$REPO_ROOT/.env"
     echo 'AUTHENTIK_DB_PASSWORD=secret' >> "$REPO_ROOT/.env"
 
-    # Fake personal01 mount
-    mkdir -p "$TEST_DIR/mnt/personal01"
+    # Fake personal mount
+    mkdir -p "$TEST_DIR/mnt/personal"
 
     # Stub bin — put stubs before real commands on PATH
     STUB_BIN="$TEST_DIR/bin"
@@ -96,7 +96,7 @@ EOF
     cp "$(dirname "$BATS_TEST_FILENAME")/../backup.sh" "$SCRIPT"
 
     # Patch hardcoded paths so tests are hermetic
-    sed -i "s|/mnt/personal01|$TEST_DIR/mnt/personal01|g" "$SCRIPT"
+    sed -i "s|/mnt/personal|$TEST_DIR/mnt/personal|g" "$SCRIPT"
     sed -i "s|/etc/fstab|$TEST_DIR/etc/fstab|g" "$SCRIPT"
     sed -i "s|/etc/mdadm/mdadm.conf|$TEST_DIR/etc/mdadm/mdadm.conf|g" "$SCRIPT"
     chmod +x "$SCRIPT"
@@ -108,11 +108,11 @@ teardown() {
 
 # ── Preflight checks ──────────────────────────────────────────────────────
 
-@test "fails if personal01 is not mounted" {
-    rmdir "$TEST_DIR/mnt/personal01"
+@test "fails if personal is not mounted" {
+    rmdir "$TEST_DIR/mnt/personal"
     run bash "$REPO_ROOT/scripts/backup.sh"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"personal01 is not mounted"* ]]
+    [[ "$output" == *"personal is not mounted"* ]]
 }
 
 @test "fails if .env is missing" {
@@ -129,12 +129,12 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
-@test "creates a dated backup directory under personal01" {
+@test "creates a dated backup directory under personal" {
     run bash "$REPO_ROOT/scripts/backup.sh"
     [ "$status" -eq 0 ]
     local today
     today="$(date +%Y-%m-%d)"
-    [ -d "$TEST_DIR/mnt/personal01/backups/$today" ]
+    [ -d "$TEST_DIR/mnt/personal/backups/$today" ]
 }
 
 # ── rsync calls ───────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ teardown() {
     run bash "$REPO_ROOT/scripts/backup.sh"
     local today
     today="$(date +%Y-%m-%d)"
-    [ -f "$TEST_DIR/mnt/personal01/backups/$today/immich-postgres.dump" ]
+    [ -f "$TEST_DIR/mnt/personal/backups/$today/immich-postgres.dump" ]
 }
 
 @test "calls save-all on minecraft container before rsync" {
@@ -249,7 +249,7 @@ teardown() {
     run bash "$REPO_ROOT/scripts/backup.sh"
     local today
     today="$(date +%Y-%m-%d)"
-    [ -f "$TEST_DIR/mnt/personal01/backups/$today/authentik-postgres.dump" ]
+    [ -f "$TEST_DIR/mnt/personal/backups/$today/authentik-postgres.dump" ]
 }
 
 @test "rsyncs authentik media" {
@@ -265,7 +265,7 @@ teardown() {
 # ── Retention ─────────────────────────────────────────────────────────────
 
 @test "keeps only 3 most recent backups" {
-    local base="$TEST_DIR/mnt/personal01/backups"
+    local base="$TEST_DIR/mnt/personal/backups"
     # Pre-create 4 old dated directories
     mkdir -p "$base/2026-01-01" "$base/2026-01-02" "$base/2026-01-03" "$base/2026-01-04"
     run bash "$REPO_ROOT/scripts/backup.sh"
@@ -277,7 +277,7 @@ teardown() {
 }
 
 @test "removes oldest backup when over limit" {
-    local base="$TEST_DIR/mnt/personal01/backups"
+    local base="$TEST_DIR/mnt/personal/backups"
     mkdir -p "$base/2026-01-01" "$base/2026-01-02" "$base/2026-01-03"
     run bash "$REPO_ROOT/scripts/backup.sh"
     [ "$status" -eq 0 ]
@@ -286,7 +286,7 @@ teardown() {
 }
 
 @test "does not prune when under limit" {
-    local base="$TEST_DIR/mnt/personal01/backups"
+    local base="$TEST_DIR/mnt/personal/backups"
     mkdir -p "$base/2026-01-01" "$base/2026-01-02"
     run bash "$REPO_ROOT/scripts/backup.sh"
     [ "$status" -eq 0 ]
@@ -329,7 +329,7 @@ teardown() {
     [ "$status" -eq 0 ]
     local today
     today="$(date +%Y-%m-%d)"
-    [ -f "$TEST_DIR/mnt/personal01/backups/$today/env.gpg" ]
+    [ -f "$TEST_DIR/mnt/personal/backups/$today/env.gpg" ]
 }
 
 # ── System config ─────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ teardown() {
     [ "$status" -eq 0 ]
     local today
     today="$(date +%Y-%m-%d)"
-    [ -f "$TEST_DIR/mnt/personal01/backups/$today/system/fstab" ]
+    [ -f "$TEST_DIR/mnt/personal/backups/$today/system/fstab" ]
 }
 
 @test "copies mdadm.conf to backup directory when present" {
@@ -347,5 +347,5 @@ teardown() {
     [ "$status" -eq 0 ]
     local today
     today="$(date +%Y-%m-%d)"
-    [ -f "$TEST_DIR/mnt/personal01/backups/$today/system/mdadm.conf" ]
+    [ -f "$TEST_DIR/mnt/personal/backups/$today/system/mdadm.conf" ]
 }

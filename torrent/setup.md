@@ -41,8 +41,8 @@ In Options > Downloads, set the default save path and per-category paths:
 
 | Content | Path |
 |---------|------|
-| Movies | `/mnt/plex01/movies` |
-| TV | `/mnt/plex01/shows` |
+| Movies | `/mnt/media/movies` |
+| TV | `/mnt/media/shows` |
 
 ## 7. Configure Sonarr (TV shows)
 
@@ -57,9 +57,7 @@ Settings > Download Clients > + > qBittorrent
 - Test and save.
 
 **Root folders:**
-Settings > Media Management > Root Folders > + `/mnt/plex01/shows`
-
-Optionally add `/mnt/plex02/shows` as a second root folder to allow offloading older shows.
+Settings > Media Management > Root Folders > + `/mnt/media/shows`
 
 Note: indexers are synced automatically from Prowlarr — no need to add them manually here.
 
@@ -71,7 +69,7 @@ Open `http://192.168.50.186:7878`. Same steps as Sonarr:
 
 **Download client:** same settings, category: `radarr`
 
-**Root folders:** `/mnt/plex01/movies` (and optionally `/mnt/plex02/movies`)
+**Root folders:** `/mnt/media/movies`
 
 Note: indexers are synced automatically from Prowlarr.
 
@@ -79,7 +77,7 @@ Note: indexers are synced automatically from Prowlarr.
 
 ## 9. Update qBittorrent download path
 
-In qBittorrent: Options > Downloads > Default Save Path → `/mnt/plex01/downloads/`
+In qBittorrent: Options > Downloads > Default Save Path → `/mnt/media/downloads/`
 
 Sonarr and Radarr override this per-category automatically, so existing categories (`movies`, `tv`) don't need manual changes — Sonarr/Radarr will reconfigure them on first use.
 

@@ -1,6 +1,6 @@
 # Plex Media Server
 
-Runs via Docker using the [linuxserver/plex](https://hub.docker.com/r/linuxserver/plex) image. Media lives on `/mnt/plex01` (and optionally `/mnt/plex02`), mounted as read-only volumes.
+Runs via Docker using the [linuxserver/plex](https://hub.docker.com/r/linuxserver/plex) image. Media lives on the `media` ZFS pool at `/mnt/media`, mounted read-only via the `plex-ro` group.
 
 ## Access
 
@@ -12,10 +12,9 @@ http://192.168.50.186:32400/web
 
 | Library | Path |
 |---------|------|
-| Movies | `/mnt/plex01/movies` |
-| TV Shows | `/mnt/plex01/shows` |
-| plex02 Movies | `/mnt/plex02/movies` (if present) |
-| plex02 TV Shows | `/mnt/plex02/shows` (if present) |
+| Movies | `/mnt/media/movies` |
+| TV Shows | `/mnt/media/shows` |
+| Audiobooks | `/mnt/media/audiobooks` |
 
 ## Hardware Transcoding
 

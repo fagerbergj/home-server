@@ -23,7 +23,9 @@ setup() {
     # into our TEST_DIR tree.
     SCRIPT="$TEST_DIR/phase4-detect-drives.sh"
     cp "$SRC_SCRIPT" "$SCRIPT"
-    sed -i "s|/dev/disk/by-id/ata-\\*|$TEST_DIR/by-id/ata-*|g" "$SCRIPT"
+    # The script globs /dev/disk/by-id/${prefix}* with prefix in {ata-, scsi-SATA_, wwn-}.
+    # Redirect that whole prefix list into our sandbox.
+    sed -i "s|/dev/disk/by-id/\\\${prefix}\\*|$TEST_DIR/by-id/\${prefix}*|g" "$SCRIPT"
     sed -i "s|\"/dev/\\\$dev\"|\"$TEST_DIR/dev/\$dev\"|g" "$SCRIPT"
     # ↑ both in `readlink` comparison and in the fallback-by_id assignment
     chmod +x "$SCRIPT"
@@ -37,11 +39,13 @@ teardown() {
 # Helpers
 # ---------------------------------------------------------------------------
 
-# make_disk <name> <size_gb> — create fake /dev/<name> + by-id symlink
+# make_disk <name> <size_gb> [prefix] — create fake /dev/<name> + by-id symlink.
+# Default prefix is ata-, override to scsi-SATA_ to simulate drives behind the
+# LSI HBA.
 make_disk() {
-    local name="$1" size_gb="$2"
+    local name="$1" size_gb="$2" prefix="${3:-ata-}"
     touch "$TEST_DIR/dev/$name"
-    ln -sf "$TEST_DIR/dev/$name" "$TEST_DIR/by-id/ata-MODEL-${name}-SERIAL"
+    ln -sf "$TEST_DIR/dev/$name" "$TEST_DIR/by-id/${prefix}MODEL-${name}-SERIAL"
 }
 
 # Writes an lsblk stub that handles both modes used by the script:
@@ -238,6 +242,34 @@ gb_bytes() { echo $(( $1 * 1000 * 1000 * 1000 )); }
     [ "$status" -ne 0 ]
     [[ "$output" == *"expected 2 personal_pool drives"* ]]
     [ -f "$TEST_DIR/drives.json" ]
+}
+
+@test "resolves drives behind the HBA via scsi-SATA_* symlinks" {
+    make_lsblk_stub
+    # Mix: media drives behind HBA (scsi-SATA_), personal on motherboard SATA (ata-)
+    for d in sdb sdc sdd sde; do make_disk "$d" 26000 "scsi-SATA_"; done
+    for d in sdf sdg;          do make_disk "$d" 8000 "ata-";        done
+    {
+        echo "sda  $(gb_bytes 500) disk"
+        echo "sdb  $(gb_bytes 26000) disk"
+        echo "sdc  $(gb_bytes 26000) disk"
+        echo "sdd  $(gb_bytes 26000) disk"
+        echo "sde  $(gb_bytes 26000) disk"
+        echo "sdf  $(gb_bytes 8000) disk"
+        echo "sdg  $(gb_bytes 8000) disk"
+    } > "$TEST_DIR/lsblk.disks"
+
+    run "$SCRIPT"
+    [ "$status" -eq 0 ]
+
+    run jq -r '.media_pool.devices[]' "$TEST_DIR/drives.json"
+    for line in $output; do
+        [[ "$line" == *"/by-id/scsi-SATA_MODEL-"* ]] || fail "media drive not resolved to scsi-SATA_: $line"
+    done
+    run jq -r '.personal_pool.devices[]' "$TEST_DIR/drives.json"
+    for line in $output; do
+        [[ "$line" == *"/by-id/ata-MODEL-"* ]] || fail "personal drive not resolved to ata-: $line"
+    done
 }
 
 @test "drives outside both size buckets are reported as unassigned" {

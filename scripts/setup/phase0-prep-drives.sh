@@ -1,47 +1,51 @@
 #!/bin/bash
-# Phase 0 — Prepare drives with GPT partition tables
+# Phase 0 — Wipe non-OS drives so phase4-drives.sh can claim them whole-disk
+# for ZFS.
+#
+# `zpool create` will refuse a disk that already carries a filesystem, RAID,
+# or partition signature unless you pass -f. Force-overriding is fine on a
+# clean build but masks "wait, I plugged in the wrong disk" mistakes — so the
+# safer default is to make the operator wipe explicitly here, then let phase4
+# create pools without -f.
+#
+# On brand-new drives this is a no-op. On recertified drives or drives moved
+# from a previous server it removes the leftover ext4/mdraid/zfs labels.
 set -euo pipefail
 
-echo "=== Phase 0: Drive Preparation ==="
+echo "=== Phase 0: Drive Wipe ==="
 echo ""
 
-# Find the OS drive
 OS_DEV=$(lsblk -no pkname "$(findmnt -n -o SOURCE /)")
 
-echo "Scanning drives..."
-echo ""
-
-DRIVES_TO_PREP=()
+DRIVES_TO_WIPE=()
 
 while IFS= read -r line; do
     dev=$(echo "$line" | awk '{print $1}')
-    size_human=$(lsblk -d -o NAME,SIZE | grep "^$dev" | awk '{print $2}')
+    size_human=$(lsblk -d -o NAME,SIZE | grep "^$dev " | awk '{print $2}')
 
     if [[ "$dev" == "$OS_DEV" ]]; then
         printf "%-10s %s  <-- OS drive (skipping)\n" "/dev/$dev" "$size_human"
         continue
     fi
 
-    # Check if drive already has a partition table
-    part_table=$(sudo parted "/dev/$dev" print 2>&1 | grep "Partition Table:" | awk '{print $3}' || true)
-
-    if [[ "$part_table" == "unknown" || -z "$part_table" ]]; then
-        printf "%-10s %s  <-- no partition table, will prep\n" "/dev/$dev" "$size_human"
-        DRIVES_TO_PREP+=("$dev")
+    sigs=$(sudo wipefs -n "/dev/$dev" 2>/dev/null | wc -l)
+    if (( sigs > 0 )); then
+        printf "%-10s %s  <-- has %d signature(s), will wipe\n" "/dev/$dev" "$size_human" "$sigs"
+        DRIVES_TO_WIPE+=("$dev")
     else
-        printf "%-10s %s  <-- already has partition table ($part_table), skipping\n" "/dev/$dev" "$size_human"
+        printf "%-10s %s  <-- already clean, skipping\n" "/dev/$dev" "$size_human"
     fi
 done < <(lsblk -d -b -o NAME,SIZE | tail -n +2 | grep -v loop | sort -k2 -rn)
 
 echo ""
 
-if [[ ${#DRIVES_TO_PREP[@]} -eq 0 ]]; then
-    echo "All non-OS drives already have partition tables. Nothing to do."
+if (( ${#DRIVES_TO_WIPE[@]} == 0 )); then
+    echo "All non-OS drives are already clean. Nothing to do."
     exit 0
 fi
 
-echo "Drives to prep: ${DRIVES_TO_PREP[*]}"
-echo "WARNING: This will create a new GPT partition table on each drive listed above."
+echo "Drives to wipe: ${DRIVES_TO_WIPE[*]}"
+echo "WARNING: this destroys filesystem/RAID signatures on each drive listed above."
 read -rp "Continue? (yes/no): " CONFIRM
 if [[ "$CONFIRM" != "yes" ]]; then
     echo "Aborted."
@@ -49,13 +53,13 @@ if [[ "$CONFIRM" != "yes" ]]; then
 fi
 echo ""
 
-for dev in "${DRIVES_TO_PREP[@]}"; do
-    echo "Prepping /dev/$dev..."
-    sudo parted -s "/dev/$dev" mklabel gpt
-    sudo parted -s -a optimal "/dev/$dev" mkpart primary ext4 0% 100%
-    echo "  /dev/${dev}1 created."
+for dev in "${DRIVES_TO_WIPE[@]}"; do
+    echo "Wiping /dev/$dev..."
+    sudo wipefs -a "/dev/$dev"
+    # Belt-and-braces: sgdisk zaps both primary and backup GPT headers.
+    sudo sgdisk --zap-all "/dev/$dev" >/dev/null
 done
 
 echo ""
 echo "=== Phase 0 complete ==="
-echo "Run phase4-drives.sh to format and mount drives."
+echo "Run scripts/setup/phase4-detect-drives.sh next."

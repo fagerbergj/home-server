@@ -9,7 +9,7 @@ External: `https://books.jasonfagerberg.duckdns.org`
 
 ## Media
 
-Audiobooks: `/mnt/plex01/audiobooks`, `/mnt/plex02/audiobooks`
+Audiobooks: `/mnt/media/audiobooks`
 
 ## Updating
 

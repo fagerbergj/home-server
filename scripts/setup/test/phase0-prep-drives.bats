@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 
-# Tests for phase0-prep-drives.sh
-# Mocks all destructive system commands — safe to run on any machine
+# Tests for phase0-prep-drives.sh (ZFS-era wipe flow).
+# Mocks lsblk/findmnt/wipefs/sgdisk so destructive commands never touch the
+# real system.
 
 SCRIPT="$BATS_TEST_DIRNAME/../phase0-prep-drives.sh"
 
@@ -10,7 +11,6 @@ setup() {
     export PATH="$TMPDIR/bin:$PATH"
     mkdir -p "$TMPDIR/bin"
 
-    # Mock lsblk
     cat > "$TMPDIR/bin/lsblk" <<'EOF'
 #!/bin/bash
 if [[ "$*" == *"-d -b -o NAME,SIZE"* ]]; then
@@ -29,31 +29,35 @@ fi
 EOF
     chmod +x "$TMPDIR/bin/lsblk"
 
-    # Mock findmnt
     cat > "$TMPDIR/bin/findmnt" <<'EOF'
 #!/bin/bash
 echo "/dev/nvme0n1p3"
 EOF
     chmod +x "$TMPDIR/bin/findmnt"
 
-    # Mock sudo — run the command without sudo
     cat > "$TMPDIR/bin/sudo" <<'EOF'
 #!/bin/bash
 "$@" 2>/dev/null || true
 EOF
     chmod +x "$TMPDIR/bin/sudo"
 
-    # Default parted mock — drives have no partition table
-    cat > "$TMPDIR/bin/parted" <<'EOF'
+    # Default: every drive has signatures (wipefs -n prints lines)
+    cat > "$TMPDIR/bin/wipefs" <<'EOF'
 #!/bin/bash
-if [[ "$*" == *"print"* ]]; then
-    dev=$(echo "$*" | grep -o '/dev/[^ ]*')
-    echo "Partition Table: unknown"
-else
-    echo "parted called with: $*"
+echo "wipefs called with: $*" >> "$TMPDIR/wipefs.calls"
+if [[ "$1" == "-n" ]]; then
+    echo "DEVICE OFFSET TYPE UUID LABEL"
+    echo "fake   0      ext4 abcd  -"
+    exit 0
 fi
 EOF
-    chmod +x "$TMPDIR/bin/parted"
+    chmod +x "$TMPDIR/bin/wipefs"
+
+    cat > "$TMPDIR/bin/sgdisk" <<'EOF'
+#!/bin/bash
+echo "sgdisk called with: $*" >> "$TMPDIR/sgdisk.calls"
+EOF
+    chmod +x "$TMPDIR/bin/sgdisk"
 }
 
 teardown() {
@@ -65,10 +69,10 @@ teardown() {
     [[ "$output" == *"nvme0n1"*"OS drive (skipping)"* ]]
 }
 
-@test "identifies unpartitioned drives for prep" {
+@test "identifies drives with signatures for wiping" {
     run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sda"*"no partition table, will prep"* ]]
-    [[ "$output" == *"sdb"*"no partition table, will prep"* ]]
+    [[ "$output" == *"sda"*"will wipe"* ]]
+    [[ "$output" == *"sdb"*"will wipe"* ]]
 }
 
 @test "aborts when user enters 'no'" {
@@ -76,46 +80,55 @@ teardown() {
     [[ "$output" == *"Aborted"* ]]
 }
 
-@test "skips already-partitioned drives" {
-    # Override parted to report gpt for sdb
-    cat > "$TMPDIR/bin/parted" <<'EOF'
+@test "skips already-clean drives" {
+    # Override wipefs -n to report no signatures for sdb
+    cat > "$TMPDIR/bin/wipefs" <<'EOF'
 #!/bin/bash
-if [[ "$*" == *"print"* ]]; then
+echo "wipefs called with: $*" >> "$TMPDIR/wipefs.calls"
+if [[ "$1" == "-n" ]]; then
     if [[ "$*" == *"sdb"* ]]; then
-        echo "Partition Table: gpt"
-    else
-        echo "Partition Table: unknown"
+        # Empty output = no signatures
+        exit 0
     fi
-else
-    echo "parted called with: $*"
+    echo "DEVICE OFFSET TYPE UUID LABEL"
+    echo "fake   0      ext4 abcd  -"
+    exit 0
 fi
 EOF
     run bash -c "echo 'no' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"sdb"*"already has partition table"* ]]
-    [[ "$output" == *"sda"*"no partition table, will prep"* ]]
+    [[ "$output" == *"sdb"*"already clean"* ]]
+    [[ "$output" == *"sda"*"will wipe"* ]]
 }
 
-@test "exits cleanly when all drives already partitioned" {
-    cat > "$TMPDIR/bin/parted" <<'EOF'
+@test "exits cleanly when all non-OS drives already clean" {
+    cat > "$TMPDIR/bin/wipefs" <<'EOF'
 #!/bin/bash
-if [[ "$*" == *"print"* ]]; then
-    echo "Partition Table: gpt"
-else
-    echo "parted called with: $*"
-fi
+if [[ "$1" == "-n" ]]; then exit 0; fi
 EOF
     run bash "$SCRIPT"
     [[ "$status" -eq 0 ]]
     [[ "$output" == *"Nothing to do"* ]]
 }
 
-@test "calls parted to create GPT and partition on unpartitioned drives" {
+@test "calls wipefs -a on dirty drives after confirmation" {
     run bash -c "echo 'yes' | bash $SCRIPT" 2>&1 || true
-    [[ "$output" == *"parted called with"*"mklabel gpt"* ]]
-    [[ "$output" == *"parted called with"*"mkpart"* ]]
+    grep -q "wipefs called with: -a /dev/sda" "$TMPDIR/wipefs.calls"
+    grep -q "wipefs called with: -a /dev/sdb" "$TMPDIR/wipefs.calls"
 }
 
-@test "reports completion after prepping drives" {
+@test "calls sgdisk --zap-all on dirty drives after confirmation" {
+    run bash -c "echo 'yes' | bash $SCRIPT" 2>&1 || true
+    grep -q "sgdisk called with: --zap-all /dev/sda" "$TMPDIR/sgdisk.calls"
+    grep -q "sgdisk called with: --zap-all /dev/sdb" "$TMPDIR/sgdisk.calls"
+}
+
+@test "does not invoke wipefs -a or sgdisk on the OS drive" {
+    run bash -c "echo 'yes' | bash $SCRIPT" 2>&1 || true
+    ! grep -q "wipefs called with: -a /dev/nvme0n1" "$TMPDIR/wipefs.calls"
+    ! grep -q "sgdisk called with: --zap-all /dev/nvme0n1" "$TMPDIR/sgdisk.calls"
+}
+
+@test "reports completion after wiping drives" {
     run bash -c "echo 'yes' | bash $SCRIPT" 2>&1 || true
     [[ "$output" == *"Phase 0 complete"* ]]
 }

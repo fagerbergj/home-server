@@ -225,7 +225,7 @@ services:
       shared-postgres:
         condition: service_healthy
     volumes:
-      - /mnt/personal01/documents:/vault
+      - /mnt/personal/documents:/vault
       - remarkable-bridge-data:/data
     networks:
       - default

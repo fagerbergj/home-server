@@ -60,22 +60,27 @@ while IFS= read -r line; do
 done < <(lsblk -d -b -n -o NAME,SIZE,TYPE)
 
 # ---------------------------------------------------------------------------
-# Resolve /dev/sdX → /dev/disk/by-id/ata-*
+# Resolve /dev/sdX → /dev/disk/by-id/{ata,scsi-SATA}-*
 # ---------------------------------------------------------------------------
 
-# Prefer ata-* over wwn-*: human-readable (model + serial) and stable.
+# Drives on the LSI 9300-16i HBA enumerate via mpt3sas as SCSI, so the kernel
+# emits scsi-SATA_<model>_<serial> symlinks instead of ata-*. Both encode model
+# + serial — equally stable. Prefer ata-* when available, fall back to
+# scsi-SATA_*. wwn-* is also stable but not human-readable, so it's last.
 by_id_for() {
     local dev="$1"
     local link target found=""
-    for link in /dev/disk/by-id/ata-*; do
-        [[ -e "$link" ]] || continue
-        target=$(readlink -f "$link")
-        if [[ "$target" == "/dev/$dev" ]]; then
+    for prefix in ata- scsi-SATA_ wwn-; do
+        for link in /dev/disk/by-id/${prefix}*; do
+            [[ -e "$link" ]] || continue
             # Skip -partN symlinks, we want the whole-disk one.
             [[ "$link" == *-part* ]] && continue
-            found="$link"
-            break
-        fi
+            target=$(readlink -f "$link")
+            if [[ "$target" == "/dev/$dev" ]]; then
+                found="$link"
+                break 2
+            fi
+        done
     done
     echo "$found"
 }

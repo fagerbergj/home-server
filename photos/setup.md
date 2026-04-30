@@ -13,8 +13,8 @@ Make sure `scripts/setup/phase4-ids.sh` has been run — it fills in `PUID` and 
 ## 2. Create the photo directory
 
 ```bash
-sudo mkdir -p /mnt/personal01/photos
-sudo chown immich:personal-rw /mnt/personal01/photos
+sudo mkdir -p /mnt/personal/photos
+sudo chown immich:personal-rw /mnt/personal/photos
 ```
 
 ## 3. Start all services

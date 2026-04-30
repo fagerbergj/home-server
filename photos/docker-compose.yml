@@ -23,7 +23,7 @@ services:
               count: all
               capabilities: [gpu, compute, video]
     volumes:
-      - /mnt/personal01/photos:/usr/src/app/upload
+      - /mnt/personal/photos:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       - redis

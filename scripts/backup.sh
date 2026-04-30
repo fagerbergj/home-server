@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# backup.sh — backs up key service data to /mnt/personal01/backups
+# backup.sh — backs up key service data to /mnt/personal/backups
 #
 # What gets backed up:
 #   - Vaultwarden (passwords)       passwords/data/
@@ -20,8 +20,8 @@
 #   - System config                 /etc/fstab, /etc/mdadm/mdadm.conf
 #   - Root crontab
 #
-# Photos are already on personal01 — no need to back them up.
-# Plex/audiobook media files are on plex01/plex02 — not backed up here.
+# Photos are already on the personal pool — no need to back them up.
+# Plex/audiobook media files live on the media pool — not backed up here.
 #
 # .env is encrypted with gpg before writing. Requires GPG_RECIPIENT in .env
 # or set in environment. Falls back to symmetric encryption if not set.
@@ -35,7 +35,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEST="/mnt/personal01/backups/$(date +%Y-%m-%d)"
+DEST="/mnt/personal/backups/$(date +%Y-%m-%d)"
 ENV_FILE="$REPO_ROOT/.env"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
@@ -43,7 +43,7 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 # ── Preflight ──────────────────────────────────────────────────────────────
 
-[[ -d /mnt/personal01 ]] || die "/mnt/personal01 is not mounted"
+[[ -d /mnt/personal ]] || die "/mnt/personal is not mounted"
 [[ -f "$ENV_FILE" ]] || die ".env not found at $ENV_FILE"
 
 # Load DB credentials from .env
@@ -159,7 +159,7 @@ ls -lh "$DEST"
 
 # ── Retention — keep only the 3 most recent backups ───────────────────────
 
-BACKUP_ROOT="/mnt/personal01/backups"
+BACKUP_ROOT="/mnt/personal/backups"
 MAX_BACKUPS=3
 
 mapfile -t OLD_BACKUPS < <(ls -1d "$BACKUP_ROOT"/????-??-?? 2>/dev/null | sort | head -n -$MAX_BACKUPS)

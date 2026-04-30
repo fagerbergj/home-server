@@ -2,36 +2,18 @@
 
 End-to-end setup for the home server. Follow phases in order.
 
-## Phase 0 — Before You Build: Consolidate Media
+## Phase 0 — Before You Build: Drive Inventory
 
-Do this on your current PC before moving any drives to the server.
+This guide assumes the target hardware in `hardware.md`:
 
-Current state:
-- ~500GB of media split across the ADATA SSD (`/mnt/ADATASSD`) and 1TB WD HDD (`/mnt/HDD`)
-- ~18GB of photos on `/media/jason/Removable Drive/Pictures` — safe, not moving to server until after RAID 1 is set up
-- 4TB Seagate, 1TB Seagate, and Define R5 case purchased and arriving
-- StarTech USB-C to SATA adapter purchased for connecting the 4TB externally
+- **500GB NVMe (M.2)** → OS drive (`nvme0n1`) — Ubuntu Server 24.04 LTS + Docker
+- **4× 26TB Seagate Exos `ST26000NM000C`** → `media` ZFS pool (RAIDZ2) at `/mnt/media`
+- **2× 8TB Dell `J7W80`** → `personal` ZFS pool (2-way mirror) at `/mnt/personal`
+- **LSI 9300-16i HBA (IT mode)** → all six HDDs hang off this card, in PCIEX1_4
 
-Steps:
-1. Connect the 4TB drive to your current PC using the StarTech USB-C to SATA adapter
-2. Copy all media from the ADATA onto the 4TB:
-   ```bash
-   rsync -av /mnt/ADATASSD/Videos/ /path/to/4tb/
-   ```
-3. Verify the copy looks complete before wiping anything
-4. The ADATA and 1TB WD are now clear and ready for their new roles
+Before starting, burn-in the new HDDs (`badblocks -wsv` for recertified, `smartctl -t long` for new) and pull SMART output for each. Any reallocated/pending/UDMA-CRC errors → RMA before pool creation. See `hardware_upgrades.md` for the full burn-in protocol.
 
-Photos will be copied to the server over SSH after RAID 1 is set up — see Phase 4.
-
-Drive assignments going into the build:
-- **500GB NVMe** → OS drive (Ubuntu Server 24.04 LTS + Docker) — `nvme0n1`
-- **596GB Hitachi HDD** → `/mnt/plex02` (non-critical/re-downloadable media)
-- **480GB ADATA SSD** → `/mnt/plex03` (non-critical/re-downloadable media — repurposed OS drive)
-- **4TB Seagate HDD** → `/mnt/plex01` (Plex movies/TV)
-- **1TB Seagate HDD** → RAID 1 primary for `/mnt/personal01`
-- **1TB WD HDD** → RAID 1 secondary for `/mnt/personal01`
-
-> **Original build note:** the server was initially set up with a 480GB ADATA SU650 SATA SSD as the OS drive. This was replaced with a 500GB NVMe in April 2026 after the SSD developed bad sectors. The ADATA was repurposed as plex03. See `hardware_upgrades.md` for the migration steps.
+> **Build history:** the server originally ran a mixed mdadm RAID 1 + bare-ext4 layout across an ADATA SSD, a 4TB Seagate Barracuda (DM-SMR — unsafe in any RAID), a 640GB Hitachi (41k hours), and 2× 1TB drives. It was migrated to the all-ZFS layout above in April 2026; see `hardware_upgrades.md` for the migration steps and rationale.
 
 ---
 
@@ -198,213 +180,152 @@ nvtop   # GPU utilization and VRAM usage
 
 ---
 
-## Phase 4 — Mount Drives
+## Phase 4 — Build ZFS Pools
 
-First, detect and assign drives:
+Install ZFS tooling first:
+```bash
+sudo apt update
+sudo apt install -y zfsutils-linux jq smartmontools
+zfs version   # must be >= 2.2
+```
+
+If any HDDs were previously used (recertified Exos, drives migrated from another box), wipe their existing filesystem/RAID/GPT signatures so `zpool create` can claim them whole-disk without `-f`:
+```bash
+sudo bash scripts/setup/phase0-prep-drives.sh
+```
+
+Detect and assign drives:
 ```bash
 sudo bash scripts/setup/phase4-detect-drives.sh
 ```
 
-This auto-detects all non-OS drives by size, assigns roles (plex01, plex02, personal01 RAID), and writes `scripts/setup/drives.json`. If plex01 already has a filesystem (coming from Phase 0), it sets `preserve: true` automatically — the drive won't be formatted.
+This buckets non-OS drives by size — 4 in the 24–28 TB range become `media_pool`, 2 in the 7–9 TB range become `personal_pool` — and resolves each to its `/dev/disk/by-id/{ata,scsi-SATA}-*` symlink (whichever the kernel emits; HBA-attached drives go through mpt3sas as `scsi-SATA_*`). Output is written to `scripts/setup/drives.json`.
 
-Review the config before proceeding:
+Review before proceeding:
 ```bash
 cat scripts/setup/drives.json
 ```
 
-Edit it if the assignments look wrong, then run:
+Then build the pools, datasets, users, groups, and permissions:
 ```bash
 sudo bash scripts/setup/phase4-drives.sh
 ```
 
-The script will prompt for confirmation, mount drives, create the RAID 1 array, wait for sync (~2 hours for 1TB), then set up service users, groups, and permissions. It prints the PUID/PGID values you'll need for docker-compose at the end.
+The script is idempotent — re-running it is safe. It prints the PUID/PGID values you'll need for docker-compose at the end.
 
 <details>
 <summary>Manual steps</summary>
 
-### Mount plex01
-
-> **If you completed Phase 0:** the 4TB drive already has your media — skip the format step.
+### Build the media pool (RAIDZ2, 4× 26TB)
 
 ```bash
-lsblk -f  # find device and existing UUID
+ls -l /dev/disk/by-id/ | grep -i ST26000
+
+sudo zpool create -o ashift=12 \
+  -O compression=lz4 \
+  -O atime=off \
+  -O xattr=sa \
+  -O acltype=posixacl \
+  -O recordsize=1M \
+  -O mountpoint=/mnt/media \
+  media raidz2 \
+    /dev/disk/by-id/scsi-SATA_ST26000NM000C-... \
+    /dev/disk/by-id/scsi-SATA_ST26000NM000C-... \
+    /dev/disk/by-id/scsi-SATA_ST26000NM000C-... \
+    /dev/disk/by-id/scsi-SATA_ST26000NM000C-...
+
+sudo mkdir -p /mnt/media/{movies,shows,audiobooks,downloads}
+sudo chown -R root:plex-rw /mnt/media
+sudo chmod -R 2775         /mnt/media
+sudo setfacl -R    -m g:plex-ro:rx /mnt/media
+sudo setfacl -R -d -m g:plex-ro:rx /mnt/media   # default ACL — new files inherit
 ```
 
-Format (**skip if coming from Phase 0**):
-```bash
-sudo mkfs.ext4 /dev/sdX1
-```
-
-Get UUID and add to fstab:
-```bash
-sudo blkid /dev/sdX1
-```
-
-```
-UUID=<uuid>   /mnt/plex01   ext4   defaults   0   2
-```
-
-```bash
-sudo mkdir -p /mnt/plex01
-sudo mount -a
-```
-
-### Mount plex02 (optional)
-
-If the 640GB Hitachi drive is present, mount it as `/mnt/plex02`. Use for non-critical, re-downloadable Plex media only — the drive has high hours.
+### Build the personal pool (2-way mirror, 2× 8TB)
 
 ```bash
-sudo mkfs.ext4 /dev/sdX1
-sudo mkdir -p /mnt/plex02
-sudo blkid /dev/sdX1
-# Add to /etc/fstab:
-UUID=<uuid>   /mnt/plex02   ext4   defaults   0   2
-sudo mount -a
+sudo zpool create -o ashift=12 \
+  -O compression=lz4 \
+  -O atime=off \
+  -O xattr=sa \
+  -O acltype=posixacl \
+  -O mountpoint=/mnt/personal \
+  personal mirror \
+    /dev/disk/by-id/scsi-SATA_ST8000NM023B-... \
+    /dev/disk/by-id/scsi-SATA_ST8000NM023B-...
+
+sudo zfs create personal/photos
+sudo zfs create personal/documents
+sudo zfs create personal/backups
+
+sudo chown -R root:personal-rw /mnt/personal
+sudo chmod -R 2775             /mnt/personal
 ```
 
-Set up folder structure and permissions (same pattern as plex01):
-```bash
-sudo mkdir -p /mnt/plex02/movies /mnt/plex02/shows /mnt/plex02/downloads
-sudo chown -R root:plex-rw /mnt/plex02
-sudo chmod -R 2775 /mnt/plex02
-sudo setfacl -R -m g:plex-ro:rx /mnt/plex02
-```
+ZFS auto-imports pools on boot via the cache file written by `zpool create` — no fstab entry needed.
 
-### Mount plex03 (optional — repurposed ADATA SSD)
-
-If the 480GB ADATA SSD is present (repurposed OS drive), mount it as `/mnt/plex03`. Re-downloadable media only — same policy as plex02.
-
-> Before mounting, run `badblocks -w` to force-remap any pending bad sectors (safe since it's freshly wiped):
-> ```bash
-> sudo badblocks -w -v /dev/sdX
-> ```
-
-```bash
-sudo mkfs.ext4 -L plex03 /dev/sdX1
-sudo mkdir -p /mnt/plex03
-sudo blkid /dev/sdX1
-# Add to /etc/fstab:
-UUID=<uuid>   /mnt/plex03   ext4   defaults   0   2
-sudo mount -a
-```
-
-Set up folder structure and permissions:
-```bash
-sudo mkdir -p /mnt/plex03/movies /mnt/plex03/shows /mnt/plex03/downloads
-sudo chown -R root:plex-rw /mnt/plex03
-sudo chmod -R 2775 /mnt/plex03
-sudo setfacl -R -m g:plex-ro:rx /mnt/plex03
-```
-
-### Set Up RAID 1 for personal01
-
-```bash
-sudo apt install -y mdadm
-lsblk  # identify the two 1TB drives
-```
-
-Create the array — put the new Seagate first (primary), old WD second:
-```bash
-sudo mdadm --create --force /dev/md0 --level=1 --raid-devices=2 /dev/sdX1 /dev/sdY1
-```
-
-Monitor sync (~2 hours):
-```bash
-watch cat /proc/mdstat
-```
-
-Format and mount once sync completes:
-```bash
-sudo mkfs.ext4 /dev/md0
-sudo mkdir -p /mnt/personal01
-sudo mount /dev/md0 /mnt/personal01
-```
-
-Save config and add to fstab:
-```bash
-sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf
-sudo update-initramfs -u
-sudo blkid /dev/md0
-# Add to /etc/fstab:
-UUID=<md0-uuid>   /mnt/personal01   ext4   defaults   0   2
-```
-
-Verify:
-```bash
-sudo mdadm --detail /dev/md0
-```
-
-Both drives should show `active sync`.
-
-### Service Users
+### Service users and groups
 
 ```bash
 # Create service users
-sudo useradd -r -s /sbin/nologin plex
-sudo useradd -r -s /sbin/nologin immich
-sudo useradd -r -s /sbin/nologin minecraft
-sudo useradd -r -s /sbin/nologin qbittorrent
-sudo useradd -r -s /sbin/nologin audiobookshelf
-sudo useradd -r -s /sbin/nologin sonarr
-sudo useradd -r -s /sbin/nologin radarr
+for u in plex immich minecraft qbittorrent audiobookshelf sonarr radarr; do
+  sudo useradd -r -s /sbin/nologin "$u"
+done
 
 # Create groups
-sudo groupadd plex-rw
-sudo groupadd plex-ro
-sudo groupadd personal-rw
-sudo groupadd personal-ro
+for g in plex-rw plex-ro personal-rw personal-ro; do
+  sudo groupadd "$g"
+done
 
 # Assign groups
-sudo usermod -aG plex-rw qbittorrent   # downloads to plex drive
-sudo usermod -aG plex-rw sonarr        # moves completed downloads to shows folder
-sudo usermod -aG plex-rw radarr        # moves completed downloads to movies folder
-sudo usermod -aG plex-rw jason-server  # manage plex drive directly
-sudo usermod -aG plex-ro plex          # plex reads media
-sudo usermod -aG plex-ro audiobookshelf  # audiobookshelf reads media
-sudo usermod -aG personal-rw immich    # immich writes photos
-sudo usermod -aG personal-rw jason-server  # manage personal drive directly
-```
-
-### Folder Structure and Permissions
-
-```bash
-sudo apt install -y acl
-
-# Plex drive
-sudo mkdir -p /mnt/plex01/movies /mnt/plex01/shows /mnt/plex01/audiobooks /mnt/plex01/downloads
-sudo chown -R root:plex-rw /mnt/plex01
-sudo chmod -R 2775 /mnt/plex01
-sudo setfacl -R -m g:plex-ro:rx /mnt/plex01
-
-# Personal drive
-sudo mkdir -p /mnt/personal01/photos
-sudo chown -R root:personal-rw /mnt/personal01
-sudo chmod -R 2775 /mnt/personal01
+sudo usermod -aG plex-rw     qbittorrent sonarr radarr jason-server
+sudo usermod -aG plex-ro     plex audiobookshelf
+sudo usermod -aG personal-rw immich jason-server
 ```
 
 </details>
 
-### Copy Photos to Server
+### Copy photos to server
 
-Once RAID 1 is set up and `/mnt/personal01` is mounted, copy photos from your main PC over SSH:
+Once `/mnt/personal/photos` exists, copy photos from your main PC over SSH:
 
 ```bash
 # Run on your main PC
-rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason-server@192.168.50.186:/mnt/personal01/photos/
+rsync -av --progress "/media/jason/Removable Drive/Pictures/" jason-server@192.168.50.186:/mnt/personal/photos/
 ```
 
-Run the IDs script to look up UIDs/GIDs and automatically update the compose files:
+Run the IDs script to look up UIDs/GIDs and automatically patch the compose files:
 ```bash
 scripts/setup/phase4-ids.sh
 ```
 
-### RAID Failure Alerts and Disk Monitoring
-
-Run the alerts setup script — it configures msmtp, mdadm email alerts, and a daily disk usage check:
+### Pool failure alerts and disk monitoring
 
 ```bash
 source ~/workspace/home-server/.env
 scripts/setup/phase4-alerts.sh
+```
+
+This wires up msmtp (Gmail relay), the ZFS Event Daemon (zed) for pool-degraded / scrub-failed emails, and a daily disk-usage check at 08:00 for `/mnt/media` and `/mnt/personal`.
+
+### Monthly scrubs
+
+```bash
+sudo systemctl enable --now zfs-scrub-monthly@media.timer
+sudo systemctl enable --now zfs-scrub-monthly@personal.timer
+```
+
+To stagger scrubs (avoid contending on the HBA's PCIe x1 bandwidth), shift `personal` to the 15th:
+
+```bash
+sudo mkdir -p /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/
+sudo tee /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/override.conf > /dev/null <<'EOF'
+[Timer]
+OnCalendar=
+OnCalendar=*-*-15 03:00:00
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart zfs-scrub-monthly@personal.timer
 ```
 
 ### Checking Drive Health
