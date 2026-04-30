@@ -1,617 +1,125 @@
-# Hardware Upgrade Plan
+# Hardware Upgrades
 
-Migration from mixed-drive / mdadm RAID 1 setup to ZFS pools on an LSI 9300-16i HBA.
-
-**Strategy:** Two shutdowns total. First shutdown installs the HBA and connects all new drives externally via cables routed out of the case. All burn-in, pool creation, and data migration happens with both old and new drives online simultaneously. Second (final) shutdown is a physical reorganization: retired drives come out, new drives move into the case bays. Old drives are never physically disturbed until the new setup is proven.
-
-## Goals
-
-- Replace Plex's 4TB + 640GB drive split with a proper RAIDZ2 media pool
-- Replace personal01 mdadm RAID 1 (2× 1TB) with a 2× 8TB enterprise mirror
-- Zero data loss, minimal Plex/Immich downtime
-- Single controller for all HDDs (hot-swap, consistent error reporting)
-- Fit everything in the existing Fractal Define R5 (8× 3.5" bays), leaving 2 bays free for future expansion
-
-## Target Hardware State
-
-| Component | Status |
-|---|---|
-| LSI 9300-16i HBA (IT mode) | **NEW** — replaces current cheap SATA expansion card |
-| 4× 26TB Seagate Exos recertified (media pool, on HBA) | **NEW** — `ST26000NM000C` from ServerPartDeals, mfr-recert 5yr warranty |
-| 2× 8TB Dell G14 enterprise (personal pool, on HBA) | **NEW** — `J7W80`, 7.2K RPM SATA 6Gb/s, 256MB cache, new (not recert) |
-| 500GB OS NVMe (M.2) | unchanged |
-| Retire: 2× 1TB (personal01 RAID 1), 4TB Seagate Barracuda SMR (plex01), 640GB Hitachi (plex02), 480GB ADATA (plex03), cheap SATA card | **REMOVE** |
-
-### Why the 4TB Barracuda is retired
-
-The existing ST4000DM004 is **DM-SMR** (confirmed via `smartctl -i` showing `Model Family: Seagate BarraCuda 3.5 (SMR)`). SMR drives are unsafe in RAID/ZFS — they time out during resilvers, can get kicked from pools, and have catastrophic random-write performance once their CMR cache fills. Retiring this drive completely.
-
-## Target Storage State
-
-| Pool | Layout | Drives | Usable | Workload |
-|---|---|---|---|---|
-| `media` | RAIDZ2 | 4× 26TB | ~46 TiB | Plex, audiobooks, torrents |
-| `personal` | single 2-way mirror | 2× 8TB | ~7.3 TiB | Immich photos, documents, backups |
-| OS (`/`) | single NVMe | 500GB | ~450 GiB | Ubuntu + Docker + Vaultwarden |
-
-**Why 2-way mirror (not striped mirrors) for personal:** Gigabit LAN caps throughput at 125 MB/s. A 2-way 8TB 7200-RPM enterprise mirror already delivers ~250 MB/s sequential write and ~400-500 MB/s sequential read — disk isn't the bottleneck for Immich workloads. Keeping 2 bays free now preserves the option to add 2 more 8TB drives later and promote to striped mirrors (RAID 10), add a mirrored SSD special vdev for metadata acceleration, or widen the media RAIDZ2 via ZFS 2.3 RAIDZ expansion.
-
-### PCIe slot constraints (B550 Eagle WIFI6)
-
-Per the GIGABYTE manual and confirmed via `lspci` tree inspection:
-
-| Slot | Source | Physical | Electrical | Notes |
-|---|---|---|---|---|
-| PCIEX16 | CPU | x16 | PCIe 4.0 x16 | GPU only (RTX 3090); can't bifurcate to share with HBA |
-| PCIEX1_1..4 | Chipset | x16 | **PCIe 3.0 x1** | All four x16-physical slots are wired x1 electrical |
-
-**Consequence for the HBA:** regardless of which chipset slot the 9300-16i is installed in, it negotiates **PCIe 3.0 x1 ≈ 985 MB/s**. Slot choice is driven by cooling (place above the bottom intake fan) and cable routing, not by bandwidth.
-
-**Impact on workloads:**
-
-| Workload | Affected? |
-|---|---|
-| Plex streams (per-client ≤30 MB/s) | No |
-| Immich uploads (gigabit LAN cap 125 MB/s) | No |
-| Torrent writes (network-bound) | No |
-| Monthly scrubs (6 drives reading in parallel, can exceed 1 GB/s) | Yes — ~50% longer than x4 would run |
-| Resilver after drive failure (~16h → ~24h for 26TB) | Yes — more exposure window, but tolerable |
-
-Acceptable tradeoff. Upgrade path would be a motherboard swap (B550/X570 variant with a real PCIEX4 chipset slot) — deferred indefinitely.
-
-## Bay & Port Accounting
-
-Final state: 4× 26TB + 2× 8TB = **6 drives in 6 HDD bays, 2 bays free, 6 of 16 HBA ports used.**
-
-**During migration (between shutdown #1 and shutdown #2):** existing drives stay in their current bays; new drives sit externally on cables routed out of the case. Bays never overflow because physical reorganization happens all at once in shutdown #2.
-
-| Phase | Internal (MOBO SATA) | Internal (HBA) | External (HBA via extended cables) |
-|---|---|---|---|
-| Now | 2×1TB + 4TB + 640GB (+ ADATA on bracket) | — | — |
-| After shutdown #1 | 2×1TB + 4TB + 640GB | — | 4×26TB + 2×8TB |
-| After shutdown #2 | — | 4×26TB + 2×8TB | — |
-
-Note: the ADATA SSD is retired during shutdown #1 (no data). The cheap SATA card is also removed during shutdown #1 — existing 4 HDDs fit on the 4 MOBO SATA ports directly.
-
-## Pre-work
-
-### Install ZFS tooling
-
-```bash
-sudo apt update
-sudo apt install -y zfsutils-linux smartmontools
-zfs version
-```
-
-**Note:** `zfs version` must report >= 2.2 before proceeding.
-
-### Snapshot current disk layout
-
-```bash
-lsblk -o NAME,SIZE,MODEL,SERIAL,WWN,MOUNTPOINT > ~/preupgrade-disks.txt
-sudo smartctl --scan >> ~/preupgrade-disks.txt
-cat /proc/mdstat >> ~/preupgrade-disks.txt
-cp /etc/fstab ~/preupgrade-fstab.txt
-cp /etc/mdadm/mdadm.conf ~/preupgrade-mdadm.conf.txt
-```
-
-Copy these to your phone or another machine — recovery reference if something goes wrong during shutdown #1.
-
-## Shutdown #1 — Install HBA, connect new drives externally
-
-1. Power down.
-2. Remove cheap SATA expansion card — retire.
-3. Remove ADATA SSD — retire (no data).
-4. Install LSI 9300-16i in **PCIEX1_4 (bottom x16-physical chipset slot)** — sits directly above the bottom intake fan for active cooling on the heatsink. See "PCIe slot constraints" below for why the slot choice doesn't affect bandwidth on this board.
-5. **Keep existing drives in place** (2×1TB + 4TB Barracuda + 640GB Hitachi), cabled to the 4 motherboard SATA ports.
-6. Connect **4× 26TB Exos + 2× 8TB Dell** externally:
-   - 2× SFF-8643 → 4× SATA forward breakout cables from HBA internal ports, routed out the rear PCI slots or side panel gap (only 6 of the 8 SATA leads will be used — leave the other 2 tied back)
-   - New drives sit on a towel/rack outside the case during migration
-   - SATA power from PSU via extended cables or splitters
-7. Label each new drive's tray/case with last 4 of its serial (Sharpie) for future physical identification.
-
-### After boot — verify before doing anything destructive
-
-```bash
-lspci | grep -i sas
-sudo dmesg | grep -iE "mpt3sas|firmware version"
-
-df -h /mnt/personal01 /mnt/plex01 /mnt/plex02
-cat /proc/mdstat
-
-lsblk -o NAME,SIZE,MODEL,SERIAL | grep -iE "ST26000|J7W80|HUS728T8"
-
-for d in /dev/sd{a..z}; do
-  sudo smartctl -i $d 2>/dev/null | grep -E "Device Model|Serial"
-  echo "---"
-done
-```
-
-**Notes:**
-- Firmware string should end in "-IT" for HBA to be in IT mode
-- personal01 should be clean
-
-If any check fails, stop and diagnose. Do not proceed to burn-in or pool creation.
+Running record of upgrades — both the history table (for context on why the build looks the way it does) and a detailed plan for the next upgrade in flight.
 
 ---
 
-## Migration Phase (all online — no downtime beyond service restarts)
+## Upgrade History
 
-### M1 — Burn in all 6 new drives
+| Date | Upgrade | Why |
+|------|---------|-----|
+| 2026-03-08 | **Initial AM4 build.** Sandy Bridge → MSI B350 Tomahawk + Ryzen 5 3600 (cascade-from-main-PC). Case: Fractal Design Define R5. PSU: EVGA 500W AXI. CPU cooler: stock AMD Wraith. GPU: GTX 780 → GTX 1070. Drives: 4TB Seagate Barracuda (`plex01`), 2× 1TB (`personal01` mdadm RAID 1), 480GB ADATA SU650 SATA SSD (OS). | Modernize platform; add Plex media drive + redundant personal storage. |
+| 2026-03-14 | Added 640GB Hitachi Deskstar (`plex02`) as Plex overflow. | Plex media outgrew the 4TB drive; old Hitachi was already on hand. |
+| 2026-03-23 | RAM 16GB → 32GB DDR4. | More headroom for concurrent services; ZFS migration was already on the radar. |
+| 2026-03-26 | GPU 2× GTX 1070 → RTX 3090 (24GB). PSU 500W → 1200W. | Single GPU with 24GB unlocks larger LLMs (33B Q4 fits in VRAM); 3090 needs the wider power envelope. |
+| 2026-04-04 | Mobo MSI B350 Tomahawk → GIGABYTE B550 Eagle WIFI6. CPU Ryzen 5 3600 → Ryzen 5 5500. | Native Ryzen 5000 (no BIOS-flash gymnastics), PCIe 4.0, WiFi6 onboard. |
+| 2026-04-16 | OS drive 480GB ADATA SU650 → 500GB NVMe. ADATA repurposed as `plex03` (additional Plex overflow). | ADATA SATA cable failure + 11 pending sectors; NVMe also gives 7×+ I/O for Docker overlay/image churn. |
+| 2026-04-30 | **ZFS + Threadripper migration.** Storage: mdadm RAID 1 + ext4 (`plex01`/`plex02`/`plex03`/`personal01`) → ZFS pools (`media` RAIDZ2 across 4× 26TB Seagate Exos, `personal` 2-way mirror across 2× 8TB Dell J7W80) on LSI 9300-16i HBA in IT mode. Retired: 2× 1TB, 4TB Barracuda (DM-SMR — unsafe for ZFS), 640GB Hitachi (41k hrs). Platform: B550 + Ryzen 5 5500 → ASUS ROG Strix X399-E + Threadripper 1950X. RAM 32GB → 48GB DDR4 (mixed kits, see "Next upgrade"). Cooler: stock Wraith → DeepCool LT720 360mm AIO (sTR4 socket). `plex03` (ADATA) repurposed as `/mnt/cache` for Ollama models + scratch. | ZFS for data integrity + capacity (~46 TiB usable) + scrubbing. Threadripper specifically for the 64 PCIe 3.0 lanes — B550 chipset slots are all wired x1 electrical, capping the HBA at ~985 MB/s and adding ~50% to scrub/resilver time. X399 puts the HBA on x8 (~7.9 GB/s, no contention). |
 
-Run these in parallel across all new drives. **Use `tmux` or `screen`** so processes survive SSH disconnects.
+Each completed upgrade's full details and rationale live in the git history of this file (`git log -- hardware_upgrades.md`). Re-create as needed.
 
-**1. Identify Drive Models**
-Dell OEM drives are typically rebadged. Check the underlying model to refine your glob patterns:
-```bash
-sudo smartctl -i /dev/disk/by-id/ata-* | grep -E "Model|Family"
-```
+---
 
-**2. Burn-in Options**
+## Next upgrade: RAM 48 GB (mixed) → 64 GB (matched, ~2933 MT/s)
 
-*   **Option A: SMART Long Self-Test (Fast, ~20h total)**
-    *Recommended for: New Dell J7W80 drives.*
-    ```bash
-    for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
-      sudo smartctl -t long $d
-    done
-    
-    for d in /dev/disk/by-id/ata-ST26000NM* /dev/disk/by-id/ata-*8TB-J7W80*; do
-      sudo smartctl -a $d | grep -E "Reallocated_Sector|Current_Pending|Offline_Uncorrectable|UDMA_CRC_Error|self-test"
-    done
-    ```
+The current 6× 8GB layout populates all 4 channels but unevenly (16/8/16/8) and runs at 2400 MT/s because one of three mixed kits is rated 2400 — the IMC clocks the whole system to the slowest stick. Combined uplift target: **~50% more usable memory bandwidth** by balancing channels and unlocking the 8-DIMM platform ceiling.
 
-*   **Option B: `badblocks` Write-Read-Verify (Thorough, ~3–4 days)**
-    *Recommended for: Recertified Seagate Exos drives.*
-    Run in separate `tmux` windows per drive:
-    ```bash
-    sudo badblocks -b 4096 -wsv -o /root/bb-ST26000-A.log /dev/disk/by-id/ata-ST26000NM000C-XXXX
-    ```
+### Goals
 
-**3. HBA Temperature Check**
-The LSI 9300-16i runs hot (SAS3008 die routinely hits 70–85 °C; 95 °C is the throttle threshold). Monitor controller temperature during burn-in — this is when the bottom intake fan's placement gets validated under sustained parallel drive I/O.
+- Full symmetric quad-channel — every channel has equal capacity, so the entire RAM range gets 4-way interleave instead of dropping to dual-channel for the unbalanced portion.
+- Lift the 2400 MT/s floor; target **2933 MT/s** (the realistic 8-DIMM ceiling on Threadripper 1950X with DOCP).
+- 64 GB capacity — sized for ZFS ARC headroom + Postgres + LLM context buffers.
+- Stay at 8 DIMMs — capacity per channel matters more than chasing 4-DIMM 3200 MT/s for this workload.
 
-`storcli` does not apply here — it's a MegaRAID tool. For an IT-mode 9300, use one of:
+### Current state
 
-*   **`lm-sensors` (preferred — no external download):** the `mpt3sas` kernel driver exposes the die temp directly.
-    ```bash
-    sudo apt install -y lm-sensors
-    sudo sensors-detect --auto
-    sensors | grep -A2 mpt3sas
-    # Expect: temp1: +NN.0°C (reading from the SAS3008 die)
-    ```
-    One-liner for periodic sampling during burn-in:
-    ```bash
-    watch -n 30 'sensors | grep -A2 mpt3sas'
-    ```
+| Channel | DIMM 0 | DIMM 1 | Channel total |
+|---------|--------|--------|---------------|
+| A | 8 GB | 8 GB | 16 GB |
+| B | *empty* | 8 GB | 8 GB |
+| C | 8 GB | 8 GB | 16 GB |
+| D | *empty* | 8 GB | 8 GB |
 
-*   **`sas3ircu` (Broadcom's IR config utility):** gives more detail (firmware version, topology, per-port status) alongside the temp. Not in apt; download from Broadcom's support portal, search "SAS3IRCU P16".
-    ```bash
-    sudo sas3ircu LIST              # find controller index (usually 0)
-    sudo sas3ircu 0 DISPLAY | grep -iE "Temperature|Firmware"
-    ```
+Total: 48 GB. All 4 channels populated → quad-channel mode is active, but **flex-mode**: the first 32 GB interleaves across all 4 channels (~76 GB/s @ 2400 MT/s); the remaining 16 GB stripes across only A and C (~38 GB/s).
 
-**Guidance:** sustained reads above 85 °C during burn-in → add airflow (reseat in a slot with more clearance, add a 40mm fan directly on the HBA heatsink, or increase bottom-fan RPM). Thermal throttling on an HBA manifests as dropped drives and CRC errors, not graceful slowdown.
+#### Why 2400 MT/s instead of 2666
 
-**4. Evaluation**
-Any drive with reallocated sectors, pending sectors, or UDMA CRC errors after burn-in → **RMA immediately** before building the pool.
+The Zen 1 IMC runs at JEDEC speed of the slowest installed kit. Mixed kits in this build:
 
-### M2 — Build `media` pool (RAIDZ2, 4× 26TB)
-
-> For fresh installs, `scripts/setup/phase4-drives.sh` performs the steps in M2 and M3 end-to-end from `drives.json` (generated by `phase4-detect-drives.sh`). The commands below are the manual equivalent used during this one-shot migration, since the old drives are still attached.
-
-```bash
-ls -l /dev/disk/by-id/ | grep -i ST26000
-
-sudo zpool create -o ashift=12 \
-  -O compression=lz4 \
-  -O atime=off \
-  -O xattr=sa \
-  -O acltype=posixacl \
-  -O recordsize=1M \
-  -O mountpoint=/mnt/media \
-  media raidz2 \
-    /dev/disk/by-id/ata-ST26000NM000C-... \
-    /dev/disk/by-id/ata-ST26000NM000C-... \
-    /dev/disk/by-id/ata-ST26000NM000C-... \
-    /dev/disk/by-id/ata-ST26000NM000C-...
-
-sudo zpool status media
-sudo zfs list media
-
-sudo mkdir -p /mnt/media/{movies,shows,audiobooks,downloads}
-sudo chown -R root:plex-rw /mnt/media
-sudo chmod -R 2775         /mnt/media
-```
-
-**Notes:**
-- Get stable device IDs — NEVER use /dev/sdX in zpool create
-- Flat subdirectory layout under /mnt/media — matches phase4-drives.sh
-
-### M3 — Build `personal` pool (single 2-way mirror, 2× 8TB)
-
-```bash
-ls -l /dev/disk/by-id/ | grep -iE "J7W80|8TB|HUS728|ST8000"
-
-sudo zpool create -o ashift=12 \
-  -O compression=lz4 \
-  -O atime=off \
-  -O xattr=sa \
-  -O acltype=posixacl \
-  -O mountpoint=/mnt/personal \
-  personal \
-    mirror /dev/disk/by-id/ata-DELL-8TB-J7W80-A /dev/disk/by-id/ata-DELL-8TB-J7W80-B
-
-sudo zfs create personal/photos
-sudo zfs create personal/documents
-sudo zfs create personal/backups
-
-sudo chown -R root:personal-rw /mnt/personal
-sudo chmod -R 2775 /mnt/personal
-sudo zpool status personal
-```
-
-**Note:** Confirm device IDs for the Dell drives — J7W80 is typically a rebadged Seagate Exos or HGST Ultrastar; use whichever model string shows up.
-
-**Future expansion note:** To promote to striped mirrors (RAID 10-equivalent) later, buy 2 more matching 8TB drives, burn them in, then:
-
-```bash
-sudo zpool add personal mirror /dev/disk/by-id/ata-DELL-8TB-J7W80-C /dev/disk/by-id/ata-DELL-8TB-J7W80-D
-```
-
-**Note:** New writes stripe across both vdevs; existing data stays on the first mirror until ZFS rebalances naturally over writes.
-
-### M4 — Pause all writes to old drives
-
-Stop new downloads and uploads so the source data is stable during rsync. Read-only services (Plex, Audiobookshelf) can stay up.
-
-- **qBittorrent**: pause all torrents
-- **Sonarr / Radarr**: Settings → General → disable automatic search / import (or just stop the containers)
-- **Immich**: no new photo uploads during rsync (ask anyone with access to hold off)
-- **backup.sh cron**: `sudo crontab -e` — comment out the cron line
-
-Services that are fine to leave running: `plex`, `audiobookshelf`, `notes`, `api`, `photos` (read-only workloads).
-
-### M5 — rsync all data to new pools
-
-Run in `tmux` — processes must survive SSH disconnects. All commands can run in parallel across separate windows.
-
-```bash
-# media pool — plex01 and plex02 both merge into flat /mnt/media
-sudo rsync -aHAXx --info=progress2 /mnt/plex01/movies/     /mnt/media/movies/
-sudo rsync -aHAXx --info=progress2 /mnt/plex01/shows/      /mnt/media/shows/
-sudo rsync -aHAXx --info=progress2 /mnt/plex01/audiobooks/ /mnt/media/audiobooks/
-sudo rsync -aHAXx --info=progress2 /mnt/plex01/downloads/  /mnt/media/downloads/
-sudo rsync -aHAXx --info=progress2 /mnt/plex02/movies/     /mnt/media/movies/
-sudo rsync -aHAXx --info=progress2 /mnt/plex02/shows/      /mnt/media/shows/
-sudo rsync -aHAXx --info=progress2 /mnt/plex02/audiobooks/ /mnt/media/audiobooks/
-sudo rsync -aHAXx --info=progress2 /mnt/plex02/downloads/  /mnt/media/downloads/
-
-# personal pool
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/photos/    /mnt/personal/photos/
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/documents/ /mnt/personal/documents/
-sudo rsync -aHAXx --info=progress2 /mnt/personal01/backups/   /mnt/personal/backups/
-```
-
-Wait for all rsyncs to complete before continuing.
-
-### M6 — Update compose files (add new mounts, keep old)
-
-Add new array mounts alongside the old ones. Services start with access to both paths so you can update in-app configs in M7 before removing old mounts in M8.
-
-| File | Change |
-|---|---|
-| `plex/docker-compose.yml` | Add `/mnt/media:/mnt/media` (keep `/mnt/plex01` and `/mnt/plex02` mounts for now) |
-| `torrent/docker-compose.yml` | Add `/mnt/media:/mnt/media` to qbittorrent, sonarr, radarr (keep old mounts for now) |
-| `audiobooks/docker-compose.yml` | `/mnt/plex01/audiobooks:/audiobooks` → `/mnt/media/audiobooks:/audiobooks`, drop `/mnt/plex02/audiobooks:/audiobooks2` |
-| `photos/docker-compose.yml` | `/mnt/personal01/photos:/usr/src/app/upload` → `/mnt/personal/photos:/usr/src/app/upload` |
-| `api/docker-compose.yml` | `/mnt/personal01/documents:/vault` → `/mnt/personal/documents:/vault` |
-| `scripts/backup.sh` | 2, 23, 38, 46, 162 — comment + `DEST` + preflight + `BACKUP_ROOT` (`/mnt/personal01` → `/mnt/personal`) |
-| `scripts/test/backup.bats` | 36, 99, 112, 137, 186, 252, 268, 280, 289, 332, 342, 350 — update in lockstep with `backup.sh` |
-
-```bash
-cd ~/workspace/home-server && for d in plex torrent audiobooks photos api notes; do
-  (cd $d && docker compose up -d)
-done
-```
-
-### M7 — Update in-service configs
-
-Services are up with both old and new paths available. Update each app's settings to point to the new paths, then verify before proceeding to M8.
-
-**qBittorrent** (Tools → Options → Downloads):
-- Default Save Path: `/mnt/media/downloads`
-
-**Sonarr** (Settings → Media Management → Root Folders):
-- Add `/mnt/media/shows`
-- Series Editor → select all → set root folder to `/mnt/media/shows`
-- Remove old root folder once all series are migrated
-
-**Radarr** (Settings → Media Management → Root Folders):
-- Add `/mnt/media/movies`
-- Movie Editor → select all → set root folder to `/mnt/media/movies`
-- Remove old root folder once all movies are migrated
-
-**Plex** (Settings → Libraries → Edit each library):
-- Update folder paths to: `/mnt/media/movies`, `/mnt/media/shows`, `/mnt/media/audiobooks`
-- Run library scan after each update
-
-**Audiobookshelf** (Settings → Libraries):
-- Container path `/audiobooks` now maps to `/mnt/media/audiobooks` — no in-app change needed if library path was already `/audiobooks`
-
-**Immich**:
-- No in-app config needed — upload path is set by the bind mount
-
-**Verify** before continuing to M8:
-- Sonarr/Radarr: all series and movies show available, no missing files
-- qBittorrent: active torrents seeding from `/mnt/media/downloads` (check a torrent → Save Path)
-- Plex: libraries scan cleanly, a movie plays end-to-end
-- Audiobookshelf: library visible and books load
-- Immich: accessible, upload a test photo
-- backup.sh: `./scripts/backup.sh && ls -lh /mnt/personal/backups/`
-
-### M8 — Remove old drive mounts from compose
-
-Once all services are verified on new paths, remove the old bind mounts and restart.
-
-| File | Lines | Change |
+| Part Number | Rating | Status |
 |---|---|---|
-| `plex/docker-compose.yml` | 16, 17 | Remove `/mnt/plex01:/mnt/plex01` and `/mnt/plex02:/mnt/plex02` |
-| `torrent/docker-compose.yml` | 63, 64, 77, 78, 92, 93 | Remove `/mnt/plex01` and `/mnt/plex02` from qbittorrent, sonarr, radarr |
+| `BLS8G4D30AESEK.M8FE1` (Crucial Ballistix Sport LT) | DDR4-3000 | Underclocked to 2400 |
+| `CMK16GX4M2A2400C16` (Corsair Vengeance LPX 2400) | DDR4-2400 | **Floor — locks the system at 2400** |
+| `CMK16GX4M2B3200C16` (Corsair Vengeance LPX 3200) | DDR4-3200 | Underclocked to 2400 |
 
-```bash
-cd ~/workspace/home-server && for d in plex torrent; do
-  (cd $d && docker compose up -d)
-done
-sudo crontab -e   # re-enable backup.sh cron
-```
+`CMK16GX4M2A2400C16` is what's holding everything down — DOCP can't raise the system above the slowest stick's rating.
 
-**Documentation edits (non-blocking — batch with post-migration cleanup):**
+### Plan — Replace the 2400 kit + add 2 more (≈$80–120)
 
-| File | Lines | Change |
-|---|---|---|
-| `plex/README.md` | 3, 15–18 | narrative + mount table |
-| `plex/setup.md` | 39–42 | library paths in admin UI steps |
-| `torrent/README.md` | 18, 22, 23 | download-path prose + table |
-| `torrent/setup.md` | 44, 45, 60, 62, 74, 82 | Sonarr/Radarr/qBittorrent root-folder instructions |
-| `torrent/scripts/sonarr_import.sh` | 17, 18, 265 | example commands in header + trailing comment |
-| `audiobooks/README.md` | 12 | library-path note |
-| `audiobooks/setup.md` | 6, 24 | mkdir + library-add instructions |
-| `photos/README.md` | 30 | photos-path table |
-| `photos/setup.md` | 16, 17 | `mkdir` + `chown` instructions |
-| `notes/setup.md` | 23, 24, 25 | `/mnt/personal01/obsidian-vault` → `/mnt/personal/obsidian-vault` |
+Pull both `CMK16GX4M2A2400C16` Corsair 2400 sticks. Buy 4× 8GB DDR4-3000+ single-rank sticks; install a matched pair in each freed/empty channel. Per-channel layout in the user's order — both purchased kits are 3000 CL15:
 
-### M9 — Verification window: 24–48h
+| Channel | DIMM 0 | DIMM 1 | Final |
+|---------|--------|--------|-------|
+| A | Crucial 3000 CL16 (existing) | Crucial 3000 CL16 (existing — moved from C-DIMM 0) | matched pair |
+| B | **NEW Crucial Ballistix `BL8G30C15U4R` 3000 CL15** | **NEW Crucial Ballistix `BL8G30C15U4R` 3000 CL15** | matched pair |
+| C | Corsair `CMK16GX4M2B3200C16` 3200 CL16 (existing — moved from D-DIMM 1) | Corsair 3200 CL16 (existing) | matched pair |
+| D | **NEW Corsair `CMK16GX4M2B3000C15W` 3000 CL15** | **NEW Corsair `CMK16GX4M2B3000C15W` 3000 CL15** | matched pair |
 
-Let the new pools run with real workload for 1–2 days before shutdown #2. Check daily:
+Each channel ends up with a same-kit pair — Zen 1 IMC trains channels independently, so this maximizes timing stability per channel. Result after DOCP: **64 GB, true symmetric quad-channel, ~2933 MT/s** → ~94 GB/s aggregate.
 
-```bash
-sudo zpool status media personal
-```
+### Install steps (when the new sticks arrive)
 
-**Note:** Look for: state ONLINE, no errors, no degraded vdevs
-
-Smoke-test daily:
-- Upload a photo → confirm it appears
-- Play a movie → confirm it streams (with NVENC enabled from earlier work)
-- Trigger a manual backup → confirm it succeeds
-
----
-
-## Shutdown #2 — Final physical reorganization
-
-This is the invasive shutdown. You're unplugging and re-seating ~11 drives.
-
-### Before shutdown
-
-```bash
-# Stop services to prevent writes during transition
-cd ~/workspace/home-server && for d in plex torrent audiobooks photos api notes; do
-  (cd $d && docker compose stop)
-done
-
-sudo crontab -e   # comment out backup.sh cron again
-
-# Unmount and stop the old personal01 array cleanly
-sudo umount /mnt/personal01
-sudo mdadm --stop /dev/md0
-
-# Export pools before physically moving drives
-sudo zpool export media
-sudo zpool export personal
-
-# Clean up fstab entries for retired mounts
-sudo sed -i '/\/mnt\/personal01/d; /\/mnt\/plex0[12]/d' /etc/fstab
-
-sudo shutdown now
-```
-
-### Physical work
-
-1. Remove all cables to external drives (disconnect the SFF-8643 breakouts, unplug external SATA power).
-2. Remove from internal bays:
-   - 2× 1TB (personal01 RAID 1) — retire, wipe later via USB dock
-   - 4TB Seagate Barracuda (plex01) — retire (SMR, unsafe for anything RAID; can be reused as cold standalone backup via USB dock)
-   - 640GB Hitachi (plex02) — retire (41k hours, dead soon anyway)
-3. Install into internal bays, all on the HBA:
-   - 4× 26TB Exos → bays 1–4
-   - 2× 8TB Dell → bays 5–6
-   - Bays 7–8 left empty (future expansion)
-4. Cable each drive to an HBA port via the two SFF-8643 breakouts (previously used externally, now internal routing). Only 6 of the 8 SATA leads are used — tuck the spare 2 back neatly or leave accessible near bays 7–8 for a future drop-in.
-5. Close the case.
-
-**Dell drive trays:** The Dell J7W80 drives ship in Dell G14 3.5" caddies (part `X7K8W` or similar). Remove the drive from the Dell caddy before mounting in the Fractal R5 — the Dell caddy is designed for Dell PowerEdge hot-swap bays and won't fit the R5's drive sleds. Four screws through the side rails hold the drive in the caddy; undo them, lift the drive out, then mount into the R5's drive tray using the R5's included screws (bottom-mount). Keep the Dell caddies in storage in case you ever RMA the drive.
-
-### After boot
-
-```bash
-sudo zpool import -a
-sudo zpool status media personal
-
-# Confirm all services come up
-docker ps --format '{{.Names}}\t{{.Status}}' | grep -E "immich|document|plex|audiobook|qbit|sonarr|radarr"
-
-# Smoke-test: Immich photo load, Plex playback, backup run
-./scripts/backup.sh
-
-# Re-enable cron
-sudo crontab -e
-```
-
----
-
-## Ongoing operations
-
-### Monthly scrubs
-
-To avoid contention on the PCIe x1 bottleneck, stagger these scrubs (e.g., 1st vs 15th of the month) and schedule them for low-usage hours.
-
-```bash
-sudo systemctl enable --now zfs-scrub-monthly@media.timer
-sudo systemctl enable --now zfs-scrub-monthly@personal.timer
-
-sudo mkdir -p /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/
-sudo tee /etc/systemd/system/zfs-scrub-monthly@personal.timer.d/override.conf > /dev/null <<'EOF'
-[Timer]
-OnCalendar=
-OnCalendar=*-*-15 03:00:00
-EOF
-sudo systemctl daemon-reload
-sudo systemctl restart zfs-scrub-monthly@personal.timer
-
-systemctl list-timers 'zfs-scrub-monthly@*.timer'
-```
-
-**Notes:**
-- Stagger 'personal' scrub to the 15th to avoid PCIe bottleneck during 'media' scrub
-- Verify both timers show the expected next-fire times
-
-### Snapshots for personal (not media)
-
-```bash
-sudo apt install -y zfs-auto-snapshot
-# Disable on media to avoid snapshot bloat from Plex writes
-sudo zfs set com.sun:auto-snapshot=false media
-```
-
-**Note:** Default `zfs-auto-snapshot` policy is 4 hourly + 24 daily + 4 weekly + 12 monthly.
-
-### Prometheus ZFS metrics
-
-Enable `--collector.zfs` in the existing node_exporter, or add `zfs_exporter` to `monitoring/docker-compose.yml`.
-
-### Post-migration documentation & observability cleanup
-
-These files reference the old drive layout but don't block services from running. Clean them up after shutdown #2 to keep the repo honest.
-
-**Top-level docs:**
-
-| File | Change |
-|---|---|
-| `hardware.md` | Rewrite "Current Hardware" and "Drive Layout" tables for 4× 26TB Exos + 2× 8TB Dell on LSI 9300-16i, ZFS pools `media` and `personal`, retired drives removed |
-| `setup.md` (top-level) | Rewrite drive-provisioning section (`/etc/fstab` examples, mdadm RAID 1 instructions, plex01/plex02/plex03 mkdir steps) for ZFS pool creation. Lines 28–32, 244, 248, 254, 258, 261, 267–270, 275, 284, 287, 293–296, 319, 320, 329, 374–377, 380–382, 389, 393 all reference the old layout |
-
-**Operational scripts:**
-
-| File | Lines | Change |
-|---|---|---|
-| `scripts/check-disk.sh` | 9 | Already updated to `/mnt/media /mnt/personal` — no further change. |
-| `scripts/setup/phase4-*.deprecated.sh` | all | Pre-migration mdadm/ext4 versions. Kept in-repo during M1–M8 as a rollback reference; delete after the M8 stability window closes (see cleanup step below). |
-
-**Monitoring:**
-
-| File | Change |
-|---|---|
-| `monitoring/config/diskspace.conf` | Lines 4, 7, 10: replace `[/mnt/plex01]` / `[/mnt/plex02]` / `[/mnt/personal01]` stanzas with `[/mnt/media]` and `[/mnt/personal]`. Drop the plex02 stanza entirely (no more overflow drive). Also consider dropping the per-mount diskspace exporter in favor of ZFS pool-level metrics (see above). |
-| `monitoring/grafana-dashboards/home-server.json` | Lines 621, 667 (read/write rate PromQL) and 829–845 (legend value mappings) use `label_replace` to rename `sda..sde` to `personal01-a`, `personal01-b`, `plex01`, `plex02`, `plex03`. Post-migration the drives are on the HBA (typically re-enumerated) and the old mappings are wrong. Options: (a) re-map the `label_replace` chain to the new drive letters and pool names (`media-1`..`media-4`, `personal-a`, `personal-b`), or (b) switch the panel to use ZFS-native metrics (`node_zfs_*`) for pool-level I/O. **(b) is the cleaner path** — ZFS abstracts per-drive detail and matches how you reason about the pools. |
-| `monitoring/grafana-provisioning/dashboards/dashboards.yaml` | No change — provisioning pointer only, no mount paths. |
-
-None of these block the migration. Prioritize in this order after shutdown #2 stabilizes:
-1. `hardware.md` + top-level `setup.md` (keep repo truthful)
-2. `monitoring/config/diskspace.conf` (so Prometheus stops alerting on missing mounts)
-3. Grafana dashboard (nicest to have — can be done when enabling ZFS metrics)
-
-**Deprecated phase4 scripts — post-M8 cleanup.** The `phase4-{detect-drives,drives,ids,alerts}.deprecated.sh` scripts are rollback references for the old layout; once M8 verification has been stable for ≥48h they are dead code:
-
-```bash
-rm scripts/setup/phase4-{drives,detect-drives,ids,alerts}.deprecated.sh
-git add -u scripts/setup/
-git commit -m "Remove deprecated phase4 scripts post-migration"
-```
-
----
-
-## Rollback points
-
-| After phase | If things go wrong, how to recover |
-|---|---|
-| Shutdown #1 | Reinstall cheap SATA card, reseat old drives. No pool exists yet; nothing cut over. |
-| M1–M3 (burn-in, pool build) | `zpool destroy` — no user data involved yet. |
-| M4 (writes paused) | Resume qBittorrent/Sonarr/Radarr — nothing was touched. |
-| M5 (rsync running) | Kill rsync; restart services from old drives — no data modified on old drives. |
-| M6 (compose files updated, services restarted) | `git checkout` compose files; restart — old drives still mounted and untouched. |
-| M7 (in-app configs updated) | Revert compose files via git, restart — old drives still mounted. |
-| M8 (old mounts removed) | Re-add old mounts to compose, restart services — data still on old drives. |
-| M9 (verification window) | Full rollback: revert compose files via git, restart services off old drives. |
-| Shutdown #2 in progress | Reinstall old drives, revert compose files, re-import old personal01 mdadm array. |
-| After shutdown #2 boot | Pools should auto-import. If not, `zpool import -d /dev/disk/by-id`. Old drives available as cold backup via USB dock if needed. |
-
----
-
-## Decisions (finalized)
-
-- [x] ~~Personal pool topology~~ — 2× 8TB single mirror (2 bays free for future RAID 10 promotion)
-- [x] ~~Drive selection~~ — 4× 26TB Seagate Exos + 2× 8TB Dell J7W80 ($2,457.96 SPD cart)
-- [x] ~~Cable plan~~ — all HDDs on HBA (hot-swap for all pools); 2× Cable Matters 1m SFF-8643 → 4× SATA forward breakout
-- [x] ~~Plex dataset layout~~ — flat layout under `/mnt/media`: `movies/`, `shows/`, `audiobooks/`, `downloads/`
-- [x] ~~HBA slot~~ — PCIEX1_4 (bottom x16-physical chipset slot, above bottom intake fan). All 4 chipset slots on this board are x1 electrical, so slot choice is driven by cooling, not bandwidth. HBA negotiates PCIe 3.0 x1 ≈ 985 MB/s — acceptable bottleneck.
-- [x] ~~Burn-in depth~~ — Option B (`badblocks -wsv`, ~3–4 days) for the 4 recertified Exos drives; Option A (SMART long self-test, ~12h) for the 2 new Dell J7W80s
-- [x] ~~Special vdev~~ — **not including**. Immich thumbnail workload doesn't justify the added complexity and extra drives. Defer indefinitely.
-
-## Drive sanitization
-
-**Prerequisite:** only run after M8 verification has passed and the new pools have been stable for ≥48h. Until then, the retired drives are your rollback safety net.
-
-**Safety:** triple-check the target device before any destructive command. Confirm by serial:
-```bash
-lsblk -o NAME,SIZE,MODEL,SERIAL
-sudo smartctl -i /dev/sdX | grep -iE "Serial|Model"
-```
-Running `dd` on the wrong device wipes it instantly with no recovery.
-
-### HDDs (1TB Seagate, 1TB WD, 4TB Barracuda, 640GB Hitachi)
-
-Via USB dock:
-```bash
-sudo wipefs -a /dev/sdX                                       # clear filesystem/RAID signatures
-sudo dd if=/dev/zero of=/dev/sdX bs=4M status=progress conv=fsync  # single-pass zero overwrite
-```
-A single zero pass is considered sufficient for modern magnetic media — Gutmann's 35-pass is obsolete. Expect ~2-4 hours for the 1TB drives, ~8 hours for the 4TB.
-
-Alternative one-liner using `shred`:
-```bash
-sudo shred -vzn1 /dev/sdX     # 1 random pass + final zero pass
-```
-
-### SSD (480GB ADATA SU650)
-
-`dd if=/dev/zero` does **not** reliably wipe SSDs due to wear leveling — the physical NAND may still hold the original data even after logical zeros are written. Use SSD-specific methods:
-
-Preferred — ATA Secure Erase (fastest, wipes at the firmware level):
-```bash
-sudo hdparm -I /dev/sdX | grep -A1 "Security:"   # confirm "supported: enhanced erase"
-sudo hdparm --user-master u --security-set-pass p /dev/sdX
-sudo hdparm --user-master u --security-erase p /dev/sdX
-```
-
-Simpler alternative — `blkdiscard` (TRIMs every block, very fast):
-```bash
-sudo blkdiscard /dev/sdX
-```
+1. Power down, unplug.
+2. Pull both Corsair `CMK16GX4M2A2400C16` sticks from **A-DIMM 1** and **B-DIMM 1**.
+3. Move existing Crucial 3000 stick from **C-DIMM 0** → **A-DIMM 1**.
+4. Move existing Corsair 3200 stick from **D-DIMM 1** → **C-DIMM 0**.
+5. Install new Crucial 3000 CL15 pair into **B-DIMM 0 + B-DIMM 1**.
+6. Install new Corsair 3000 CL15 white pair into **D-DIMM 0 + D-DIMM 1**.
+7. Boot to BIOS → **Load Optimized Defaults** → **Ai Tweaker → Ai Overclock Tuner → DOCP** → save & exit.
 
 ### Verify
 
 ```bash
-sudo hexdump -C /dev/sdX | head -20     # should show all zeros or no readable structure
-sudo wipefs /dev/sdX                    # should report no signatures
+free -h
+# Total should now read ~58.6 GiB (i.e., 64 GB raw)
+
+sudo dmidecode -t 17 | grep -E "Bank Locator|Locator|Size|Part Number|Configured" | grep -v "No Module"
+# Every channel shows 2 populated sticks of the same Part Number; Configured Memory Speed = 2666 or 2933
+
+sudo apt install -y mbw stress-ng
+
+mbw -n 5 1024
+# Expected AVG MEMCPY:
+#   ~50 GB/s  current (flex-mode @ 2400)
+#   ~85+ GB/s true quad-channel @ 2933 (recommended path)
+
+# 10-minute stability soak after BIOS tuning
+sudo stress-ng --vm 8 --vm-bytes 80% --timeout 600s --metrics
 ```
+
+### Risks & notes
+
+- **Why 2933 and not 3000+ with 8 DIMMs**: the Zen 1 (Whitehaven) IMC degrades with rank load. 1 DIMM per channel can hit 3200; 2 DIMMs per channel realistically tops out at 2933 even with 3200-rated sticks. Don't waste money on 3600 kits.
+- **Single-rank only**: keep all sticks 8GB single-rank. Mixing single-rank and dual-rank in the same channel can cause boot failures or force the IMC to drop another notch.
+- **POST instability**: 8 DIMMs is the most demanding config for the memory controller. If POST fails after enabling DOCP, drop target frequency one step (2933 → 2666) or bump DRAM voltage to 1.35V. Memory Context Restore = ON skips retraining on subsequent boots once stable.
+- **No DDR5 path**: Threadripper 1950X is DDR4 only. Any future DDR5 means a platform change — defer indefinitely.
+
+### Decisions
+
+- [ ] Purchase the 2× new 16GB kits (Crucial `BL8G30C15U4R` + Corsair `CMK16GX4M2B3000C15W`)
+- [ ] Schedule a 30-minute power-down window to install + tune BIOS
+- [ ] Pull the 2× `CMK16GX4M2A2400C16` Corsair sticks
+- [ ] Enable DOCP in BIOS, verify ~2933 MT/s under load
+- [ ] Verify true quad-channel via `mbw` and run `stress-ng` for 10 min stability soak
+- [ ] Update `hardware.md` to reflect 64 GB / 8 sticks / 2933 MT/s / true quad-channel
+
+---
+
+## Convention for future upgrades
+
+When the RAM upgrade lands:
+1. Move the "Next upgrade" detail down into a new row in the **Upgrade History** table — date, summary, why.
+2. Replace the "Next upgrade" section with the next planned upgrade's detailed plan.
+3. Commit. The git history retains the full prior plan if you ever need to reconstruct details.
+
+This keeps `hardware_upgrades.md` short and forward-looking instead of accumulating cruft.
