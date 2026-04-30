@@ -81,6 +81,19 @@ exec "$@"
 EOF
     chmod +x "$STUB_BIN/sudo"
 
+    # restic stub — records all subcommand invocations
+    cat > "$STUB_BIN/restic" <<'EOF'
+#!/usr/bin/env bash
+echo "restic $*" >> "$TEST_DIR/restic.calls"
+case "$1" in
+    backup) exit 0 ;;
+    forget) exit 0 ;;
+    snapshots) echo "stub snapshot ID 12345678 1 file 0 B"; exit 0 ;;
+    *) exit 0 ;;
+esac
+EOF
+    chmod +x "$STUB_BIN/restic"
+
     # Fake /etc/fstab and mdadm.conf
     mkdir -p "$TEST_DIR/etc/mdadm"
     echo "UUID=fake / ext4 defaults 0 1" > "$TEST_DIR/etc/fstab"
@@ -340,6 +353,63 @@ teardown() {
     local today
     today="$(date +%Y-%m-%d)"
     [ -f "$TEST_DIR/mnt/personal/backups/$today/system/fstab" ]
+}
+
+# ── Offsite (restic) ──────────────────────────────────────────────────────
+
+@test "skips offsite when RESTIC_REPOSITORY is not set" {
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Offsite backup skipped"* ]]
+    [ ! -f "$TEST_DIR/restic.calls" ]
+}
+
+@test "calls restic backup when RESTIC_REPOSITORY + RESTIC_PASSWORD are set" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^restic backup" "$TEST_DIR/restic.calls"
+}
+
+@test "offsite backup includes photos and documents source paths" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "/mnt/personal/photos"
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "/mnt/personal/documents"
+}
+
+@test "offsite backup includes postgres dumps and vaultwarden from \$DEST" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "immich-postgres.dump"
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "authentik-postgres.dump"
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "vaultwarden"
+    grep "^restic backup" "$TEST_DIR/restic.calls" | grep -q "rmfakecloud"
+}
+
+@test "offsite calls restic forget for retention" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^restic forget" "$TEST_DIR/restic.calls"
+    grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-daily 7"
+    grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-weekly 4"
+    grep "^restic forget" "$TEST_DIR/restic.calls" | grep -q -- "--keep-monthly 12"
+}
+
+@test "offsite warns if restic binary missing" {
+    echo 'RESTIC_REPOSITORY=b2:test-bucket:home-server' >> "$REPO_ROOT/.env"
+    echo 'RESTIC_PASSWORD=fake-password' >> "$REPO_ROOT/.env"
+    rm "$STUB_BIN/restic"
+    run bash "$REPO_ROOT/scripts/backup.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"restic"*"not installed"* ]]
 }
 
 @test "copies mdadm.conf to backup directory when present" {

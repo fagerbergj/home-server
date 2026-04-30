@@ -20,11 +20,19 @@
 #   - System config                 /etc/fstab, /etc/mdadm/mdadm.conf
 #   - Root crontab
 #
-# Photos are already on the personal pool — no need to back them up.
+# Photos and documents live on the personal pool (mirrored ZFS) — protected
+# locally, but pushed offsite by the optional restic step below since they're
+# the irreplaceable bits.
 # Plex/audiobook media files live on the media pool — not backed up here.
 #
-# .env is encrypted with gpg before writing. Requires GPG_RECIPIENT in .env
-# or set in environment. Falls back to symmetric encryption if not set.
+# .env is encrypted with gpg before writing. Requires BACKUP_GPG_PASSPHRASE
+# in .env or environment. Falls back to skipping if not set.
+#
+# Offsite backup (optional, additive): if RESTIC_REPOSITORY and RESTIC_PASSWORD
+# are set in .env, the irreplaceable subset (photos, documents, postgres dumps,
+# vaultwarden data, rmfakecloud, env.gpg) is pushed to a restic repo after the
+# local backup finishes. Works with any restic backend — S3, Backblaze B2,
+# rsync.net, SFTP. Restic handles encryption, dedup, and retention.
 #
 # Usage:
 #   ./scripts/backup.sh
@@ -156,6 +164,63 @@ sudo crontab -l > "$DEST/system/root-crontab" 2>/dev/null || true
 
 log "Done. Backup size: $(du -sh "$DEST" | cut -f1)"
 ls -lh "$DEST"
+
+# ── Offsite (restic — provider-agnostic, uses RESTIC_REPOSITORY URL) ──────
+#
+# Pushes only the irreplaceable subset (photos, documents, postgres dumps,
+# vaultwarden, rmfakecloud, env.gpg) — not the full local backup. Restic
+# handles encryption, deduplication, and retention.
+#
+# One-time setup before this runs cleanly:
+#   sudo apt install -y restic
+#   restic init                         # bootstrap the remote repo
+#
+# Required env vars in .env (sourced above):
+#   RESTIC_REPOSITORY   e.g. b2:jason-fagerberg:home-server
+#   RESTIC_PASSWORD     long random string — losing this means losing the backups
+#   For B2:  B2_ACCOUNT_ID + B2_ACCOUNT_KEY (the application key, not master)
+#   For S3:  AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_DEFAULT_REGION
+#
+# If the env vars aren't set, this section is a no-op.
+
+if [[ -n "${RESTIC_REPOSITORY:-}" && -n "${RESTIC_PASSWORD:-}" ]]; then
+    if ! command -v restic &>/dev/null; then
+        log "WARNING: RESTIC_REPOSITORY set but 'restic' not installed (sudo apt install -y restic) — skipping offsite"
+    else
+        log "Offsite backup (restic → $RESTIC_REPOSITORY)..."
+
+        OFFSITE_SOURCES=(
+            /mnt/personal/photos
+            /mnt/personal/documents
+            "$DEST/immich-postgres.dump"
+            "$DEST/authentik-postgres.dump"
+            "$DEST/vaultwarden"
+            "$DEST/rmfakecloud"
+        )
+        [[ -f "$DEST/env.gpg" ]] && OFFSITE_SOURCES+=("$DEST/env.gpg")
+
+        if restic backup \
+            --quiet \
+            --tag automated \
+            --tag "$(date +%Y-%m-%d)" \
+            "${OFFSITE_SOURCES[@]}"; then
+            log "  Restic backup ok. Pruning snapshots (keep daily-7, weekly-4, monthly-12)..."
+            restic forget \
+                --quiet \
+                --keep-daily 7 \
+                --keep-weekly 4 \
+                --keep-monthly 12 \
+                --prune \
+                || log "  WARNING: restic forget --prune failed (Object Lock retention may block delete)"
+            log "  Latest offsite snapshot:"
+            restic snapshots --latest 1 2>/dev/null | tail -3 || true
+        else
+            log "  ERROR: restic backup failed — local backup still ok, offsite skipped"
+        fi
+    fi
+else
+    log "Offsite backup skipped (set RESTIC_REPOSITORY + RESTIC_PASSWORD in .env to enable)"
+fi
 
 # ── Retention — keep only the 3 most recent backups ───────────────────────
 
