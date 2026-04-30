@@ -73,7 +73,7 @@ teardown() {
 @test "installs msmtp, msmtp-mta, mailutils, and zfs-zed" {
     run "$SCRIPT"
     [ "$status" -eq 0 ]
-    grep -q 'install -y msmtp msmtp-mta zfs-zed' "$TEST_DIR/apt.calls"
+    grep -q 'install -y msmtp msmtp-mta mailutils zfs-zed' "$TEST_DIR/apt.calls"
 }
 
 # ---------------------------------------------------------------------------
