@@ -9,10 +9,15 @@ services:
     env_file:
       - ../.env
     environment:
-      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_SERVICE_PROVIDER=airvpn
       - VPN_TYPE=wireguard
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - SERVER_COUNTRIES=Netherlands
+      # Port forwarding is static on AirVPN — reserve a port in the Client Area,
+      # set AIRVPN_FORWARDED_PORT in ../.env, and use it as qBittorrent's listen port.
+      - FIREWALL_VPN_INPUT_PORTS=${AIRVPN_FORWARDED_PORT}
     ports:
       - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
       - "9696:9696"   # Prowlarr web UI (exposed here since prowlarr shares this network)
