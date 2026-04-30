@@ -16,7 +16,7 @@ services:
       - OLLAMA_KEEP_ALIVE=-1
       - OLLAMA_CONTEXT_LENGTH=65536
     volumes:
-      - ./data:/root/.ollama
+      - /mnt/cache/ollama:/root/.ollama
     init: true
     runtime: nvidia
     deploy:
