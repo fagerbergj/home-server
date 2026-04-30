@@ -48,6 +48,34 @@ make_disk() {
     ln -sf "$TEST_DIR/dev/$name" "$TEST_DIR/by-id/${prefix}MODEL-${name}-SERIAL"
 }
 
+# Writes an lsblk stub that emits NAME SIZE TYPE ROTA — used by tests that
+# need to control rotational vs SSD detection.
+make_lsblk_with_rota_stub() {
+    cat > "$STUB_BIN/lsblk" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >> "$TEST_DIR/lsblk.calls"
+if [[ "$1" == "-no" && "$2" == "pkname" ]]; then
+    src="$3"
+    base="${src##*/}"
+    base="${base%%[0-9]*}"
+    echo "$base"
+    exit 0
+fi
+if [[ "$*" == *"NAME,SIZE,TYPE,ROTA"* ]]; then
+    cat "$TEST_DIR/lsblk.disks"
+    exit 0
+fi
+# Backwards-compatible: NAME,SIZE,TYPE without ROTA — strip 4th column
+if [[ "$*" == *"NAME,SIZE,TYPE"* ]]; then
+    awk '{print $1, $2, $3}' "$TEST_DIR/lsblk.disks"
+    exit 0
+fi
+echo "lsblk: unexpected args: $*" >&2
+exit 1
+EOF
+    chmod +x "$STUB_BIN/lsblk"
+}
+
 # Writes an lsblk stub that handles both modes used by the script:
 #   lsblk -no pkname <source>      → strip "/dev/" + trailing digits
 #   lsblk -d -b -n -o NAME,SIZE,TYPE → disk listing from $TEST_DIR/lsblk.disks
@@ -270,6 +298,83 @@ gb_bytes() { echo $(( $1 * 1000 * 1000 * 1000 )); }
     for line in $output; do
         [[ "$line" == *"/by-id/ata-MODEL-"* ]] || fail "personal drive not resolved to ata-: $line"
     done
+}
+
+@test "emits ext4_drives entry for a single non-rotational SSD" {
+    make_lsblk_with_rota_stub
+    for d in sdb sdc sdd sde; do make_disk "$d" 26000; done
+    for d in sdf sdg;          do make_disk "$d" 8000;  done
+    make_disk sdh 480
+    {
+        echo "sda  $(gb_bytes 500) disk 0"     # OS NVMe (rota=0 but excluded as OS)
+        echo "sdb  $(gb_bytes 26000) disk 1"
+        echo "sdc  $(gb_bytes 26000) disk 1"
+        echo "sdd  $(gb_bytes 26000) disk 1"
+        echo "sde  $(gb_bytes 26000) disk 1"
+        echo "sdf  $(gb_bytes 8000) disk 1"
+        echo "sdg  $(gb_bytes 8000) disk 1"
+        echo "sdh  $(gb_bytes 480) disk 0"     # cache SSD, rota=0
+    } > "$TEST_DIR/lsblk.disks"
+
+    run "$SCRIPT"
+    [ "$status" -eq 0 ]
+
+    run jq -r '.ext4_drives | length' "$TEST_DIR/drives.json"
+    [ "$output" = "1" ]
+    run jq -r '.ext4_drives[0].mountpoint' "$TEST_DIR/drives.json"
+    [ "$output" = "/mnt/cache" ]
+    run jq -r '.ext4_drives[0].label' "$TEST_DIR/drives.json"
+    [ "$output" = "cache" ]
+    run jq -r '.ext4_drives[0].subdirs | join(",")' "$TEST_DIR/drives.json"
+    [ "$output" = "ollama,scratch" ]
+    run jq -r '.ext4_drives[0].device' "$TEST_DIR/drives.json"
+    [[ "$output" == *"/by-id/ata-MODEL-sdh"* ]]
+}
+
+@test "emits empty ext4_drives array when no SSDs found" {
+    make_lsblk_with_rota_stub
+    for d in sdb sdc sdd sde; do make_disk "$d" 26000; done
+    for d in sdf sdg;          do make_disk "$d" 8000;  done
+    {
+        echo "sda  $(gb_bytes 500) disk 0"
+        echo "sdb  $(gb_bytes 26000) disk 1"
+        echo "sdc  $(gb_bytes 26000) disk 1"
+        echo "sdd  $(gb_bytes 26000) disk 1"
+        echo "sde  $(gb_bytes 26000) disk 1"
+        echo "sdf  $(gb_bytes 8000) disk 1"
+        echo "sdg  $(gb_bytes 8000) disk 1"
+    } > "$TEST_DIR/lsblk.disks"
+
+    run "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run jq -r '.ext4_drives | length' "$TEST_DIR/drives.json"
+    [ "$output" = "0" ]
+}
+
+@test "auto-numbers additional ext4 mountpoints when multiple SSDs found" {
+    make_lsblk_with_rota_stub
+    for d in sdb sdc sdd sde; do make_disk "$d" 26000; done
+    for d in sdf sdg;          do make_disk "$d" 8000;  done
+    make_disk sdh 480
+    make_disk sdi 1000
+    {
+        echo "sda  $(gb_bytes 500) disk 0"
+        echo "sdb  $(gb_bytes 26000) disk 1"
+        echo "sdc  $(gb_bytes 26000) disk 1"
+        echo "sdd  $(gb_bytes 26000) disk 1"
+        echo "sde  $(gb_bytes 26000) disk 1"
+        echo "sdf  $(gb_bytes 8000) disk 1"
+        echo "sdg  $(gb_bytes 8000) disk 1"
+        echo "sdh  $(gb_bytes 480) disk 0"
+        echo "sdi  $(gb_bytes 1000) disk 0"
+    } > "$TEST_DIR/lsblk.disks"
+
+    run "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run jq -r '.ext4_drives | length' "$TEST_DIR/drives.json"
+    [ "$output" = "2" ]
+    run jq -r '[.ext4_drives[].mountpoint] | sort | join(",")' "$TEST_DIR/drives.json"
+    [ "$output" = "/mnt/cache,/mnt/cache2" ]
 }
 
 @test "drives outside both size buckets are reported as unassigned" {

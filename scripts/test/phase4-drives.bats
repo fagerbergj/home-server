@@ -106,9 +106,71 @@ EOF
 
     SCRIPT="$SCRIPT_DIR/phase4-drives.sh"
     # Redirect the absolute mount paths so chown/chmod don't need root.
-    mkdir -p "$TEST_DIR/mnt"
+    mkdir -p "$TEST_DIR/mnt" "$TEST_DIR/etc"
+    : > "$TEST_DIR/etc/fstab"
     sed -i "s|/mnt/media|$TEST_DIR/mnt/media|g" "$SCRIPT"
     sed -i "s|/mnt/personal|$TEST_DIR/mnt/personal|g" "$SCRIPT"
+    sed -i "s|/etc/fstab|$TEST_DIR/etc/fstab|g" "$SCRIPT"
+
+    # ext4_drives provisioning needs blkid, findmnt, wipefs, mkfs.ext4,
+    # systemctl, mount, and id. All record calls into TEST_DIR; default
+    # behavior is "drive is empty / not mounted".
+    cat > "$STUB_BIN/blkid" <<'EOF'
+#!/usr/bin/env bash
+echo "$*" >> "$TEST_DIR/blkid.calls"
+# Pre-formatted devices: a file with the device basename = TYPE\nUUID
+dev="${@: -1}"
+fixture="$TEST_DIR/blkid-fixtures/$(basename "$dev")"
+if [[ -f "$fixture" ]]; then
+    type=$(sed -n 1p "$fixture")
+    uuid=$(sed -n 2p "$fixture")
+    if [[ "$1" == "-s" && "$2" == "TYPE" ]]; then
+        echo "$type"
+    elif [[ "$1" == "-s" && "$2" == "UUID" ]]; then
+        echo "$uuid"
+    fi
+    exit 0
+fi
+exit 2
+EOF
+    chmod +x "$STUB_BIN/blkid"
+
+    make_stub findmnt 'echo "$*" >> "$TEST_DIR/findmnt.calls"; mnt="${@: -1}"; [[ -f "$TEST_DIR/mounted/$(basename "$mnt")" ]] && exit 0 || exit 1'
+    make_stub wipefs
+    make_stub mkfs.ext4 'echo "$*" >> "$TEST_DIR/mkfs.ext4.calls"; dev="${@: -1}"; mkdir -p "$TEST_DIR/blkid-fixtures"; printf "ext4\nfake-uuid-$$\n" > "$TEST_DIR/blkid-fixtures/$(basename "$dev")"'
+    make_stub systemctl
+    make_stub mount  'echo "$*" >> "$TEST_DIR/mount.calls"; mnt="${@: -1}"; [[ "$1" == "-a" ]] && true; mkdir -p "$TEST_DIR/mounted"; touch "$TEST_DIR/mounted/cache"'
+
+    cat > "$STUB_BIN/id" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+    -un) echo "tester" ;;
+    -gn) echo "tester" ;;
+    *) echo "tester:x:1000:1000::/home/tester:/bin/bash" ;;
+esac
+exit 0
+EOF
+    chmod +x "$STUB_BIN/id"
+}
+
+# Helper to add an ext4_drives entry to the existing drives.json fixture.
+# The mountpoint goes straight into the JSON as a sandbox path so the
+# script reads the redirected location at runtime — no script sed needed
+# for the mountpoint. We do still sed the [[ -b $DEV ]] guard since the
+# test fixture device path doesn't actually exist as a block device.
+add_ext4_entry() {
+    local device="$1" label="${2:-cache}"
+    local subdirs="${3:-[\"ollama\",\"scratch\"]}"
+    local sandbox_mnt="$TEST_DIR/mnt/cache"
+    jq --arg dev "$device" --arg mnt "$sandbox_mnt" --arg lbl "$label" \
+       --argjson subs "$subdirs" \
+       '.ext4_drives = [{device: $dev, mountpoint: $mnt, label: $lbl, subdirs: $subs, owner: "tester"}]' \
+       "$SCRIPT_DIR/drives.json" > "$SCRIPT_DIR/drives.json.new"
+    mv "$SCRIPT_DIR/drives.json.new" "$SCRIPT_DIR/drives.json"
+    # The script's `[[ ! -b "$DEV" ]]` guard is meant to catch typos in
+    # drives.json. Test devices are placeholder paths, not real block
+    # devices, so neutralize the guard.
+    sed -i 's|\[\[ ! -b "\$DEV" \]\]|false|g' "$SCRIPT"
 }
 
 teardown() {
@@ -265,6 +327,52 @@ run_script() {
     [[ "$output" == *"personal pool already exists"* ]]
     # No `create` calls
     ! grep -q '^create ' "$TEST_DIR/zpool.calls"
+}
+
+# ---------------------------------------------------------------------------
+# ext4_drives provisioning
+# ---------------------------------------------------------------------------
+
+@test "skips ext4 phase when no ext4_drives in config" {
+    run run_script
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"No ext4_drives entries"* ]]
+    [ ! -f "$TEST_DIR/mkfs.ext4.calls" ]
+}
+
+@test "formats and mounts a fresh ext4 drive" {
+    add_ext4_entry "/dev/disk/by-id/ata-FAKE-CACHE"
+    run run_script
+    [ "$status" -eq 0 ]
+    # mkfs.ext4 was called with the configured label
+    grep -q '\-L cache /dev/disk/by-id/ata-FAKE-CACHE' "$TEST_DIR/mkfs.ext4.calls"
+    # fstab gained the new entry
+    grep -q "$TEST_DIR/mnt/cache  ext4" "$TEST_DIR/etc/fstab"
+    # Subdirs created
+    [ -d "$TEST_DIR/mnt/cache/ollama" ]
+    [ -d "$TEST_DIR/mnt/cache/scratch" ]
+}
+
+@test "preserves existing ext4 filesystem and does not reformat" {
+    add_ext4_entry "/dev/disk/by-id/ata-FAKE-CACHE"
+    # Pre-seed the fixture so blkid reports ext4 + UUID immediately.
+    mkdir -p "$TEST_DIR/blkid-fixtures"
+    printf "ext4\nexisting-uuid\n" > "$TEST_DIR/blkid-fixtures/ata-FAKE-CACHE"
+    run run_script
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Existing ext4"* ]]
+    [ ! -f "$TEST_DIR/mkfs.ext4.calls" ]
+    grep -q "UUID=existing-uuid" "$TEST_DIR/etc/fstab"
+}
+
+@test "skips ext4 work when mountpoint already mounted" {
+    add_ext4_entry "/dev/disk/by-id/ata-FAKE-CACHE"
+    mkdir -p "$TEST_DIR/mounted"
+    touch "$TEST_DIR/mounted/cache"
+    run run_script
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"already mounted"* ]]
+    [ ! -f "$TEST_DIR/mkfs.ext4.calls" ]
 }
 
 @test "skips dataset creation when dataset already exists" {

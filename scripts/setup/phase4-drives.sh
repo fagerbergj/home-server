@@ -1,15 +1,16 @@
 #!/bin/bash
-# Phase 4 — Create ZFS pools and mount points.
+# Phase 4 — Create ZFS pools, optional cache tier, and mount points.
 #
 # Reads the device lists from drives.json (produced by phase4-detect-drives.sh)
 # and creates:
 #   media    — RAIDZ2 across 4× ~26 TB HDDs, mounted at /mnt/media
 #   personal — 2-way mirror across 2× ~8 TB HDDs, mounted at /mnt/personal
+#   cache    — (optional) ext4 on a single SSD, mounted at /mnt/cache
 #
 # Also creates the service users, posix groups, and permission layout that the
 # docker-compose services rely on (plex-rw/plex-ro/personal-rw).
 #
-# Idempotent: skips zpool creation if a pool of the same name already exists.
+# Idempotent: skips zpool/mkfs/fstab actions if already configured.
 set -euo pipefail
 
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
@@ -140,6 +141,101 @@ sudo chown -R root:personal-rw /mnt/personal
 sudo chmod -R 2775             /mnt/personal
 
 echo "Personal pool datasets and permissions set."
+echo ""
+
+# ---------------------------------------------------------------------------
+# ext4 tier(s) — single-drive scratch / cache disks
+#
+# Each entry in drives.json's `ext4_drives` array becomes a mounted ext4
+# filesystem. No redundancy by design; only put data here that's cheap to
+# recreate (Ollama models, build artifacts, Docker overlay if you decide
+# to relocate it). Multiple entries are supported — name them in
+# drives.json (mountpoint + label), each can have its own subdirs and
+# owner.
+# ---------------------------------------------------------------------------
+
+provision_ext4_drive() {
+    local entry="$1"
+    local DEV     MNT      LABEL   OWNER
+    DEV=$(jq -r   '.device'                 <<<"$entry")
+    MNT=$(jq -r   '.mountpoint'             <<<"$entry")
+    LABEL=$(jq -r '.label // "ext4"'        <<<"$entry")
+    OWNER=$(jq -r '.owner // empty'         <<<"$entry")
+    mapfile -t SUBDIRS < <(jq -r '.subdirs[]?' <<<"$entry")
+
+    if [[ -z "$DEV" || -z "$MNT" ]]; then
+        echo "ERROR: ext4_drives entry is missing device or mountpoint:" >&2
+        echo "  $entry" >&2
+        return 1
+    fi
+
+    echo "ext4 drive: $DEV → $MNT (label=$LABEL)"
+
+    if findmnt -n "$MNT" >/dev/null 2>&1; then
+        echo "  $MNT already mounted — skipping format/fstab steps."
+    else
+        if [[ ! -b "$DEV" ]]; then
+            echo "  ERROR: $DEV is not a block device. Edit drives.json and re-run." >&2
+            return 1
+        fi
+
+        local EXISTING_FS
+        EXISTING_FS=$(sudo blkid -s TYPE -o value "$DEV" 2>/dev/null || true)
+        if [[ "$EXISTING_FS" == "ext4" ]]; then
+            echo "  Existing ext4 on $DEV — preserving."
+        else
+            if [[ -n "$EXISTING_FS" ]]; then
+                echo "  $DEV currently has $EXISTING_FS — wiping."
+            fi
+            sudo wipefs -a "$DEV"
+            sudo mkfs.ext4 -L "$LABEL" "$DEV"
+        fi
+
+        local UUID
+        UUID=$(sudo blkid -s UUID -o value "$DEV")
+        if [[ -z "$UUID" ]]; then
+            echo "  ERROR: could not read UUID for $DEV" >&2
+            return 1
+        fi
+
+        sudo mkdir -p "$MNT"
+        if grep -qE "^[^#]*UUID=$UUID" /etc/fstab; then
+            echo "  fstab entry already present for UUID=$UUID."
+        else
+            echo "UUID=$UUID  $MNT  ext4  defaults,nofail,x-systemd.device-timeout=5s  0  2" \
+                | sudo tee -a /etc/fstab >/dev/null
+            echo "  Appended fstab entry for $MNT."
+        fi
+
+        sudo systemctl daemon-reload
+        sudo mount -a
+        findmnt "$MNT"
+    fi
+
+    # Subdirs + ownership.
+    if (( ${#SUBDIRS[@]} > 0 )); then
+        sudo mkdir -p "${SUBDIRS[@]/#/$MNT/}"
+    fi
+    if [[ -n "$OWNER" ]]; then
+        if id "$OWNER" &>/dev/null; then
+            sudo chown -R "$OWNER:$(id -gn "$OWNER")" "$MNT"
+        else
+            echo "  Warning: owner '$OWNER' does not exist — leaving $MNT owned by root." >&2
+        fi
+    fi
+
+    echo "  $MNT ready."
+}
+
+mapfile -t EXT4_ENTRIES < <(jq -c '.ext4_drives[]?' "$CONFIG")
+if (( ${#EXT4_ENTRIES[@]} == 0 )); then
+    echo "No ext4_drives entries in $CONFIG — skipping ext4 tier(s)."
+else
+    echo "Provisioning ${#EXT4_ENTRIES[@]} ext4 tier(s)..."
+    for entry in "${EXT4_ENTRIES[@]}"; do
+        provision_ext4_drive "$entry"
+    done
+fi
 echo ""
 
 # ---------------------------------------------------------------------------

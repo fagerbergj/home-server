@@ -1,11 +1,13 @@
 #!/bin/bash
-# Detects HDDs, buckets by size, resolves to stable /dev/disk/by-id/ata-*
-# paths, and writes drives.json describing the two ZFS pools the next
+# Detects HDDs + an optional cache SSD, buckets by size, resolves to
+# stable /dev/disk/by-id/ata-* (or scsi-SATA_*) paths, and writes
+# drives.json describing the two ZFS pools and ext4 cache tier the next
 # script (phase4-drives.sh) will create.
 #
 # Detection rules — match the hardware documented in hardware_upgrades.md:
 #   media_pool    (RAIDZ2):  4 HDDs in the 24-28 TB range  (Seagate Exos 26TB)
 #   personal_pool (mirror):  2 HDDs in the 7-9 TB range    (Dell J7W80 8TB)
+#   cache         (ext4):    1 SSD that is not the OS drive (any size)
 #
 # Environment overrides:
 #   DRYRUN=1   — print the detected assignments; do not write drives.json.
@@ -33,22 +35,32 @@ echo ""
 
 OS_DEV=$(lsblk -no pkname "$(findmnt -n -o SOURCE /)")
 
-# lsblk gives us: name size-bytes type
+# lsblk gives us: name size-bytes type rota
 #   TYPE=disk filters out partitions and loops.
+#   ROTA=1 means spinning HDD; ROTA=0 means SSD/NVMe.
 MEDIA_DEVICES=()
 PERSONAL_DEVICES=()
+CACHE_DEVICES=()
 OTHER_DEVICES=()
 
 while IFS= read -r line; do
     dev=$(awk '{print $1}' <<<"$line")
     size_b=$(awk '{print $2}' <<<"$line")
     type=$(awk '{print $3}' <<<"$line")
+    rota=$(awk '{print $4}' <<<"$line")
 
     [[ "$type" != "disk" ]] && continue
     [[ "$dev" == "$OS_DEV" ]] && continue
 
     # Size in GB (base-10) — matches how disk manufacturers advertise.
     size_gb=$((size_b / 1000 / 1000 / 1000))
+
+    # Cache tier: any non-rotational drive that isn't the OS drive.
+    # Catches SATA SSDs and would catch NVMe too if a second one is added.
+    if [[ "$rota" == "0" ]]; then
+        CACHE_DEVICES+=("$dev:$size_gb")
+        continue
+    fi
 
     if (( size_gb >= MEDIA_MIN_GB && size_gb <= MEDIA_MAX_GB )); then
         MEDIA_DEVICES+=("$dev:$size_gb")
@@ -57,7 +69,7 @@ while IFS= read -r line; do
     else
         OTHER_DEVICES+=("$dev:$size_gb")
     fi
-done < <(lsblk -d -b -n -o NAME,SIZE,TYPE)
+done < <(lsblk -d -b -n -o NAME,SIZE,TYPE,ROTA)
 
 # ---------------------------------------------------------------------------
 # Resolve /dev/sdX → /dev/disk/by-id/{ata,scsi-SATA}-*
@@ -103,8 +115,10 @@ resolve_devices() {
 
 MEDIA_RESOLVED=()
 PERSONAL_RESOLVED=()
+CACHE_RESOLVED=()
 resolve_devices MEDIA_DEVICES MEDIA_RESOLVED
 resolve_devices PERSONAL_DEVICES PERSONAL_RESOLVED
+resolve_devices CACHE_DEVICES CACHE_RESOLVED
 
 # ---------------------------------------------------------------------------
 # Print summary
@@ -122,6 +136,12 @@ echo ""
 printf "personal_pool candidates (%d found, expected %d):\n" \
     "${#PERSONAL_RESOLVED[@]}" "$EXPECTED_PERSONAL"
 for entry in "${PERSONAL_RESOLVED[@]:-}"; do
+    [[ -z "$entry" ]] && continue
+    printf "  %s  (%s GB)\n" "${entry%:*}" "${entry#*:}"
+done
+echo ""
+printf "cache candidates (%d found, optional):\n" "${#CACHE_RESOLVED[@]}"
+for entry in "${CACHE_RESOLVED[@]:-}"; do
     [[ -z "$entry" ]] && continue
     printf "  %s  (%s GB)\n" "${entry%:*}" "${entry#*:}"
 done
@@ -156,6 +176,46 @@ emit_json_array() {
     printf '\n    ]'
 }
 
+emit_ext4_drives() {
+    # Emits the ext4_drives array. Each detected SSD becomes an entry.
+    # The first SSD defaults to /mnt/cache + label=cache + ollama/scratch
+    # subdirs (the documented "primary" cache use). Additional SSDs get
+    # /mnt/cache2, /mnt/cache3, ... — operator can rename in drives.json.
+    # If zero SSDs found, emit an empty array so the schema is always
+    # well-formed.
+    printf ',\n'
+    printf '  "ext4_drives": [\n'
+    local i first=1 entry dev
+    for i in "${!CACHE_RESOLVED[@]}"; do
+        entry="${CACHE_RESOLVED[$i]}"
+        [[ -z "$entry" ]] && continue
+        dev="${entry%:*}"
+        if (( first )); then
+            first=0
+        else
+            printf ',\n'
+        fi
+        if (( i == 0 )); then
+            printf '    {\n'
+            printf '      "device": "%s",\n' "$dev"
+            printf '      "mountpoint": "/mnt/cache",\n'
+            printf '      "label": "cache",\n'
+            printf '      "subdirs": ["ollama", "scratch"],\n'
+            printf '      "owner": "%s"\n' "${SUDO_USER:-$USER}"
+            printf '    }'
+        else
+            printf '    {\n'
+            printf '      "device": "%s",\n' "$dev"
+            printf '      "mountpoint": "/mnt/cache%d",\n' "$((i + 1))"
+            printf '      "label": "cache%d",\n' "$((i + 1))"
+            printf '      "subdirs": [],\n'
+            printf '      "owner": "%s"\n' "${SUDO_USER:-$USER}"
+            printf '    }'
+        fi
+    done
+    printf '\n  ]'
+}
+
 if [[ "$DRYRUN" == "1" ]]; then
     echo "DRYRUN=1 — skipping drives.json write."
 else
@@ -170,8 +230,9 @@ else
         printf '    "layout": "mirror",\n'
         printf '    "devices": '
         emit_json_array PERSONAL_RESOLVED
-        printf '\n  }\n'
-        printf '}\n'
+        printf '\n  }'
+        emit_ext4_drives
+        printf '\n}\n'
     } > "$OUTPUT"
     echo "Written to $OUTPUT"
 fi

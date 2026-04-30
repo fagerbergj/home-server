@@ -14,5 +14,14 @@
       "/dev/disk/by-id/ata-DELL-J7W80-SERIAL1",
       "/dev/disk/by-id/ata-DELL-J7W80-SERIAL2"
     ]
-  }
+  },
+  "ext4_drives": [
+    {
+      "device": "/dev/disk/by-id/ata-ADATA_SU650-SERIAL",
+      "mountpoint": "/mnt/cache",
+      "label": "cache",
+      "subdirs": ["ollama", "scratch"],
+      "owner": "jason-server"
+    }
+  ]
 }
