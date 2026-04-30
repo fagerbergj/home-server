@@ -4,17 +4,17 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| CPU | AMD Ryzen 5 5500 (Cezanne, 6c/12t, 3.6GHz, 65W) | ✅ |
-| Motherboard | GIGABYTE B550 Eagle WIFI6 (AM4, B550 chipset) | ✅ Native Ryzen 5000 support, PCIe 4.0, WIFI6 |
-| RAM | 32GB DDR4 | ✅ Upgraded from 16GB |
-| CPU Cooler | Stock AMD Wraith | ✅ |
+| CPU | AMD Ryzen Threadripper 1950X (Whitehaven, 16c/32t, 3.4GHz base / 4.0GHz XFR, 180W) | ✅ 64 PCIe 3.0 lanes — chosen for the lane budget over per-core perf |
+| Motherboard | ASUS ROG Strix X399-E Gaming (X399, sTR4) | ✅ 3× PCIe 3.0 x16 slots from CPU lanes; sensors via `asus_wmi_sensors` |
+| RAM | 48GB DDR4 (quad-channel) | ✅ |
+| CPU Cooler | DeepCool LT720 360mm AIO (sTR4 mount) | ✅ |
 | OS Drive | 500GB NVMe (M.2) | ✅ |
-| HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; PCIEX1_4 slot, negotiates PCIe 3.0 x1 (~985 MB/s) |
+| HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; runs at PCIe 3.0 x8 on Threadripper (~7.9 GB/s ceiling, far above what the drives can produce) |
 | Media Pool | 4× 26TB Seagate Exos `ST26000NM000C` (mfr-recert, 5yr warranty) | ✅ ZFS RAIDZ2, ~46 TiB usable |
 | Personal Pool | 2× 8TB Dell `J7W80` (Seagate Exos rebadge, new) | ✅ ZFS 2-way mirror, ~7.3 TiB usable; 2 bays free for future expansion |
-| GPU | RTX 3090 (Ampere, 24GB VRAM) | ✅ 24GB VRAM for LLM inference, excellent NVENC |
+| GPU | RTX 3090 (Ampere, 24GB VRAM) | ✅ 24GB VRAM for LLM inference, excellent NVENC; runs at full PCIe 3.0 x16 |
 | PSU | 1200W | ✅ |
-| Network | Intel GbE LAN (onboard, `enp6s0`) + WIFI6 | ✅ Gigabit |
+| Network | Intel GbE LAN (onboard) + WIFI6 | ✅ Gigabit |
 | Case | Fractal Design Define R5 (ATX Mid Tower, 8× 3.5" bays) | ✅ 6 bays in use, 2 free |
 
 ---
@@ -35,6 +35,7 @@
 
 ## Platform Notes
 
-- AM4 / B550 Eagle WIFI6 — Ryzen 5 5500, native Ryzen 5000 support (no BIOS flash workaround needed).
-- All four chipset PCIEX1 slots on this board are wired x1 electrical despite being x16 physical, so the HBA negotiates PCIe 3.0 x1. Slot choice is driven by cooling (above the bottom intake fan), not bandwidth. See `hardware_upgrades.md` for the full slot/bandwidth analysis.
-- HBA temperature: SAS3008 die runs 70–85 °C under load; throttle threshold is 95 °C. Monitor with `sensors | grep -A2 mpt3sas`.
+- **PCIe lanes**: Threadripper 1950X exposes 64 PCIe 3.0 lanes directly from the CPU. Both the GPU (x16) and the HBA (x8) get full electrical width without contending on a chipset uplink — the lane budget was the entire reason for picking this platform over the previous AM4/B550 build.
+- **HBA bandwidth**: at PCIe 3.0 x8 the 9300-16i has ~7.9 GB/s of host-side bandwidth, so monthly scrubs across 6 drives in parallel and resilvers run unconstrained. This eliminates the ~50% scrub-time penalty the AM4/B550 build would have incurred at x1.
+- **HBA temperature**: SAS3008 die runs 70–85 °C under load; throttle threshold is 95 °C. Monitor with `sensors | grep -A2 mpt3sas`.
+- **Note**: `hardware_upgrades.md` describes the original ZFS migration done on the AM4/B550 platform — its PCIe x1 analysis is no longer applicable here.
