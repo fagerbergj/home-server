@@ -1,8 +1,8 @@
 # Torrent Stack
 
-Automated media pipeline: Sonarr/Radarr find and request content → qBittorrent downloads it through Mullvad VPN → files land in the right Plex folder, renamed correctly.
+Automated media pipeline: Sonarr/Radarr find and request content → qBittorrent downloads it through AirVPN → files land in the right Plex folder, renamed correctly.
 
-All torrent traffic is routed through Mullvad VPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks.
+All torrent traffic is routed through AirVPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks. AirVPN supports static port forwarding, which is required for healthy seeding and inbound peer connections.
 
 ## Access
 
@@ -45,7 +45,7 @@ http://192.168.50.186:9696
 
 ## Changing Exit Country
 
-Edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [Mullvad server list](https://mullvad.net/servers) for options.
+Edit `SERVER_COUNTRIES` in `docker-compose.yml`. See the [AirVPN server list](https://airvpn.org/status/) for options. Note that the WireGuard config and reserved port are tied to the key/account, not a specific server, so changing the country doesn't require regenerating anything.
 
 ## Configarr (TRaSH-Guides sync)
 
