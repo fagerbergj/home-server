@@ -65,8 +65,6 @@ services:
     volumes:
       - ./config:/config
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
-      - /mnt/plex01:/mnt/plex01 # leave until all active seeds reach 1.2 ratio
-      - /mnt/plex02:/mnt/plex02 # leave until all active seeds reach 1.2 ratio
       - /mnt/media:/mnt/media
     mem_limit: 4g
     restart: unless-stopped
