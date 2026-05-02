@@ -214,7 +214,7 @@ services:
       - VAULT_PATH=/vault
       - DATABASE_URL=postgresql://${SHARED_DB_USER}:${SHARED_DB_PASSWORD}@shared-postgres:5432/shared?search_path=document_pipeline
       - QDRANT_URL=http://qdrant:6333
-      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-remarkable}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-documents}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
       - OPEN_WEBUI_URL=${OPEN_WEBUI_URL}
       - OPEN_WEBUI_API_KEY=${OPEN_WEBUI_API_KEY}
