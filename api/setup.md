@@ -68,13 +68,18 @@ For each proxy host that fronts a streaming service, edit it → **Advanced**
 tab → paste:
 
 ```nginx
-proxy_http_version 1.1;
-proxy_buffering off;
-proxy_cache off;
 proxy_read_timeout 600s;
 proxy_send_timeout 600s;
-chunked_transfer_encoding on;
+proxy_buffering off;
 ```
+
+Keep it to these three directives. NPM's validator silently rejects the
+proxy host config if you also include `proxy_http_version`, `proxy_cache`,
+or `chunked_transfer_encoding` in the Advanced block — which causes the
+host to disappear from `/data/nginx/proxy_host/`, so requests fall through
+to NPM's default server and clients see `SSL_ERROR_UNRECOGNIZED_NAME_ALERT`.
+Those three directives are all NPM defaults already, so dropping them
+loses nothing.
 
 Save — NPM regenerates the config and reloads automatically. Verify with:
 
