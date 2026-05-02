@@ -57,6 +57,34 @@ In Nginx Proxy Manager (`http://192.168.50.186:81`), add the following proxy hos
 | `api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | on | `*.jasonfagerberg.duckdns.org` | on |
 | `auth.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | on | `*.jasonfagerberg.duckdns.org` | on |
 
+### Streaming / SSE settings
+
+NPM defaults (`proxy_read_timeout 60s`, `proxy_buffering on`) break long-lived
+SSE streams: tokens get buffered, and any silence longer than 60s drops the
+connection (504 on first request while a model loads, `NS_ERROR_NET_PARTIAL_TRANSFER`
+mid-stream when the agent is between tool calls).
+
+For each proxy host that fronts a streaming service, edit it → **Advanced**
+tab → paste:
+
+```nginx
+proxy_http_version 1.1;
+proxy_buffering off;
+proxy_cache off;
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;
+chunked_transfer_encoding on;
+```
+
+Save — NPM regenerates the config and reloads automatically. Verify with:
+
+```bash
+docker exec nginx-proxy-manager sh -c 'grep -E "timeout|buffering" /data/nginx/proxy_host/*.conf'
+```
+
+Traefik's defaults are streaming-friendly (no response-header timeout, no
+buffering), so no Traefik-side tweaks are needed.
+
 ---
 
 ## 4. Start Authentik
