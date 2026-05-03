@@ -10,6 +10,12 @@ services:
       - JWT_SECRET_KEY=${RMFAKECLOUD_JWT_SECRET_KEY}
       - STORAGE_URL=${RMFAKECLOUD_STORAGE_URL}
       - DATADIR=/data
+      - RM_SMTP_SERVER=smtp.gmail.com:587
+      - RM_SMTP_USERNAME=jf.fagerberg@gmail.com
+      - RM_SMTP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - RM_SMTP_FROM=ReMarkable self-hosted <jf.fagerberg@gmail.com>
+      - RM_SMTP_NOTLS=1
+      - RM_SMTP_STARTTLS=1
     volumes:
       - ./rmfakecloud-data:/data
     networks:
