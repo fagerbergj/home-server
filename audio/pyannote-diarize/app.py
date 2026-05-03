@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 
 import numpy as np
 import torch
@@ -106,6 +107,25 @@ def _match_voiceprint(embedding, voiceprints: dict) -> tuple[str, float] | None:
     if best_name and best_sim >= SPEAKER_MATCH_THRESHOLD:
         return best_name, best_sim
     return None
+
+
+def _load_whisper_with_retry(model: str) -> WhisperModel:
+    """Load WhisperModel, retrying once on CUDA OOM after freeing + waiting.
+
+    Ollama and this service share a single GPU; an OOM here usually means
+    Ollama hasn't released its VRAM yet from a prior pipeline stage. A 5s
+    cooldown is enough for it to drop to idle in practice.
+    """
+    try:
+        return WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
+    except RuntimeError as e:
+        if "out of memory" not in str(e).lower():
+            raise
+        logger.warning("whisper load OOM — freeing and retrying in 5s: %s", e)
+        _free()
+        time.sleep(5)
+        _free()
+        return WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
 
 
 def _to_mono16k(src: str, dst_dir: str) -> str:
@@ -319,8 +339,22 @@ async def transcribe(file: UploadFile, model: str = Form(DEFAULT_WHISPER_MODEL))
         wav_path = _to_mono16k(upload_path, work_dir)
 
         logger.info("transcribing model=%s", model)
-        whisper = WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
-        segments, info = whisper.transcribe(wav_path, word_timestamps=True)
+        # GPU is shared with Ollama; if Ollama hasn't released VRAM yet, the
+        # ctranslate2 allocation 500s. Retry once after freeing + a short wait
+        # rather than failing the whole pipeline retry chain.
+        whisper = _load_whisper_with_retry(model)
+        # vad_filter drops silent / sub-threshold audio before decode — kills
+        # the "you you you you…" hallucination tail on quiet trailing edges.
+        # condition_on_previous_text=False stops one bad segment poisoning the
+        # rest of the file via the prior-text prompt, which is how a single
+        # repetition loop balloons into a cascade.
+        segments, info = whisper.transcribe(
+            wav_path,
+            word_timestamps=True,
+            vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 500},
+            condition_on_previous_text=False,
+        )
         # The generator must be drained to materialize segments. Collecting
         # eagerly so we can log counts and fall back if word-level is empty.
         seg_list = list(segments)
