@@ -21,6 +21,7 @@ services:
     ports:
       - "8080:8080"   # qBittorrent web UI (exposed here since qbittorrent shares this network)
       - "9696:9696"   # Prowlarr web UI (exposed here since prowlarr shares this network)
+      - "9117:9117"   # Jackett web UI (exposed here since jackett shares this network)
       - "8191:8191"   # FlareSolverr (exposed here since flaresolverr shares this network)
       - "6881:6881"
       - "6881:6881/udp"
@@ -48,6 +49,24 @@ services:
       - TZ=America/Chicago
     volumes:
       - ./prowlarr/config:/config
+    restart: unless-stopped
+
+  # Jackett kept alongside Prowlarr for manual backfill of older content —
+  # Sonarr/Radarr handle ongoing releases via Prowlarr, but Jackett's UI is
+  # better suited for hand-searching legacy stuff.
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    network_mode: "service:gluetun"   # all traffic routed through Gluetun
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - AUTO_UPDATE=true
+    volumes:
+      - ./jackett/config:/config
     restart: unless-stopped
 
   qbittorrent:

@@ -10,6 +10,7 @@ All torrent traffic is routed through AirVPN via [Gluetun](https://github.com/qd
 |---------|-----|---------|
 | qBittorrent | `http://192.168.50.186:8080` | Download client |
 | Prowlarr | `http://192.168.50.186:9696` | Indexer manager (syncs to Sonarr/Radarr) |
+| Jackett | `http://192.168.50.186:9117` | Manual indexer search for backfilling old content |
 | Sonarr | `http://192.168.50.186:8989` | TV show library manager |
 | Radarr | `http://192.168.50.186:7878` | Movie library manager |
 
@@ -42,6 +43,16 @@ Prowlarr manages indexers and syncs them automatically to Sonarr and Radarr. All
 ```
 http://192.168.50.186:9696
 ```
+
+## Jackett
+
+Jackett is kept alongside Prowlarr for **manual backfilling of older content**. Sonarr/Radarr (via Prowlarr) handle newer and ongoing releases well, but for hunting down legacy stuff the Jackett UI is more practical for hand-searching across trackers.
+
+```
+http://192.168.50.186:9117
+```
+
+Also routed through Gluetun.
 
 ## Changing Exit Country
 

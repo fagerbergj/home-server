@@ -56,7 +56,16 @@ docker restart qbittorrent
    - Radarr: `http://192.168.32.1:7878`, API key from Radarr Settings > General
    - Note: use `192.168.32.1` (Docker host gateway), not the LAN IP — Prowlarr runs on Gluetun's network and can't reach the host directly via `192.168.50.186`
 
-## 7. Set download paths
+## 7. Configure Jackett (manual backfill)
+
+1. Open `http://192.168.50.186:9117`
+2. Copy the **API Key** from the top-right (used if you ever wire it into another app)
+3. **Add Indexers:** click `+ Add indexer` and add whichever trackers you want for backfill searches
+4. **FlareSolverr** (for Cloudflare-protected indexers): Settings (wrench icon) > set FlareSolverr API URL to `http://127.0.0.1:8191` and save
+
+Jackett is intentionally not wired into Sonarr/Radarr — its purpose here is the manual search UI for older content that Prowlarr-driven automation misses. Use the **Manual Search** button on each indexer, or copy the Torznab feed URL into qBittorrent's RSS if you want a feed.
+
+## 8. Set download paths
 
 In Options > Downloads, set the default save path and per-category paths:
 
@@ -65,7 +74,7 @@ In Options > Downloads, set the default save path and per-category paths:
 | Movies | `/mnt/media/movies` |
 | TV | `/mnt/media/shows` |
 
-## 8. Configure Sonarr (TV shows)
+## 9. Configure Sonarr (TV shows)
 
 Open `http://192.168.50.186:8989`.
 
@@ -84,7 +93,7 @@ Note: indexers are synced automatically from Prowlarr — no need to add them ma
 
 ---
 
-## 9. Configure Radarr (movies)
+## 10. Configure Radarr (movies)
 
 Open `http://192.168.50.186:7878`. Same steps as Sonarr:
 
@@ -96,7 +105,7 @@ Note: indexers are synced automatically from Prowlarr.
 
 ---
 
-## 10. Update qBittorrent download path
+## 11. Update qBittorrent download path
 
 In qBittorrent: Options > Downloads > Default Save Path → `/mnt/media/downloads/`
 
@@ -104,7 +113,7 @@ Sonarr and Radarr override this per-category automatically, so existing categori
 
 ---
 
-## 11. Configure Configarr (TRaSH-Guides sync)
+## 12. Configure Configarr (TRaSH-Guides sync)
 
 Configarr pushes TRaSH-Guides quality profiles and custom formats into Sonarr and Radarr. Templates enabled in `configarr/config/config.yml`: all English profiles (WEB-1080p, WEB-2160p for TV; HD Bluray+WEB, UHD Bluray+WEB, Remux+WEB 1080p/2160p for movies) plus anime for both.
 
