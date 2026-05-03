@@ -167,6 +167,15 @@ services:
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - opensearch-data:/usr/share/opensearch/data
+    # Single-node never reaches green (no replica to allocate), so wait for
+    # yellow. Lets dependents gate on actual readiness instead of just process
+    # start — document-pipeline used to race the boot and disable search.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
     networks:
       - default
@@ -223,6 +232,8 @@ services:
       - OPENSEARCH_INDEX=${OPENSEARCH_INDEX:-documents}
     depends_on:
       shared-postgres:
+        condition: service_healthy
+      opensearch:
         condition: service_healthy
     volumes:
       - /mnt/personal/documents:/vault
