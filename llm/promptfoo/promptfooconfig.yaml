@@ -23,6 +23,7 @@ providers:
   - id: ollama:chat:qwen35-coder:latest
   - id: ollama:chat:gemma4:31b
   - id: ollama:chat:gemma4-26b:latest
+  - id: ollama:chat:granite4.1:30b
 
 prompts:
   - "{{task}}"
