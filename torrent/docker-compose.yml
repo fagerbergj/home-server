@@ -172,7 +172,7 @@ services:
       - TS_HOSTNAME=vpn-exit
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
-      - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
+      - TS_EXTRA_ARGS=--advertise-exit-node
     volumes:
       - ./tailscale-vpn-state:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
