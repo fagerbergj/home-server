@@ -1,6 +1,9 @@
 # Networking
 
-Reverse proxy via Nginx Proxy Manager (NPM). Handles SSL automatically via Let's Encrypt wildcard cert (DNS-01 challenge via DuckDNS). DDNS via a DuckDNS updater container — no router config needed.
+Two ingress paths:
+
+- **Public** — Nginx Proxy Manager (NPM) terminates TLS for services that need to be reachable from non-tailnet devices (the reMarkable tablet, family Plex clients, mobile apps with no Tailscale, etc.). Wildcard Let's Encrypt cert via DuckDNS DNS-01 challenge. DDNS via the DuckDNS updater container.
+- **Tailnet** — Tailscale gives every enrolled device a `100.x.x.x` IP and a MagicDNS hostname. Admin UIs and personal-only services live here, never on the public internet.
 
 ## Architecture
 
@@ -11,19 +14,33 @@ Internet
     │                      ──► auth.jasonfagerberg.duckdns.org        ──► Traefik        (8090) ──► Authentik (9000)
     │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
     │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
-    │                      ──► llm-api.jasonfagerberg.duckdns.org     ──► Ollama API      (11434)
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
     │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
     │                      ──► remarkable.jasonfagerberg.duckdns.org  ──► rmfakecloud     (3005)
-    │                      ──► status.jasonfagerberg.duckdns.org      ──► Uptime Kuma     (3001)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft    (25565)
+
+Tailnet (100.64.0.0/10)
+    │
+    └── tailscale ──► jason-server ──► :81    NPM admin
+                                  ──► :8091  Traefik dashboard
+                                  ──► :3003  AdGuard Home
+                                  ──► :3004  Grafana
+                                  ──► :3001  Uptime Kuma
+                                  ──► :8080  qBittorrent
+                                  ──► :8989  Sonarr
+                                  ──► :7878  Radarr
+                                  ──► :9000  Authentik (break-glass)
+                                  ──► :11434 Ollama raw API
+                                  ──► 192.168.50.0/24 (subnet route — full LAN access)
 ```
 
 Minecraft bypasses NPM entirely — raw TCP on port 25565.
 
-## External URLs
+## Public URLs
+
+Reachable from anywhere on the internet via NPM.
 
 | Service | URL |
 |---------|-----|
@@ -31,21 +48,29 @@ Minecraft bypasses NPM entirely — raw TCP on port 25565.
 | API Docs | `https://api.jasonfagerberg.duckdns.org/docs` |
 | Authentik | `https://auth.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
-
 | Minecraft | `jasonfagerberg.duckdns.org:25565` |
 | Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
-| Ollama API | `https://llm-api.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 | Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Plex | `https://plex.jasonfagerberg.duckdns.org` |
 | rmfakecloud | `https://remarkable.jasonfagerberg.duckdns.org` |
-| Uptime Kuma | `https://status.jasonfagerberg.duckdns.org` |
 
-## Internal Only
+## Tailnet URLs
+
+Reachable only from devices enrolled in the tailnet. MagicDNS resolves `jason-server` to its `100.x.x.x` IP automatically. Subnet route also makes `192.168.50.186:<port>` work from anywhere.
 
 | Service | URL |
 |---------|-----|
-| AdGuard Home | `http://192.168.50.186:3003` |
+| NPM admin | `http://jason-server:81` |
+| Traefik dashboard | `http://jason-server:8091/dashboard/` |
+| AdGuard Home | `http://jason-server:3003` |
+| Grafana | `http://jason-server:3004` |
+| Uptime Kuma | `http://jason-server:3001` |
+| qBittorrent | `http://jason-server:8080` |
+| Sonarr | `http://jason-server:8989` |
+| Radarr | `http://jason-server:7878` |
+| Authentik (break-glass) | `http://jason-server:9000` |
+| Ollama raw API | `http://jason-server:11434` |
 
 ## NPM Admin
 

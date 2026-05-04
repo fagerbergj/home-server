@@ -16,8 +16,8 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama (Local)",
       "options": {
-        "baseURL": "http://192.168.50.186:11434/v1",
-        "apiKey": "{env:OLLAMA_API_KEY}"
+        "baseURL": "http://jason-server:11434/v1",
+        "apiKey": "unused"
       },
       "models": {
         "qwen35-coding": {
@@ -41,29 +41,9 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
 }
 ```
 
-## API key
+## Access
 
-The key is the same one used by NPM to protect the external endpoint. Get it from the server:
-
-```bash
-grep OLLAMA_API_KEY ~/workspace/home-server/.env
-```
-
-Then export it in your shell profile (`~/.bashrc` or `~/.zshrc`):
-
-```bash
-export OLLAMA_API_KEY=your-key-here
-```
-
-## External access (off home network)
-
-Swap the `baseURL` for the external endpoint:
-
-```json
-"baseURL": "https://llm-api.jasonfagerberg.duckdns.org/v1"
-```
-
-Auth is the same API key — enforced by NPM, not Ollama.
+`jason-server` resolves via Tailscale MagicDNS once the client is enrolled (see [networking/setup.md](../networking/setup.md) Phase 7) — the same `baseURL` works on LAN and remotely. Ollama doesn't enforce API keys; tailnet membership is the access boundary. The `"unused"` placeholder is just to satisfy OpenCode's required-field validation.
 
 ## Verify
 

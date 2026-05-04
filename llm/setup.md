@@ -1,26 +1,18 @@
 # LLM — Setup
 
-## 1. Generate the env file
-
-```bash
-./generate-env.sh
-```
-
-This generates the API key used in NPM's nginx config to protect the external Ollama endpoint.
-
-## 2. Start services
+## 1. Start services
 
 ```bash
 docker compose up -d
 ```
 
-## 3. Pull models
+## 2. Pull models
 
 ```bash
 docker exec ollama ollama pull qwen3.5:35b
 ```
 
-## 4. Create model variants
+## 3. Create model variants
 
 Two variants from the same weights — one tuned for coding (large context, thinking on), one for chat (small context, no thinking). Qwen3.5 35B is a hybrid SSM architecture so VRAM stays flat (~26 GiB) regardless of context size.
 
@@ -40,7 +32,7 @@ EOF
 ollama create qwen35-chat -f /tmp/Modelfile'
 ```
 
-## 5. Set up Open WebUI
+## 4. Set up Open WebUI
 
 Open `http://192.168.50.186:3000` in your browser.
 
@@ -58,9 +50,9 @@ Open `http://192.168.50.186:3000` in your browser.
    docker exec -it ollama ollama ps
    ```
    You should see the model listed with `100% GPU`
-3. Verify API key auth is working via OpenCode — follow [opencode_setup.md](opencode_setup.md) to configure it with `qwen35-coding`, then confirm you can chat from a project
-4. Confirm auth is enforced at NPM — a request without the key should be rejected:
+3. Verify the API is reachable over the tailnet — from any tailnet-enrolled device:
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" https://llm-api.jasonfagerberg.duckdns.org/v1/models
+   curl -s -o /dev/null -w "%{http_code}" http://jason-server:11434/api/tags
    ```
-   You should get `401`
+   You should get `200`. From a non-tailnet device on the public internet the request should fail outright — that's the access boundary working.
+4. Verify OpenCode integration — follow [opencode_setup.md](opencode_setup.md) to configure it with `qwen35-coding`, then confirm you can chat from a project

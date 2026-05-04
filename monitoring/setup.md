@@ -40,15 +40,9 @@ Add each service as an **HTTP(s)** monitor using the local IP. Do not use extern
 
 > Do not add a Minecraft monitor if autopause is enabled — pings will prevent the server from pausing.
 
-## Proxy Hosts
-
-Add in Nginx Proxy Manager — see [`networking/setup.md`](../networking/setup.md):
-
-| Service | Domain | Port |
-|---------|--------|------|
-| Uptime Kuma | `status.jasonfagerberg.duckdns.org` | `3001` |
-
 ## Access
 
-- Uptime Kuma local: `http://192.168.50.186:3001`
-- Uptime Kuma remote: `https://status.jasonfagerberg.duckdns.org`
+Grafana and Uptime Kuma are tailnet-only — see [`networking/setup.md`](../networking/setup.md) Phase 7.
+
+- Grafana: `http://jason-server:3004`
+- Uptime Kuma: `http://jason-server:3001`

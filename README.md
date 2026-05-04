@@ -19,6 +19,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | qBittorrent | Download torrents directly to server via web UI |
 | remarkable-bridge | OCRs reMarkable notes via Ollama and indexes them in Open WebUI |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
+| Tailscale | Mesh VPN — remote access to LAN-only admin UIs, exit node, MagicDNS |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
 | Watchtower | Auto-updates containers daily, emails on update |
@@ -65,7 +66,8 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 4. Mount Drives + Alerts
 5. Docker + NVIDIA Container Toolkit
 6. [Nginx Proxy Manager](networking/setup.md) (proxy hosts, SSL)
-7. Services — see each service's `setup.md`
+7. [Tailscale](networking/setup.md) (mesh VPN for tailnet-only admin UIs)
+8. Services — see each service's `setup.md`
 
 See [setup.md](setup.md) for the full step-by-step guide.
 

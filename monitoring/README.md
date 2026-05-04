@@ -10,12 +10,12 @@
 
 ## Access
 
+Tailnet-only — see [../networking/setup.md](../networking/setup.md) Phase 7.
+
 | Tool | URL |
 |------|-----|
-| Grafana (local) | `http://192.168.50.186:3004` |
-| Grafana (remote) | `https://dashboard.jasonfagerberg.duckdns.org` |
-| Uptime Kuma (local) | `http://192.168.50.186:3001` |
-| Uptime Kuma (remote) | `https://status.jasonfagerberg.duckdns.org` |
+| Grafana | `http://jason-server:3004` |
+| Uptime Kuma | `http://jason-server:3001` |
 
 ## Updating
 

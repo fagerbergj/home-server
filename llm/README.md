@@ -4,9 +4,13 @@ Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on an
 
 ## Access
 
-Local: `http://192.168.50.186:3000`
-External: `https://llm.jasonfagerberg.duckdns.org`
-API: `https://llm-api.jasonfagerberg.duckdns.org`
+Open WebUI:
+- LAN: `http://192.168.50.186:3000`
+- Public: `https://llm.jasonfagerberg.duckdns.org`
+
+Ollama API (tailnet-only — see [networking/setup.md](../networking/setup.md) Phase 7):
+- LAN: `http://192.168.50.186:11434`
+- Tailnet: `http://jason-server:11434`
 
 ## Evaluating a model
 
@@ -107,13 +111,11 @@ curl http://192.168.50.186:11434/api/generate \
   -d '{"model": "<model>", "prompt": "Hello!", "stream": false}'
 ```
 
-From outside your network — any tool that supports a custom OpenAI-compatible base URL:
+From outside your home network — connect via Tailscale, then use any tool that supports a custom OpenAI-compatible base URL:
 ```
-Base URL: https://llm-api.jasonfagerberg.duckdns.org
-API Key:  <your key from NPM nginx config>
+Base URL: http://jason-server:11434
+API Key:  unused — tailnet membership is the access boundary
 ```
-
-> Auth is enforced by NPM's nginx config, not Ollama itself.
 
 ## Managing Models
 

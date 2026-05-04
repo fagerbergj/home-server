@@ -415,7 +415,15 @@ See [`networking/setup.md`](networking/setup.md) — Phase 6 section for full de
 
 ---
 
-## Phase 7 — Services (Docker Compose)
+## Phase 7 — Tailscale
+
+Mesh VPN for remote access to LAN-only admin UIs and ad-blocking on the go.
+
+See [`networking/setup.md`](networking/setup.md) — Phase 7 section.
+
+---
+
+## Phase 8 — Services (Docker Compose)
 
 Start services in this order — see each directory's `setup.md` for details:
 
