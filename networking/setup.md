@@ -219,6 +219,31 @@ These never need to leave the tailnet — no NPM proxy host, no Authentik route.
 
 The `dashboard.`, `status.`, and `llm-api.` proxy hosts that previously fronted Grafana, Uptime Kuma, and the Ollama API have been deleted from NPM. The wildcard cert still covers the namespace if you ever want to re-add a public host.
 
+### Optional: Second Exit Node Through AirVPN
+
+A `tailscale-vpn-exit` sidecar in [`torrent/docker-compose.yml`](../torrent/docker-compose.yml) shares Gluetun's network namespace, so its outbound is forced through AirVPN. Approve it as an exit node in the admin console alongside `jason-server`, then the Tailscale app on your phone/laptop has two choices:
+
+- `jason-server` — direct via your home ISP
+- `vpn-exit` — through AirVPN (Netherlands by default)
+
+To enable:
+
+1. Generate a reusable Tailscale auth key at [login.tailscale.com/admin/settings/keys](https://login.tailscale.com/admin/settings/keys) — reusable on, ephemeral off, tags optional.
+2. Set `TS_AUTHKEY_VPN_EXIT=tskey-auth-...` in `~/workspace/home-server/.env`.
+3. Bring up the sidecar:
+   ```bash
+   cd ~/workspace/home-server/torrent
+   docker compose up -d tailscale-vpn-exit
+   ```
+4. In the admin console, **Machines → vpn-exit → Edit route settings → Use as exit node**.
+5. On the phone/laptop Tailscale app, pick `vpn-exit` as the exit node when you want AirVPN routing; turn it off for direct.
+
+Caveats:
+- AirVPN bandwidth is shared with qBittorrent — heavy seeding will slow phone browsing.
+- Latency stacks: phone → tailnet → home → AirVPN. Expect +50–150ms.
+- Direct peer connections to the sidecar won't usually establish (Gluetun blocks inbound except the qBittorrent forwarded port), so traffic falls back to a DERP relay. Functional, slightly slower.
+- No phone-side killswitch — if Tailscale drops, the phone falls back to its normal connection. Enable Tailscale's "always on" + exit-node-required if you need leak protection.
+
 ### Updates
 
 The `tailscaled` package auto-updates via apt's unattended upgrades hook installed by the official script. Confirm with:

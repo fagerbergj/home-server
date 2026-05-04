@@ -25,6 +25,15 @@ services:
       - "8191:8191"   # FlareSolverr (exposed here since flaresolverr shares this network)
       - "6881:6881"
       - "6881:6881/udp"
+    # Built-in Gluetun healthcheck verifies the VPN tunnel is up, not just the
+    # process. Dependents below gate on this so watchtower-triggered restarts
+    # don't leave qBittorrent stuck in "firewalled" with a stale namespace.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--tries=1", "--timeout=5", "https://airvpn.org"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   flaresolverr:
@@ -32,7 +41,9 @@ services:
     container_name: flaresolverr
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
+        restart: true
     environment:
       - TZ=America/Chicago
     restart: unless-stopped
@@ -42,7 +53,9 @@ services:
     container_name: prowlarr
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
+        restart: true
     environment:
       - PUID=1000
       - PGID=1000
@@ -59,7 +72,9 @@ services:
     container_name: jackett
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
+        restart: true
     environment:
       - PUID=1000
       - PGID=1000
@@ -74,7 +89,9 @@ services:
     container_name: qbittorrent
     network_mode: "service:gluetun"   # all traffic routed through Gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
+        restart: true
     environment:
       - PUID=994  # run: id qbittorrent
       - PGID=1001      # run: getent group plex-rw
@@ -127,3 +144,36 @@ services:
       - ./configarr/custom/cfs:/app/cfs
       - ./configarr/custom/templates:/app/templates
     restart: "no"
+
+  # Optional second Tailscale exit node, sharing Gluetun's network namespace
+  # so its outbound is forced through AirVPN. From a phone or laptop, pick
+  # `vpn-exit` as the exit node in the Tailscale app to route that device's
+  # traffic through AirVPN; pick `jason-server` (or none) for direct.
+  #
+  # Requires TS_AUTHKEY_VPN_EXIT in ../.env — generate at
+  # https://login.tailscale.com/admin/settings/keys (reusable, ephemeral off).
+  # After first boot, approve the new node and toggle "Use as exit node" in
+  # the admin console.
+  tailscale-vpn-exit:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-vpn-exit
+    hostname: vpn-exit
+    network_mode: "service:gluetun"
+    env_file:
+      - ../.env
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY_VPN_EXIT}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
+    volumes:
+      - ./tailscale-vpn-state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped

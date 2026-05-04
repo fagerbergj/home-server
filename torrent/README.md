@@ -4,6 +4,10 @@ Automated media pipeline: Sonarr/Radarr find and request content → qBittorrent
 
 All torrent traffic is routed through AirVPN via [Gluetun](https://github.com/qdm12/gluetun). If the VPN drops, traffic stops — no leaks. AirVPN supports static port forwarding, which is required for healthy seeding and inbound peer connections.
 
+Dependents (qBittorrent, Sonarr-feeders, etc.) gate on Gluetun's healthcheck and auto-restart when Gluetun restarts (`depends_on.restart: true`), so watchtower-triggered Gluetun updates no longer leave qBittorrent stuck in `firewalled` with a stale namespace.
+
+A `tailscale-vpn-exit` sidecar piggy-backs on Gluetun's namespace to expose AirVPN as an additional Tailscale exit node — useful for routing phone or laptop traffic through AirVPN on demand. Optional, off by default. See [../networking/setup.md](../networking/setup.md) Phase 7.
+
 ## Access
 
 Tailnet-only — see [../networking/setup.md](../networking/setup.md) Phase 7.
