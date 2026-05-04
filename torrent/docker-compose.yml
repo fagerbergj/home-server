@@ -25,13 +25,6 @@ services:
       - "8191:8191"   # FlareSolverr (exposed here since flaresolverr shares this network)
       - "6881:6881"
       - "6881:6881/udp"
-    # IP forwarding is per-namespace, not host-global. Tailscale's exit-node
-    # sidecar (tailscale-vpn-exit) shares this namespace and needs forwarding
-    # on to route Tailscale-client traffic out through WireGuard. Gluetun
-    # NATs but doesn't enable forwarding on its own.
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv6.conf.all.forwarding=1
     # Built-in Gluetun healthcheck verifies the VPN tunnel is up, not just the
     # process. Dependents below gate on this so watchtower-triggered restarts
     # don't leave qBittorrent stuck in "firewalled" with a stale namespace.
@@ -151,36 +144,3 @@ services:
       - ./configarr/custom/cfs:/app/cfs
       - ./configarr/custom/templates:/app/templates
     restart: "no"
-
-  # Optional second Tailscale exit node, sharing Gluetun's network namespace
-  # so its outbound is forced through AirVPN. From a phone or laptop, pick
-  # `vpn-exit` as the exit node in the Tailscale app to route that device's
-  # traffic through AirVPN; pick `jason-server` (or none) for direct.
-  #
-  # Requires TS_AUTHKEY_VPN_EXIT in ../.env — generate at
-  # https://login.tailscale.com/admin/settings/keys (reusable, ephemeral off).
-  # After first boot, approve the new node and toggle "Use as exit node" in
-  # the admin console.
-  tailscale-vpn-exit:
-    image: tailscale/tailscale:latest
-    container_name: tailscale-vpn-exit
-    network_mode: "service:gluetun"
-    env_file:
-      - ../.env
-    environment:
-      - TS_AUTHKEY=${TS_AUTHKEY_VPN_EXIT}
-      - TS_HOSTNAME=vpn-exit
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-      - TS_EXTRA_ARGS=--advertise-exit-node
-    volumes:
-      - ./tailscale-vpn-state:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    depends_on:
-      gluetun:
-        condition: service_healthy
-        restart: true
-    restart: unless-stopped
