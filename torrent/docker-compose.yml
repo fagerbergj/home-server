@@ -157,12 +157,12 @@ services:
   tailscale-vpn-exit:
     image: tailscale/tailscale:latest
     container_name: tailscale-vpn-exit
-    hostname: vpn-exit
     network_mode: "service:gluetun"
     env_file:
       - ../.env
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY_VPN_EXIT}
+      - TS_HOSTNAME=vpn-exit
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
