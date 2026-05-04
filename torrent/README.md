@@ -6,13 +6,15 @@ All torrent traffic is routed through AirVPN via [Gluetun](https://github.com/qd
 
 ## Access
 
+Tailnet-only — see [../networking/setup.md](../networking/setup.md) Phase 7.
+
 | Service | URL | Purpose |
 |---------|-----|---------|
-| qBittorrent | `http://192.168.50.186:8080` | Download client |
-| Prowlarr | `http://192.168.50.186:9696` | Indexer manager (syncs to Sonarr/Radarr) |
-| Jackett | `http://192.168.50.186:9117` | Manual indexer search for backfilling old content |
-| Sonarr | `http://192.168.50.186:8989` | TV show library manager |
-| Radarr | `http://192.168.50.186:7878` | Movie library manager |
+| qBittorrent | `http://jason-server:8080` | Download client |
+| Prowlarr | `http://jason-server:9696` | Indexer manager (syncs to Sonarr/Radarr) |
+| Jackett | `http://jason-server:9117` | Manual indexer search for backfilling old content |
+| Sonarr | `http://jason-server:8989` | TV show library manager |
+| Radarr | `http://jason-server:7878` | Movie library manager |
 
 ## Download Paths
 
@@ -41,7 +43,7 @@ Plugins included: `animetosho.py`, `audiobookbay.py`, `kickasstorrents.py`, `sol
 Prowlarr manages indexers and syncs them automatically to Sonarr and Radarr. All indexer traffic routes through the VPN via Gluetun.
 
 ```
-http://192.168.50.186:9696
+http://jason-server:9696
 ```
 
 ## Jackett
@@ -49,7 +51,7 @@ http://192.168.50.186:9696
 Jackett is kept alongside Prowlarr for **manual backfilling of older content**. Sonarr/Radarr (via Prowlarr) handle newer and ongoing releases well, but for hunting down legacy stuff the Jackett UI is more practical for hand-searching across trackers.
 
 ```
-http://192.168.50.186:9117
+http://jason-server:9117
 ```
 
 Also routed through Gluetun.

@@ -24,7 +24,7 @@ docker compose up -d
 
 Open `http://192.168.50.186:3002` and follow the wizard. Set your admin username and password.
 
-After the wizard completes the web UI is accessible at `http://192.168.50.186:3003` (internal only — not exposed via NPM).
+After the wizard completes the web UI is accessible at `http://jason-server:3003` (tailnet) or `http://192.168.50.186:3003` (LAN). Not exposed via NPM.
 
 ## 4. Point router DNS at the server
 
