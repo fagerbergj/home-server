@@ -25,6 +25,13 @@ services:
       - "8191:8191"   # FlareSolverr (exposed here since flaresolverr shares this network)
       - "6881:6881"
       - "6881:6881/udp"
+    # IP forwarding is per-namespace, not host-global. Tailscale's exit-node
+    # sidecar (tailscale-vpn-exit) shares this namespace and needs forwarding
+    # on to route Tailscale-client traffic out through WireGuard. Gluetun
+    # NATs but doesn't enable forwarding on its own.
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
     # Built-in Gluetun healthcheck verifies the VPN tunnel is up, not just the
     # process. Dependents below gate on this so watchtower-triggered restarts
     # don't leave qBittorrent stuck in "firewalled" with a stale namespace.
