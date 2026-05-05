@@ -103,6 +103,13 @@ services:
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
       - /mnt/media:/mnt/media
     mem_limit: 8g
+    # Each peer connection consumes a file descriptor. Container default is
+    # 1024, which qBittorrent silently exceeds with high connection caps,
+    # then refuses new peers without an obvious error.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     restart: unless-stopped
 
   sonarr:
