@@ -102,7 +102,7 @@ services:
       - ./config:/config
       - ./config/torrent/nova3/engines:/config/torrent/nova3/engines  # search plugins
       - /mnt/media:/mnt/media
-    mem_limit: 4g
+    mem_limit: 8g
     restart: unless-stopped
 
   sonarr:
