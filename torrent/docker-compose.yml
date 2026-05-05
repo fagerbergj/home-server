@@ -14,7 +14,7 @@ services:
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
-      - SERVER_COUNTRIES=Netherlands
+      - SERVER_COUNTRIES=${VPN_SERVER_COUNTRIES:-Netherlands}
       # Port forwarding is static on AirVPN — reserve a port in the Client Area,
       # set AIRVPN_FORWARDED_PORT in ../.env, and use it as qBittorrent's listen port.
       - FIREWALL_VPN_INPUT_PORTS=${AIRVPN_FORWARDED_PORT}
