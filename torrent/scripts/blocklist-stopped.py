@@ -19,6 +19,10 @@ Required env vars:
   SONARR_API_KEY    Sonarr API key (Settings > General)
   RADARR_API_KEY    Radarr API key (Settings > General)
 
+Optional env vars (only needed if qBit's IP-bypass list excludes the host):
+  QBIT_USERNAME     qBittorrent WebUI username
+  QBIT_PASSWORD     qBittorrent WebUI password
+
 Options:
   --apply           Actually delete + blocklist (default: dry run)
   --qbit-url URL    qBittorrent WebUI URL (default: http://localhost:8080)
@@ -30,19 +34,35 @@ Examples:
   export SONARR_API_KEY=xxx RADARR_API_KEY=yyy
   blocklist-stopped.py                          # dry run
   blocklist-stopped.py --apply                  # blocklist + re-search
-  blocklist-stopped.py --apply --no-redownload  # blocklist only
+  blocklist-stopped.py --apply --no-redownload  # blocklist only, no re-search
 """
 
 import argparse
+import http.cookiejar
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 
 
-def qbit_get(base_url, path):
-    req = urllib.request.Request(f"{base_url}{path}")
-    return json.loads(urllib.request.urlopen(req).read())
+def qbit_opener(base_url):
+    """Return a urllib opener with cookie jar; logs in if credentials are set."""
+    jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    user = os.environ.get("QBIT_USERNAME")
+    pw = os.environ.get("QBIT_PASSWORD")
+    if user and pw:
+        body = urllib.parse.urlencode({"username": user, "password": pw}).encode()
+        req = urllib.request.Request(f"{base_url}/api/v2/auth/login", data=body)
+        resp = opener.open(req).read().decode()
+        if resp.strip() != "Ok.":
+            raise RuntimeError(f"qBit login failed: {resp!r}")
+    return opener
+
+
+def qbit_get(opener, base_url, path):
+    return json.loads(opener.open(f"{base_url}{path}").read())
 
 
 def arr_call(base, key, path, method="GET"):
@@ -114,7 +134,8 @@ def main():
 
     print(f"Querying {args.qbit_url} ...")
     try:
-        torrents = qbit_get(args.qbit_url, "/api/v2/torrents/info?filter=stopped")
+        opener = qbit_opener(args.qbit_url)
+        torrents = qbit_get(opener, args.qbit_url, "/api/v2/torrents/info?filter=stopped")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

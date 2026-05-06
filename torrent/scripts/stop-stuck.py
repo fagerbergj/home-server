@@ -17,6 +17,10 @@ Options:
   --qbit-url URL       qBittorrent WebUI URL (default: http://localhost:8080)
   --delete             Delete instead of stop (irreversible)
 
+Optional env vars (only needed if qBit's IP-bypass list excludes the host):
+  QBIT_USERNAME        qBittorrent WebUI username
+  QBIT_PASSWORD        qBittorrent WebUI password
+
 Examples:
   stop-stuck.py                              # dry run, default 1h threshold
   stop-stuck.py --apply                      # stop torrents stuck >1h
@@ -25,22 +29,38 @@ Examples:
 """
 
 import argparse
+import http.cookiejar
 import json
+import os
 import sys
 import time
 import urllib.parse
 import urllib.request
 
 
-def qbit_get(base_url, path):
-    req = urllib.request.Request(f"{base_url}{path}")
-    return json.loads(urllib.request.urlopen(req).read())
+def build_opener(base_url):
+    """Return a urllib opener with cookie jar; logs in if credentials are set."""
+    jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    user = os.environ.get("QBIT_USERNAME")
+    pw = os.environ.get("QBIT_PASSWORD")
+    if user and pw:
+        body = urllib.parse.urlencode({"username": user, "password": pw}).encode()
+        req = urllib.request.Request(f"{base_url}/api/v2/auth/login", data=body)
+        resp = opener.open(req).read().decode()
+        if resp.strip() != "Ok.":
+            raise RuntimeError(f"qBit login failed: {resp!r}")
+    return opener
 
 
-def qbit_post(base_url, path, data):
+def qbit_get(opener, base_url, path):
+    return json.loads(opener.open(f"{base_url}{path}").read())
+
+
+def qbit_post(opener, base_url, path, data):
     body = urllib.parse.urlencode(data).encode()
     req = urllib.request.Request(f"{base_url}{path}", data=body, method="POST")
-    urllib.request.urlopen(req).read()
+    opener.open(req).read()
 
 
 def main():
@@ -60,7 +80,8 @@ def main():
 
     print(f"Querying {args.qbit_url} ...")
     try:
-        torrents = qbit_get(args.qbit_url, "/api/v2/torrents/info?filter=downloading")
+        opener = build_opener(args.qbit_url)
+        torrents = qbit_get(opener, args.qbit_url, "/api/v2/torrents/info?filter=downloading")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -86,11 +107,11 @@ def main():
 
     hashes = "|".join(t["hash"] for t in stuck)
     if args.delete:
-        qbit_post(args.qbit_url, "/api/v2/torrents/delete",
+        qbit_post(opener, args.qbit_url, "/api/v2/torrents/delete",
                   {"hashes": hashes, "deleteFiles": "true"})
         print(f"\nDeleted {len(stuck)} torrents.")
     else:
-        qbit_post(args.qbit_url, "/api/v2/torrents/stop", {"hashes": hashes})
+        qbit_post(opener, args.qbit_url, "/api/v2/torrents/stop", {"hashes": hashes})
         print(f"\nStopped {len(stuck)} torrents (state -> stoppedDL).")
 
 
