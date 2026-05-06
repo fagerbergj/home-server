@@ -8,7 +8,7 @@ services:
       - EULA=TRUE
       - VERSION=1.21.1
       - TYPE=NEOFORGE
-      - MEMORY=4G
+      - MEMORY=8G
       - TZ=America/Chicago
       - DIFFICULTY=normal
       - MAX_PLAYERS=10
