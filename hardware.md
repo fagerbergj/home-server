@@ -6,7 +6,7 @@
 |-----------|--------|-------|
 | CPU | AMD Ryzen Threadripper 1950X (Whitehaven, 16c/32t, 3.4GHz base / 4.0GHz XFR, 180W) | ✅ 64 PCIe 3.0 lanes — chosen for the lane budget over per-core perf |
 | Motherboard | ASUS ROG Strix X399-E Gaming (X399, sTR4) | ✅ 3× PCIe 3.0 x16 slots from CPU lanes; sensors via `asus_wmi_sensors` |
-| RAM | 48GB DDR4 (quad-channel) | ✅ |
+| RAM | 64GB DDR4-3000 (8× 8GB, true symmetric quad-channel, 1.35 V) | ✅ Matched pair per channel: 2× Crucial Ballistix 3000 CL16 + 2× Corsair LPX 3200 CL16 + 2× Corsair LPX 3000 CL15 + 2× Crucial Ballistix 3000 CL15 |
 | CPU Cooler | DeepCool LT720 360mm AIO (sTR4 mount) | ✅ |
 | OS Drive | 500GB NVMe (M.2) | ✅ Ubuntu + Docker images/overlay2; bind-mount service configs |
 | Cache Drive | 480GB ADATA SU650 SATA SSD | ✅ Repurposed ex-OS drive at `/mnt/cache` — Ollama model store + scratch tier |

@@ -16,103 +16,15 @@ Running record of upgrades — both the history table (for context on why the bu
 | 2026-04-16 | OS drive: 480GB ADATA SU650 → 500GB NVMe.<br>ADATA repurposed as `plex03` (additional Plex overflow). | ADATA SATA cable failure + 11 pending sectors; NVMe also gives 7×+ I/O for Docker overlay/image churn. |
 | 2026-04-30 | **Drives.** Storage: mdadm/ext4 → ZFS (`media` RAIDZ2 + `personal` mirror) on LSI 9300-16i HBA.<br>+4× 26TB Seagate Exos + 2× 8TB Dell J7W80; retired all old HDDs.<br>`plex03` (ADATA) → `/mnt/cache` for Ollama models. | ZFS for integrity + ~46 TiB capacity + scrubbing. Single HBA replaces mixed mobo SATA + cheap expansion card. |
 | 2026-04-30 | **Platform.** Motherboard B550 Eagle WIFI6 → ASUS ROG Strix X399-E.<br>CPU Ryzen 5 5500 → Threadripper 1950X.<br>RAM 32GB → 48GB DDR4 (mixed kits).<br>Cooler: stock Wraith → DeepCool LT720 360mm AIO. | Done bundled with the drive upgrade for PCIe lanes — B550 caps the HBA at x1 (~985 MB/s); X399 puts it on x8 (~7.9 GB/s). Threadripper sTR4 mandates the AIO; stock Wraith doesn't fit the socket. |
+| 2026-05-06 | RAM 48 GB mixed (16/8/16/8 flex-mode @ 2400 MT/s) → 64 GB matched (8× 8GB, true symmetric quad-channel @ 3000 MT/s, VDIMM 1.35 V).<br>Pulled 2× Corsair `CMK16GX4M2A2400C16` 2400; added 2× Crucial Ballistix `BL8G30C15U4R` 3000 CL15 + 2× Corsair `CMK16GX4M2B3000C15W` 3000 CL15.<br>Final layout: A = existing Crucial 3000 CL16 pair, B = existing Corsair 3200 CL16 pair, C = new Corsair 3000 CL15 pair, D = new Crucial Ballistix 3000 CL15 pair. | The 2400 Corsair kit was clocking the whole IMC to its JEDEC floor; removing it and rebalancing to a matched pair per channel unlocks true quad-channel interleave across all 64 GB. Trained at 3000 MT/s rather than the planned 2933 — IMC turned out healthier than typical for an 8-DIMM Zen 1 config. ~22% memory bandwidth uplift for ZFS ARC, page cache, and Postgres. |
 
 Each completed upgrade's full details and rationale live in the git history of this file (`git log -- hardware_upgrades.md`). Re-create as needed.
 
 ---
 
-## Next upgrade: RAM 48 GB (mixed) → 64 GB (matched, ~2933 MT/s)
+## Next upgrade: _TBD_
 
-The current 6× 8GB layout populates all 4 channels but unevenly (16/8/16/8) and runs at 2400 MT/s because one of three mixed kits is rated 2400 — the IMC clocks the whole system to the slowest stick. Combined uplift target: **~50% more usable memory bandwidth** by balancing channels and unlocking the 8-DIMM platform ceiling.
-
-### Goals
-
-- Full symmetric quad-channel — every channel has equal capacity, so the entire RAM range gets 4-way interleave instead of dropping to dual-channel for the unbalanced portion.
-- Lift the 2400 MT/s floor; target **2933 MT/s** (the realistic 8-DIMM ceiling on Threadripper 1950X with DOCP).
-- 64 GB capacity — sized for ZFS ARC headroom + Postgres + LLM context buffers.
-- Stay at 8 DIMMs — capacity per channel matters more than chasing 4-DIMM 3200 MT/s for this workload.
-
-### Current state
-
-| Channel | DIMM 0 | DIMM 1 | Channel total |
-|---------|--------|--------|---------------|
-| A | 8 GB | 8 GB | 16 GB |
-| B | *empty* | 8 GB | 8 GB |
-| C | 8 GB | 8 GB | 16 GB |
-| D | *empty* | 8 GB | 8 GB |
-
-Total: 48 GB. All 4 channels populated → quad-channel mode is active, but **flex-mode**: the first 32 GB interleaves across all 4 channels (~76 GB/s @ 2400 MT/s); the remaining 16 GB stripes across only A and C (~38 GB/s).
-
-#### Why 2400 MT/s instead of 2666
-
-The Zen 1 IMC runs at JEDEC speed of the slowest installed kit. Mixed kits in this build:
-
-| Part Number | Rating | Status |
-|---|---|---|
-| `BLS8G4D30AESEK.M8FE1` (Crucial Ballistix Sport LT) | DDR4-3000 | Underclocked to 2400 |
-| `CMK16GX4M2A2400C16` (Corsair Vengeance LPX 2400) | DDR4-2400 | **Floor — locks the system at 2400** |
-| `CMK16GX4M2B3200C16` (Corsair Vengeance LPX 3200) | DDR4-3200 | Underclocked to 2400 |
-
-`CMK16GX4M2A2400C16` is what's holding everything down — DOCP can't raise the system above the slowest stick's rating.
-
-### Plan — Replace the 2400 kit + add 2 more (≈$80–120)
-
-Pull both `CMK16GX4M2A2400C16` Corsair 2400 sticks. Buy 4× 8GB DDR4-3000+ single-rank sticks; install a matched pair in each freed/empty channel. Per-channel layout in the user's order — both purchased kits are 3000 CL15:
-
-| Channel | DIMM 0 | DIMM 1 | Final |
-|---------|--------|--------|-------|
-| A | Crucial 3000 CL16 (existing) | Crucial 3000 CL16 (existing — moved from C-DIMM 0) | matched pair |
-| B | **NEW Crucial Ballistix `BL8G30C15U4R` 3000 CL15** | **NEW Crucial Ballistix `BL8G30C15U4R` 3000 CL15** | matched pair |
-| C | Corsair `CMK16GX4M2B3200C16` 3200 CL16 (existing — moved from D-DIMM 1) | Corsair 3200 CL16 (existing) | matched pair |
-| D | **NEW Corsair `CMK16GX4M2B3000C15W` 3000 CL15** | **NEW Corsair `CMK16GX4M2B3000C15W` 3000 CL15** | matched pair |
-
-Each channel ends up with a same-kit pair — Zen 1 IMC trains channels independently, so this maximizes timing stability per channel. Result after DOCP: **64 GB, true symmetric quad-channel, ~2933 MT/s** → ~94 GB/s aggregate.
-
-### Install steps (when the new sticks arrive)
-
-1. Power down, unplug.
-2. Pull both Corsair `CMK16GX4M2A2400C16` sticks from **A-DIMM 1** and **B-DIMM 1**.
-3. Move existing Crucial 3000 stick from **C-DIMM 0** → **A-DIMM 1**.
-4. Move existing Corsair 3200 stick from **D-DIMM 1** → **C-DIMM 0**.
-5. Install new Crucial 3000 CL15 pair into **B-DIMM 0 + B-DIMM 1**.
-6. Install new Corsair 3000 CL15 white pair into **D-DIMM 0 + D-DIMM 1**.
-7. Boot to BIOS → **Load Optimized Defaults** → **Ai Tweaker → Ai Overclock Tuner → DOCP** → save & exit.
-
-### Verify
-
-```bash
-free -h
-# Total should now read ~58.6 GiB (i.e., 64 GB raw)
-
-sudo dmidecode -t 17 | grep -E "Bank Locator|Locator|Size|Part Number|Configured" | grep -v "No Module"
-# Every channel shows 2 populated sticks of the same Part Number; Configured Memory Speed = 2666 or 2933
-
-sudo apt install -y mbw stress-ng
-
-mbw -n 5 1024
-# Expected AVG MEMCPY:
-#   ~50 GB/s  current (flex-mode @ 2400)
-#   ~85+ GB/s true quad-channel @ 2933 (recommended path)
-
-# 10-minute stability soak after BIOS tuning
-sudo stress-ng --vm 8 --vm-bytes 80% --timeout 600s --metrics
-```
-
-### Risks & notes
-
-- **Why 2933 and not 3000+ with 8 DIMMs**: the Zen 1 (Whitehaven) IMC degrades with rank load. 1 DIMM per channel can hit 3200; 2 DIMMs per channel realistically tops out at 2933 even with 3200-rated sticks. Don't waste money on 3600 kits.
-- **Single-rank only**: keep all sticks 8GB single-rank. Mixing single-rank and dual-rank in the same channel can cause boot failures or force the IMC to drop another notch.
-- **POST instability**: 8 DIMMs is the most demanding config for the memory controller. If POST fails after enabling DOCP, drop target frequency one step (2933 → 2666) or bump DRAM voltage to 1.35V. Memory Context Restore = ON skips retraining on subsequent boots once stable.
-- **No DDR5 path**: Threadripper 1950X is DDR4 only. Any future DDR5 means a platform change — defer indefinitely.
-
-### Decisions
-
-- [ ] Purchase the 2× new 16GB kits (Crucial `BL8G30C15U4R` + Corsair `CMK16GX4M2B3000C15W`)
-- [ ] Schedule a 30-minute power-down window to install + tune BIOS
-- [ ] Pull the 2× `CMK16GX4M2A2400C16` Corsair sticks
-- [ ] Enable DOCP in BIOS, verify ~2933 MT/s under load
-- [ ] Verify true quad-channel via `mbw` and run `stress-ng` for 10 min stability soak
-- [ ] Update `hardware.md` to reflect 64 GB / 8 sticks / 2933 MT/s / true quad-channel
+No upgrade currently planned. When the next one is scoped, replace this section with a detailed plan following the structure of prior entries (Goals / Current state / Plan / Install steps / Verify / Risks & notes / Decisions).
 
 ---
 
