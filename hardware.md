@@ -16,7 +16,7 @@
 | GPU | RTX 3090 (Ampere, 24GB VRAM) | ✅ 24GB VRAM for LLM inference, excellent NVENC; runs at full PCIe 3.0 x16 |
 | PSU | 1200W | ✅ |
 | Network | Intel GbE LAN (onboard) + WIFI6 | ✅ Gigabit |
-| Case | Fractal Design Define R5 (ATX Mid Tower, 8× 3.5" bays) | ✅ 6 bays in use, 2 free |
+| Case | Fractal Design Define 7 XL (E-ATX Full Tower) | ✅ 6× 3.5" in use; expandable to 18× 3.5" via multibracket kits |
 
 ---
 
