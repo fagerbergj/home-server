@@ -20,7 +20,7 @@ services:
       - /dev/dri
     group_add:
       - video
-      - render
+      - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
   qdrant:
