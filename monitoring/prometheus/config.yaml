@@ -15,6 +15,10 @@ scrape_configs:
     static_configs:
       - targets: ['nvidia-exporter:9835']
 
+  - job_name: amd_gpu
+    static_configs:
+      - targets: ['amd-exporter:5000']
+
   - job_name: smartctl
     static_configs:
       - targets: ['smartctl-exporter:9633']

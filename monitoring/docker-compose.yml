@@ -90,6 +90,21 @@ services:
       - "9835:9835"
     restart: unless-stopped
 
+  amd-exporter:
+    image: rocm/device-metrics-exporter:v1.5.0
+    container_name: amd-exporter
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - render
+    volumes:
+      - /sys:/sys:ro
+    ports:
+      - "9836:5000"
+    restart: unless-stopped
+
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
