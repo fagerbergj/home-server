@@ -73,28 +73,29 @@ WORKDIR /app
 # wheels bundle their own ROCm runtime libs and work fine on top of the
 # ROCm 7.2.3 SDK from the base image — HIP ABI is backwards-compatible.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 uninstall -y torch torchaudio torchvision torchcodec pytorch-triton triton || true
+    pip3 uninstall -y torch torchaudio torchvision pytorch-triton triton || true
 
-# torchcodec must come from the same index as torch — its compiled .so files
-# link against torch's C ABI and PyPI's torchcodec was built against the
-# CUDA torch ABI, which differs from the ROCm torch ABI (manifests as
-# "undefined symbol: torch_from_blob" at dlopen time). Installing both from
-# pytorch.org/whl/rocm6.4 guarantees matching ABI.
+# pytorch.org doesn't publish torchcodec for the ROCm index, so we don't
+# include it here. pyannote will install the PyPI torchcodec as a dep; that
+# wheel was compiled against the CUDA torch ABI and dlopen-fails on our
+# ROCm torch ('undefined symbol: torch_from_blob'). app.py works around
+# this by always passing pyannote {'waveform': tensor, 'sample_rate': int}
+# dicts (the documented fallback per the warning in pyannote/audio/core/io.py),
+# which avoids the AudioDecoder code path entirely.
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install --index-url https://download.pytorch.org/whl/rocm6.4 \
-        torch torchaudio torchvision torchcodec \
- && python3 -c "import torch; assert torch.version.hip, f'still not a ROCm build: {torch.__version__}'; print(f'torch installed: {torch.__version__} hip={torch.version.hip}')" \
- && python3 -c "import torchcodec; from torchcodec.decoders import AudioDecoder; print(f'torchcodec ok: {torchcodec.__version__}')"
+        torch torchaudio torchvision \
+ && python3 -c "import torch; assert torch.version.hip, f'still not a ROCm build: {torch.__version__}'; print(f'torch installed: {torch.__version__} hip={torch.version.hip}')"
 
-# Capture the ROCm-built torch/torchaudio/torchvision/torchcodec versions
-# into a pip constraints file so pyannote.audio's dep resolution can't
-# accidentally replace them with CUDA wheels from PyPI. Read the version
-# from each module's __version__ attribute (importlib.metadata can drop the
-# local version identifier). The +rocm local id makes the == constraint
+# Capture the ROCm-built torch/torchaudio/torchvision versions into a pip
+# constraints file so pyannote.audio's dep resolution can't accidentally
+# replace them with CUDA wheels from PyPI. Read the version from each
+# module's __version__ attribute (importlib.metadata can drop the local
+# version identifier). The +rocm local id makes the == constraint
 # un-satisfiable by PyPI's plain or +cu128 wheels.
 RUN python3 - <<'PY' > /tmp/torch-constraints.txt
 import importlib
-for pkg in ("torch", "torchaudio", "torchvision", "torchcodec"):
+for pkg in ("torch", "torchaudio", "torchvision"):
     try:
         m = importlib.import_module(pkg)
     except ImportError:
@@ -120,12 +121,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
         -c /tmp/torch-constraints.txt \
         -r requirements.txt
 
-# Verify torch wasn't replaced by a non-ROCm wheel during dep resolution
-# AND that torchcodec still loads (i.e. wasn't swapped to a PyPI build with
-# mismatched ABI). Fails the build immediately if pip ignored our
-# constraints — much better than a runtime surprise.
-RUN python3 -c "import torch; assert torch.version.hip, f'torch is not a ROCm build after pip install: {torch.__version__} (hip={torch.version.hip}, cuda={torch.version.cuda})'; print(f'torch ok: {torch.__version__} hip={torch.version.hip}')" \
- && python3 -c "from torchcodec.decoders import AudioDecoder; import torchcodec; print(f'torchcodec ok: {torchcodec.__version__}')"
+# Verify torch wasn't replaced by a non-ROCm wheel during dep resolution.
+# Fails the build immediately if pip ignored our constraints — much better
+# than a 30-second-later runtime surprise.
+RUN python3 -c "import torch; assert torch.version.hip, f'torch is not a ROCm build after pip install: {torch.__version__} (hip={torch.version.hip}, cuda={torch.version.cuda})'; print(f'torch ok: {torch.__version__} hip={torch.version.hip}')"
 
 COPY app.py .
 

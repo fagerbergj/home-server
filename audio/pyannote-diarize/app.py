@@ -92,6 +92,30 @@ def _cosine(a, b) -> float:
     return float(np.dot(av, bv) / denom)
 
 
+def _load_audio_dict(wav_path: str) -> dict:
+    """Read a wav file into pyannote's in-memory tensor-dict format.
+
+    pyannote 3.4 dispatches audio loading to torchcodec.decoders.AudioDecoder,
+    whose PyPI wheel is compiled against the CUDA torch ABI and dlopen-fails
+    on our ROCm torch build ('undefined symbol: torch_from_blob'). Per the
+    fallback documented in pyannote/audio/core/io.py, passing a
+    {'waveform': (channel, time) tensor, 'sample_rate': int} dict bypasses
+    AudioDecoder entirely.
+
+    Input is always a wav from _to_mono16k (16 kHz, mono, PCM), which
+    soundfile handles natively.
+    """
+    import soundfile as sf
+    data, sr = sf.read(wav_path, dtype="float32", always_2d=False)
+    # soundfile returns (samples,) for mono or (samples, channels) for multi.
+    # pyannote wants (channel, time).
+    if data.ndim == 1:
+        waveform = torch.from_numpy(data).unsqueeze(0)
+    else:
+        waveform = torch.from_numpy(data.T).contiguous()
+    return {"waveform": waveform, "sample_rate": sr}
+
+
 def _embed_audio(wav_path: str, start: float | None = None, end: float | None = None) -> list[float]:
     """Compute a speaker embedding for the whole file or a [start, end] segment."""
     from pyannote.audio import Inference
@@ -103,10 +127,11 @@ def _embed_audio(wav_path: str, start: float | None = None, end: float | None = 
         token=HF_TOKEN,
         device=torch.device(DEVICE) if DEVICE == "cuda" else torch.device("cpu"),
     )
+    audio = _load_audio_dict(wav_path)
     if start is None:
-        emb = inference(wav_path)
+        emb = inference(audio)
     else:
-        emb = inference.crop(wav_path, Segment(start, end))
+        emb = inference.crop(audio, Segment(start, end))
     del inference
     return np.asarray(emb).flatten().tolist()
 
@@ -205,7 +230,7 @@ def _diarize(wav_path: str) -> list[dict]:
         pipeline.to(torch.device("cuda"))
 
     diarization = pipeline(
-        wav_path,
+        _load_audio_dict(wav_path),
         min_speakers=MIN_SPEAKERS,
         max_speakers=MAX_SPEAKERS,
     )
