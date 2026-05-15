@@ -21,7 +21,23 @@ import tempfile
 
 import numpy as np
 import torch
+import torchaudio
 from fastapi import FastAPI, Form, HTTPException, UploadFile
+
+# torchaudio 2.5+ removed AudioMetaData from the top-level namespace but
+# pyannote.audio 3.3.x uses it as a return-type annotation in io.py, which
+# is evaluated at import time. Restore it so pyannote can be imported.
+if not hasattr(torchaudio, "AudioMetaData"):
+    from typing import NamedTuple
+
+    class _AudioMetaData(NamedTuple):
+        sample_rate: int
+        num_frames: int
+        num_channels: int
+        bits_per_sample: int
+        encoding: str
+
+    torchaudio.AudioMetaData = _AudioMetaData  # type: ignore[attr-defined]
 
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
