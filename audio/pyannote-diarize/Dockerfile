@@ -24,8 +24,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # FFmpeg 6 — pyannote.audio 3.4+ depends on torchcodec which needs FFmpeg 6
 # shared libs (libavcodec.so.60, libavformat.so.60, libavutil.so.58).
 # Ubuntu 22.04 ships FFmpeg 4.4, so pull FFmpeg 6 from savoury1's PPA.
+# The ffmpeg4 PPA must be added alongside ffmpeg6 — it provides ancillary
+# libs (libsndio7, etc.) that the ffmpeg6 packages depend on but doesn't
+# itself include. Documented in savoury1/ffmpeg6 PPA notes.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common \
+    && add-apt-repository -y ppa:savoury1/ffmpeg4 \
     && add-apt-repository -y ppa:savoury1/ffmpeg6 \
     && apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg libsndfile1 \
