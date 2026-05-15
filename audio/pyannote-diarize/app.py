@@ -58,7 +58,9 @@ import lightning_fabric.utilities.cloud_io as _lf_cloud_io
 
 _orig_lf_load = _lf_cloud_io._load
 
-def _lf_load_weights_any(path_or_url, map_location=None):
+def _lf_load_weights_any(path_or_url, map_location=None, **kwargs):
+    # Ignore any weights_only kwarg from callers (pytorch_lightning passes it
+    # explicitly); always use False since checkpoints come from HF hub.
     return torch.load(path_or_url, map_location=map_location, weights_only=False)
 
 _lf_cloud_io._load = _lf_load_weights_any
