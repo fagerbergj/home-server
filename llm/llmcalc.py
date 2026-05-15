@@ -48,13 +48,14 @@ MIN_TOTAL_ROWS = 5         # always show at least this many rows, even if unusab
 @dataclass
 class Hardware:
     gpu_name: str
-    vram_gib: float
-    vram_bw_gbs: float        # GB/s
+    vram_gib: float           # total across all GPUs
+    vram_bw_gbs: float        # total across all GPUs, GB/s
     ram_gib: float
     ram_bw_gbs: float
     swap_gib: float
     swap_bw_gbs: float        # NVMe ~3.5 (gen3) / 7 (gen4)
     kv_cache_type: str = "q8_0"   # matches OLLAMA_KV_CACHE_TYPE env var
+    gpu_count: int = 1        # number of identical GPUs; vram_gib/vram_bw_gbs are totals
 
 
 def prompt(msg: str, default: str | None = None, cast=str):
@@ -73,15 +74,20 @@ def prompt(msg: str, default: str | None = None, cast=str):
 
 def setup_hardware() -> Hardware:
     print("\n── Hardware profile (saved to ~/.config/llmcalc.json) ──")
-    print("Tip: VRAM bandwidth — RTX 3090: 936, 4090: 1008, 4070: 504")
-    print("Tip: DDR4-2400 quad-channel ≈ 76.8 peak (use ~55), dual ≈ 38.4 (use ~28)")
+    print("Tip: VRAM bandwidth per card — RTX 3090: 936, 4090: 1008, 4070: 504, R9700: 576")
+    print("Tip: DDR4-3000 quad-channel ≈ 96 peak (use ~48), DDR4-2400 quad ≈ 77 peak (use ~55)")
     print("Tip: NVMe Gen3 ≈ 3.5, Gen4 ≈ 7")
+    gpu_name = prompt("GPU name", "RTX 3090")
+    gpu_count = prompt("Number of GPUs", "1", int)
+    vram_per = prompt("VRAM per GPU (GiB)", "24", float)
+    bw_per   = prompt("VRAM bandwidth per GPU (GB/s, theoretical peak)", "936", float)
     hw = Hardware(
-        gpu_name=prompt("GPU name", "RTX 3090"),
-        vram_gib=prompt("VRAM (GiB)", "24", float),
-        vram_bw_gbs=prompt("VRAM bandwidth (GB/s, theoretical peak)", "936", float),
+        gpu_name=gpu_name,
+        gpu_count=gpu_count,
+        vram_gib=vram_per * gpu_count,
+        vram_bw_gbs=bw_per * gpu_count,
         ram_gib=prompt("System RAM (GiB)", "64", float),
-        ram_bw_gbs=prompt("RAM bandwidth (GB/s, theoretical peak)", "55", float),
+        ram_bw_gbs=prompt("RAM bandwidth (GB/s, theoretical peak)", "48", float),
         swap_gib=prompt("Swap (GiB, 0 if none)", "0", float),
         swap_bw_gbs=prompt("Swap/NVMe bandwidth (GB/s)", "3.5", float),
         kv_cache_type=prompt("KV cache type — match OLLAMA_KV_CACHE_TYPE (f16/q8_0/q4_0)", "q8_0"),
@@ -523,10 +529,24 @@ def kv_cache_gib(m: Model, hw: Hardware, ctx: int) -> float:
 
 def plan(m: Model, hw: Hardware, ctx: int) -> dict:
     """Greedy layer placement: VRAM → RAM → swap. KV cache rides with its layer."""
-    vram_avail = hw.vram_gib * USABLE_VRAM_FRAC
+    per_gpu_vram = hw.vram_gib / hw.gpu_count
+    per_gpu_bw   = hw.vram_bw_gbs / hw.gpu_count
+
     weight_per_layer = m.file_gib / m.blocks
     kv_per_layer = kv_cache_gib(m, hw, ctx) / max(m.blocks, 1)
     per_layer = weight_per_layer + kv_per_layer
+
+    # Find minimum number of GPUs needed to fit all layers in VRAM.
+    # Ollama automatically uses more cards only when the model doesn't fit on fewer.
+    n_gpus = hw.gpu_count
+    for n in range(1, hw.gpu_count + 1):
+        if per_layer == 0 or int(per_gpu_vram * n * USABLE_VRAM_FRAC // per_layer) >= m.blocks:
+            n_gpus = n
+            break
+
+    effective_vram = per_gpu_vram * n_gpus
+    effective_bw   = per_gpu_bw   * n_gpus
+    vram_avail = effective_vram * USABLE_VRAM_FRAC
 
     layers_vram = min(m.blocks, int(vram_avail // per_layer)) if per_layer > 0 else m.blocks
     rem = m.blocks - layers_vram
@@ -535,7 +555,7 @@ def plan(m: Model, hw: Hardware, ctx: int) -> dict:
     layers_swap = min(rem, int(hw.swap_gib // per_layer)) if per_layer > 0 and hw.swap_gib > 0 else 0
     layers_unfit = rem - layers_swap
 
-    vram_used = layers_vram * per_layer + (hw.vram_gib - vram_avail)
+    vram_used = layers_vram * per_layer + (effective_vram - vram_avail)
     ram_used  = layers_ram  * per_layer
     swap_used = layers_swap * per_layer
 
@@ -558,7 +578,7 @@ def plan(m: Model, hw: Hardware, ctx: int) -> dict:
         f_r = layers_ram  / total_layers
         f_s = layers_swap / total_layers
         t_per_token = bytes_per_token_gib * (
-            f_v / hw.vram_bw_gbs +
+            f_v / effective_bw +
             f_r / hw.ram_bw_gbs +
             (f_s / hw.swap_bw_gbs if hw.swap_bw_gbs > 0 else 0)
         )
@@ -570,6 +590,7 @@ def plan(m: Model, hw: Hardware, ctx: int) -> dict:
         "layers_vram": layers_vram, "layers_ram": layers_ram,
         "layers_swap": layers_swap, "layers_unfit": layers_unfit,
         "tok_s": tok_s,
+        "n_gpus": n_gpus,
     }
 
 
@@ -589,7 +610,8 @@ def fmt_row(p: dict, blocks: int, ctx_max: int = 0) -> str:
     elif p["layers_ram"] > 0:
         detail = f"{p['layers_ram']}/{blocks} layers in RAM"
     else:
-        detail = "100% GPU"
+        n = p.get("n_gpus", 1)
+        detail = f"100% GPU" + (f" ({n} cards)" if n > 1 else "")
 
     if ctx_max and p["ctx"] == ctx_max:
         detail += " (model max)"
@@ -611,7 +633,15 @@ def report(m: Model, hw: Hardware):
         arch_note += f", SWA ({m.swa_blocks}/{m.blocks} layers, window={m.sliding_window})"
     print(f"  {m.name}  ({m.file_gib:.1f} GiB, Q{m.quant_bits}, "
           f"{m.blocks} blocks, KV={m.kv_heads or 'embed'}, kv_type={hw.kv_cache_type}{arch_note})")
-    print(f"  Hardware: {hw.gpu_name} {hw.vram_gib:.0f}GiB @ {hw.vram_bw_gbs:.0f}GB/s | "
+    per_gpu_vram = hw.vram_gib / hw.gpu_count
+    per_gpu_bw   = hw.vram_bw_gbs / hw.gpu_count
+    if hw.gpu_count > 1:
+        gpu_str = (f"{hw.gpu_count}× {hw.gpu_name} "
+                   f"{per_gpu_vram:.0f}GiB×{hw.gpu_count}={hw.vram_gib:.0f}GiB "
+                   f"@ {per_gpu_bw:.0f}×{hw.gpu_count}={hw.vram_bw_gbs:.0f}GB/s")
+    else:
+        gpu_str = f"{hw.gpu_name} {hw.vram_gib:.0f}GiB @ {hw.vram_bw_gbs:.0f}GB/s"
+    print(f"  Hardware: {gpu_str} | "
           f"RAM {hw.ram_gib:.0f}GiB @ {hw.ram_bw_gbs:.0f}GB/s | "
           f"swap {hw.swap_gib:.0f}GiB @ {hw.swap_bw_gbs:.1f}GB/s")
     print(f"────────────────────────────────────────────────────")

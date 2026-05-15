@@ -367,8 +367,15 @@ def main():
 
     ctxs = [int(c.strip()) for c in args.ctxs.split(",") if c.strip()] if args.ctxs else None
     hw = load_hardware()
-    print(f"Hardware: {hw.gpu_name} {hw.vram_gib:.0f}G @ {hw.vram_bw_gbs:.0f}GB/s | "
-          f"RAM {hw.ram_gib:.0f}G @ {hw.ram_bw_gbs:.0f}GB/s | kv={hw.kv_cache_type}")
+    per_gpu_vram = hw.vram_gib / hw.gpu_count
+    per_gpu_bw   = hw.vram_bw_gbs / hw.gpu_count
+    if hw.gpu_count > 1:
+        gpu_str = (f"{hw.gpu_count}x {hw.gpu_name} {hw.vram_gib:.0f}G "
+                   f"@ {hw.vram_bw_gbs:.0f}GB/s "
+                   f"({per_gpu_vram:.0f}G×{hw.gpu_count} @ {per_gpu_bw:.0f}×{hw.gpu_count})")
+    else:
+        gpu_str = f"{hw.gpu_name} {hw.vram_gib:.0f}G @ {hw.vram_bw_gbs:.0f}GB/s"
+    print(f"Hardware: {gpu_str} | RAM {hw.ram_gib:.0f}G @ {hw.ram_bw_gbs:.0f}GB/s | kv={hw.kv_cache_type}")
 
     results = []
     url_by_name: dict[str, str] = {}
