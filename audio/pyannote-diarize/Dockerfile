@@ -67,26 +67,32 @@ RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
-# Capture the base image's pre-installed ROCm-built torch/torchaudio/torchvision
-# versions into a pip constraints file. Without this, pip resolving
-# pyannote.audio's deps will silently replace those wheels with CUDA-only ones
-# from PyPI — manifests as "no NVIDIA driver" at the first .to("cuda") call.
+# Capture the base image's pre-installed ROCm-built torch/torchaudio versions
+# into a pip constraints file. Without this, pip resolving pyannote.audio's
+# deps will silently replace those wheels with CUDA-only ones from PyPI —
+# manifests as "no NVIDIA driver" at the first .to("cuda") call.
 #
-# Use importlib.metadata (not `pip freeze`) so we get the full version string
-# including the local version identifier (+rocm…). Local identifiers make the
-# == constraint un-satisfiable by PyPI's plain or +cu128 wheels, so pip must
+# Read the version from each module's __version__ attribute (not
+# importlib.metadata, which can drop the local version identifier depending
+# on how the wheel was installed). The local id (+rocm7.x.y...) makes the ==
+# constraint un-satisfiable by PyPI's plain or +cu128 wheels, so pip must
 # keep the already-installed ROCm wheel.
 RUN python3 - <<'PY' > /tmp/torch-constraints.txt
-import importlib.metadata as md
-for pkg in ("torch", "torchaudio", "torchvision", "pytorch-triton-rocm"):
+import importlib
+for pkg in ("torch", "torchaudio", "torchvision"):
     try:
-        print(f"{pkg}=={md.version(pkg)}")
-    except md.PackageNotFoundError:
-        pass
+        m = importlib.import_module(pkg)
+    except ImportError:
+        continue
+    v = getattr(m, "__version__", None)
+    if v:
+        print(f"{pkg}=={v}")
 PY
 RUN echo "=== torch constraints (locked from base image) ===" \
  && cat /tmp/torch-constraints.txt \
- && test -s /tmp/torch-constraints.txt || { echo "FATAL: empty constraints file"; exit 1; }
+ && echo "=== end constraints ===" \
+ && test -s /tmp/torch-constraints.txt || { echo "FATAL: empty constraints file"; exit 1; } \
+ && grep -q "^torch==.*+rocm" /tmp/torch-constraints.txt || { echo "FATAL: torch constraint has no +rocm local id, pip would let cu128 satisfy it"; cat /tmp/torch-constraints.txt; exit 1; }
 
 # BuildKit cache mounts persist pip wheels across builds, so requirements
 # changes only re-download what actually changed.
