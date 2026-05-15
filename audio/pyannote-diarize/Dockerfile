@@ -67,16 +67,25 @@ RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
-# Capture the base image's pre-installed ROCm-built torch/torchaudio versions
-# into a pip constraints file. Without this, pip resolving pyannote.audio's
-# deps will silently replace those wheels with CUDA-only ones from PyPI —
-# manifests as "no NVIDIA driver" at the first .to("cuda") call.
-#
-# Read the version from each module's __version__ attribute (not
-# importlib.metadata, which can drop the local version identifier depending
-# on how the wheel was installed). The local id (+rocm7.x.y...) makes the ==
-# constraint un-satisfiable by PyPI's plain or +cu128 wheels, so pip must
-# keep the already-installed ROCm wheel.
+# Replace the base image's bundled PyTorch (which is the CUDA 12.8 build,
+# torch==2.10.0+cu128, despite the rocm/pytorch image tag) with an actual
+# ROCm-built PyTorch from pytorch.org's ROCm wheel index. The ROCm 6.4
+# wheels bundle their own ROCm runtime libs and work fine on top of the
+# ROCm 7.2.3 SDK from the base image — HIP ABI is backwards-compatible.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 uninstall -y torch torchaudio torchvision pytorch-triton triton || true
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --index-url https://download.pytorch.org/whl/rocm6.4 \
+        torch torchaudio torchvision \
+ && python3 -c "import torch; assert torch.version.hip, f'still not a ROCm build: {torch.__version__}'; print(f'torch installed: {torch.__version__} hip={torch.version.hip}')"
+
+# Capture the ROCm-built torch/torchaudio/torchvision versions into a pip
+# constraints file so pyannote.audio's dep resolution can't accidentally
+# replace them with CUDA wheels from PyPI. Read the version from each
+# module's __version__ attribute (importlib.metadata can drop the local
+# version identifier). The +rocm local id makes the == constraint
+# un-satisfiable by PyPI's plain or +cu128 wheels.
 RUN python3 - <<'PY' > /tmp/torch-constraints.txt
 import importlib
 for pkg in ("torch", "torchaudio", "torchvision"):
@@ -88,11 +97,11 @@ for pkg in ("torch", "torchaudio", "torchvision"):
     if v:
         print(f"{pkg}=={v}")
 PY
-RUN echo "=== torch constraints (locked from base image) ===" \
+RUN echo "=== torch constraints (locked from ROCm install) ===" \
  && cat /tmp/torch-constraints.txt \
  && echo "=== end constraints ===" \
  && test -s /tmp/torch-constraints.txt || { echo "FATAL: empty constraints file"; exit 1; } \
- && grep -q "^torch==.*+rocm" /tmp/torch-constraints.txt || { echo "FATAL: torch constraint has no +rocm local id, pip would let cu128 satisfy it"; cat /tmp/torch-constraints.txt; exit 1; }
+ && grep -q "^torch==.*+rocm" /tmp/torch-constraints.txt || { echo "FATAL: torch constraint has no +rocm local id"; cat /tmp/torch-constraints.txt; exit 1; }
 
 # BuildKit cache mounts persist pip wheels across builds, so requirements
 # changes only re-download what actually changed.
