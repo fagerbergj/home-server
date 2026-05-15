@@ -1,20 +1,40 @@
 # syntax=docker/dockerfile:1.6
-FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+# Stage 1: build whisper.cpp with HIPBLAS for AMD GPU acceleration on RDNA 4.
+# AMDGPU_TARGETS=gfx1201 = R9700 (Navi 48). Update if the GPU ever changes.
+FROM rocm/pytorch:rocm6.2.4_ubuntu22.04_py3.10_pytorch_release_2.3.1 AS whisper-build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git cmake build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --depth=1 https://github.com/ggml-org/whisper.cpp.git
+WORKDIR /build/whisper.cpp
+RUN cmake -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build -j --config Release
+
+# Stage 2: runtime
+FROM rocm/pytorch:rocm6.2.4_ubuntu22.04_py3.10_pytorch_release_2.3.1
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HF_HOME=/root/.cache/huggingface
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip ffmpeg libsndfile1 \
+        ffmpeg libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Bring the whisper.cpp build tree across — whisper-cli loads its sibling .so
+# files from the same tree at runtime.
+COPY --from=whisper-build /build/whisper.cpp/build /opt/whisper.cpp/build
+ENV LD_LIBRARY_PATH=/opt/whisper.cpp/build/src:/opt/whisper.cpp/build/ggml/src:${LD_LIBRARY_PATH}
+RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
 # BuildKit cache mounts persist pip wheels across builds, so requirements
-# changes only re-download what actually changed. torch + torchaudio + pyannote
-# are pinned together in requirements.txt so pip's resolver can't silently
-# upgrade torchaudio past our pin.
+# changes only re-download what actually changed.
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install --upgrade pip setuptools wheel
 

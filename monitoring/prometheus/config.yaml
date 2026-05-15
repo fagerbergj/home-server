@@ -11,10 +11,6 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
-  - job_name: nvidia
-    static_configs:
-      - targets: ['nvidia-exporter:9835']
-
   - job_name: amd_gpu
     static_configs:
       - targets: ['amd-exporter:5000']

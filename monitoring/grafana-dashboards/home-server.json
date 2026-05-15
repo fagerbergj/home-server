@@ -2,7 +2,7 @@
   "title": "Home Server",
   "uid": "home-server",
   "schemaVersion": 39,
-  "version": 21,
+  "version": 22,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -232,9 +232,14 @@
       },
       "targets": [
         {
-          "expr": "label_replace(nvidia_smi_utilization_gpu_ratio * 100,\"gpu\",\"RTX 3090\",\"uuid\",\"32083e34-098e-a5c4-c2c0-f956236c8735\")",
-          "legendFormat": "{{gpu}}",
+          "expr": "gpu_gfx_activity{gpu_id=\"0\"}",
+          "legendFormat": "R9700 #0",
           "refId": "A"
+        },
+        {
+          "expr": "gpu_gfx_activity{gpu_id=\"1\"}",
+          "legendFormat": "R9700 #1",
+          "refId": "B"
         }
       ]
     },
@@ -298,9 +303,166 @@
       },
       "targets": [
         {
-          "expr": "label_replace(nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes * 100,\"gpu\",\"RTX 3090\",\"uuid\",\"32083e34-098e-a5c4-c2c0-f956236c8735\")",
-          "legendFormat": "{{gpu}}",
+          "expr": "gpu_used_vram{gpu_id=\"0\"} / gpu_total_vram{gpu_id=\"0\"} * 100",
+          "legendFormat": "R9700 #0",
           "refId": "A"
+        },
+        {
+          "expr": "gpu_used_vram{gpu_id=\"1\"} / gpu_total_vram{gpu_id=\"1\"} * 100",
+          "legendFormat": "R9700 #1",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "GPU Temperature",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "gpu_edge_temperature{gpu_id=\"0\"}",
+          "legendFormat": "R9700 #0 edge",
+          "refId": "A"
+        },
+        {
+          "expr": "gpu_junction_temperature{gpu_id=\"0\"}",
+          "legendFormat": "R9700 #0 junction",
+          "refId": "B"
+        },
+        {
+          "expr": "gpu_edge_temperature{gpu_id=\"1\"}",
+          "legendFormat": "R9700 #1 edge",
+          "refId": "C"
+        },
+        {
+          "expr": "gpu_junction_temperature{gpu_id=\"1\"}",
+          "legendFormat": "R9700 #1 junction",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "GPU Power",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "gpu_average_package_power{gpu_id=\"0\"}",
+          "legendFormat": "R9700 #0",
+          "refId": "A"
+        },
+        {
+          "expr": "gpu_average_package_power{gpu_id=\"1\"}",
+          "legendFormat": "R9700 #1",
+          "refId": "B"
         }
       ]
     },
@@ -313,7 +475,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 25
       }
     },
     {
@@ -328,7 +490,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -374,7 +536,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -417,7 +579,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 34
       }
     },
     {
@@ -432,7 +594,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 35
       },
       "options": {
         "sortBy": [
@@ -590,7 +752,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 33
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -641,7 +803,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 33
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -681,6 +843,52 @@
       ]
     },
     {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Swap Usage",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 41
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "(node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes * 100",
+          "legendFormat": "Swap %",
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "id": 13,
       "type": "table",
       "title": "SATA Drive Health (S.M.A.R.T.)",
@@ -692,7 +900,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "options": {
         "sortBy": [
@@ -786,7 +994,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Temp (\u00b0C)"
+              "options": "Temp (°C)"
             },
             "properties": [
               {
@@ -908,57 +1116,11 @@
           "options": {
             "renameByName": {
               "device": "Drive",
-              "Value #A": "Temp (\u00b0C)",
+              "Value #A": "Temp (°C)",
               "Value #B": "Reallocated Sectors",
               "Value #C": "Pending Sectors"
             }
           }
-        }
-      ]
-    },
-    {
-      "id": 14,
-      "type": "timeseries",
-      "title": "Swap Usage",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "Prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 33
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi"
-        },
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "(node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes * 100",
-          "legendFormat": "Swap %",
-          "refId": "A"
         }
       ]
     },
@@ -974,7 +1136,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 41
+        "y": 49
       },
       "options": {
         "sortBy": [

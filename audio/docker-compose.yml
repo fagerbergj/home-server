@@ -8,20 +8,20 @@ services:
     env_file:
       - ../.env
     environment:
-      - DEFAULT_WHISPER_MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
+      - WHISPER_MODEL_PATH=/models/ggml-large-v3.bin
+      - VAD_MODEL_PATH=/models/ggml-silero-v5.1.2.bin
       # HF_TOKEN must be set in ../.env. See README for setup.
       - HF_TOKEN=${HF_TOKEN}
     volumes:
       - ./model-cache:/root/.cache
+      - /mnt/cache/whisper-models:/models:ro
     # NeMo's DataLoader workers exchange tensors via /dev/shm. Docker's default
     # 64 MB is way too small and fails with "Resource temporarily unavailable".
     shm_size: '2gb'
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - "44"    # video
+      - "993"   # render
     restart: unless-stopped

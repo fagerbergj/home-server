@@ -1,11 +1,13 @@
-"""FastAPI wrapper: faster-whisper transcription + pyannote speaker diarization.
+"""FastAPI wrapper: whisper.cpp transcription + pyannote speaker diarization.
 
 Endpoint matches the OpenAI /v1/audio/transcriptions shape that the existing
 document-pipeline Go client already speaks. Returns:
     {"text": "[SPEAKER_00] hello there\\n\\n[SPEAKER_01] hi"}
 
-Models load per request and unload before returning so VRAM is freed between
-calls — the GPU is shared with Ollama in this setup.
+Transcription shells out to whisper-cli built with GGML_HIP=ON so it runs on
+the R9700. Pyannote runs in-process via the ROCm-built torch from the base
+image. Models load per request and free between calls — the GPU is shared
+with Ollama in this setup.
 """
 from __future__ import annotations
 
@@ -16,18 +18,20 @@ import os
 import shutil
 import subprocess
 import tempfile
-import time
 
 import numpy as np
 import torch
 from fastapi import FastAPI, Form, HTTPException, UploadFile
-from faster_whisper import WhisperModel
 
+# DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
+# so `torch.device("cuda")` resolves to the R9700 transparently.
 DEVICE = os.environ.get("DEVICE", "cuda")
-COMPUTE_TYPE = os.environ.get("COMPUTE_TYPE", "float16")
-DEFAULT_WHISPER_MODEL = os.environ.get(
-    "DEFAULT_WHISPER_MODEL", "Systran/faster-whisper-large-v3"
-)
+# Path to a whisper.cpp ggml model file inside the container. The default
+# matches the volume layout in docker-compose.yml (host /mnt/cache/whisper-models).
+WHISPER_MODEL_PATH = os.environ.get("WHISPER_MODEL_PATH", "/models/ggml-large-v3.bin")
+# Silero VAD model for whisper.cpp's --vad flag. Same trailing-edge
+# hallucination suppression that vad_filter gave us under faster-whisper.
+VAD_MODEL_PATH = os.environ.get("VAD_MODEL_PATH", "/models/ggml-silero-v5.1.2.bin")
 DIARIZATION_MODEL = os.environ.get(
     "DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1"
 )
@@ -109,23 +113,57 @@ def _match_voiceprint(embedding, voiceprints: dict) -> tuple[str, float] | None:
     return None
 
 
-def _load_whisper_with_retry(model: str) -> WhisperModel:
-    """Load WhisperModel, retrying once on CUDA OOM after freeing + waiting.
+def _transcribe(wav_path: str, work_dir: str) -> list[dict]:
+    """Run whisper-cli on the wav file. Returns list of {start, end, word}.
 
-    Ollama and this service share a single GPU; an OOM here usually means
-    Ollama hasn't released its VRAM yet from a prior pipeline stage. A 5s
-    cooldown is enough for it to drop to idle in practice.
+    -ml 1 forces one-word-per-segment so we get word-level timestamps in the
+    JSON output (matches what faster-whisper's word_timestamps=True gave us).
+    --vad + Silero model preserves the trailing-edge hallucination suppression
+    that vad_filter did previously.
     """
+    out_prefix = os.path.join(work_dir, "whisper")
+    cmd = [
+        "whisper-cli",
+        "-m", WHISPER_MODEL_PATH,
+        "-f", wav_path,
+        "-oj",                    # output JSON
+        "-of", out_prefix,
+        "-ml", "1",               # one-word-per-segment
+        "-nt",                    # no inline timestamps in text
+        "-l", "auto",
+        "--no-prints",            # suppress progress chatter on stdout
+    ]
+    if os.path.exists(VAD_MODEL_PATH):
+        cmd.extend(["--vad", "--vad-model", VAD_MODEL_PATH])
+    else:
+        logger.warning("VAD model not at %s — transcribing without VAD",
+                       VAD_MODEL_PATH)
+
     try:
-        return WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
-    except RuntimeError as e:
-        if "out of memory" not in str(e).lower():
-            raise
-        logger.warning("whisper load OOM — freeing and retrying in 5s: %s", e)
-        _free()
-        time.sleep(5)
-        _free()
-        return WhisperModel(model, device=DEVICE, compute_type=COMPUTE_TYPE)
+        subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"whisper-cli failed (exit {e.returncode}): {e.stderr.decode()[:2000]}"
+        ) from e
+
+    json_path = out_prefix + ".json"
+    with open(json_path) as f:
+        data = json.load(f)
+
+    words: list[dict] = []
+    for seg in data.get("transcription", []):
+        text = (seg.get("text") or "").strip()
+        if not text:
+            continue
+        offsets = seg.get("offsets", {})
+        words.append({
+            "start": float(offsets.get("from", 0)) / 1000.0,  # ms → s
+            "end": float(offsets.get("to", 0)) / 1000.0,
+            # Preserve leading space so the formatter joins words without
+            # gluing them together.
+            "word": text if text.startswith(" ") else " " + text,
+        })
+    return words
 
 
 def _to_mono16k(src: str, dst_dir: str) -> str:
@@ -325,7 +363,11 @@ async def enroll_speaker(file: UploadFile, name: str = Form(...)):
 
 
 @app.post("/v1/audio/transcriptions")
-async def transcribe(file: UploadFile, model: str = Form(DEFAULT_WHISPER_MODEL)):
+async def transcribe(file: UploadFile, model: str = Form("")):
+    """Transcribe + diarize. `model` form field is accepted for API
+    compatibility with the OpenAI shape but ignored — the model is fixed
+    at container start via WHISPER_MODEL_PATH. To switch models, mount a
+    different .bin and change the env var."""
     if not HF_TOKEN:
         raise HTTPException(500, "HF_TOKEN not set — pyannote diarization requires it")
 
@@ -338,52 +380,9 @@ async def transcribe(file: UploadFile, model: str = Form(DEFAULT_WHISPER_MODEL))
     try:
         wav_path = _to_mono16k(upload_path, work_dir)
 
-        logger.info("transcribing model=%s", model)
-        # GPU is shared with Ollama; if Ollama hasn't released VRAM yet, the
-        # ctranslate2 allocation 500s. Retry once after freeing + a short wait
-        # rather than failing the whole pipeline retry chain.
-        whisper = _load_whisper_with_retry(model)
-        # vad_filter drops silent / sub-threshold audio before decode — kills
-        # the "you you you you…" hallucination tail on quiet trailing edges.
-        # condition_on_previous_text=False stops one bad segment poisoning the
-        # rest of the file via the prior-text prompt, which is how a single
-        # repetition loop balloons into a cascade.
-        segments, info = whisper.transcribe(
-            wav_path,
-            word_timestamps=True,
-            vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 500},
-            condition_on_previous_text=False,
-        )
-        # The generator must be drained to materialize segments. Collecting
-        # eagerly so we can log counts and fall back if word-level is empty.
-        seg_list = list(segments)
-        words: list[dict] = []
-        for seg in seg_list:
-            seg_words = list(seg.words or [])
-            if seg_words:
-                for w in seg_words:
-                    words.append({
-                        "start": float(w.start),
-                        "end": float(w.end),
-                        "word": w.word,
-                    })
-            elif (seg.text or "").strip():
-                # word_timestamps yielded no words for this segment — fall back
-                # to segment-level so we don't lose transcription.
-                words.append({
-                    "start": float(seg.start),
-                    "end": float(seg.end),
-                    "word": seg.text,
-                })
-        logger.info(
-            "transcribed lang=%s duration=%.1fs segments=%d words=%d",
-            getattr(info, "language", "?"),
-            getattr(info, "duration", 0.0),
-            len(seg_list),
-            len(words),
-        )
-        del whisper
+        logger.info("transcribing model=%s", WHISPER_MODEL_PATH)
+        words = _transcribe(wav_path, work_dir)
+        logger.info("transcribed words=%d", len(words))
         _free()
 
         speaker_segs = _diarize(wav_path)
