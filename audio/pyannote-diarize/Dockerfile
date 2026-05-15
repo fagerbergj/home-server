@@ -71,12 +71,22 @@ WORKDIR /app
 # versions into a pip constraints file. Without this, pip resolving
 # pyannote.audio's deps will silently replace those wheels with CUDA-only ones
 # from PyPI — manifests as "no NVIDIA driver" at the first .to("cuda") call.
-# The constraint pins force pip to leave the ROCm wheels alone.
-RUN pip3 freeze 2>/dev/null \
-    | grep -iE "^(torch|torchaudio|torchvision|pytorch-triton-rocm)==" \
-    > /tmp/torch-constraints.txt \
- && echo "=== torch constraints (locked from base image) ===" \
- && cat /tmp/torch-constraints.txt
+#
+# Use importlib.metadata (not `pip freeze`) so we get the full version string
+# including the local version identifier (+rocm…). Local identifiers make the
+# == constraint un-satisfiable by PyPI's plain or +cu128 wheels, so pip must
+# keep the already-installed ROCm wheel.
+RUN python3 - <<'PY' > /tmp/torch-constraints.txt
+import importlib.metadata as md
+for pkg in ("torch", "torchaudio", "torchvision", "pytorch-triton-rocm"):
+    try:
+        print(f"{pkg}=={md.version(pkg)}")
+    except md.PackageNotFoundError:
+        pass
+PY
+RUN echo "=== torch constraints (locked from base image) ===" \
+ && cat /tmp/torch-constraints.txt \
+ && test -s /tmp/torch-constraints.txt || { echo "FATAL: empty constraints file"; exit 1; }
 
 # BuildKit cache mounts persist pip wheels across builds, so requirements
 # changes only re-download what actually changed.
@@ -85,7 +95,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install -c /tmp/torch-constraints.txt -r requirements.txt
+    pip3 install --upgrade-strategy only-if-needed \
+        -c /tmp/torch-constraints.txt \
+        -r requirements.txt
+
+# Verify torch wasn't replaced by a non-ROCm wheel during dep resolution.
+# Fails the build immediately if pip ignored our constraints — much better
+# than a 30-second-later runtime surprise.
+RUN python3 -c "import torch; assert torch.version.hip, f'torch is not a ROCm build after pip install: {torch.__version__} (hip={torch.version.hip}, cuda={torch.version.cuda})'; print(f'torch ok: {torch.__version__} hip={torch.version.hip}')"
 
 COPY app.py .
 
