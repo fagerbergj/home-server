@@ -36,16 +36,6 @@ if torch.version.hip is None:
         "constraints."
     )
 
-# Disable cuDNN/MIOpen. The PyTorch ROCm 6.4 wheel bundles its own MIOpen,
-# but MIOpen JIT-compiles some kernels (e.g. RNN dropout) via HIPRTC from the
-# ROCm 7.2.3 SDK in the base image. The two ROCm versions' C++ runtime
-# headers conflict with GCC 12's stdlib at JIT time, producing
-# "redefinition of integral_constant" errors and miopenStatusUnknownError.
-# pyannote's PyanNet uses an LSTM, so this is on the hot path. Forcing the
-# eager LSTM kernel avoids MIOpen entirely. ~3-5x slower per inference but
-# correct. Revisit once we move the base image to a matching ROCm version.
-torch.backends.cudnn.enabled = False
-
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
 DEVICE = os.environ.get("DEVICE", "cuda")

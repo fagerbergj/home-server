@@ -83,7 +83,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # dicts (the documented fallback per the warning in pyannote/audio/core/io.py),
 # which avoids the AudioDecoder code path entirely.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install --index-url https://download.pytorch.org/whl/rocm6.4 \
+    pip3 install --index-url https://download.pytorch.org/whl/rocm7.2 \
         torch torchaudio torchvision \
  && python3 -c "import torch; assert torch.version.hip, f'still not a ROCm build: {torch.__version__}'; print(f'torch installed: {torch.__version__} hip={torch.version.hip}')"
 
