@@ -2,7 +2,7 @@
 
 # Stage 1: build whisper.cpp with HIPBLAS for AMD GPU acceleration on RDNA 4.
 # AMDGPU_TARGETS=gfx1201 = R9700 (Navi 48). Update if the GPU ever changes.
-FROM rocm/pytorch:rocm6.2.4_ubuntu22.04_py3.10_pytorch_release_2.3.1 AS whisper-build
+FROM rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0 AS whisper-build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git cmake build-essential \
@@ -15,7 +15,7 @@ RUN cmake -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Rel
     && cmake --build build -j --config Release
 
 # Stage 2: runtime
-FROM rocm/pytorch:rocm6.2.4_ubuntu22.04_py3.10_pytorch_release_2.3.1
+FROM rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
