@@ -13,7 +13,7 @@
 | HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; runs at PCIe 3.0 x8 on Threadripper (~7.9 GB/s ceiling, far above what the drives can produce) |
 | Media Pool | 4× 26TB Seagate Exos `ST26000NM000C` (mfr-recert, 5yr warranty) | ✅ ZFS RAIDZ2, ~46 TiB usable |
 | Personal Pool | 2× 8TB Dell `J7W80` (Seagate Exos rebadge, new) | ✅ ZFS 2-way mirror, ~7.3 TiB usable; 2 bays free for future expansion |
-| GPU | 1× AMD Radeon AI Pro R9700 (RDNA 4 / Navi 48, 32 GB VRAM) — 2nd card pending | ✅ 32 GB VRAM; ROCm 7.x; PCIEX16_3. 2nd R9700 replaces RTX 3090 in PCIEX16_1 after soak period (→ 64 GB total). |
+| GPU | 2× AMD Radeon AI Pro R9700 (RDNA 4 / Navi 48, 32 GB VRAM each — 64 GB total) | ✅ ROCm 7.x; #1 in PCIEX16_3 (x16), #2 in PCIEX16_1 (x16), PCIEX16_2 empty for airflow gap |
 | PSU | 1200W | ✅ |
 | Network | Intel GbE LAN (onboard) + WIFI6 | ✅ Gigabit |
 | Case | Fractal Design Define 7 XL (E-ATX Full Tower) | ✅ 6× 3.5" in use; expandable to 18× 3.5" via multibracket kits |
