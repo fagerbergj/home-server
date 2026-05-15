@@ -21,7 +21,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HF_HOME=/root/.cache/huggingface
 
+# FFmpeg 6 — pyannote.audio 3.4+ depends on torchcodec which needs FFmpeg 6
+# shared libs (libavcodec.so.60, libavformat.so.60, libavutil.so.58).
+# Ubuntu 22.04 ships FFmpeg 4.4, so pull FFmpeg 6 from savoury1's PPA.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        software-properties-common \
+    && add-apt-repository -y ppa:savoury1/ffmpeg6 \
+    && apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,6 +39,17 @@ RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
+# Capture the base image's pre-installed ROCm-built torch/torchaudio/torchvision
+# versions into a pip constraints file. Without this, pip resolving
+# pyannote.audio's deps will silently replace those wheels with CUDA-only ones
+# from PyPI — manifests as "no NVIDIA driver" at the first .to("cuda") call.
+# The constraint pins force pip to leave the ROCm wheels alone.
+RUN pip3 freeze 2>/dev/null \
+    | grep -iE "^(torch|torchaudio|torchvision|pytorch-triton-rocm)==" \
+    > /tmp/torch-constraints.txt \
+ && echo "=== torch constraints (locked from base image) ===" \
+ && cat /tmp/torch-constraints.txt
+
 # BuildKit cache mounts persist pip wheels across builds, so requirements
 # changes only re-download what actually changed.
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -40,7 +57,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install -r requirements.txt
+    pip3 install -c /tmp/torch-constraints.txt -r requirements.txt
 
 COPY app.py .
 

@@ -21,49 +21,20 @@ import tempfile
 
 import numpy as np
 import torch
-import torchaudio
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 
-# torchaudio 2.5+ removed AudioMetaData from the top-level namespace but
-# pyannote.audio 3.3.x uses it as a return-type annotation in io.py, which
-# is evaluated at import time. Restore it so pyannote can be imported.
-if not hasattr(torchaudio, "AudioMetaData"):
-    from typing import NamedTuple
-
-    class _AudioMetaData(NamedTuple):
-        sample_rate: int
-        num_frames: int
-        num_channels: int
-        bits_per_sample: int
-        encoding: str
-
-    torchaudio.AudioMetaData = _AudioMetaData  # type: ignore[attr-defined]
-
-# torchaudio 2.5+ removed list_audio_backends(); pyannote 3.3.x calls it in
-# Audio.__init__ to select the I/O backend. Return soundfile which is always
-# available as a pyannote dependency.
-if not hasattr(torchaudio, "list_audio_backends"):
-    torchaudio.list_audio_backends = lambda: ["soundfile"]  # type: ignore[attr-defined]
-
-# PyTorch 2.6+ changed torch.load default to weights_only=True. pyannote
-# checkpoints embed many custom classes (TorchVersion, Specifications, …)
-# that aren't in the default allowlist.
-#
-# Patch lightning_fabric.utilities.cloud_io._load — the exact function that
-# pyannote imports as `pl_load` — to pass weights_only=False explicitly.
-# Patching here before pyannote is ever imported means pyannote's module-level
-# `from lightning_fabric.utilities.cloud_io import _load as pl_load` picks up
-# our patched version. Safe: all checkpoints come from the HuggingFace hub.
-import lightning_fabric.utilities.cloud_io as _lf_cloud_io
-
-_orig_lf_load = _lf_cloud_io._load
-
-def _lf_load_weights_any(path_or_url, map_location=None, **kwargs):
-    # Ignore any weights_only kwarg from callers (pytorch_lightning passes it
-    # explicitly); always use False since checkpoints come from HF hub.
-    return torch.load(path_or_url, map_location=map_location, weights_only=False)
-
-_lf_cloud_io._load = _lf_load_weights_any
+# Fail loudly at startup if torch isn't the ROCm build — pip resolving
+# pyannote.audio's deps can silently replace the base image's ROCm-built
+# torch wheel with a CUDA-only wheel from PyPI, which presents as "no NVIDIA
+# driver" at the first .to("cuda") call. The Dockerfile uses a pip
+# constraints file to prevent this; this check catches future regressions.
+if torch.version.hip is None:
+    raise RuntimeError(
+        f"torch {torch.__version__} is not a ROCm build "
+        f"(torch.version.hip is None, torch.version.cuda={torch.version.cuda}). "
+        "pip likely replaced the base image's ROCm torch — check Dockerfile "
+        "constraints."
+    )
 
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
