@@ -234,8 +234,12 @@ def _diarize(wav_path: str) -> list[dict]:
         min_speakers=MIN_SPEAKERS,
         max_speakers=MAX_SPEAKERS,
     )
+    # pyannote 3.4 wraps the Annotation in a DiarizeOutput dataclass. The
+    # Annotation is exposed as .speaker_diarization; older versions returned
+    # the bare Annotation directly.
+    annotation = getattr(diarization, "speaker_diarization", diarization)
     segs: list[dict] = []
-    for turn, _, speaker in diarization.itertracks(yield_label=True):
+    for turn, _, speaker in annotation.itertracks(yield_label=True):
         segs.append({
             "start": float(turn.start),
             "end": float(turn.end),
