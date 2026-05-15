@@ -45,6 +45,13 @@ if not hasattr(torchaudio, "AudioMetaData"):
 if not hasattr(torchaudio, "list_audio_backends"):
     torchaudio.list_audio_backends = lambda: ["soundfile"]  # type: ignore[attr-defined]
 
+# PyTorch 2.6+ changed torch.load default to weights_only=True. pyannote
+# checkpoints embed torch.torch_version.TorchVersion which isn't in the
+# default allowlist. Register it globally so Pipeline.from_pretrained works.
+if hasattr(torch.serialization, "add_safe_globals"):
+    import torch.torch_version  # noqa: PLC0415
+    torch.serialization.add_safe_globals([torch.torch_version.TorchVersion])
+
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
 DEVICE = os.environ.get("DEVICE", "cuda")
