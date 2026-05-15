@@ -14,6 +14,35 @@ WORKDIR /build/whisper.cpp
 RUN cmake -B build -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build -j --config Release
 
+# Stage 1b: build FFmpeg 6 from source. pyannote.audio 3.4+ depends on
+# torchcodec which dlopens libavcodec.so.60 et al. Ubuntu 22.04 only ships
+# FFmpeg 4.4. The savoury1 PPA chain works but pulls a tangled mess of
+# transitive deps that fight with the ROCm base; building a minimal FFmpeg 6
+# under /opt/ffmpeg6 is reproducible, isolated, and only ~5 min cached.
+FROM ubuntu:22.04 AS ffmpeg6-build
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wget xz-utils ca-certificates build-essential pkg-config yasm nasm \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
+ARG FFMPEG_VERSION=6.1.2
+RUN wget -qO ffmpeg.tar.xz https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz \
+    && tar -xf ffmpeg.tar.xz \
+    && cd ffmpeg-${FFMPEG_VERSION} \
+    && ./configure --prefix=/opt/ffmpeg6 \
+        --enable-shared --disable-static \
+        --disable-doc --disable-debug \
+        --disable-network --disable-everything \
+        --enable-protocol=file,pipe \
+        --enable-demuxer=wav,mov,matroska,ogg,flac,aac,mp3,webm,avi,mp4 \
+        --enable-muxer=wav,mov \
+        --enable-decoder=pcm_s16le,pcm_f32le,aac,mp3,flac,vorbis,opus,h264,hevc,vp8,vp9 \
+        --enable-encoder=pcm_s16le \
+        --enable-filter=aresample,aformat,anull,asetnsamples,atrim,scale \
+        --enable-parser=aac,h264,hevc,vp9 \
+    && make -j$(nproc) \
+    && make install
+
 # Stage 2: runtime
 FROM rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0
 
@@ -21,19 +50,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HF_HOME=/root/.cache/huggingface
 
-# FFmpeg 6 — pyannote.audio 3.4+ depends on torchcodec which needs FFmpeg 6
-# shared libs (libavcodec.so.60, libavformat.so.60, libavutil.so.58).
-# Ubuntu 22.04 ships FFmpeg 4.4, so pull FFmpeg 6 from savoury1's PPA.
-# The ffmpeg4 PPA must be added alongside ffmpeg6 — it provides ancillary
-# libs (libsndio7, etc.) that the ffmpeg6 packages depend on but doesn't
-# itself include. Documented in savoury1/ffmpeg6 PPA notes.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-    && add-apt-repository -y ppa:savoury1/ffmpeg4 \
-    && add-apt-repository -y ppa:savoury1/ffmpeg6 \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        ffmpeg libsndfile1 \
+        libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install our self-built FFmpeg 6 (binary + shared libs) under /opt/ffmpeg6.
+COPY --from=ffmpeg6-build /opt/ffmpeg6 /opt/ffmpeg6
+ENV PATH=/opt/ffmpeg6/bin:${PATH} \
+    LD_LIBRARY_PATH=/opt/ffmpeg6/lib:${LD_LIBRARY_PATH}
 
 # Bring the whisper.cpp build tree across — whisper-cli loads its sibling .so
 # files from the same tree at runtime.
