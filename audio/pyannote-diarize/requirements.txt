@@ -17,3 +17,8 @@ uvicorn[standard]
 python-multipart
 
 numpy
+
+# soundfile reads our pre-converted 16 kHz mono WAV into a tensor for the
+# pyannote dict input. pyannote 3.4 dropped soundfile as a direct dep when
+# it switched to torchcodec, so we install it ourselves.
+soundfile>=0.12.1
