@@ -1,6 +1,6 @@
 # Local LLM (Ollama)
 
-Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on an RTX 3090 (24GB VRAM). [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
+Runs [Ollama](https://ollama.com) in Docker with GPU-accelerated inference on an AMD Radeon AI Pro R9700 (32 GB VRAM) via ROCm. [Open WebUI](https://github.com/open-webui/open-webui) provides a chat interface.
 
 ## Access
 
@@ -64,17 +64,17 @@ The KV cache line will show `N/A` and the total will be just weights + overhead.
 
 One model, stays loaded. Prioritize **context size** over speed — coding tasks need enough context to hold multiple files or a long back-and-forth. Slow inference is fine. RAM spillage is fine.
 
-**Target:** weights fit within ~20GB VRAM, leaving room for a large KV cache. Use `-c 32768` or higher and check the total.
+**Target:** weights fit within ~28GB VRAM, leaving room for a large KV cache. Use `-c 32768` or higher and check the total.
 
 Good candidates: models tagged `code` or `coding` on Ollama. GQA models (low `-k`) handle long context much more efficiently.
 
-> **Note on hybrid SSM/attention models** (e.g. Qwen3.5): the script underestimates KV cache because it assumes all blocks use attention. Binary search with `ollama ps` to find the actual 100% GPU context limit. Example: qwen35-coder:latest (27.8B Q4_K_M) hits 100% GPU at **32768** context on a 3090.
+> **Note on hybrid SSM/attention models** (e.g. Qwen3.5): the script underestimates KV cache because it assumes all blocks use attention. Binary search with `ollama ps` to find the actual 100% GPU context limit. Example: qwen35-coder:latest (27.8B Q4_K_M) hits 100% GPU at **32768** context on a 3090; the R9700's extra 8 GB allows pushing further.
 
 ### Chat model
 
 Can be a large, high-quality model — context only needs to cover a conversation (4k–8k is usually enough). Prioritise model quality over context size.
 
-**Target:** total VRAM under ~22GB at 8k context.
+**Target:** total VRAM under ~28GB at 8k context.
 
 > **Example:** gemma4-26b (25.8B Q4_K_M) uses 21GB at 131072 context — 100% GPU.
 
@@ -82,7 +82,7 @@ Can be a large, high-quality model — context only needs to cover a conversatio
 ./check-compaitbility.sh -f <size> -q 4 -e <embedding> -b <blocks> -k <kv_heads> -d <kv_len> -c 8192 -t q8_0
 ```
 
-With 24GB VRAM and a small context window, 30B+ Q4 models fit comfortably.
+With 32GB VRAM and a small context window, 30B+ Q4 models fit comfortably — 70B Q5 fits across 2 cards once the second R9700 is installed.
 
 ### Specialized models
 
@@ -138,8 +138,8 @@ Use the context size you evaluated with `check-compaitbility.sh` — loading a l
 
 ## Resource Notes
 
-- RTX 3090 24GB VRAM — expect ~20–50 tokens/sec on Q4 models depending on size
-- Plex NVENC transcoding and LLM inference share the GPU but rarely overlap in practice
+- AMD R9700 32 GB VRAM — expect ~20–60 tokens/sec on Q4 models depending on size (ROCm via `ollama/ollama:rocm`)
+- Plex transcoding uses VAAPI on `/dev/dri` — separate path from Ollama's ROCm compute on `/dev/kfd`, no contention
 - Model files are stored in `./data`
 - KV cache quantized to `q8_0` via `OLLAMA_KV_CACHE_TYPE` — halves KV cache VRAM vs default FP16
 - Flash attention enabled via `OLLAMA_FLASH_ATTENTION=1`

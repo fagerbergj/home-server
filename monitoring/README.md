@@ -4,7 +4,7 @@
 - **Prometheus** — metrics collection and storage (30-day retention).
 - **Node Exporter** — host metrics: CPU, RAM, disk, network, temperatures.
 - **cAdvisor** — per-container CPU and RAM metrics.
-- **NVIDIA GPU Exporter** — GPU utilization, VRAM, temperature.
+- **AMD GPU Exporter** (`rocm/device-metrics-exporter`) — GPU utilization, VRAM, temperature, power. Metrics scrape at `gpu_*` prefix; labeled by `gpu_id`.
 - **smartctl Exporter** — drive S.M.A.R.T. health (reallocated sectors, pending sectors, temps).
 - **Uptime Kuma** — service status page showing each container up/down.
 

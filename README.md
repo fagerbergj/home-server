@@ -26,7 +26,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 
 ## OS
 
-**Ubuntu Server 24.04 LTS** — chosen for strong NVIDIA/CUDA driver support and Docker compatibility.
+**Ubuntu Server 24.04 LTS** — chosen for strong GPU driver support (ROCm for AMD) and Docker compatibility.
 
 ## Architecture
 
@@ -62,9 +62,9 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 
 1. OS Install + [Router & Firewall](networking/setup.md) (DHCP reservation, port forwarding, ufw)
 2. GitHub (clone repo, create .env)
-3. NVIDIA Drivers
+3. AMD GPU Drivers (ROCm)
 4. Mount Drives + Alerts
-5. Docker + NVIDIA Container Toolkit
+5. Docker
 6. [Nginx Proxy Manager](networking/setup.md) (proxy hosts, SSL)
 7. [Tailscale](networking/setup.md) (mesh VPN for tailnet-only admin UIs)
 8. Services — see each service's `setup.md`

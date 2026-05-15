@@ -129,34 +129,35 @@ source ~/workspace/home-server/.env
 
 ---
 
-## Phase 3 — NVIDIA Drivers
+## Phase 3 — AMD GPU Drivers (ROCm)
 
-Nouveau (the open-source driver) loads by default but lacks NVENC hardware encoding, which Plex needs for transcoding. You must blacklist it and install the proprietary driver.
+The in-tree `amdgpu` kernel driver doesn't support RDNA 4 (gfx1201 / R9700). Install the out-of-tree DKMS module + ROCm stack from AMD's repo.
 
-### Blacklist nouveau
-
-```bash
-echo "blacklist nouveau" | sudo tee /etc/modprobe.d/blacklist-nouveau.conf
-echo "options nouveau modeset=0" | sudo tee -a /etc/modprobe.d/blacklist-nouveau.conf
-sudo update-initramfs -u
-sudo reboot
-```
-
-### Install the proprietary driver
+### Install ROCm
 
 ```bash
-sudo apt install -y nvidia-driver-535
+# Download the amdgpu-install meta-package (check https://repo.radeon.com/amdgpu-install/ for latest)
+curl -fsSL https://repo.radeon.com/amdgpu-install/latest/ubuntu/jammy/amdgpu-install_7.2.3.70203-1_all.deb \
+  -o /tmp/amdgpu-install.deb
+sudo apt install -y /tmp/amdgpu-install.deb
+
+# Install ROCm + DKMS kernel module (DKMS builds the out-of-tree driver for gfx1201)
+sudo amdgpu-install --usecase=rocm,dkms
+
+# Add your user to the render and video groups for GPU access
+sudo usermod -aG render,video "$USER"
+
 sudo reboot
 ```
 
 ### Verify
 
 ```bash
-nvidia-smi
+rocm-smi
 nvtop
 ```
 
-You should see the RTX 3090 listed with driver version and VRAM.
+You should see the R9700 listed with temperature, VRAM, and clock info.
 
 ---
 
@@ -385,24 +386,15 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-Install NVIDIA Container Toolkit (allows Docker containers to use the GPU):
-```bash
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
-sudo apt update
-sudo apt install -y nvidia-container-toolkit
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-```
+ROCm containers use device passthrough — no extra toolkit needed. The GPU is exposed via `/dev/kfd` (compute) and `/dev/dri` (video), which are passed in each service's `docker-compose.yml`.
 
 </details>
 
 Verify GPU is accessible from Docker:
 ```bash
-docker run --rm --gpus all nvidia/cuda:12.3.1-base-ubuntu22.04 nvidia-smi
+docker run --rm --device=/dev/kfd --device=/dev/dri \
+  --group-add video --group-add render \
+  rocm/rocm-terminal rocm-smi
 ```
 
 ---

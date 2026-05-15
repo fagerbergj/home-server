@@ -1,11 +1,30 @@
 # Audio Setup
 
-One-time setup for the audio stack (faster-whisper + pyannote diarization).
+One-time setup for the audio stack (whisper.cpp transcription + pyannote diarization).
 
 ## Prerequisites
 
-- NVIDIA GPU with driver supporting CUDA 12.1+ (565+ recommended)
-- NVIDIA Container Toolkit installed
+- AMD GPU with ROCm installed (see `setup.md` Phase 3)
+- User in `render` and `video` groups (`sudo usermod -aG render,video $USER`)
+- `/mnt/cache/whisper-models/` directory with model files (see below)
+
+## Download model files
+
+whisper.cpp uses ggml model files loaded from the host at `/mnt/cache/whisper-models/`.
+
+```bash
+mkdir -p /mnt/cache/whisper-models
+
+# Transcription model: ggml-large-v3 (~1.5 GB)
+wget -P /mnt/cache/whisper-models \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin
+
+# Silero VAD model (~10 MB) — suppresses hallucination tails on silent trailing edges
+wget -P /mnt/cache/whisper-models \
+  https://huggingface.co/snakers4/silero-vad/resolve/master/files/silero_vad.onnx
+mv /mnt/cache/whisper-models/silero_vad.onnx \
+   /mnt/cache/whisper-models/ggml-silero-v5.1.2.bin
+```
 
 ## Hugging Face token (required)
 
@@ -15,7 +34,6 @@ pyannote's diarization model is open-source but gated for usage tracking. One-ti
 2. Accept the licenses (click "Agree and access" on each — instant approval):
    - https://huggingface.co/pyannote/speaker-diarization-3.1
    - https://huggingface.co/pyannote/segmentation-3.0
-   - https://huggingface.co/pyannote/speaker-diarization-community-1 (transitive dep — pyannote pulls this for the PLDA backend)
 3. Generate a **read** token: https://huggingface.co/settings/tokens
    - Type: Read
    - Name: anything (e.g. `home-server-audio`)
@@ -31,7 +49,7 @@ The token is used only on the first model download. After that the cache is offl
 
 ```bash
 cd ~/workspace/home-server/audio
-docker compose build faster-whisper
+docker compose build faster-whisper   # 15-30 min first time — pulls ~15 GB ROCm base image + compiles whisper.cpp
 docker compose up -d faster-whisper
 docker logs -f faster-whisper
 ```
@@ -46,7 +64,7 @@ curl http://localhost:8005/health
 
 curl http://localhost:8005/v1/audio/transcriptions \
   -F "file=@some-recording.webm" \
-  -F "model=Systran/faster-whisper-large-v3"
+  -F "model=ignored"
 ```
 
 ## Speaker enrollment (optional, recommended)
@@ -83,5 +101,7 @@ You can re-enroll the same name multiple times — additional samples accumulate
 
 - **`HF_TOKEN not set`** — token missing from `.env` or env not picked up. `docker compose config` to verify it's in the rendered service env.
 - **`Pipeline.from_pretrained returned None`** — token is set but you haven't accepted the pyannote license. Visit the model pages above and click Agree.
-- **CUDA driver too old** — `nvidia-smi` reports `CUDA Version: 12.2` or lower. Upgrade host driver to 565+ (`sudo apt install nvidia-driver-590` and reboot).
+- **`/dev/kfd: no such file or directory`** — ROCm kernel module not loaded. Run `rocm-smi` on the host; if it fails, check that `amdgpu-install --usecase=rocm,dkms` completed and you rebooted.
+- **`permission denied /dev/kfd`** — user not in `render` group. `sudo usermod -aG render,video $USER` then log out and back in.
+- **`whisper-cli: command not found` inside container** — the multi-stage build didn't complete. Check `docker compose build` output for errors in the `whisper-build` stage.
 - **`Resource temporarily unavailable` on `/dev/shm`** — already mitigated by `shm_size: 2gb` in compose.

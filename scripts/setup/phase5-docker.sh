@@ -1,5 +1,5 @@
 #!/bin/bash
-# Phase 5 — Docker + NVIDIA Container Toolkit
+# Phase 5 — Docker
 set -euo pipefail
 
 echo "=== Phase 5: Docker ==="
@@ -20,25 +20,14 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 sudo usermod -aG docker "$USER"
 
-# --- NVIDIA Container Toolkit ---
-echo ""
-echo "Installing NVIDIA Container Toolkit..."
-
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
-  sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-
-curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
-sudo apt update
-sudo apt install -y nvidia-container-toolkit
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
+# ROCm containers use /dev/kfd + /dev/dri device passthrough — no extra toolkit needed.
+# GPU access is configured per-service in each docker-compose.yml.
 
 echo ""
 echo "Verifying GPU is accessible from Docker..."
-docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu24.04 nvidia-smi
+docker run --rm --device=/dev/kfd --device=/dev/dri \
+  --group-add video --group-add render \
+  rocm/rocm-terminal rocm-smi
 
 echo ""
 echo "=== Phase 5 complete ==="

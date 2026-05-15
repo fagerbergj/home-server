@@ -33,13 +33,14 @@ Each completed upgrade's full details and rationale live in the git history of t
 
 ### Current state
 
-- 1× RTX 3090 (Ampere, 24 GB), PCIe 3.0 x16 slot, NVIDIA proprietary driver, NVIDIA Container Toolkit.
-- 5 services + monitoring touch the GPU via `runtime: nvidia` or CUDA images:
-    - `llm/` — Ollama (CUDA inference)
-    - `photos/` — Immich ML (`release-cuda` image) + Immich server (NVENC video transcode)
-    - `plex/` — Plex (NVENC/NVDEC transcode)
-    - `audio/` — `pyannote-diarize` (custom image, `nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04` base)
-    - `monitoring/` — `nvidia_gpu_exporter` for Prometheus
+- 1× AMD Radeon AI Pro R9700 (RDNA 4, 32 GB) in PCIEX16_3 — ROCm 7.x installed, all services migrated.
+- 1× RTX 3090 (Ampere, 24 GB) still in PCIEX16_1 — idle, to be replaced at shutdown #2.
+- All services now on ROCm / VAAPI — NVIDIA runtime and container toolkit no longer used:
+    - `llm/` — Ollama (`ollama/ollama:rocm`) ✅
+    - `photos/` — Immich ML (`release-rocm`) + Immich server (VAAPI transcode) ✅
+    - `plex/` — Plex (VAAPI transcode) ✅
+    - `audio/` — `pyannote-diarize` (whisper.cpp + HIPBLAS, `rocm/pytorch` base) ✅ *(build in progress)*
+    - `monitoring/` — `amd-exporter` (`rocm/device-metrics-exporter`) ✅
 
 ### Plan
 
@@ -82,13 +83,13 @@ Order intentional: easiest service first, custom build last, monitoring early so
     - Install ROCm per AMD's Ubuntu 24.04 instructions (`amdgpu-install --usecase=rocm,dkms`)
     - Add user to `render` and `video` groups
     - Reboot, verify both `nvidia-smi` (3090) and `rocm-smi` (R9700) work side-by-side
-4. **Monitoring first** (`monitoring/`) — add `amd-smi-exporter` alongside the existing `nvidia_gpu_exporter`. Both run in parallel through the entire migration so you can watch GPU temps, VRAM, and load on both cards as services move. Add Grafana panels for the AMD metrics; leave the NVIDIA panels in place.
-5. **Service migration**, in order — for each, stand up the ROCm version side-by-side with the CUDA version where possible, validate, then cut over:
-    1. **Ollama** (`llm/`) — bring up a parallel `ollama-rocm` container pointed at the R9700 (`devices: [/dev/kfd, /dev/dri]`, `group_add: [video, render]`, image `ollama/ollama:rocm`) on a different port. Pull a 32B coding model (e.g. Qwen2.5-Coder-32B Q5), validate. Once happy, point Open WebUI at the new endpoint and remove the CUDA Ollama. Note: 70B target can't be validated until shutdown #2 — see Risks.
-    2. **Plex** (`plex/`) — drop `runtime: nvidia`, mount `/dev/dri`. Plex UI → Transcoder → switch HW accel from NVENC to VAAPI. Force a transcode, confirm `(hw)`.
-    3. **Immich server + ML** (`photos/`) — server: drop nvidia runtime, mount `/dev/dri`, set transcoder to VAAPI. ML: image tag `release-cuda` → `release-rocm`, swap device block. Expect a multi-hour ML re-extraction on first run.
-    4. **pyannote-diarize** (`audio/`) — rebuild Dockerfile on `rocm/pytorch:latest` base. Tag the existing CUDA image as `pyannote-diarize:cuda-fallback` first so you can roll back if the rebuild misbehaves. Test against a known transcription.
-6. **Soak period** — run all migrated services for at least a week on the single R9700 with the 3090 idle. If anything is unstable, fall back to CUDA on the 3090 while debugging. The 3090 stays in the box as insurance.
+4. ✅ **Monitoring first** (`monitoring/`) — added `amd-exporter` (`rocm/device-metrics-exporter:v1.5.0`). Grafana dashboard updated with GPU utilization, VRAM, temperature, and power panels using `gpu_*` metrics. `nvidia-exporter` removed.
+5. ✅ **Service migration** complete:
+    1. ✅ **Ollama** (`llm/`) — replaced directly with `ollama/ollama:rocm`. Validated inference on R9700.
+    2. ✅ **Plex** (`plex/`) — VAAPI via `/dev/dri`. Confirmed `(hw)` transcode in dashboard.
+    3. ✅ **Immich server + ML** (`photos/`) — server on VAAPI, ML on `release-rocm` (MIGraphX EP). Face detection confirmed on GPU.
+    4. 🔄 **pyannote-diarize** (`audio/`) — rebuilt on `rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0`; replaced faster-whisper with whisper.cpp (HIPBLAS, gfx1201). Build in progress.
+6. **Soak period** — run all migrated services for at least a week on the single R9700 with the 3090 idle. If anything is unstable, roll back while debugging. The 3090 stays in the box as insurance.
 7. **Shutdown #2: 3090 → 2nd R9700**
     - Pull 3090, install 2nd R9700.
     - Boot, verify `rocm-smi` lists both R9700s.
