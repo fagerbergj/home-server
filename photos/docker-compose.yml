@@ -26,14 +26,15 @@ services:
     restart: unless-stopped
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:release-rocm
+    # Pinned to v2.4.1 — release-rocm uses MIGraphXExecutionProvider which crashes on all
+    # recent RDNA generations (gfx1030–gfx1201). v2.4.1 uses ROCMExecutionProvider instead.
+    # Do not upgrade until https://github.com/immich-app/immich/issues/27387 is resolved.
+    image: ghcr.io/immich-app/immich-machine-learning:v2.4.1-rocm
     container_name: immich-machine-learning
     networks:
       - backend
     env_file:
       - ../.env
-    environment:
-      - HSA_OVERRIDE_GFX_VERSION=11.0.0
     devices:
       - /dev/kfd
       - /dev/dri
