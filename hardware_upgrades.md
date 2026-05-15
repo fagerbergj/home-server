@@ -88,7 +88,7 @@ Order intentional: easiest service first, custom build last, monitoring early so
     1. ✅ **Ollama** (`llm/`) — replaced directly with `ollama/ollama:rocm`. Validated inference on R9700.
     2. ✅ **Plex** (`plex/`) — VAAPI via `/dev/dri`. Confirmed `(hw)` transcode in dashboard.
     3. ✅ **Immich server + ML** (`photos/`) — server on VAAPI, ML on `release-rocm` (MIGraphX EP). Face detection confirmed on GPU.
-    4. 🔄 **pyannote-diarize** (`audio/`) — rebuilt on `rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0`; replaced faster-whisper with whisper.cpp (HIPBLAS, gfx1201). Build in progress.
+    4. ✅ **pyannote-diarize** (`audio/`) — rebuilt on `rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0`; replaced faster-whisper with whisper.cpp (HIPBLAS, gfx1201). Validated.
 6. **Soak period** — run all migrated services for at least a week on the single R9700 with the 3090 idle. If anything is unstable, roll back while debugging. The 3090 stays in the box as insurance.
 7. **Shutdown #2: 3090 → 2nd R9700**
     - Pull 3090, install 2nd R9700.
