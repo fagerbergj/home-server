@@ -39,6 +39,12 @@ if not hasattr(torchaudio, "AudioMetaData"):
 
     torchaudio.AudioMetaData = _AudioMetaData  # type: ignore[attr-defined]
 
+# torchaudio 2.5+ removed list_audio_backends(); pyannote 3.3.x calls it in
+# Audio.__init__ to select the I/O backend. Return soundfile which is always
+# available as a pyannote dependency.
+if not hasattr(torchaudio, "list_audio_backends"):
+    torchaudio.list_audio_backends = lambda: ["soundfile"]  # type: ignore[attr-defined]
+
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
 DEVICE = os.environ.get("DEVICE", "cuda")
