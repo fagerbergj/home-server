@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Bring the whisper.cpp build tree across — whisper-cli loads its sibling .so
 # files from the same tree at runtime.
 COPY --from=whisper-build /build/whisper.cpp/build /opt/whisper.cpp/build
-ENV LD_LIBRARY_PATH=/opt/whisper.cpp/build/src:/opt/whisper.cpp/build/ggml/src:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/opt/whisper.cpp/build/src:/opt/whisper.cpp/build/ggml/src:/opt/whisper.cpp/build/ggml/src/ggml-hip:${LD_LIBRARY_PATH}
 RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
