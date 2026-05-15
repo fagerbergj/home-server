@@ -47,18 +47,21 @@ if not hasattr(torchaudio, "list_audio_backends"):
 
 # PyTorch 2.6+ changed torch.load default to weights_only=True. pyannote
 # checkpoints embed many custom classes (TorchVersion, Specifications, …)
-# that aren't in the default allowlist. Patch torch.load to default
-# weights_only=False — safe here because all checkpoints come from the
-# HuggingFace model hub and we trust the source.
-import functools as _functools
-_orig_torch_load = torch.load
+# that aren't in the default allowlist.
+#
+# Patch lightning_fabric.utilities.cloud_io._load — the exact function that
+# pyannote imports as `pl_load` — to pass weights_only=False explicitly.
+# Patching here before pyannote is ever imported means pyannote's module-level
+# `from lightning_fabric.utilities.cloud_io import _load as pl_load` picks up
+# our patched version. Safe: all checkpoints come from the HuggingFace hub.
+import lightning_fabric.utilities.cloud_io as _lf_cloud_io
 
-@_functools.wraps(_orig_torch_load)
-def _torch_load_compat(*args, **kwargs):
-    kwargs.setdefault("weights_only", False)
-    return _orig_torch_load(*args, **kwargs)
+_orig_lf_load = _lf_cloud_io._load
 
-torch.load = _torch_load_compat
+def _lf_load_weights_any(path_or_url, map_location=None):
+    return torch.load(path_or_url, map_location=map_location, weights_only=False)
+
+_lf_cloud_io._load = _lf_load_weights_any
 
 # DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
 # so `torch.device("cuda")` resolves to the R9700 transparently.
