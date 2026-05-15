@@ -100,7 +100,7 @@ def _embed_audio(wav_path: str, start: float | None = None, end: float | None = 
     inference = Inference(
         EMBEDDING_MODEL,
         window="whole",
-        use_auth_token=HF_TOKEN,
+        token=HF_TOKEN,
         device=torch.device(DEVICE) if DEVICE == "cuda" else torch.device("cpu"),
     )
     if start is None:
@@ -195,10 +195,7 @@ def _diarize(wav_path: str) -> list[dict]:
     from pyannote.audio import Pipeline
 
     logger.info("loading diarization pipeline=%s", DIARIZATION_MODEL)
-    # pyannote.audio 3.3.x takes `use_auth_token`. 3.4+ renamed it to `token`.
-    # We're pinned to 3.3.2 in requirements.txt — verified via
-    #   inspect.signature(Pipeline.from_pretrained)
-    pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, use_auth_token=HF_TOKEN)
+    pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, token=HF_TOKEN)
     if pipeline is None:
         raise RuntimeError(
             f"Pipeline.from_pretrained returned None — check HF_TOKEN and that "
