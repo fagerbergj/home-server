@@ -1,39 +1,43 @@
-# promptfoo config — cloud models (Sonnet/Haiku) judged by Prometheus2
+# promptfoo config -- local models judged by Prometheus2
 #
 # Run:  npx promptfoo@latest eval -c promptfooconfig.cloud.yaml
 # View: npx promptfoo@latest view
 #
-# Uses Prometheus2 as judge to avoid Claude self-bias when evaluating Sonnet/Haiku.
+# Judge: Prometheus2 (local Ollama, fine-tuned for evaluation).
 # Pull the judge model first:
-#   ollama pull tensortemplar/prometheus2:8x7b-Q3_K_S
+#   ollama pull ggozad/prometheus2
 #
-# Targets: Sonnet ≥90%, Haiku ≥70%.
-# If a test fails for Sonnet, the prompt or rubric needs revision before
-# running local models — don't adjust for Haiku failures alone.
+# Models evaluated: deepseek-r1:70b, qwen3.6:35b, gemma4:31b, gpt-oss:120b
+# Judge threshold: 0.8 (score >= 4 out of 5)
 
 evaluateOptions:
   maxConcurrency: 2
-  timeoutMs: 120000  # 2 minutes — cloud models are fast
+  timeoutMs: 300000  # 5 minutes -- larger local models can be slow
 
 providers:
-  - id: anthropic:claude-sonnet-4-6
-  - id: anthropic:claude-haiku-4-5-20251001
+  - id: ollama:deepseek-r1:70b
+  - id: ollama:qwen3.6:35b
+  - id: ollama:gemma4:31b
+  - id: ollama:gpt-oss:120b
 
 prompts:
   - "{{task}}"
 
 tests: tests.yaml
 
-# Judge: Prometheus2 (local Ollama, fine-tuned for evaluation)
-# Uses 1-5 scoring scale; threshold 0.66 ≈ score ≥ 3.3
+# Judge: Prometheus2 (local Ollama, ABS_SYSTEM_PROMPT built in)
+# Uses 1-5 absolute grading scale; threshold 0.8 = score >= 4
 defaultTest:
-  threshold: 0.75
+  threshold: 0.8
   options:
-    provider: anthropic:claude-sonnet-4-6
+    provider: ollama:ggozad/prometheus2
     rubricPrompt: |
       ###Task Description:
-      Evaluate the response based on the score rubric below.
-      Write a brief feedback, then output a JSON object on the last line.
+      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
+      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
+      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
+      4. Please do not generate any other opening, closing, and explanations.
 
       ###The instruction to evaluate:
       {{prompt}}
@@ -41,16 +45,10 @@ defaultTest:
       ###Response to evaluate:
       {{output}}
 
+      ###Reference Answer (Score 5):
+      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
+
       ###Score Rubrics:
-      [{{rubric}}]
-      Score 1.0: Addresses all required points in the criterion; explanation is accurate, in-depth, and easy to act on.
-      Score 0.9: Addresses all required points in the criterion; explanation is correct but may lack depth, precision, or clarity.
-      Score 0.75: Addresses almost all required points but omits one minor detail; the points it covers are explained clearly and thoroughly.
-      Score 0.5: Omits multiple required points from the criterion; the points it does cover are explained reasonably well.
-      Score 0.25: Addresses very few required points from the criterion, or the explanation is so unclear or disorganized it is difficult to follow.
-      Score 0.0: Response is incorrect, misleading, or does not address the criterion at all.
+      {{rubric}}
 
       ###Feedback:
-      Write your feedback, then end with ONLY this JSON on the last line:
-      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
-      Score must be one of: 0.0, 0.25, 0.5, 0.75, 0.9, 1.0. Pass if score >= 0.75.

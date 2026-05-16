@@ -16,7 +16,7 @@
 # Note: local Ollama models run on a separate machine; latency reflects that GPU.
 
 evaluateOptions:
-  maxConcurrency: 1
+  maxConcurrency: 2
   timeoutMs: 600000  # 10 minutes — allows time for cold model loads
 
 providers:
@@ -24,6 +24,7 @@ providers:
   - id: ollama:chat:gemma4:31b
   - id: ollama:chat:gemma4-26b:latest
   - id: ollama:chat:granite4.1:30b
+  - id: ollama:chat:deepseek-r1:70b
 
 prompts:
   - "{{task}}"

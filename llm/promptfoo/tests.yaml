@@ -9,10 +9,11 @@
     - type: llm-rubric
       metric: "[baseline] goroutine model"
       value: >
-        Does it explain goroutines as lightweight threads managed by the Go runtime —
-        including that they're cheap to spawn (small initial stack), multiplexed onto OS
-        threads by the scheduler, and why this lets a server handle many simultaneous
-        connections without the overhead of one OS thread per connection?
+        Score 3: Explains goroutines as lightweight threads managed by the Go runtime
+        Score 4: Also explains they're cheap to spawn (small initial stack), multiplexed
+        onto OS threads by the scheduler
+        Score 5: Also explains why this lets a server handle many simultaneous connections
+        without the overhead of one OS thread per connection
 
 - description: "Python: GIL and async for REST APIs"
   vars:
@@ -23,15 +24,14 @@
     - type: llm-rubric
       metric: "[baseline] GIL limits parallelism"
       value: >
-        Does it explain that the GIL prevents multiple Python threads from executing
+        Score 3: Explains that the GIL prevents multiple Python threads from executing
         Python bytecode simultaneously, meaning CPU-bound work can't be parallelized
-        across threads?
-    - type: llm-rubric
-      metric: "[proficient] IO-bound workloads sidestep the GIL"
-      value: >
-        Does it explain that for IO-bound workloads (the typical REST API case), async
-        frameworks largely sidestep the GIL — the runtime releases the GIL during IO
-        waits, allowing cooperative multitasking without true thread parallelism?
+        across threads
+        Score 4: Also explains that for IO-bound workloads (the typical REST API case),
+        async frameworks largely sidestep the GIL — the runtime releases the GIL during
+        IO waits, allowing cooperative multitasking without true thread parallelism
+        Score 5: Also provides concrete examples of async frameworks like uvicorn or
+        asyncio and how they achieve this
 
 - description: "Go vs Python vs Kotlin: deployment artifacts"
   vars:
@@ -42,10 +42,10 @@
     - type: llm-rubric
       metric: "[proficient] deployment differences"
       value: >
-        Does it explain the key deployment differences — Go compiles to a single static
-        binary with no runtime dependency, Python requires the interpreter and
-        dependencies, and Kotlin/JVM requires a JVM with its associated startup time
-        and memory overhead?
+        Score 3: Covers Go compiles to a single static binary with no runtime dependency
+        Score 4: Also covers Python requiring the interpreter and dependencies
+        Score 5: Also covers Kotlin/JVM requiring a JVM with its associated startup time
+        and memory overhead
 
 - description: "Kotlin: JVM ecosystem and type system"
   vars:
@@ -57,16 +57,23 @@
     - type: llm-rubric
       metric: "[proficient] JVM ecosystem commitment"
       value: >
-        Does it explain that choosing Kotlin means committing to the JVM — its startup
+        Score 3: Explains that choosing Kotlin means committing to the JVM — its startup
         characteristics, memory model, GC tuning, and the Java library ecosystem —
-        not just a syntax preference? (Specific frameworks like Spring Boot are
-        illustrative, not required.)
+        not just a syntax preference
+        Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types
+        enforced at compile time) as a mechanism for catching a class of bugs at
+        compile time rather than at runtime
+        Score 5: Also discusses sealed classes as another compile-time mechanism for
+        catching invalid state representations
     - type: llm-rubric
       metric: "[expert] type system depth"
       value: >
-        Does it discuss Kotlin's null safety (nullable vs non-nullable types enforced
-        at compile time) and/or sealed classes as mechanisms for catching a class of
-        bugs at compile time rather than at runtime?
+        Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a
+        compile-time bug-catching mechanism
+        Score 4: Also discusses sealed classes as a compile-time mechanism for restricting
+        valid state representations
+        Score 5: Also explains how both mechanisms work together to eliminate whole classes
+        of runtime errors
 
 # ── Messaging ─────────────────────────────────────────────────────────────
 
@@ -79,9 +86,10 @@
     - type: llm-rubric
       metric: "[baseline] log retention vs delete-on-ack"
       value: >
-        Does it explain that Kafka retains messages as a persistent, replayable log
-        independent of consumer acknowledgement, while RabbitMQ deletes messages
-        once they are acknowledged — and explain why this difference matters?
+        Score 3: Explains that Kafka retains messages as a persistent, replayable log
+        independent of consumer acknowledgement
+        Score 4: Also explains that RabbitMQ deletes messages once they are acknowledged
+        Score 5: Also explains why this difference matters for system design decisions
 
 - description: "Kafka: ordering guarantees"
   vars:
@@ -92,9 +100,12 @@
     - type: llm-rubric
       metric: "[baseline] partition-level ordering"
       value: >
-        Does it explain that Kafka guarantees message ordering within a partition but
-        not across partitions, and apply this concretely — e.g., route all events for
-        the same entity to the same partition to preserve ordering for that entity?
+        Score 3: Explains that Kafka guarantees message ordering within a partition but
+        not across partitions
+        Score 4: Also applies this concretely — e.g., route all events for the same
+        entity to the same partition to preserve ordering for that entity
+        Score 5: Also explains the implications for designing a multi-consumer system
+        where ordering matters
 
 - description: "Kafka: consumer groups and backpressure"
   vars:
@@ -105,16 +116,20 @@
     - type: llm-rubric
       metric: "[proficient] consumer group model"
       value: >
-        Does it explain that Kafka consumer groups are offset-based — each group
-        independently tracks its own position in the topic, so multiple groups can
-        each read the full message stream independently, and consumers within a group
-        divide the partitions among themselves?
+        Score 3: Explains that Kafka consumer groups are offset-based — each group
+        independently tracks its own position in the topic
+        Score 4: Also explains that multiple groups can each read the full message stream
+        independently, and consumers within a group divide the partitions among themselves
+        Score 5: Also explains what happens when a consumer falls behind — consumer lag
+        accumulates and Kafka doesn't block the producer or drop messages, so lag grows
+        unboundedly until the consumer catches up
     - type: llm-rubric
       metric: "[expert] consumer lag and backpressure"
       value: >
-        Does it explain that when a consumer falls behind, consumer lag accumulates —
-        Kafka doesn't block the producer or drop messages, so lag grows unboundedly
-        until the consumer catches up?
+        Score 3: Explains that consumer lag accumulates when a consumer falls behind
+        Score 4: Also explains that Kafka doesn't block the producer or drop messages
+        Score 5: Also explains that lag grows unboundedly until the consumer catches up
+        and what operational implications this has
 
 - description: "Kafka: when is the complexity justified"
   vars:
@@ -125,9 +140,11 @@
     - type: llm-rubric
       metric: "[proficient] when Kafka is justified"
       value: >
-        Does it explain that Kafka is justified when you need multiple independent
-        consumer groups replaying the same stream, event sourcing/audit log replay,
-        or persistent event history — not just for high throughput alone?
+        Score 3: Explains that Kafka is justified when you need multiple independent
+        consumer groups replaying the same stream
+        Score 4: Also covers event sourcing/audit log replay or persistent event history
+        Score 5: Also explains why high throughput alone is not sufficient justification
+        for Kafka's operational overhead
 
 # ── Data pipeline ──────────────────────────────────────────────────────────
 
@@ -140,10 +157,11 @@
     - type: llm-rubric
       metric: "[baseline] latency requirement is the primary driver"
       value: >
-        Does it identify the required data freshness or latency SLA as the primary
-        deciding factor — specifically, how quickly do consumers need results after
-        events occur — rather than treating throughput, cost, or complexity as
-        equally important?
+        Score 3: Identifies the required data freshness or latency SLA as the primary
+        deciding factor
+        Score 4: Also explains how quickly consumers need results after events occur
+        Score 5: Also explains why throughput, cost, or complexity are secondary to the
+        latency requirement
 
 - description: "Batch: correctness and testability advantages"
   vars:
@@ -154,15 +172,20 @@
     - type: llm-rubric
       metric: "[baseline] fixed input deterministic output"
       value: >
-        Does it explain that batch pipelines operate on a fixed, bounded dataset and
-        produce deterministic output that can be fully reproduced by re-running the
-        same job — making bugs easier to isolate and reproduce?
+        Score 3: Explains that batch pipelines operate on a fixed, bounded dataset
+        Score 4: Also explains they produce deterministic output that can be fully
+        reproduced by re-running the same job — making bugs easier to isolate and
+        reproduce
+        Score 5: Also contrasts this with streaming's lack of fixed boundaries
     - type: llm-rubric
       metric: "[proficient] streaming testing complexity"
       value: >
-        Does it explain that streaming introduces time-dependent behavior — event
-        ordering, late arrivals, windowing — that makes tests harder to write and
-        reliably reproduce compared to a batch job with static input and output?
+        Score 3: Explains that streaming introduces time-dependent behavior — event
+        ordering, late arrivals, windowing
+        Score 4: Also explains that this makes tests harder to write and reliably
+        reproduce compared to a batch job with static input and output
+        Score 5: Also provides specific examples of streaming testing challenges
+        unique to time-dependent behavior
 
 - description: "Streaming: operational challenges"
   vars:
@@ -173,17 +196,21 @@
     - type: llm-rubric
       metric: "[proficient] state management"
       value: >
-        Does it discuss stateful streaming as a core operational challenge —
-        checkpointing state, managing state store growth over time, or how the system
-        recovers after a failure when in-flight state must be rebuilt?
+        Score 3: Discusses stateful streaming as a core operational challenge
+        Score 4: Also covers checkpointing state and managing state store growth over time
+        Score 5: Also explains how the system recovers after a failure when in-flight
+        state must be rebuilt
     - type: llm-rubric
       metric: "[proficient] reprocessing and backfill"
       value: >
-        Does it explain that reprocessing and backfill are significantly harder with
-        streaming — requiring offset management and replaying from a source — compared
-        to batch where you simply re-run the job against the same input?
+        Score 3: Explains that reprocessing and backfill are significantly harder with
+        streaming than with batch
+        Score 4: Also explains that streaming requires offset management and replaying
+        from a source
+        Score 5: Also contrasts with batch where you simply re-run the job against
+        the same input
 
-# ── Database ───────────────────────────────────────────────────────────────
+# ── Database ─────────────────────────────────────────────────────────────────
 
 - description: "PostgreSQL JSONB: viability and transaction support"
   vars:
@@ -195,15 +222,18 @@
     - type: llm-rubric
       metric: "[baseline] JSONB as viable alternative"
       value: >
-        Does it explain that PostgreSQL's JSONB can store, index, and query
-        semi-structured data — making it a genuine alternative to MongoDB rather
-        than a tool only for fully relational data?
+        Score 3: Explains that PostgreSQL's JSONB can store, index, and query
+        semi-structured data
+        Score 4: Also explains it's a genuine alternative to MongoDB rather than
+        a tool only for fully relational data
+        Score 5: Also addresses the transaction support comparison
     - type: llm-rubric
       metric: "[baseline] transaction support differences"
       value: >
-        Does it explain that PostgreSQL has full ACID multi-table transactions, while
-        MongoDB's multi-document transactions are more limited and carry meaningful
-        performance costs compared to single-document operations?
+        Score 3: Explains that PostgreSQL has full ACID multi-table transactions
+        Score 4: Also explains MongoDB's multi-document transactions are more limited
+        Score 5: Also explains they carry meaningful performance costs compared to
+        single-document operations
 
 - description: "PostgreSQL JSONB vs MongoDB: query ergonomics"
   vars:
@@ -214,9 +244,11 @@
     - type: llm-rubric
       metric: "[proficient] query ergonomics"
       value: >
-        Does it explain that MongoDB's query language is designed natively for nested
-        document structures, while PostgreSQL's JSONB operators (->, ->>, #>) are
-        more verbose and harder to read and optimize for deeply nested access patterns?
+        Score 3: Explains that MongoDB's query language is designed natively for nested
+        document structures
+        Score 4: Also explains PostgreSQL's JSONB operators (->, ->>, #>) are more
+        verbose and harder to read and optimize for deeply nested access patterns
+        Score 5: Also provides concrete examples comparing the query syntax of both
 
 - description: "Variable schema data: what it usually looks like in practice"
   vars:
@@ -227,10 +259,11 @@
     - type: llm-rubric
       metric: "[proficient] stable core schema insight"
       value: >
-        Does it explain that most "variable schema" data has a stable core (fields
-        common across all records) with only the edges being truly variable — making
-        a relational table with fixed columns plus a JSONB column for the variable
-        parts a practical middle ground?
+        Score 3: Explains that most "variable schema" data has a stable core (fields
+        common across all records)
+        Score 4: Also explains only the edges being truly variable
+        Score 5: Also recommends a relational table with fixed columns plus a JSONB
+        column for the variable parts as a practical middle ground
 
 # ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -243,10 +276,10 @@
     - type: llm-rubric
       metric: "[baseline] revocation undermines statelessness"
       value: >
-        Does it explain that JWTs can't be invalidated before expiry, and that the
-        standard solution — a server-side denylist — requires the same kind of shared
-        state that JWTs were supposed to eliminate, partially defeating their stateless
-        advantage?
+        Score 3: Explains that JWTs can't be invalidated before expiry
+        Score 4: Also explains that the standard solution — a server-side denylist —
+        requires the same kind of shared state that JWTs were supposed to eliminate
+        Score 5: Also explains how this partially defeats JWT's stateless advantage
 
 - description: "JWT: payload is not encrypted"
   vars:
@@ -257,9 +290,11 @@
     - type: llm-rubric
       metric: "[baseline] JWTs are not encrypted"
       value: >
-        Does it explain that base64 is encoding, not encryption — anyone who holds
-        the token can decode and read the payload without any key, so sensitive data
-        (PII, roles, secrets) should never be placed in JWT claims?
+        Score 3: Explains that base64 is encoding, not encryption
+        Score 4: Also explains anyone who holds the token can decode and read the
+        payload without any key
+        Score 5: Also explains that sensitive data (PII, roles, secrets) should never
+        be placed in JWT claims
 
 - description: "Token storage: localStorage vs httpOnly cookies"
   vars:
@@ -271,16 +306,20 @@
     - type: llm-rubric
       metric: "[proficient] token storage tradeoffs"
       value: >
-        Does it explain that localStorage is vulnerable to XSS (any injected script
-        can read it) while httpOnly cookies are inaccessible to JavaScript but require
-        CSRF protection — and that this is a genuine security tradeoff with no
-        universally correct answer?
+        Score 3: Explains that localStorage is vulnerable to XSS (any injected script
+        can read it)
+        Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but
+        require CSRF protection
+        Score 5: Also explains that this is a genuine security tradeoff with no
+        universally correct answer
     - type: llm-rubric
       metric: "[expert] the logout problem"
       value: >
-        Does it address what "logout" actually means for JWTs — that client-side
-        deletion doesn't stop a copied token from working, so true invalidation
-        requires server-side state (a denylist or short expiry with refresh rotation)?
+        Score 3: Addresses what "logout" actually means for JWTs
+        Score 4: Also explains client-side deletion doesn't stop a copied token from
+        working
+        Score 5: Also explains true invalidation requires server-side state (a denylist
+        or short expiry with refresh rotation)
 
 # ── Queue vs HTTP ──────────────────────────────────────────────────────────
 
@@ -294,10 +333,11 @@
     - type: llm-rubric
       metric: "[baseline] sync vs async as primary driver"
       value: >
-        Does it explain that the fundamental shift is from synchronous to asynchronous
-        communication — the sender no longer waits for a response — and that this is
-        the central question: does the caller actually need an immediate result, or is
-        fire-and-forget acceptable?
+        Score 3: Explains the fundamental shift is from synchronous to asynchronous
+        communication
+        Score 4: Also explains the sender no longer waits for a response
+        Score 5: Also frames this as the central question: does the caller actually
+        need an immediate result, or is fire-and-forget acceptable?
 
 - description: "Queue vs HTTP: operational costs and failure modes"
   vars:
@@ -308,21 +348,25 @@
     - type: llm-rubric
       metric: "[baseline] operational cost of queue infra"
       value: >
-        Does it explain that a message broker is another production system to deploy,
-        monitor, scale, and maintain — adding operational overhead that HTTP
-        service-to-service calls don't require?
+        Score 3: Explains that a message broker is another production system to deploy
+        Score 4: Also covers monitor, scale, and maintain aspects
+        Score 5: Also contrasts with HTTP service-to-service calls not requiring this
+        additional operational overhead
     - type: llm-rubric
       metric: "[proficient] failure mode differences"
       value: >
-        Does it explain that HTTP failures are immediate and visible to the caller
-        (error codes, timeouts) while queue failures are deferred and harder to
-        detect — dead letter queues, silent drops, or unbounded consumer lag?
+        Score 3: Explains that HTTP failures are immediate and visible to the caller
+        (error codes, timeouts)
+        Score 4: Also explains queue failures are deferred and harder to detect
+        Score 5: Also covers dead letter queues, silent drops, or unbounded consumer
+        lag as specific queue failure modes
     - type: llm-rubric
       metric: "[expert] idempotency requirements"
       value: >
-        Does it explain that message queues introduce at-least-once delivery
-        semantics, meaning consumers must handle duplicate messages idempotently —
-        a design constraint that HTTP calls don't impose by default?
+        Score 3: Explains that message queues introduce at-least-once delivery semantics
+        Score 4: Also explains consumers must handle duplicate messages idempotently
+        Score 5: Also explains this is a design constraint that HTTP calls don't impose
+        by default
 
 - description: "Queue vs HTTP: coupling and idempotency"
   vars:
@@ -334,15 +378,18 @@
     - type: llm-rubric
       metric: "[proficient] coupling moves to schema"
       value: >
-        Does it explain that queues don't eliminate coupling — they shift it from
-        runtime API contracts to the message schema or event format, and that
-        producers and consumers must still agree on message structure?
+        Score 3: Explains that queues don't eliminate coupling
+        Score 4: Also explains they shift it from runtime API contracts to the message
+        schema or event format
+        Score 5: Also explains that producers and consumers must still agree on
+        message structure
     - type: llm-rubric
       metric: "[expert] idempotency requirements"
       value: >
-        Does it explain that message queues introduce at-least-once delivery
-        semantics, meaning consumers must handle duplicate messages idempotently —
-        a design constraint that HTTP calls don't impose by default?
+        Score 3: Explains that message queues introduce at-least-once delivery semantics
+        Score 4: Also explains consumers must handle duplicate messages idempotently
+        Score 5: Also explains this is a design constraint that HTTP calls don't impose
+        by default
 
 # ── Monolith vs microservices ──────────────────────────────────────────────
 
@@ -355,15 +402,19 @@
     - type: llm-rubric
       metric: "[baseline] microservice operational costs"
       value: >
-        Does it name at least two specific operational costs beyond vague "complexity"
-        — such as distributed tracing, service discovery, per-service deployment
-        pipelines, or the difficulty of debugging failures that span service boundaries?
+        Score 3: Names at least one specific operational cost beyond vague "complexity"
+        Score 4: Also names a second specific cost — such as distributed tracing,
+        service discovery, per-service deployment pipelines, or the difficulty of
+        debugging failures that span service boundaries
+        Score 5: Also provides enough detail that the costs feel concrete and actionable
     - type: llm-rubric
       metric: "[baseline] small team favors monolith"
       value: >
-        Does it argue that small teams should start with a monolith, with specific
-        reasoning — such as that a team of 2-5 engineers can't effectively own
-        multiple independent services in production while also shipping features?
+        Score 3: Argues that small teams should start with a monolith
+        Score 4: Also provides specific reasoning — such as that a team of 2-5
+        engineers can't effectively own multiple independent services in production
+        while also shipping features
+        Score 5: Also provides additional concrete reasoning tied to small team constraints
 
 - description: "Microservices: Conway's Law"
   vars:
@@ -374,10 +425,12 @@
     - type: llm-rubric
       metric: "[proficient] Conway's Law"
       value: >
-        Does it explain Conway's Law — that systems mirror the communication structure
-        of the organizations that build them — and apply it: service boundaries that
-        don't match team boundaries create ongoing friction because someone always
-        owns the "wrong" part of the system?
+        Score 3: Explains Conway's Law — that systems mirror the communication structure
+        of the organizations that build them
+        Score 4: Also applies it: service boundaries that don't match team boundaries
+        create ongoing friction
+        Score 5: Also explains that someone always owns the "wrong" part of the system
+        when boundaries are misaligned
 
 - description: "Microservices: modular monolith and cost asymmetry"
   vars:
@@ -388,17 +441,21 @@
     - type: llm-rubric
       metric: "[proficient] modular monolith"
       value: >
-        Does it explain the modular monolith as a middle path — clear internal module
-        or package boundaries within a single deployable, designed so services can be
-        extracted later when team size and scale justify it?
+        Score 3: Explains the modular monolith as a middle path
+        Score 4: Also explains clear internal module or package boundaries within a
+        single deployable
+        Score 5: Also explains the design intention so services can be extracted later
+        when team size and scale justify it
     - type: llm-rubric
       metric: "[expert] cost asymmetry"
       value: >
-        Does it explain the cost asymmetry — extracting a service from a well-factored
-        monolith is much easier than merging poorly-scoped microservices back together,
-        making the monolith-first approach lower risk even if you plan to split later?
+        Score 3: Explains the cost asymmetry concept
+        Score 4: Also explains extracting a service from a well-factored monolith is
+        much easier than merging poorly-scoped microservices back together
+        Score 5: Also explains why this makes the monolith-first approach lower risk
+        even if you plan to split later
 
-# ── Abstraction vs inline ──────────────────────────────────────────────────
+# ── Abstraction vs inline ────────────────────────────────────────────────
 
 - description: "Abstraction: when to extract"
   vars:
@@ -410,17 +467,22 @@
     - type: llm-rubric
       metric: "[baseline] concrete heuristic"
       value: >
-        Does it give a concrete, actionable heuristic — such as the rule of three
-        (wait until the pattern appears three times), only when you can give the
-        abstraction a meaningful domain name, only when the duplicated code
+        Score 3: Gives a concrete, actionable heuristic — such as the rule of three
+        (wait until the pattern appears three times)
+        Score 4: Also covers at least one additional heuristic — only when you can give
+        the abstraction a meaningful domain name, only when the duplicated code
         represents the same concept (not just the same structure), or only when
-        callers don't need to know the internals?
+        callers don't need to know the internals
+        Score 5: Also provides enough detail that the heuristic feels practical and
+        actionable in real development
     - type: llm-rubric
       metric: "[proficient] signs of waiting too long"
       value: >
-        Does it name concrete signs you've waited too long — such as fixing the same
-        bug in multiple places, or making a change that requires updating N copies of
-        similar logic in lockstep?
+        Score 3: Names concrete signs you've waited too long — such as fixing the same
+        bug in multiple places
+        Score 4: Also names making a change that requires updating N copies of similar
+        logic in lockstep
+        Score 5: Also explains how these signs manifest in practice for a development team
 
 - description: "Abstraction: the cost of getting it wrong"
   vars:
@@ -431,17 +493,21 @@
     - type: llm-rubric
       metric: "[baseline] wrong abstraction locks you in"
       value: >
-        Does it explain that a wrong abstraction locks you into an interface — when
-        the abstracted cases later diverge, you're forced into awkward workarounds
-        or a painful refactor of the abstraction and all its callers?
+        Score 3: Explains that a wrong abstraction locks you into an interface
+        Score 4: Also explains when the abstracted cases later diverge, you're forced
+        into awkward workarounds or a painful refactor of the abstraction and all
+        its callers
+        Score 5: Also explains the cascading cost of fixing the broken abstraction
+        across all its call sites
     - type: llm-rubric
       metric: "[proficient] wrong abstraction worse than duplication"
       value: >
-        Does it make the point that the wrong abstraction is worse than duplication —
-        duplicated code can be changed independently, while a shared abstraction makes
-        both callers harder to evolve?
+        Score 3: Makes the point that the wrong abstraction is worse than duplication
+        Score 4: Also explains duplicated code can be changed independently
+        Score 5: Also explains a shared abstraction makes both callers harder to evolve
+        when the abstraction is wrong
 
-# ── LLM / prompt engineering ──────────────────────────────────────────────
+# ── LLM / prompt engineering ───────────────────────────────────────────────
 
 - description: "Structured output: JSON failure modes and constrained decoding"
   vars:
@@ -452,15 +518,19 @@
     - type: llm-rubric
       metric: "[baseline] JSON failure modes"
       value: >
-        Does it name at least one specific LLM failure mode for JSON — such as
+        Score 3: Names at least one specific LLM failure mode for JSON — such as
         unclosed brackets, invalid string escaping, trailing commas, or output
-        truncated mid-object due to token limits?
+        truncated mid-object due to token limits
+        Score 4: Names additional specific failure modes showing depth of understanding
+        Score 5: Covers the full range of common JSON failure modes LLMs exhibit
     - type: llm-rubric
       metric: "[proficient] constrained decoding"
       value: >
-        Does it mention constrained decoding, guided generation, or provider JSON mode
-        (e.g., Anthropic tool use, OpenAI response_format) as a way to guarantee
-        syntactically valid output — shifting the problem from syntax to semantics?
+        Score 3: Mentions constrained decoding, guided generation, or provider JSON mode
+        (e.g., Anthropic tool use, OpenAI response_format)
+        Score 4: Also explains these shift the problem from syntax to semantics
+        Score 5: Also explains why constrained approaches are more reliable than post-hoc
+        validation and repair
 
 - description: "Structured output: XML and custom delimiters"
   vars:
@@ -471,15 +541,18 @@
     - type: llm-rubric
       metric: "[proficient] XML verbosity tradeoff"
       value: >
-        Does it explain XML's verbosity as a double-edged sword — explicit closing
-        tags make partial or truncated output more recoverable (you can detect where
-        the model stopped), but they cost significantly more tokens than equivalent JSON?
+        Score 3: Explains XML's explicit closing tags make partial or truncated output
+        more recoverable (you can detect where the model stopped)
+        Score 4: Also explains explicit closing tags cost significantly more tokens than
+        equivalent JSON
+        Score 5: Also explains when the recoverability benefit outweighs the token cost
     - type: llm-rubric
       metric: "[baseline] custom delimiters need custom parsers"
       value: >
-        Does it explain that custom delimiters require writing and maintaining custom
-        parsing logic, which is itself a source of bugs — compared to using a
-        battle-tested JSON or XML parser?
+        Score 3: Explains custom delimiters require writing and maintaining custom
+        parsing logic
+        Score 4: Also explains this is itself a source of bugs
+        Score 5: Also contrasts with using a battle-tested JSON or XML parser
 
 - description: "CoT: when it hurts accuracy"
   vars:
@@ -490,15 +563,20 @@
     - type: llm-rubric
       metric: "[proficient] CoT introduces errors on simple tasks"
       value: >
-        Does it explain that on simple tasks, chain-of-thought creates more
-        opportunities for the model to reason itself into a wrong answer — more steps
-        mean more surface area for errors compared to a direct response?
+        Score 3: Explains that on simple tasks, chain-of-thought creates more
+        opportunities for the model to reason itself into a wrong answer
+        Score 4: Also explains more steps mean more surface area for errors compared
+        to a direct response
+        Score 5: Also explains this with specific reasoning about why intermediate
+        steps amplify error probability on simple tasks
     - type: llm-rubric
       metric: "[proficient] concrete example where CoT hurts"
       value: >
-        Does it give a specific task type where forcing CoT produces worse results —
-        such as simple factual retrieval, sentiment classification, direct entity
-        extraction, or other tasks where the answer doesn't require intermediate steps?
+        Score 3: Gives a specific task type where forcing CoT produces worse results
+        Score 4: Also covers examples like simple factual retrieval, sentiment
+        classification, direct entity extraction, or other tasks where the answer
+        doesn't require intermediate steps
+        Score 5: Also explains why CoT specifically hurts each example task type
 
 - description: "CoT: zero-shot vs few-shot, and model size"
   vars:
@@ -509,15 +587,18 @@
     - type: llm-rubric
       metric: "[expert] zero-shot vs few-shot CoT"
       value: >
-        Does it distinguish zero-shot CoT ("think step by step") from few-shot CoT
-        (providing worked example reasoning chains in the prompt), and explain that
-        they have different effectiveness profiles?
+        Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT
+        (providing worked example reasoning chains in the prompt)
+        Score 4: Also explains they have different effectiveness profiles
+        Score 5: Also explains what makes each approach effective in different contexts
     - type: llm-rubric
       metric: "[expert] model size dependence"
       value: >
-        Does it explain that CoT is most effective on larger, more capable models and
-        can degrade performance on smaller models that lack sufficient capacity to
-        benefit from intermediate reasoning steps?
+        Score 3: Explains that CoT is most effective on larger, more capable models
+        Score 4: Also explains smaller models can degrade in performance when given
+        intermediate reasoning steps
+        Score 5: Also explains smaller models lack sufficient capacity to benefit from
+        intermediate reasoning steps
 
 - description: "Prompt chains: the silent error propagation risk"
   vars:
@@ -528,10 +609,12 @@
     - type: llm-rubric
       metric: "[baseline] error propagation in chains"
       value: >
-        Does it explain that a semantically wrong but plausible-looking output from
-        an early step flows silently into later steps — the downstream output still
-        looks reasonable, making the corruption hard to detect without inspecting
-        intermediate outputs?
+        Score 3: Explains that a semantically wrong but plausible-looking output from
+        an early step flows silently into later steps
+        Score 4: Also explains the downstream output still looks reasonable, making
+        the corruption hard to detect without inspecting intermediate outputs
+        Score 5: Also explains why this risk is uniquely dangerous compared to other
+        failure modes in LLM pipelines
 
 - description: "Prompt chains: observability and cost optimization"
   vars:
@@ -542,15 +625,17 @@
     - type: llm-rubric
       metric: "[baseline] observability advantage of chaining"
       value: >
-        Does it explain that chaining makes intermediate outputs inspectable —
-        failures are easier to isolate to a specific step, debug, and retry compared
-        to a monolithic prompt where only the final output is visible?
+        Score 3: Explains that chaining makes intermediate outputs inspectable
+        Score 4: Also explains failures are easier to isolate to a specific step
+        Score 5: Also covers debugging and retry advantages compared to a monolithic
+        prompt where only the final output is visible
     - type: llm-rubric
       metric: "[proficient] cost optimization with different models"
       value: >
-        Does it explain that chaining lets you assign different models to different
-        steps — a cheap, fast model for classification or extraction and an expensive
-        model only for the steps that require deep reasoning?
+        Score 3: Explains that chaining lets you assign different models to different steps
+        Score 4: Also explains a cheap, fast model for classification or extraction and
+        an expensive model only for the steps that require deep reasoning
+        Score 5: Also provides concrete examples of cost-optimal model assignment across steps
 
 - description: "Prompt chains: latency and interface contracts"
   vars:
@@ -561,16 +646,18 @@
     - type: llm-rubric
       metric: "[proficient] latency — sequential round trips"
       value: >
-        Does it explain that chaining adds sequential API round trips — each step
-        waits for the previous to complete — so an N-step chain has at minimum N
-        times the latency of a single call?
+        Score 3: Explains that chaining adds sequential API round trips
+        Score 4: Also explains each step waits for the previous to complete
+        Score 5: Also explains an N-step chain has at minimum N times the latency of
+        a single call
     - type: llm-rubric
       metric: "[expert] interface design between chain steps"
       value: >
-        Does it address the interface contract problem — each step's output is the
-        next step's input, and structural mismatches (wrong field names, missing keys,
-        unexpected types) tend to fail silently rather than loudly, requiring explicit
-        schema validation between steps?
+        Score 3: Addresses the interface contract problem — each step's output is the
+        next step's input
+        Score 4: Also explains structural mismatches (wrong field names, missing keys,
+        unexpected types) tend to fail silently rather than loudly
+        Score 5: Also explains the need for explicit schema validation between steps
 
 # ── Bug finding / code analysis ───────────────────────────────────────────
 
@@ -595,27 +682,35 @@
     - type: llm-rubric
       metric: "[baseline] NULL comparison bug"
       value: >
-        Does it identify that `u.deleted_at = NULL` is always false — NULL comparisons
-        require `IS NULL`, not `= NULL`, because NULL is not equal to anything including
-        itself?
+        Score 3: Identifies that `u.deleted_at = NULL` is always false
+        Score 4: Also explains NULL comparisons require `IS NULL`, not `= NULL`, because
+        NULL is not equal to anything including itself
+        Score 5: Also explains the logical implication — the WHERE clause excludes all
+        rows where deleted_at is NULL, which may be most or all rows
     - type: llm-rubric
       metric: "[baseline] LEFT JOIN converted to INNER JOIN"
       value: >
-        Does it identify that the WHERE clause filtering on `o.created_at` (a column
-        from the right-side table) silently converts the LEFT JOIN to an INNER JOIN,
-        excluding all users who have no orders in the date range?
+        Score 3: Identifies that the WHERE clause filtering on `o.created_at` (a column
+        from the right-side table) is the problem
+        Score 4: Also explains this silently converts the LEFT JOIN to an INNER JOIN,
+        excluding all users who have no orders in the date range
+        Score 5: Also explains the fix — moving the filter to the JOIN condition instead
+        of the WHERE clause
     - type: llm-rubric
       metric: "[proficient] GROUP BY non-aggregate column"
       value: >
-        Does it identify that `u.name` is selected but not included in the GROUP BY
-        clause and not wrapped in an aggregate — non-deterministic in permissive SQL
-        modes and an error in strict mode?
+        Score 3: Identifies that `u.name` is selected but not included in the GROUP BY
+        clause and not wrapped in an aggregate
+        Score 4: Also explains it's non-deterministic in permissive SQL modes
+        Score 5: Also explains it's an error in strict SQL mode
     - type: llm-rubric
       metric: "[expert] missing index"
       value: >
-        Does it identify that `o.user_id` (the join column) and/or `o.created_at`
-        (the filter column) likely need indexes for this query to perform acceptably
-        at scale?
+        Score 3: Identifies that `o.user_id` (the join column) needs an index
+        Score 4: Also identifies that `o.created_at` (the filter column) likely needs
+        an index for this query to perform acceptably at scale
+        Score 5: Also explains the performance impact of missing indexes on this specific
+        query pattern
 
 - description: "Docker: debug slow builds and security concerns"
   vars:
@@ -639,27 +734,33 @@
     - type: llm-rubric
       metric: "[baseline] secret in ENV"
       value: >
-        Does it identify that hardcoding credentials in ENV bakes the secret into
-        the image layer — visible via `docker history` and any registry the image
-        is pushed to — and explain the correct approach (runtime secret injection)?
+        Score 3: Identifies that hardcoding credentials in ENV bakes the secret into
+        the image layer
+        Score 4: Also explains it's visible via `docker history` and any registry the
+        image is pushed to
+        Score 5: Also explains the correct approach (runtime secret injection)
     - type: llm-rubric
       metric: "[baseline] COPY ordering breaks layer cache"
       value: >
-        Does it identify that `COPY . /app` before `pip3 install` invalidates the
-        pip layer on every code change, causing a full dependency reinstall? Does it
-        explain the fix: copy requirements.txt first, run pip, then copy the rest?
+        Score 3: Identifies that `COPY . /app` before `pip3 install` is the problem
+        Score 4: Also explains this invalidates the pip layer on every code change,
+        causing a full dependency reinstall
+        Score 5: Also explains the fix: copy requirements.txt first, run pip, then copy
+        the rest
     - type: llm-rubric
       metric: "[proficient] running as root"
       value: >
-        Does it identify that there is no USER instruction, meaning the container
-        process runs as root — a security risk if the process or a dependency is
-        compromised?
+        Score 3: Identifies that there is no USER instruction
+        Score 4: Also explains the container process runs as root
+        Score 5: Also explains this is a security risk if the process or a dependency
+        is compromised
     - type: llm-rubric
       metric: "[expert] CMD shell vs exec form"
       value: >
-        Does it identify that `CMD python3 app.py` uses shell form — the process
-        runs as a child of `/bin/sh`, so signals like SIGTERM are not forwarded,
-        preventing graceful shutdown? The fix is exec form: `CMD ["python3", "app.py"]`.
+        Score 3: Identifies that `CMD python3 app.py` uses shell form
+        Score 4: Also explains the process runs as a child of `/bin/sh`, so signals like
+        SIGTERM are not forwarded, preventing graceful shutdown
+        Score 5: Also explains the fix is exec form: `CMD ["python3", "app.py"]`
 
 - description: "Go: debug wrong results in concurrent fetch"
   vars:
@@ -681,7 +782,7 @@
                   defer wg.Done()
                   resp, err := http.Get(url)
                   if err != nil {
-                      return
+                    return
                   }
                   body, _ := io.ReadAll(resp.Body)
                   results[i] = string(body)
@@ -695,25 +796,33 @@
     - type: llm-rubric
       metric: "[baseline] loop variable capture"
       value: >
-        Does it identify the loop variable capture bug — in Go 1.21, i and url are shared
-        across goroutines, so all goroutines may read the last loop values? Does it explain
-        why this causes incorrect results, not just name the issue?
+        Score 3: Identifies the loop variable capture bug — in Go 1.21, i and url are
+        shared across goroutines
+        Score 4: Also explains all goroutines may read the last loop values, causing
+        incorrect results
+        Score 5: Also explains the fix — capturing loop variables as function parameters
+        in the goroutine closure
     - type: llm-rubric
       metric: "[baseline] resp.Body never closed"
       value: >
-        Does it identify that resp.Body is never closed — a resource leak (file descriptor
-        and memory) on every successful request? Does it explain why, not just flag it?
+        Score 3: Identifies that resp.Body is never closed
+        Score 4: Also explains this is a resource leak (file descriptor and memory) on
+        every successful request
+        Score 5: Also explains why this matters not just naming the issue
     - type: llm-rubric
       metric: "[proficient] io.ReadAll error ignored"
       value: >
-        Does it identify that the io.ReadAll error is silently discarded with _ — the
-        function may return partial or empty results without any indication of failure?
+        Score 3: Identifies that the io.ReadAll error is silently discarded with _
+        Score 4: Also explains the function may return partial or empty results without
+        any indication of failure
+        Score 5: Also explains the impact on debugging and reliability
     - type: llm-rubric
       metric: "[expert] no timeout or context"
       value: >
-        Does it identify that http.Get has no timeout or context — goroutines can hang
-        indefinitely on slow or unresponsive servers, and there is no way for the caller
-        to cancel in-flight requests?
+        Score 3: Identifies that http.Get has no timeout or context
+        Score 4: Also explains goroutines can hang indefinitely on slow or unresponsive
+        servers
+        Score 5: Also explains there is no way for the caller to cancel in-flight requests
 
 - description: "Kotlin: debug NullPointerException in coroutine service"
   vars:
@@ -746,31 +855,37 @@
     - type: llm-rubric
       metric: "[baseline] race condition and NPE"
       value: >
-        Does it identify the race between Thread.sleep and the coroutine — the coroutine
-        may not complete within 1000ms, and result!! will throw NullPointerException?
-        Does it explain the mechanism, not just say "it might be null"?
+        Score 3: Identifies the race between Thread.sleep and the coroutine
+        Score 4: Also explains the coroutine may not complete within 1000ms, and
+        result!! will throw NullPointerException
+        Score 5: Also explains the mechanism, not just says "it might be null"
     - type: llm-rubric
       metric: "[baseline] blocking function should be suspend"
       value: >
-        Does it identify that getUser is a blocking function pretending to be async — it
-        should be a suspend function or return a Deferred, not use Thread.sleep to wait?
+        Score 3: Identifies that getUser is a blocking function pretending to be async
+        Score 4: Also explains it should be a suspend function or return a Deferred,
+        not use Thread.sleep to wait
+        Score 5: Also explains why this is fundamentally wrong in the Kotlin coroutine model
     - type: llm-rubric
       metric: "[proficient] shared mutable variable visibility"
       value: >
-        Does it identify that result is a shared mutable variable between the coroutine
-        (Dispatchers.IO thread pool) and the calling thread, with no visibility guarantee
-        under the JVM memory model?
+        Score 3: Identifies that result is a shared mutable variable between the coroutine
+        (Dispatchers.IO thread pool) and the calling thread
+        Score 4: Also explains there is no visibility guarantee under the JVM memory model
+        Score 5: Also explains the practical consequences of the visibility gap
     - type: llm-rubric
       metric: "[proficient] unscoped lifecycle"
       value: >
-        Does it identify that scope has no lifecycle management — it leaks if shutdown()
-        is never called, and the caller has no way to know shutdown() is required?
+        Score 3: Identifies that scope has no lifecycle management
+        Score 4: Also explains it leaks if shutdown() is never called
+        Score 5: Also explains the caller has no way to know shutdown() is required
     - type: llm-rubric
       metric: "[expert] silent coroutine failure"
       value: >
-        Does it identify that if repo.findById throws an exception, the coroutine fails
-        silently — result stays null, and the caller gets an NPE with no indication of
-        the actual error?
+        Score 3: Identifies that if repo.findById throws an exception, the coroutine fails
+        silently
+        Score 4: Also explains result stays null
+        Score 5: Also explains the caller gets an NPE with no indication of the actual error
 
 - description: "TypeScript: debug silent failures in event processor"
   vars:
@@ -798,32 +913,38 @@
     - type: llm-rubric
       metric: "[baseline] unsafe cast"
       value: >
-        Does it identify that `as { type: string; userId: string }` is an unsafe cast —
-        there is no runtime validation, so any value (null, number, wrong-shaped object)
-        passes through the type system unchecked?
+        Score 3: Identifies that `as { type: string; userId: string }` is an unsafe cast
+        Score 4: Also explains there is no runtime validation, so any value (null, number,
+        wrong-shaped object) passes through the type system unchecked
+        Score 5: Also explains the practical consequences of the unsafe cast
     - type: llm-rubric
       metric: "[baseline] Promise.all fails fast"
       value: >
-        Does it identify that Promise.all fails fast — if one deleteUser call rejects,
-        the remaining promises are abandoned and the error propagates with no cleanup?
+        Score 3: Identifies that Promise.all fails fast
+        Score 4: Also explains if one deleteUser call rejects, the remaining promises are
+        abandoned and the error propagates with no cleanup
+        Score 5: Also explains the cascading failure impact on the entire batch
     - type: llm-rubric
       metric: "[proficient] no error handling on deleteUser"
       value: >
-        Does it identify that there is no error handling on deleteUser — if it throws,
-        the entire function rejects and any remaining delete operations are abandoned
-        mid-batch?
+        Score 3: Identifies that there is no error handling on deleteUser
+        Score 4: Also explains if it throws, the entire function rejects
+        Score 5: Also explains any remaining delete operations are abandoned mid-batch
     - type: llm-rubric
       metric: "[proficient] no input validation"
       value: >
-        Does it identify that there is no validation of individual events — nulls,
-        primitives, or objects with unexpected shapes all silently pass the type assertion
-        and may cause runtime errors downstream?
+        Score 3: Identifies that there is no validation of individual events
+        Score 4: Also explains nulls, primitives, or objects with unexpected shapes all
+        silently pass the type assertion
+        Score 5: Also explains they may cause runtime errors downstream
     - type: llm-rubric
       metric: "[expert] results contain untrusted data"
       value: >
-        Does it identify that the results array accumulates e.userId for all events
-        including non-delete ones, which may be undefined at runtime despite the type
-        claiming string — downstream consumers of this array would trust invalid data?
+        Score 3: Identifies that the results array accumulates e.userId for all events
+        including non-delete ones
+        Score 4: Also explains these may be undefined at runtime despite the type
+        claiming string
+        Score 5: Also explains downstream consumers of this array would trust invalid data
 
 # ── Structured output and tool use (scripted assertions — no LLM judge) ───
 #
