@@ -12,6 +12,10 @@ services:
       - VAD_MODEL_PATH=/models/ggml-silero-v5.1.2.bin
       # HF_TOKEN must be set in ../.env. See README for setup.
       - HF_TOKEN=${HF_TOKEN}
+      # Switch HIP signal completion from busy-poll to interrupt-driven.
+      # Without this, `import torch` initializes the ROCm runtime and a HIP
+      # worker thread spins on a CPU core forever, even when idle.
+      - HSA_ENABLE_INTERRUPT=1
     volumes:
       - ./model-cache:/root/.cache
       - /mnt/cache/whisper-models:/models:ro
