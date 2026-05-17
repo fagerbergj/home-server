@@ -13,6 +13,7 @@ services:
       - OLLAMA_KEEP_ALIVE=1h
       - OLLAMA_CONTEXT_LENGTH=16384
       - OLLAMA_SCHED_SPREAD=1            # split layers across both R9700s
+      - ROCBLAS_USE_HIPBLASLT=0          # bundled hipBLASLt lacks gfx1201 kernels; use rocBLAS's own (which does)
     volumes:
       - /mnt/cache/ollama:/root/.ollama
     init: true
