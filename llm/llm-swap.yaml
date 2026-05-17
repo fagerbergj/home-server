@@ -7,7 +7,7 @@ models:
     ttl: 3600
     cmd: >
       /app/llama-server
-      -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Llama-3.3-70B-Instruct-Q4_K_M.gguf
+      -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
       --split-mode tensor
       -fit off
       -ngl 999
@@ -21,7 +21,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3.6-35B-A3B-GGUF:Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
+      -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -33,7 +33,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3.5-9B-GGUF:Qwen3.5-9B-Q4_K_M.gguf
+      -hf unsloth/Qwen3.5-9B-GGUF:Q4_K_M
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -45,8 +45,8 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-VL-8B-Instruct-GGUF:Qwen3-VL-8B-Instruct-Q4_K_M.gguf
-      --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F16.gguf
+      -hf unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M
+      --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F16
       -ngl 999
       -c 8192
       --port 9999
@@ -56,21 +56,11 @@ models:
     ttl: 3600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-Coder-Next-GGUF:Qwen3-Coder-Next-Q4_K_M.gguf
+      -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
       -ngl 999
       -c 65536
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --port 9999
-
-  "prometheus-7b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:prometheus-7b-v2.0.Q4_K_M.gguf
-      -ngl 999
-      -c 8192
       --port 9999
 
   "qwen3-embed":
@@ -78,7 +68,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Qwen3-Embedding-0.6B-Q8_0.gguf
+      -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
       --embedding
       --pooling cls
       -ngl 999

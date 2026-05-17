@@ -37,7 +37,7 @@ services:
       - ROCBLAS_USE_HIPBLASLT=0
       - HF_TOKEN=${HF_TOKEN:-}
     command: >
-      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:prometheus-7b-v2.0.Q4_K_M.gguf
+      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:Q4_K_M
       --alias prometheus-7b
       -ngl 999
       -c 8192
