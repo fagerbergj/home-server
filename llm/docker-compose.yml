@@ -27,9 +27,9 @@ services:
 
   # Always-on judge for promptfoo — runs alongside any llama-swap model (~5 GB, fits fine).
   # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
-  prometheus:
+  llama-judge:
     image: ghcr.io/ggml-org/llama.cpp:server-rocm
-    container_name: prometheus
+    container_name: llama-judge
     profiles: ["judge"]
     ports:
       - "11437:11437"
