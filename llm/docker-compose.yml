@@ -25,6 +25,31 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
+  # Opt-in: `docker compose --profile swap up -d --build llama-swap`
+  # OpenAI-compatible API on port 11436 backed by llama-swap + llama.cpp.
+  # Model routing is in llama-swap.yaml — update document-pipeline env vars to point here.
+  llama-swap:
+    build:
+      context: .
+      dockerfile: llama-swap.Dockerfile
+    container_name: llama-swap
+    profiles: ["swap"]
+    ports:
+      - "11436:11436"
+    environment:
+      - ROCBLAS_USE_HIPBLASLT=0
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ./llama-swap.yaml:/app/config.yaml:ro
+      - /mnt/cache/huggingface:/root/.cache/huggingface
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - "993"
+    restart: unless-stopped
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant

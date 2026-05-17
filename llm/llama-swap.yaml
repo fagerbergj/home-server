@@ -1,0 +1,85 @@
+healthCheckTimeout: 600   # 70b loading takes time
+logRequests: true
+
+models:
+  "llama-3.3-70b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 3600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Llama-3.3-70B-Instruct-Q4_K_M.gguf
+      --split-mode tensor
+      -fit off
+      -ngl 999
+      -c 16384
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
+  "qwen3.6-35b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3.6-35B-A3B-GGUF:Qwen3.6-35B-A3B-UD-Q4_K_M.gguf
+      -ngl 999
+      -c 16384
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
+  "qwen3.5-9b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3.5-9B-GGUF:Qwen3.5-9B-Q4_K_M.gguf
+      -ngl 999
+      -c 16384
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
+  "qwen3-vl-8b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3-VL-8B-Instruct-GGUF:Qwen3-VL-8B-Instruct-Q4_K_M.gguf
+      --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F16.gguf
+      -ngl 999
+      -c 8192
+      --port 9999
+
+  "qwen3-coder-next":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 3600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3-Coder-Next-GGUF:Qwen3-Coder-Next-Q4_K_M.gguf
+      -ngl 999
+      -c 65536
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
+  "prometheus-7b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:prometheus-7b-v2.0.Q4_K_M.gguf
+      -ngl 999
+      -c 8192
+      --port 9999
+
+  "qwen3-embed":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Qwen3-Embedding-0.6B-Q8_0.gguf
+      --embedding
+      --pooling cls
+      -ngl 999
+      --port 9999
