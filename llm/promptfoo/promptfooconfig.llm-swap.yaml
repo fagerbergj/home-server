@@ -1,13 +1,12 @@
 # promptfoo config — llm-swap stack judged by prometheus-7b
 #
-# Don't run directly — use eval.sh which sets MODEL and MAX_CONCURRENCY
-# and loops through the model list:
+# Don't run directly — use eval.sh which sets MODEL and concurrency:
 #
-#   cd llm/promptfoo && ./eval.sh
+#   cd llm/promptfoo && ./eval.sh [model]
 #
-# Or run a single model:
+# Or run a single model manually:
 #
-#   MODEL=qwen3.5-9b MAX_CONCURRENCY=4 npx promptfoo@latest eval -c promptfooconfig.llm-swap.yaml
+#   MODEL=qwen3.5-9b npx promptfoo@latest eval -c promptfooconfig.llm-swap.yaml --max-concurrency 4
 
 evaluateOptions:
   timeoutMs: 600000
@@ -34,23 +33,24 @@ defaultTest:
         apiBaseUrl: http://jason-server:11437/v1
         apiKey: llm-judge
     rubricPrompt: |
-      ###Task Description:
-      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
-      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
-      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
-      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
-      4. Please do not generate any other opening, closing, and explanations.
+      You are grading a technical response against a specific criterion.
 
-      ###The instruction to evaluate:
+      Prompt given to the model:
       {{prompt}}
 
-      ###Response to evaluate:
+      Response to grade:
       {{output}}
 
-      ###Reference Answer (Score 5):
-      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
-
-      ###Score Rubrics:
+      Scoring rubric:
       {{rubric}}
 
-      ###Feedback:
+      Think through this carefully:
+      1. What does the rubric specifically require at each score level?
+      2. Which level does this response achieve? Quote the relevant part.
+      3. If partial credit applies, explain why.
+
+      Then output ONLY a JSON object on the last line — nothing after it:
+      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
+
+      Score mapping: Score 5 → 1.0, Score 4 → 0.8, Score 3 → 0.6, Score 2 → 0.4, Score 1 → 0.2
+      pass is true when score >= 0.8 (Score 4 or 5).

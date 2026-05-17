@@ -58,7 +58,7 @@ models:
       -c 16384
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --reasoning-budget 0
+      --no-reasoning
       --port 9999
 
   "qwen3-vl-8b":
