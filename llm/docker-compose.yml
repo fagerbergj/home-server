@@ -25,43 +25,6 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
-  # Opt-in: `docker compose --profile tp up -d llama-tp`.
-  # Spike of llama.cpp's experimental tensor parallelism (PR ggml-org/llama.cpp#19378,
-  # merged 2026-04-09). Measured 2026-05-17 on 2× R9700 (gfx1201):
-  #   Ollama layer-split baseline: ~12.5 t/s
-  #   llama.cpp --split-mode tensor: 19.1 t/s  (+53%)
-  # Not in production because Ollama doesn't expose this split mode yet — revisit when
-  # Ollama vendors a llama.cpp that includes the meta-backend.
-  # Off by default; exposes OpenAI-compat /v1/completions, so:
-  # bench.py --backend openai llama-70b --api http://localhost:11500
-  llama-tp:
-    image: ghcr.io/ggml-org/llama.cpp:server-rocm
-    container_name: llama-tp
-    profiles: ["tp"]
-    ports:
-      - "11500:11500"
-    environment:
-      - ROCBLAS_USE_HIPBLASLT=0            # gfx1201 kernel coverage gap, same as ollama service
-      - HF_TOKEN=${HF_TOKEN:-}
-    command: >
-      -hf ${LLAMA_TP_MODEL:-bartowski/Llama-3.3-70B-Instruct-GGUF:Q4_K_M}
-      --alias ${LLAMA_TP_ALIAS:-llama-70b}
-      --split-mode tensor
-      -fit off
-      -ngl 999
-      -c ${LLAMA_TP_CTX:-16384}
-      --host 0.0.0.0
-      --port 11500
-    volumes:
-      - /mnt/cache/huggingface:/root/.cache/huggingface
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-      - "993"
-    restart: unless-stopped
-
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
