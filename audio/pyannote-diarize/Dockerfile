@@ -136,7 +136,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # than a 30-second-later runtime surprise.
 RUN python3 -c "import torch; assert torch.version.hip, f'torch is not a ROCm build after pip install: {torch.__version__} (hip={torch.version.hip}, cuda={torch.version.cuda})'; print(f'torch ok: {torch.__version__} hip={torch.version.hip}')"
 
-COPY app.py .
+COPY app.py gpu_worker.py ./
 
 EXPOSE 8000
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

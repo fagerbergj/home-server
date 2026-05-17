@@ -5,21 +5,21 @@ document-pipeline Go client already speaks. Returns:
     {"text": "[SPEAKER_00] hello there\\n\\n[SPEAKER_01] hi"}
 
 Transcription shells out to whisper-cli built with GGML_HIP=ON so it runs on
-the R9700. Pyannote runs in-process via the ROCm-built torch from the base
-image. Models load per request and free between calls — the GPU is shared
-with Ollama in this setup.
+the R9700. Pyannote runs in a per-request subprocess (gpu_worker.py) so that
+the HIP context — and its persistent KFD event-wait thread that busy-polls
+one CPU core indefinitely — dies after each request instead of accumulating
+in the long-lived FastAPI process.
 """
 from __future__ import annotations
 
-import gc
 import json
 import logging
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
-import numpy as np
 import torch
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 
@@ -28,6 +28,8 @@ from fastapi import FastAPI, Form, HTTPException, UploadFile
 # torch wheel with a CUDA-only wheel from PyPI, which presents as "no NVIDIA
 # driver" at the first .to("cuda") call. The Dockerfile uses a pip
 # constraints file to prevent this; this check catches future regressions.
+# `torch.version.hip` is a compile-time attribute — reading it does NOT
+# initialize the HIP runtime, so the parent process stays GPU-clean.
 if torch.version.hip is None:
     raise RuntimeError(
         f"torch {torch.__version__} is not a ROCm build "
@@ -36,14 +38,7 @@ if torch.version.hip is None:
         "constraints."
     )
 
-# DEVICE stays "cuda" for pyannote — ROCm-built PyTorch presents the CUDA API,
-# so `torch.device("cuda")` resolves to the R9700 transparently.
-DEVICE = os.environ.get("DEVICE", "cuda")
-# Path to a whisper.cpp ggml model file inside the container. The default
-# matches the volume layout in docker-compose.yml (host /mnt/cache/whisper-models).
 WHISPER_MODEL_PATH = os.environ.get("WHISPER_MODEL_PATH", "/models/ggml-large-v3.bin")
-# Silero VAD model for whisper.cpp's --vad flag. Same trailing-edge
-# hallucination suppression that vad_filter gave us under faster-whisper.
 VAD_MODEL_PATH = os.environ.get("VAD_MODEL_PATH", "/models/ggml-silero-v5.1.2.bin")
 DIARIZATION_MODEL = os.environ.get(
     "DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1"
@@ -55,15 +50,14 @@ MAX_SPEAKERS = int(os.environ.get("MAX_SPEAKERS", "8"))
 SPEAKER_MATCH_THRESHOLD = float(os.environ.get("SPEAKER_MATCH_THRESHOLD", "0.5"))
 VOICEPRINTS_PATH = os.environ.get("VOICEPRINTS_PATH", "/root/.cache/voiceprints.json")
 MIN_ENROLL_SEG_SEC = float(os.environ.get("MIN_ENROLL_SEG_SEC", "1.0"))
+# Hard cap on a single transcription's GPU phase. Diarizing a 1-hour wav on
+# the R9700 is well under 2 minutes; anything past 10 min is a hung worker.
+WORKER_TIMEOUT_SEC = float(os.environ.get("WORKER_TIMEOUT_SEC", "600"))
+
+WORKER_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gpu_worker.py")
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn.error")
-
-
-def _free():
-    gc.collect()
-    if DEVICE == "cuda":
-        torch.cuda.empty_cache()
 
 
 def _load_voiceprints() -> dict[str, list[list[float]]]:
@@ -85,70 +79,35 @@ def _save_voiceprints(prints: dict) -> None:
     os.replace(tmp, VOICEPRINTS_PATH)
 
 
-def _cosine(a, b) -> float:
-    av = np.asarray(a, dtype=np.float32).flatten()
-    bv = np.asarray(b, dtype=np.float32).flatten()
-    denom = float(np.linalg.norm(av) * np.linalg.norm(bv)) + 1e-10
-    return float(np.dot(av, bv) / denom)
-
-
-def _load_audio_dict(wav_path: str) -> dict:
-    """Read a wav file into pyannote's in-memory tensor-dict format.
-
-    pyannote 3.4 dispatches audio loading to torchcodec.decoders.AudioDecoder,
-    whose PyPI wheel is compiled against the CUDA torch ABI and dlopen-fails
-    on our ROCm torch build ('undefined symbol: torch_from_blob'). Per the
-    fallback documented in pyannote/audio/core/io.py, passing a
-    {'waveform': (channel, time) tensor, 'sample_rate': int} dict bypasses
-    AudioDecoder entirely.
-
-    Input is always a wav from _to_mono16k (16 kHz, mono, PCM), which
-    soundfile handles natively.
-    """
-    import soundfile as sf
-    data, sr = sf.read(wav_path, dtype="float32", always_2d=False)
-    # soundfile returns (samples,) for mono or (samples, channels) for multi.
-    # pyannote wants (channel, time).
-    if data.ndim == 1:
-        waveform = torch.from_numpy(data).unsqueeze(0)
-    else:
-        waveform = torch.from_numpy(data.T).contiguous()
-    return {"waveform": waveform, "sample_rate": sr}
-
-
-def _embed_audio(wav_path: str, start: float | None = None, end: float | None = None) -> list[float]:
-    """Compute a speaker embedding for the whole file or a [start, end] segment."""
-    from pyannote.audio import Inference
-    from pyannote.core import Segment
-
-    inference = Inference(
-        EMBEDDING_MODEL,
-        window="whole",
-        token=HF_TOKEN,
-        device=torch.device(DEVICE) if DEVICE == "cuda" else torch.device("cpu"),
-    )
-    audio = _load_audio_dict(wav_path)
-    if start is None:
-        emb = inference(audio)
-    else:
-        emb = inference.crop(audio, Segment(start, end))
-    del inference
-    return np.asarray(emb).flatten().tolist()
-
-
-def _match_voiceprint(embedding, voiceprints: dict) -> tuple[str, float] | None:
-    """Find the enrolled name with highest cosine similarity, if it crosses
-    SPEAKER_MATCH_THRESHOLD."""
-    best_name, best_sim = None, 0.0
-    for name, embs in voiceprints.items():
-        for e in embs:
-            sim = _cosine(embedding, e)
-            if sim > best_sim:
-                best_sim = sim
-                best_name = name
-    if best_name and best_sim >= SPEAKER_MATCH_THRESHOLD:
-        return best_name, best_sim
-    return None
+def _run_worker(cmd: str, task: dict):
+    """Run gpu_worker.py in a subprocess. JSON in via stdin, JSON out via
+    stdout, log lines via stderr. The subprocess exits when done, taking
+    its HIP context (and the busy-polling KFD event-wait thread) with it."""
+    payload = json.dumps(task)
+    try:
+        proc = subprocess.run(
+            [sys.executable, WORKER_SCRIPT, cmd],
+            input=payload,
+            capture_output=True,
+            text=True,
+            timeout=WORKER_TIMEOUT_SEC,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"gpu_worker {cmd} timed out after {WORKER_TIMEOUT_SEC}s") from e
+    if proc.stderr:
+        for line in proc.stderr.rstrip().splitlines():
+            logger.info("worker[%s]: %s", cmd, line)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gpu_worker {cmd} exited {proc.returncode}: {proc.stderr[-2000:]}"
+        )
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"gpu_worker {cmd} stdout was not JSON: {proc.stdout[:500]!r}"
+        ) from e
 
 
 def _transcribe(wav_path: str, work_dir: str) -> list[dict]:
@@ -215,80 +174,26 @@ def _to_mono16k(src: str, dst_dir: str) -> str:
 
 
 def _diarize(wav_path: str) -> list[dict]:
-    """Run pyannote diarization. Returns list of {start, end, speaker}."""
-    # Lazy-import — pyannote pulls torch + heavy deps.
-    from pyannote.audio import Pipeline
+    """Diarize + voiceprint-relabel in a subprocess. Returns list of
+    {start, end, speaker} sorted by start."""
+    return _run_worker("diarize", {
+        "wav_path": wav_path,
+        "diarization_model": DIARIZATION_MODEL,
+        "embedding_model": EMBEDDING_MODEL,
+        "min_speakers": MIN_SPEAKERS,
+        "max_speakers": MAX_SPEAKERS,
+        "voiceprints": _load_voiceprints(),
+        "min_enroll_seg_sec": MIN_ENROLL_SEG_SEC,
+        "speaker_match_threshold": SPEAKER_MATCH_THRESHOLD,
+    })
 
-    logger.info("loading diarization pipeline=%s", DIARIZATION_MODEL)
-    pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, token=HF_TOKEN)
-    if pipeline is None:
-        raise RuntimeError(
-            f"Pipeline.from_pretrained returned None — check HF_TOKEN and that "
-            f"you've accepted the {DIARIZATION_MODEL} license on huggingface.co."
-        )
-    if DEVICE == "cuda":
-        pipeline.to(torch.device("cuda"))
 
-    diarization = pipeline(
-        _load_audio_dict(wav_path),
-        min_speakers=MIN_SPEAKERS,
-        max_speakers=MAX_SPEAKERS,
-    )
-    # pyannote 3.4 wraps the Annotation in a DiarizeOutput dataclass. The
-    # Annotation is exposed as .speaker_diarization; older versions returned
-    # the bare Annotation directly.
-    annotation = getattr(diarization, "speaker_diarization", diarization)
-    segs: list[dict] = []
-    for turn, _, speaker in annotation.itertracks(yield_label=True):
-        segs.append({
-            "start": float(turn.start),
-            "end": float(turn.end),
-            "speaker": speaker,
-        })
-    segs.sort(key=lambda s: s["start"])
-    del pipeline
-    _free()
-
-    # Voiceprint relabeling: if any speakers are enrolled, compute an embedding
-    # for each pyannote SPEAKER_XX (using their longest segment) and replace the
-    # label with the closest enrolled name when similarity crosses the threshold.
-    voiceprints = _load_voiceprints()
-    if not voiceprints or not segs:
-        return segs
-
-    by_speaker: dict[str, list[dict]] = {}
-    for s in segs:
-        by_speaker.setdefault(s["speaker"], []).append(s)
-
-    relabel: dict[str, str] = {}
-    for speaker, sps in by_speaker.items():
-        longest = max(sps, key=lambda s: s["end"] - s["start"])
-        dur = longest["end"] - longest["start"]
-        if dur < MIN_ENROLL_SEG_SEC:
-            logger.info("voiceprint: skip %s, longest segment %.2fs < %.2fs",
-                        speaker, dur, MIN_ENROLL_SEG_SEC)
-            continue
-        try:
-            emb = _embed_audio(wav_path, longest["start"], longest["end"])
-        except Exception as e:
-            logger.warning("voiceprint: embedding failed for %s: %s", speaker, e)
-            continue
-        match = _match_voiceprint(emb, voiceprints)
-        if match:
-            name, sim = match
-            logger.info("voiceprint: %s -> %s (sim=%.3f)", speaker, name, sim)
-            relabel[speaker] = name
-        else:
-            logger.info("voiceprint: no match for %s above threshold %.2f",
-                        speaker, SPEAKER_MATCH_THRESHOLD)
-    _free()
-
-    if relabel:
-        for s in segs:
-            if s["speaker"] in relabel:
-                s["speaker"] = relabel[s["speaker"]]
-
-    return segs
+def _embed_audio(wav_path: str) -> list[float]:
+    """Compute a speaker embedding for the whole file in a subprocess."""
+    return _run_worker("embed", {
+        "wav_path": wav_path,
+        "embedding_model": EMBEDDING_MODEL,
+    })
 
 
 def _assign_speakers(words: list[dict], segs: list[dict]) -> list[dict]:
@@ -398,7 +303,6 @@ async def enroll_speaker(file: UploadFile, name: str = Form(...)):
         return {"name": name, "sample_count": len(voiceprints[name])}
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
-        _free()
 
 
 @app.post("/v1/audio/transcriptions")
@@ -422,13 +326,10 @@ async def transcribe(file: UploadFile, model: str = Form("")):
         logger.info("transcribing model=%s", WHISPER_MODEL_PATH)
         words = _transcribe(wav_path, work_dir)
         logger.info("transcribed words=%d", len(words))
-        _free()
 
         speaker_segs = _diarize(wav_path)
-        _free()
 
         words = _assign_speakers(words, speaker_segs)
         return {"text": _format(words)}
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
-        _free()
