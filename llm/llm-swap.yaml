@@ -1,5 +1,5 @@
 healthCheckTimeout: 600   # 70b loading takes time
-logRequests: true
+logLevel: info
 
 groups:
   # Only one chat model loaded at a time; won't evict the embed group.
