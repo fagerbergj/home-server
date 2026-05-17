@@ -9,6 +9,7 @@
 set -euo pipefail
 
 CONFIG=promptfooconfig.llm-swap.yaml
+export LLM_SWAP_URL="http://jason-server:11436/v1"
 
 # Model → max concurrent test cases.
 # Bigger/slower models get lower concurrency to avoid timeout pile-ups.
