@@ -27,10 +27,13 @@ services:
 
   # Opt-in: `docker compose --profile tp up -d llama-tp`.
   # Spike of llama.cpp's experimental tensor parallelism (PR ggml-org/llama.cpp#19378,
-  # merged 2026-04-09). The PR caveats that perf extensions are CUDA-only today —
-  # the HIP path may end up slower than Ollama's --split-mode layer. Bench to find out.
+  # merged 2026-04-09). Measured 2026-05-17 on 2× R9700 (gfx1201):
+  #   Ollama layer-split baseline: ~12.5 t/s
+  #   llama.cpp --split-mode tensor: 19.1 t/s  (+53%)
+  # Not in production because Ollama doesn't expose this split mode yet — revisit when
+  # Ollama vendors a llama.cpp that includes the meta-backend.
   # Off by default; exposes OpenAI-compat /v1/completions, so:
-  # bench.py --backend openai llama-70b
+  # bench.py --backend openai llama-70b --api http://localhost:11500
   llama-tp:
     image: ghcr.io/ggml-org/llama.cpp:server-rocm
     container_name: llama-tp
