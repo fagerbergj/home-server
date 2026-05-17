@@ -154,6 +154,116 @@ def _report_failure(stage: str, ctx: int, err: Exception, api: str) -> None:
         pass
 
 
+def generate_vllm_stream(api: str, model: str, num_predict: int,
+                         timeout: int = 600) -> tuple[float, int, float]:
+    """Stream a completion from a vLLM OpenAI-compatible server. Returns
+    (decode_seconds, completion_tokens, ttft_seconds). decode_seconds is
+    measured first-token → last-token to match Ollama's eval_duration semantics
+    (prompt processing excluded)."""
+    body = {
+        "model": model,
+        "prompt": LONG_PROMPT,
+        "max_tokens": num_predict,
+        "temperature": 0.0,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+    }
+    req = urllib.request.Request(
+        f"{api}/v1/completions",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
+    )
+    t_start = time.time()
+    t_first = None
+    t_last = None
+    completion_tokens = 0
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            for raw in resp:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue
+                choices = chunk.get("choices") or []
+                if choices and choices[0].get("text"):
+                    now = time.time()
+                    if t_first is None:
+                        t_first = now
+                    t_last = now
+                usage = chunk.get("usage")
+                if usage and usage.get("completion_tokens"):
+                    completion_tokens = usage["completion_tokens"]
+    except urllib.error.HTTPError as e:
+        body_text = e.read().decode("utf-8", errors="replace")[:300]
+        raise OllamaError(f"HTTP {e.code}: {body_text}") from None
+
+    if t_first is None or t_last is None:
+        raise RuntimeError("no tokens received from vLLM")
+    decode_s = max(t_last - t_first, 1e-6)
+    ttft_s = t_first - t_start
+    return decode_s, completion_tokens, ttft_s
+
+
+def vllm_model_exists(api: str, model: str) -> bool:
+    try:
+        models = http_get(f"{api}/v1/models").get("data", [])
+        return any(m.get("id") == model for m in models)
+    except Exception:
+        return False
+
+
+def bench_vllm(model: str, api: str) -> tuple[str, list[dict]]:
+    """vLLM is one-model-per-server with a fixed max_model_len, so there's no
+    ctx ladder to sweep. Single warm-up + measurement, returned in the same
+    row shape as bench_url (with prediction fields zeroed so print_table just
+    shows '—' for them)."""
+    if not vllm_model_exists(api, model):
+        # vLLM lists models under whatever --served-model-name was passed.
+        # Surface what it does have so the user can fix the name.
+        try:
+            listed = [m.get("id") for m in http_get(f"{api}/v1/models").get("data", [])]
+            print(f"  ! vLLM doesn't serve '{model}'. Available: {listed}")
+        except Exception as e:
+            print(f"  ! couldn't reach vLLM at {api}: {e}")
+        return model, []
+
+    print(f"\n=== {model} (vLLM) ===")
+    print(f"  warming up...", flush=True)
+    try:
+        generate_vllm_stream(api, model, WARMUP_GEN)
+    except Exception as e:
+        _report_failure("warm-up", 0, e, api)
+        return model, []
+
+    print(f"    measuring (target {TARGET_GEN} tokens)...", flush=True)
+    try:
+        decode_s, n_tok, ttft = generate_vllm_stream(api, model, TARGET_GEN)
+    except Exception as e:
+        _report_failure("generate", 0, e, api)
+        return model, []
+
+    real_tok_s = n_tok / decode_s if decode_s else 0
+    print(f"    real: {real_tok_s:5.1f} t/s  ttft={ttft*1000:.0f}ms  "
+          f"decode={decode_s:.2f}s  tokens={n_tok}")
+    row = {
+        "ctx": 0,  # vLLM ctx is fixed at server start (max_model_len)
+        "pred_tok_s": 0, "real_tok_s": real_tok_s,
+        "pred_vram": 0, "real_vram": 0,
+        "pred_ram": 0, "real_ram": 0,
+        "pred_layers_ram": 0, "real_layers_ram": 0,
+        "blocks": 0,
+        "wall_s": decode_s + ttft, "eval_count": n_tok,
+        "ttft_s": ttft, "decode_s": decode_s,
+    }
+    return model, [row]
+
+
 def score(r: dict) -> float:
     """ctx × tok/s — 'useful tokens-of-context processed per second'.
     This is naturally Pareto-optimal for the speed/context trade-off:
@@ -316,6 +426,17 @@ def bench_url(url: str, ctxs: list[int] | None, api: str, hw, container: str) ->
     return m.name, rows, m
 
 
+def print_table_vllm(model_results: list[tuple[str, list[dict]]]) -> None:
+    print("\n" + "─" * 60)
+    print(f"{'model':<32} {'tok/s':>7} {'ttft (ms)':>10} {'tokens':>7}")
+    print("─" * 60)
+    for name, rows in model_results:
+        for r in rows:
+            print(f"{name:<32} {r['real_tok_s']:>7.1f} "
+                  f"{r.get('ttft_s', 0)*1000:>10.0f} {r['eval_count']:>7}")
+    print("─" * 60)
+
+
 def print_table(model_results: list[tuple[str, list[dict]]]) -> None:
     print("\n" + "─" * 92)
     print(f"{'model':<22} {'ctx':>7} {'pred t/s':>9} {'real t/s':>9} {'Δ':>6} "
@@ -350,11 +471,19 @@ def write_csv(path: str, model_results: list[tuple[str, list[dict]]]) -> None:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Benchmark Ollama vs llmcalc predictions")
-    ap.add_argument("urls", nargs="+", help="Ollama blob URLs")
+    ap = argparse.ArgumentParser(description="Benchmark Ollama or vLLM (decode tok/s)")
+    ap.add_argument("--backend", choices=["ollama", "vllm"], default="ollama",
+                    help="Which inference server to talk to. ollama: pass blob URLs "
+                         "(predictions + ctx sweep). vllm: pass served model names "
+                         "(single measurement against /v1/completions).")
+    ap.add_argument("urls", nargs="+",
+                    help="Ollama: blob URLs from ollama.com. vLLM: served-model-name "
+                         "(matches --served-model-name on the vllm server, default 'llama-70b').")
     ap.add_argument("--ctxs", default=None,
-                    help="Comma-separated context sizes. Default: auto-pick 3 around llmcalc's recommendation.")
-    ap.add_argument("--api", default="http://localhost:11434", help="Ollama API URL")
+                    help="Ollama only. Comma-separated context sizes. "
+                         "Default: auto-pick 3 around llmcalc's recommendation.")
+    ap.add_argument("--api", default=None,
+                    help="API URL. Defaults: ollama=http://localhost:11434, vllm=http://localhost:8000")
     ap.add_argument("--csv", help="Optional CSV output path")
     ap.add_argument("--container", default="ollama",
                     help="Ollama docker container name (for pull/apply)")
@@ -364,6 +493,23 @@ def main():
     ap.add_argument("--yes", "-y", action="store_true",
                     help="Skip the apply prompt; use the speed-preferred default.")
     args = ap.parse_args()
+
+    if args.api is None:
+        args.api = "http://localhost:8000" if args.backend == "vllm" else "http://localhost:11434"
+
+    if args.backend == "vllm":
+        print(f"Backend: vLLM @ {args.api}")
+        results = []
+        for model in args.urls:
+            try:
+                name, rows = bench_vllm(model, args.api)
+                if rows:
+                    results.append((name, rows))
+            except Exception as e:
+                print(f"! {model}: {e}", file=sys.stderr)
+        if results:
+            print_table_vllm(results)
+        return
 
     ctxs = [int(c.strip()) for c in args.ctxs.split(",") if c.strip()] if args.ctxs else None
     hw = load_hardware()

@@ -25,6 +25,42 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
+  # Opt-in: `docker compose --profile vllm up -d vllm`.
+  # Off by default because it will fight Ollama for VRAM (loads one model and
+  # holds it). Intended for benchmarking 70b chat with tensor parallelism — see
+  # bench.py --backend vllm.
+  vllm:
+    image: rocm/vllm:latest
+    container_name: vllm
+    profiles: ["vllm"]
+    ports:
+      - "8000:8000"
+    ipc: host                              # required for vLLM's NCCL/RCCL workers
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=          # leave unset; matches working Ollama config
+      - ROCBLAS_USE_HIPBLASLT=0            # gfx1201 kernel coverage gap, same as ollama service
+      - HIP_VISIBLE_DEVICES=0,1
+      - VLLM_MODEL=${VLLM_MODEL:-hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4}
+      - VLLM_MAX_MODEL_LEN=${VLLM_MAX_MODEL_LEN:-16384}
+      - VLLM_TP=${VLLM_TP:-2}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+    command: >
+      --model ${VLLM_MODEL:-hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4}
+      --tensor-parallel-size ${VLLM_TP:-2}
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-16384}
+      --dtype float16
+      --gpu-memory-utilization 0.90
+      --served-model-name ${VLLM_SERVED_NAME:-llama-70b}
+    volumes:
+      - /mnt/cache/huggingface:/root/.cache/huggingface
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - "993"
+    restart: unless-stopped
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
