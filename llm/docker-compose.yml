@@ -41,7 +41,7 @@ services:
       - ROCBLAS_USE_HIPBLASLT=0            # gfx1201 kernel coverage gap, same as ollama service
       - HF_TOKEN=${HF_TOKEN:-}
     command: >
-      -hf ${LLAMA_TP_MODEL:-bartowski/Meta-Llama-3.3-70B-Instruct-GGUF:Q4_K_M}
+      -hf ${LLAMA_TP_MODEL:-bartowski/Llama-3.3-70B-Instruct-GGUF:Q4_K_M}
       --alias ${LLAMA_TP_ALIAS:-llama-70b}
       --split-mode tensor
       -ngl 999
