@@ -16,6 +16,11 @@ services:
       # Without this, `import torch` initializes the ROCm runtime and a HIP
       # worker thread spins on a CPU core forever, even when idle.
       - HSA_ENABLE_INTERRUPT=1
+      # libgomp defaults to OMP_WAIT_POLICY=active, so PyTorch's OMP worker
+      # threads busy-wait on a spinlock between requests and pin a CPU core
+      # at 100% indefinitely. PASSIVE makes idle workers sleep on a futex.
+      - OMP_WAIT_POLICY=PASSIVE
+      - OMP_NUM_THREADS=4
     volumes:
       - ./model-cache:/root/.cache
       - /mnt/cache/whisper-models:/models:ro
