@@ -13,7 +13,6 @@ services:
       - OLLAMA_KEEP_ALIVE=1h
       - OLLAMA_CONTEXT_LENGTH=16384
       - OLLAMA_SCHED_SPREAD=1            # split layers across both R9700s
-      - HSA_OVERRIDE_GFX_VERSION=11.0.0  # gfx1201 Tensile kernels missing from bundled rocBLAS; use gfx1100 path
     volumes:
       - /mnt/cache/ollama:/root/.ollama
     init: true
