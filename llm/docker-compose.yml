@@ -40,13 +40,13 @@ services:
       # No HSA_OVERRIDE / HIP_VISIBLE_DEVICES — setting them (even empty) breaks
       # GPU discovery in this image (see commit 05ade2c for the same lesson on ollama).
       - ROCBLAS_USE_HIPBLASLT=0            # gfx1201 kernel coverage gap, same as ollama service
-      - VLLM_MODEL=${VLLM_MODEL:-hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4}
+      - VLLM_MODEL=${VLLM_MODEL:-casperhansen/llama-3.3-70b-instruct-awq}
       - VLLM_MAX_MODEL_LEN=${VLLM_MAX_MODEL_LEN:-16384}
       - VLLM_TP=${VLLM_TP:-2}
       - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
     entrypoint: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
     command: >
-      --model ${VLLM_MODEL:-hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4}
+      --model ${VLLM_MODEL:-casperhansen/llama-3.3-70b-instruct-awq}
       --tensor-parallel-size ${VLLM_TP:-2}
       --max-model-len ${VLLM_MAX_MODEL_LEN:-16384}
       --dtype float16
