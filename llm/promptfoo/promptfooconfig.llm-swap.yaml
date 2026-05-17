@@ -14,7 +14,7 @@ evaluateOptions:
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
-      apiBaseUrl: "{{ env.LLM_SWAP_URL }}"
+      apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
 
 prompts:

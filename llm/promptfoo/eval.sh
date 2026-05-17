@@ -8,8 +8,12 @@
 
 set -euo pipefail
 
+# --tools flag runs the tool-reasoning eval suite instead of general knowledge
 CONFIG=promptfooconfig.llm-swap.yaml
-export LLM_SWAP_URL="http://jason-server:11436/v1"
+if [[ "${1:-}" == "--tools" ]]; then
+  CONFIG=promptfooconfig.tools.yaml
+  shift
+fi
 
 # Model → max concurrent test cases.
 # Bigger/slower models get lower concurrency to avoid timeout pile-ups.
