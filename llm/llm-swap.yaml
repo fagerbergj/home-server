@@ -46,6 +46,7 @@ models:
       -c 16384
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --reasoning-budget 0
       --port 9999
 
   "qwen3.5-9b":
@@ -58,6 +59,7 @@ models:
       -c 16384
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --reasoning-budget 0
       --port 9999
 
   "qwen3-vl-8b":
@@ -69,6 +71,7 @@ models:
       --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F16
       -ngl 999
       -c 8192
+      --reasoning-budget 0
       --port 9999
 
   "qwen3-coder-next":
@@ -81,6 +84,7 @@ models:
       -c 65536
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --reasoning-budget 0
       --port 9999
 
   "qwen3-embed":
