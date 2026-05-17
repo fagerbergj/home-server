@@ -79,6 +79,12 @@ RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
+# Upgrade pip before the torch install. The system pip (22.x) ships an old
+# cachecontrol whose msgpack serializer crashes on >4 GB responses
+# ("ValueError: Memoryview is too large"), and the ROCm torch wheel is ~6 GB.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --upgrade pip setuptools wheel
+
 # Install ROCm-built PyTorch from pytorch.org's ROCm wheel index. The wheel
 # bundles its own ROCm runtime libs and works fine on top of the ROCm 7.2.3
 # userspace from the base image — HIP ABI is backwards-compatible.
@@ -119,9 +125,6 @@ RUN echo "=== torch constraints (locked from ROCm install) ===" \
 
 # BuildKit cache mounts persist pip wheels across builds, so requirements
 # changes only re-download what actually changed.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install --upgrade pip setuptools wheel
-
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install --upgrade-strategy only-if-needed \
