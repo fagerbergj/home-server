@@ -44,6 +44,7 @@ services:
       -hf ${LLAMA_TP_MODEL:-bartowski/Llama-3.3-70B-Instruct-GGUF:Q4_K_M}
       --alias ${LLAMA_TP_ALIAS:-llama-70b}
       --split-mode tensor
+      -fit off
       -ngl 999
       -c ${LLAMA_TP_CTX:-16384}
       --host 0.0.0.0
