@@ -46,6 +46,8 @@ models:
       -c 16384
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --spec-type draft-mtp
+      --spec-draft-n-max 3
       --port 9999
 
   "qwen3.5-9b":
@@ -59,6 +61,8 @@ models:
       --cache-type-k q8_0
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
+      --spec-type draft-mtp
+      --spec-draft-n-max 3
       --port 9999
 
   "qwen3-vl-8b":
@@ -82,6 +86,8 @@ models:
       -c 262144
       --cache-type-k q4_0
       --cache-type-v q4_0
+      --spec-type draft-mtp
+      --spec-draft-n-max 3
       --port 9999
 
   "qwen3-embed":
