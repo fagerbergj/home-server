@@ -30,7 +30,7 @@ services:
   # holds it). Intended for benchmarking 70b chat with tensor parallelism — see
   # bench.py --backend vllm.
   vllm:
-    image: rocm/vllm:latest
+    image: rocm/vllm-dev:nightly        # rocm/vllm:latest ships an aiter without gfx1201 (vllm#28649)
     container_name: vllm
     profiles: ["vllm"]
     ports:
