@@ -44,6 +44,7 @@ services:
       - VLLM_MAX_MODEL_LEN=${VLLM_MAX_MODEL_LEN:-16384}
       - VLLM_TP=${VLLM_TP:-2}
       - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+    entrypoint: ["python3", "-m", "vllm.entrypoints.openai.api_server"]
     command: >
       --model ${VLLM_MODEL:-hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4}
       --tensor-parallel-size ${VLLM_TP:-2}
