@@ -32,29 +32,23 @@ defaultTest:
       config:
         apiBaseUrl: http://jason-server:11437/v1
         apiKey: llm-judge
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
-      ###Task Description:
-      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
-      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
-      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
-      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
-      4. Please do not generate any other opening, closing, and explanations.
+      You are grading a technical response. Use the rubric to assess quality,
+      then output ONLY a JSON object on the last line — nothing after it.
 
-      ###The instruction to evaluate:
-      {{prompt}}
-
-      ###Response to evaluate:
-      {{output}}
-
-      ###Reference Answer (Score 5):
-      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
-
-      ###Score Rubrics:
+      Rubric:
       {{rubric}}
 
-      ###Feedback:
-    transform: |
-      const match = output.match(/\[RESULT\]\s*([1-5])/);
-      if (!match) return { pass: false, score: 0, reason: 'Could not parse [RESULT] from prometheus output' };
-      const n = parseInt(match[1]);
-      return { pass: n >= 4, score: n / 5, reason: output.split('[RESULT]')[0].trim().slice(-200) };
+      Prompt given to the model:
+      {{prompt}}
+
+      Response to grade:
+      {{output}}
+
+      Think step by step:
+      1. What score level does the rubric require?
+      2. Does the response satisfy it? Quote the key part.
+
+      Then output ONLY this JSON (no trailing text):
+      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
