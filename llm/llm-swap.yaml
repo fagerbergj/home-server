@@ -1,6 +1,26 @@
 healthCheckTimeout: 600   # 70b loading takes time
 logRequests: true
 
+groups:
+  # Only one chat model loaded at a time; won't evict the embed group.
+  main:
+    swap: true
+    exclusive: false
+    members:
+      - llama-3.3-70b
+      - qwen3.6-35b
+      - qwen3.5-9b
+      - qwen3-vl-8b
+      - qwen3-coder-next
+
+  # Stays loaded regardless of what the main group is doing.
+  embed:
+    swap: false
+    exclusive: false
+    persistent: true
+    members:
+      - qwen3-embed
+
 models:
   "llama-3.3-70b":
     proxy: "http://127.0.0.1:9999"
@@ -64,12 +84,12 @@ models:
       --port 9999
 
   "qwen3-embed":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
+    proxy: "http://127.0.0.1:9998"
+    ttl: -1
     cmd: >
       /app/llama-server
       -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
       --embedding
       --pooling cls
       -ngl 999
-      --port 9999
+      --port 9998
