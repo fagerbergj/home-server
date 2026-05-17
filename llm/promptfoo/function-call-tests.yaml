@@ -1,0 +1,127 @@
+# Berkeley Function Calling Leaderboard (BFCL) — simple subset
+# Source: https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard
+# Entries: simple_0 through simple_5
+#
+# The model is given a function schema and a user request.
+# It must call the right function with the right arguments.
+# Assertions check function name and required argument values.
+
+- description: "BFCL simple_0: calculate_triangle_area"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "calculate_triangle_area", "description": "Calculate the area of a triangle given its base and height.", "parameters": {"type": "object", "properties": {"base": {"type": "integer"}, "height": {"type": "integer"}, "unit": {"type": "string"}}, "required": ["base", "height"]}}
+
+      User: Find the area of a triangle with a base of 10 units and height of 5 units.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('calculate_triangle_area')
+      metric: "[baseline] calls correct function"
+    - type: javascript
+      value: output.includes('"base"') && (output.includes('"base": 10') || output.includes('"base":10'))
+      metric: "[baseline] base=10"
+    - type: javascript
+      value: output.includes('"height"') && (output.includes('"height": 5') || output.includes('"height":5'))
+      metric: "[baseline] height=5"
+
+- description: "BFCL simple_1: math.factorial"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "math.factorial", "description": "Calculate the factorial of a given number.", "parameters": {"type": "object", "properties": {"number": {"type": "integer"}}, "required": ["number"]}}
+
+      User: Calculate the factorial of 5 using math functions.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('factorial')
+      metric: "[baseline] calls factorial function"
+    - type: javascript
+      value: output.includes('"number"') && (output.includes('"number": 5') || output.includes('"number":5'))
+      metric: "[baseline] number=5"
+
+- description: "BFCL simple_2: math.hypot"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "math.hypot", "description": "Calculate the Euclidean norm — the hypotenuse of a right triangle.", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}, "z": {"type": "integer"}}, "required": ["x", "y"]}}
+
+      User: Calculate the hypotenuse of a right triangle given the lengths of the other two sides as 4 and 5.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('hypot')
+      metric: "[baseline] calls hypot function"
+    - type: llm-rubric
+      metric: "[proficient] correct arguments for sides 4 and 5"
+      value: >
+        Score 3: Calls math.hypot with both x and y arguments populated
+        Score 4: Also uses values 4 and 5 (order doesn't matter — hypot is symmetric)
+        Score 5: Also does not include z (it's optional and the problem doesn't mention a z-axis)
+
+- description: "BFCL simple_3: quadratic_roots a=1, b=-3, c=2"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "algebra.quadratic_roots", "description": "Find the roots of a quadratic equation ax^2 + bx + c = 0.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
+
+      User: Find the roots of a quadratic equation with coefficients a=1, b=-3, c=2.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('quadratic')
+      metric: "[baseline] calls quadratic function"
+    - type: javascript
+      value: (output.includes('"a": 1') || output.includes('"a":1')) && (output.includes('"b": -3') || output.includes('"b":-3')) && (output.includes('"c": 2') || output.includes('"c":2'))
+      metric: "[baseline] correct coefficients a=1, b=-3, c=2"
+
+- description: "BFCL simple_4: solve_quadratic a=2, b=6, c=5"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "solve_quadratic_equation", "description": "Solve the quadratic equation and return its roots.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
+
+      User: Solve a quadratic equation where a=2, b=6, and c=5.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('solve_quadratic')
+      metric: "[baseline] calls correct function"
+    - type: javascript
+      value: (output.includes('"a": 2') || output.includes('"a":2')) && (output.includes('"b": 6') || output.includes('"b":6')) && (output.includes('"c": 5') || output.includes('"c":5'))
+      metric: "[baseline] correct coefficients a=2, b=6, c=5"
+
+- description: "BFCL simple_5: solve_quadratic a=3, b=-11, c=-4"
+  vars:
+    task: |
+      You have access to this function:
+      {"name": "solve_quadratic", "description": "Solve a quadratic equation. Optional root_type parameter: 'real' for real roots only (default), 'all' for real and complex.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}, "root_type": {"type": "string"}}, "required": ["a", "b", "c"]}}
+
+      User: Find all the roots of a quadratic equation given coefficients a=3, b=-11, and c=-4.
+
+      Respond with the function call you would make in JSON:
+      {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      value: output.includes('solve_quadratic')
+      metric: "[baseline] calls correct function"
+    - type: javascript
+      value: (output.includes('"a": 3') || output.includes('"a":3')) && (output.includes('"b": -11') || output.includes('"b":-11')) && (output.includes('"c": -4') || output.includes('"c":-4'))
+      metric: "[baseline] correct coefficients"
+    - type: llm-rubric
+      metric: "[proficient] uses root_type=all for 'find all roots'"
+      value: >
+        Score 3: Calls solve_quadratic with the correct a, b, c values
+        Score 4: Also includes root_type because the user said "find all the roots"
+        Score 5: Sets root_type to "all" specifically (not "real") since user wants all roots

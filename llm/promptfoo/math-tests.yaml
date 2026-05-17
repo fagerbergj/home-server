@@ -1,0 +1,179 @@
+# GSM8K grade-school math word problems
+# Source: https://github.com/openai/grade-school-math (MIT License)
+# Entries 0-9 from test.jsonl
+#
+# Assertions:
+#   - javascript: exact numeric answer must appear in output
+#   - llm-rubric: reasoning quality
+
+- description: "GSM8K: duck eggs at farmers market"
+  vars:
+    task: >
+      Janet's ducks lay 16 eggs per day. She eats three for breakfast every
+      morning and bakes muffins for her friends every day with four. She sells
+      the remainder at the farmers' market daily for $2 per fresh duck egg.
+      How much in dollars does she make every day at the farmers' market?
+      Show your work step by step, then state the final answer.
+    answer: "18"
+  assert:
+    - type: javascript
+      value: output.includes('18')
+      metric: "[baseline] correct answer: 18"
+    - type: llm-rubric
+      metric: "[baseline] shows arithmetic reasoning"
+      value: >
+        Score 3: Arrives at the correct answer of $18
+        Score 4: Also shows the subtraction step (16 - 3 - 4 = 9 eggs)
+        Score 5: Also shows the multiplication step (9 × $2 = $18)
+
+- description: "GSM8K: bolts of fiber for a robe"
+  vars:
+    task: >
+      A robe takes 2 bolts of blue fiber and half that much white fiber.
+      How many bolts in total does it take?
+      Show your work step by step, then state the final answer.
+    answer: "3"
+  assert:
+    - type: javascript
+      value: output.includes('3')
+      metric: "[baseline] correct answer: 3"
+    - type: llm-rubric
+      metric: "[baseline] correct reasoning"
+      value: >
+        Score 3: Arrives at the correct total of 3 bolts
+        Score 4: Also identifies white fiber = 1 bolt (half of 2)
+        Score 5: Also shows the addition 2 + 1 = 3
+
+- description: "GSM8K: house flip profit"
+  vars:
+    task: >
+      Josh decides to try flipping a house. He buys a house for $80,000 and
+      then puts in $50,000 in repairs. This increased the value of the house
+      by 150%. How much profit did he make?
+      Show your work step by step, then state the final answer.
+    answer: "70000"
+  assert:
+    - type: javascript
+      value: output.includes('70000') || output.includes('70,000')
+      metric: "[baseline] correct answer: $70,000"
+    - type: llm-rubric
+      metric: "[proficient] multi-step profit calculation"
+      value: >
+        Score 3: Arrives at the correct profit of $70,000
+        Score 4: Also correctly computes total cost ($130,000) and new value ($200,000)
+        Score 5: Also clearly identifies that 150% increase means +$120,000 on top of original $80,000
+
+- description: "GSM8K: sprint meters per week"
+  vars:
+    task: >
+      James decides to run 3 sprints 3 times a week. He runs 60 meters each sprint.
+      How many total meters does he run a week?
+      Show your work step by step, then state the final answer.
+    answer: "540"
+  assert:
+    - type: javascript
+      value: output.includes('540')
+      metric: "[baseline] correct answer: 540"
+    - type: llm-rubric
+      metric: "[baseline] correct multiplication"
+      value: >
+        Score 3: Arrives at 540 meters
+        Score 4: Also shows 3 × 3 = 9 total sprints
+        Score 5: Also shows 9 × 60 = 540
+
+- description: "GSM8K: chicken feed final meal"
+  vars:
+    task: >
+      Every day, Wendi feeds each of her chickens three cups of mixed chicken
+      feed. She gives the chickens their feed in three separate meals. In the
+      morning, she gives her flock of 20 chickens 15 cups of feed. In the
+      afternoon, she gives her chickens another 25 cups of feed. How many cups
+      of feed does she need to give her chickens in the final meal of the day?
+      Show your work step by step, then state the final answer.
+    answer: "20"
+  assert:
+    - type: javascript
+      value: output.includes('20')
+      metric: "[baseline] correct answer: 20 cups"
+    - type: llm-rubric
+      metric: "[proficient] multi-step meal calculation"
+      value: >
+        Score 3: Arrives at 20 cups for the final meal
+        Score 4: Also computes total daily feed needed: 20 × 3 = 60 cups
+        Score 5: Also clearly shows 60 - 15 - 25 = 20
+
+- description: "GSM8K: glasses discount pricing"
+  vars:
+    task: >
+      One glass costs $5, but every second glass costs only 60% of the price.
+      Kylar wants to buy 16 glasses. How much does he need to pay for them?
+      Show your work step by step, then state the final answer.
+    answer: "64"
+  assert:
+    - type: javascript
+      value: output.includes('64')
+      metric: "[baseline] correct answer: $64"
+    - type: llm-rubric
+      metric: "[proficient] alternating price reasoning"
+      value: >
+        Score 3: Arrives at $64
+        Score 4: Also correctly identifies 8 glasses at $5 and 8 glasses at $3
+        Score 5: Also explains that 60% of $5 = $3 for the discounted glasses
+
+- description: "GSM8K: sheep across three towns"
+  vars:
+    task: >
+      Toulouse has twice as many sheep as Charleston. Charleston has 4 times
+      as many sheep as Seattle. How many sheep do Toulouse, Charleston, and
+      Seattle have together if Seattle has 20 sheep?
+      Show your work step by step, then state the final answer.
+    answer: "260"
+  assert:
+    - type: javascript
+      value: output.includes('260')
+      metric: "[baseline] correct answer: 260"
+    - type: llm-rubric
+      metric: "[proficient] chained multiplication"
+      value: >
+        Score 3: Arrives at 260 total sheep
+        Score 4: Also derives Charleston = 80 and Toulouse = 160 correctly
+        Score 5: Also shows full derivation chain from Seattle = 20
+
+- description: "GSM8K: download interrupted by Windows update"
+  vars:
+    task: >
+      Carla is downloading a 200 GB file. Normally she can download 2 GB/minute,
+      but 40% of the way through the download, Windows forces a restart to install
+      updates, which takes 20 minutes. Then Carla has to restart the download from
+      the beginning. How long does it take to download the file?
+      Show your work step by step, then state the final answer.
+    answer: "160"
+  assert:
+    - type: javascript
+      value: output.includes('160')
+      metric: "[baseline] correct answer: 160 minutes"
+    - type: llm-rubric
+      metric: "[proficient] multi-phase time calculation"
+      value: >
+        Score 3: Arrives at 160 minutes total
+        Score 4: Also correctly identifies the three phases: 40 min (interrupted) + 20 min (update) + 100 min (restart)
+        Score 5: Also shows that 40% of 200 GB = 80 GB takes 40 minutes
+
+- description: "GSM8K: overtime pay calculation"
+  vars:
+    task: >
+      Eliza's rate per hour for the first 40 hours she works each week is $10.
+      She also receives an overtime pay of 1.2 times her regular hourly rate.
+      If Eliza worked for 45 hours this week, how much are her earnings for this week?
+      Show your work step by step, then state the final answer.
+    answer: "460"
+  assert:
+    - type: javascript
+      value: output.includes('460')
+      metric: "[baseline] correct answer: $460"
+    - type: llm-rubric
+      metric: "[proficient] overtime pay calculation"
+      value: >
+        Score 3: Arrives at $460 total earnings
+        Score 4: Also correctly computes regular pay ($400) and overtime pay ($60)
+        Score 5: Also shows overtime rate = $10 × 1.2 = $12 for 5 hours = $60

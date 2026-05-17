@@ -1,0 +1,37 @@
+# BFCL function calling tests
+# Run: ./eval.sh --function-call [model]
+# Best models: llama-3.3-70b, qwen3.6-35b
+evaluateOptions:
+  timeoutMs: 120000
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+prompts:
+  - "{{task}}"
+tests: function-call-tests.yaml
+defaultTest:
+  threshold: 0.8
+  options:
+    provider:
+      id: openai:chat:prometheus-7b
+      config:
+        apiBaseUrl: http://jason-server:11437/v1
+        apiKey: llm-judge
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
+    rubricPrompt: |
+      You are grading a function call response. Use the rubric to assess quality,
+      then output ONLY a JSON object on the last line — nothing after it.
+
+      Rubric:
+      {{rubric}}
+
+      Prompt given to the model:
+      {{prompt}}
+
+      Response to grade:
+      {{output}}
+
+      Then output ONLY this JSON (no trailing text):
+      {"pass": true/false, "score": 0.0, "reason": "one sentence"}

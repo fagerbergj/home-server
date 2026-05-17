@@ -1,0 +1,239 @@
+# Tool-call reasoning tests for the document-pipeline ADK tools:
+#   search_documents — Lucene search, returns lean summaries
+#   get_document     — fetch full text by ID
+#   rag_search       — semantic/vector search, plain words only
+#   update_document  — propose a field edit (requires approval)
+#
+# Each test gives the model the tool descriptions and asks it to output
+# {"tool": "...", "args": {...}} so we can assert deterministically.
+
+# ─── search_documents routing ─────────────────────────────────────────────────
+
+- description: "routes to search_documents for tag query"
+  vars:
+    scenario: >
+      The user says: "Find all my documents tagged with invoice"
+    guidance: >
+      search_documents is for Lucene queries with field:value syntax (tags:, title:,
+      series:, date_month:). rag_search is for fuzzy topical questions in plain words.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] search_documents for tag field query"
+      value: >
+        Score 3: Calls search_documents (not rag_search) for a tag lookup
+        Score 4: Also uses tags:invoice as the query
+        Score 5: Also explains why search_documents is preferred (field:value syntax)
+
+- description: "routes to search_documents for date query"
+  vars:
+    scenario: >
+      The user says: "Show me documents from May 2026"
+    guidance: >
+      search_documents is for Lucene queries with field:value syntax (tags:, title:,
+      series:, date_month:). rag_search is for fuzzy topical questions in plain words.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] search_documents for date_month field query"
+      value: >
+        Score 3: Calls search_documents for a date query
+        Score 4: Also uses date_month:2026-05 as the query
+        Score 5: Also explains that date_month uses YYYY-MM format
+
+- description: "routes to search_documents for title keyword query"
+  vars:
+    scenario: >
+      The user says: "Find the document about the quarterly review"
+    guidance: >
+      search_documents is for Lucene queries with field:value syntax (tags:, title:,
+      series:, date_month:). rag_search is for fuzzy topical questions in plain words.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] search_documents for title search"
+      value: >
+        Score 3: Calls search_documents
+        Score 4: Uses title: prefix or free-text query with relevant keywords
+        Score 5: Explains the difference vs rag_search for specific document retrieval
+
+# ─── rag_search routing ───────────────────────────────────────────────────────
+
+- description: "routes to rag_search for fuzzy topical question"
+  vars:
+    scenario: >
+      The user asks: "What have I written about machine learning over the past year?"
+    guidance: >
+      search_documents is for Lucene queries with field:value syntax (tags:, title:,
+      series:, date_month:). rag_search is for fuzzy topical questions in plain words.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] rag_search for topical question"
+      value: >
+        Score 3: Calls rag_search (not search_documents) for a broad topical question
+        Score 4: Passes plain words like "machine learning" as the query
+        Score 5: Explains that rag_search handles cross-document semantic retrieval
+
+- description: "routes to rag_search for cross-doc synthesis question"
+  vars:
+    scenario: >
+      The user asks: "Summarise everything I know about the Westbrook project"
+    guidance: >
+      search_documents is for Lucene queries with field:value syntax (tags:, title:,
+      series:, date_month:). rag_search is for fuzzy topical questions in plain words.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] rag_search for synthesis"
+      value: >
+        Score 3: Calls rag_search for cross-document synthesis
+        Score 4: Uses plain words ("Westbrook project") not field:value syntax
+        Score 5: Notes it may need multiple rag_search calls or a follow-up get_document
+
+# ─── search_documents Lucene argument correctness ────────────────────────────
+
+- description: "quotes multi-word series value in Lucene query"
+  vars:
+    scenario: >
+      The user asks: "Show me everything in the Secret Campaign series"
+    guidance: >
+      search_documents uses Lucene syntax. Multi-word field values MUST be quoted:
+      series:"Secret Campaign" is correct. series:Secret Campaign is wrong (Lucene
+      parses it as series:Secret AND Campaign).
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] quotes multi-word series value"
+      value: >
+        Score 3: Calls search_documents with a series: query
+        Score 4: Quotes the multi-word value: series:"Secret Campaign"
+        Score 5: Explains why quoting is required (Lucene splits on spaces otherwise)
+
+- description: "quotes multi-word title value in Lucene query"
+  vars:
+    scenario: >
+      The user says: "Find the document titled may 16 meeting notes"
+    guidance: >
+      search_documents uses Lucene syntax. Multi-word field values MUST be quoted:
+      title:"may 16 meeting notes" is correct. title:may 16 meeting notes is wrong.
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] quotes multi-word title value"
+      value: >
+        Score 3: Calls search_documents with a title: query
+        Score 4: Quotes the phrase: title:"may 16 meeting notes" (or a close substring)
+        Score 5: Also notes it could try a shorter quoted fragment if exact title is unknown
+
+- description: "does not use field:value syntax in rag_search"
+  vars:
+    scenario: >
+      The user asks you to search for documents about tags:invoice using semantic search.
+    guidance: >
+      rag_search accepts PLAIN WORDS only. Field:value syntax like tags:invoice will
+      match the colon literally and return junk. The model should redirect to
+      search_documents or strip the field syntax.
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] no field syntax in rag_search"
+      value: >
+        Score 3: Does not call rag_search with tags:invoice verbatim
+        Score 4: Either redirects to search_documents with tags:invoice, or calls rag_search
+                 with plain words like "invoice documents"
+        Score 5: Explains the field:value restriction on rag_search
+
+# ─── guard rails — empty inputs ───────────────────────────────────────────────
+
+- description: "never calls search_documents with empty query"
+  vars:
+    scenario: >
+      The user says: "Search for something" without specifying what. You are not
+      sure what to search for.
+    guidance: >
+      search_documents must never be called with an empty query. If the user has not
+      provided enough information, the model should ask for clarification.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] no empty search_documents query"
+      value: >
+        Score 3: Does not call search_documents with an empty or blank query
+        Score 4: Also asks the user for clarification (title, tag, date, topic)
+        Score 5: Also explains what kinds of queries search_documents accepts
+
+- description: "never calls get_document without an ID"
+  vars:
+    scenario: >
+      The user asks: "Show me the full text of that document." There are no search
+      results in context — no document IDs have been mentioned.
+    guidance: >
+      get_document requires a document UUID. If no ID is available, the model must
+      run search_documents first to find a candidate, then pass its ID to get_document.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] no empty get_document ID"
+      value: >
+        Score 3: Does not call get_document with an empty or placeholder ID
+        Score 4: Calls search_documents first to find the document
+        Score 5: Explains that get_document requires an ID from a prior search
+
+# ─── update_document ─────────────────────────────────────────────────────────
+
+- description: "uses correct field name for update"
+  vars:
+    scenario: >
+      The user says: "The summary for document abc-123 is wrong, please fix it to
+      say 'Quarterly review covering Q2 sales performance and pipeline forecast'."
+    guidance: >
+      update_document allowed fields: raw_text, narrative_summary, clarified_text,
+      summary. The user is asking to fix the summary.
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] correct field name for summary update"
+      value: >
+        Score 3: Calls update_document with field set to "summary"
+        Score 4: Also sets the correct document ID (abc-123) and the new content
+        Score 5: Also explains that the tool will ask for user confirmation before applying
+
+- description: "rejects invalid field name for update"
+  vars:
+    scenario: >
+      The user asks you to update the "embedding" field of document abc-123.
+    guidance: >
+      update_document only allows: raw_text, narrative_summary, clarified_text, summary.
+      "embedding" is not an allowed field. The model should refuse or explain.
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] rejects invalid update field"
+      value: >
+        Score 3: Does not call update_document with field="embedding"
+        Score 4: Explains that "embedding" is not an editable field
+        Score 5: Lists the allowed fields to help the user pick the right one
+
+- description: "does not retry a rejected update"
+  vars:
+    scenario: >
+      You previously called update_document and it returned {"status": "rejected"}.
+      The user has not said anything new.
+    guidance: >
+      When update_document returns status="rejected", the model must NOT immediately
+      retry the same edit. It should ask the user what they want to do instead.
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] no immediate retry after rejected update"
+      value: >
+        Score 3: Does not immediately retry update_document with the same arguments
+        Score 4: Acknowledges the rejection and asks the user for direction
+        Score 5: Offers specific alternatives (try a different edit, leave it as-is, etc.)
+
+# ─── search → get chained workflow ───────────────────────────────────────────
+
+- description: "chains search_documents then get_document for specific doc"
+  vars:
+    scenario: >
+      The user asks: "Show me the full text of my meeting notes from March 2026."
+      You have no document IDs in context.
+    guidance: >
+      To fetch full text of a specific document: first call search_documents to
+      find candidates, then call get_document on the best match's ID.
+      Never call get_document without an ID from a prior search.
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] search then get for specific document"
+      value: >
+        Score 3: Plans to call search_documents before get_document
+        Score 4: Uses a relevant search query (date_month:2026-03 or title:"meeting notes")
+        Score 5: Explains the full workflow and why get_document needs an ID from the search

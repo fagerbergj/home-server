@@ -1,0 +1,87 @@
+# promptfoo config — tool-call reasoning tests for document-pipeline ADK tools
+#
+# Tests verify the model makes correct tool routing decisions and forms
+# valid arguments without actually invoking the tools.
+#
+# Run all models:  ./eval.sh --tools
+# Run one model:   MODEL=qwen3.6-35b ./eval-tools.sh
+#
+# See eval.sh — the tool config is selected via the --tools flag.
+
+evaluateOptions:
+  timeoutMs: 120000   # tool reasoning calls are fast
+
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: "{{ env.LLM_SWAP_URL }}"
+      apiKey: llm-swap
+
+prompts:
+  - |
+    You have access to four tools for a personal document management system.
+    Given a scenario, respond with exactly one JSON object on the last line:
+    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<one sentence>"}
+    If multiple tool calls are needed, describe the first one only.
+    If no tool should be called, use {"tool": null, "args": {}, "reason": "..."}.
+
+    TOOLS:
+
+    search_documents(query: string)
+      Lucene search by title, tag, date, series, or content.
+      Returns lean summaries — call get_document for full text.
+      Use when the query has field:value syntax (tags:, title:, series:, date_month:).
+      IMPORTANT: quote multi-word field values or Lucene splits on spaces.
+        Correct: series:"Secret Campaign"   Wrong: series:Secret Campaign
+      Never call with an empty query.
+
+    get_document(id: string)
+      Fetch full text of a specific document by UUID.
+      Must have an ID from a prior search_documents call.
+      Never call with an empty id.
+
+    rag_search(query: string)
+      Semantic search for fuzzy or cross-document topical questions.
+      Query must be PLAIN WORDS — no field:value syntax.
+      Never call with an empty query.
+
+    update_document(id: string, field: string, content: string)
+      Propose an edit to a document field. Always requires user approval first.
+      Allowed fields: raw_text, narrative_summary, clarified_text, summary
+      Never retry if status="rejected" without asking the user.
+
+    SCENARIO: {{scenario}}
+
+    {{guidance}}
+
+tests: tool-tests.yaml
+
+defaultTest:
+  threshold: 0.8
+  options:
+    provider:
+      id: openai:chat:prometheus-7b
+      config:
+        apiBaseUrl: http://jason-server:11437/v1
+        apiKey: llm-judge
+    rubricPrompt: |
+      ###Task Description:
+      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
+      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
+      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
+      4. Please do not generate any other opening, closing, and explanations.
+
+      ###The instruction to evaluate:
+      {{prompt}}
+
+      ###Response to evaluate:
+      {{output}}
+
+      ###Reference Answer (Score 5):
+      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
+
+      ###Score Rubrics:
+      {{rubric}}
+
+      ###Feedback:
