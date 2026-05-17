@@ -10,7 +10,6 @@
 #   MODEL=qwen3.5-9b MAX_CONCURRENCY=4 npx promptfoo@latest eval -c promptfooconfig.llm-swap.yaml
 
 evaluateOptions:
-  maxConcurrency: ${MAX_CONCURRENCY:-2}
   timeoutMs: 600000
 
 providers:
