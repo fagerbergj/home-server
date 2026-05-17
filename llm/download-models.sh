@@ -14,7 +14,7 @@ dl() {
     -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN:-}" \
     -v "$HF_CACHE:/root/.cache/huggingface" \
     python:3.12-slim \
-    sh -c "pip install -q 'huggingface_hub[cli]' && huggingface-cli download '$repo' '$file'"
+    sh -c "pip install -q huggingface_hub && hf download '$repo' '$file'"
   echo ""
 }
 
