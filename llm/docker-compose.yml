@@ -25,6 +25,34 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
+  # Always-on judge for promptfoo — runs alongside any llama-swap model (~5 GB, fits fine).
+  # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
+  prometheus:
+    image: ghcr.io/ggml-org/llama.cpp:server-rocm
+    container_name: prometheus
+    profiles: ["judge"]
+    ports:
+      - "11437:11437"
+    environment:
+      - ROCBLAS_USE_HIPBLASLT=0
+      - HF_TOKEN=${HF_TOKEN:-}
+    command: >
+      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:prometheus-7b-v2.0.Q4_K_M.gguf
+      --alias prometheus-7b
+      -ngl 999
+      -c 8192
+      --host 0.0.0.0
+      --port 11437
+    volumes:
+      - /mnt/cache/huggingface:/root/.cache/huggingface
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - "993"
+    restart: unless-stopped
+
   # Opt-in: `docker compose --profile swap up -d --build llama-swap`
   # OpenAI-compatible API on port 11436 backed by llama-swap + llama.cpp.
   # Model routing is in llama-swap.yaml — update document-pipeline env vars to point here.
