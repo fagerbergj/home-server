@@ -33,24 +33,28 @@ defaultTest:
         apiBaseUrl: http://jason-server:11437/v1
         apiKey: llm-judge
     rubricPrompt: |
-      You are grading a technical response against a specific criterion.
+      ###Task Description:
+      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
+      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
+      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
+      4. Please do not generate any other opening, closing, and explanations.
 
-      Prompt given to the model:
+      ###The instruction to evaluate:
       {{prompt}}
 
-      Response to grade:
+      ###Response to evaluate:
       {{output}}
 
-      Scoring rubric:
+      ###Reference Answer (Score 5):
+      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
+
+      ###Score Rubrics:
       {{rubric}}
 
-      Think through this carefully:
-      1. What does the rubric specifically require at each score level?
-      2. Which level does this response achieve? Quote the relevant part.
-      3. If partial credit applies, explain why.
-
-      Then output ONLY a JSON object on the last line — nothing after it:
-      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
-
-      Score mapping: Score 5 → 1.0, Score 4 → 0.8, Score 3 → 0.6, Score 2 → 0.4, Score 1 → 0.2
-      pass is true when score >= 0.8 (Score 4 or 5).
+      ###Feedback:
+    transform: |
+      const match = output.match(/\[RESULT\]\s*([1-5])/);
+      if (!match) return { pass: false, score: 0, reason: 'Could not parse [RESULT] from prometheus output' };
+      const n = parseInt(match[1]);
+      return { pass: n >= 4, score: n / 5, reason: output.split('[RESULT]')[0].trim().slice(-200) };
