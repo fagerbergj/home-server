@@ -1,0 +1,57 @@
+# promptfoo config — llm-swap stack judged by prometheus-7b
+#
+# Don't run directly — use eval.sh which sets MODEL and MAX_CONCURRENCY
+# and loops through the model list:
+#
+#   cd llm/promptfoo && ./eval.sh
+#
+# Or run a single model:
+#
+#   MODEL=qwen3.5-9b MAX_CONCURRENCY=4 npx promptfoo@latest eval -c promptfooconfig.llm-swap.yaml
+
+evaluateOptions:
+  maxConcurrency: ${MAX_CONCURRENCY:-2}
+  timeoutMs: 600000
+
+providers:
+  - id: openai:chat:${MODEL:-qwen3.5-9b}
+    config:
+      baseURL: http://jason-server:11436/v1
+      apiKey: none
+
+prompts:
+  - "{{task}}"
+
+tests: tests.yaml
+
+# Judge: prometheus-7b-v2.0 (always-on, port 11437)
+# Ensure it's running: make -C .. judge-up
+defaultTest:
+  threshold: 0.8
+  options:
+    provider:
+      id: openai:chat:prometheus-7b
+      config:
+        baseURL: http://jason-server:11437/v1
+        apiKey: none
+    rubricPrompt: |
+      ###Task Description:
+      An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
+      1. Write a detailed feedback that assess the quality of the response strictly based on the given score rubric, not evaluating in general.
+      2. After writing a feedback, write a score that is an integer between 1 and 5. You should refer to the score rubric.
+      3. The output format should look as follows: "(write a feedback for criteria) [RESULT] (an integer number between 1 and 5)"
+      4. Please do not generate any other opening, closing, and explanations.
+
+      ###The instruction to evaluate:
+      {{prompt}}
+
+      ###Response to evaluate:
+      {{output}}
+
+      ###Reference Answer (Score 5):
+      A perfect response fully satisfies every criterion in the rubric at the highest score level with clear, detailed explanations and correct specifics.
+
+      ###Score Rubrics:
+      {{rubric}}
+
+      ###Feedback:
