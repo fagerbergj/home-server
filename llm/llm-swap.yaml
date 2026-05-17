@@ -79,7 +79,7 @@ models:
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
       -ngl 999
-      -c 65536
+      -c 262144
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9999
