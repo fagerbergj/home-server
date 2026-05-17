@@ -1,0 +1,44 @@
+# Maps each model to its test suites and concurrency.
+#
+# Default suites (run with: ./eval.sh [model]):
+#   architecture  (32 tests) — systems design knowledge
+#   coding        (12 tests) — HumanEval + debugging
+#   function-call (11 tests) — BFCL + structured output + tool routing
+#   brain-twisters (9 tests) — logical/spatial reasoning traps
+#
+# Opt-in (--suite <name>):
+#   math          (9 tests)  — GSM8K word problems
+#   tools        (14 tests)  — document-pipeline specific tool routing
+
+models:
+  llama-3.3-70b:
+    concurrency: 1
+    suites:
+      - architecture
+      - coding
+      - function-call
+      - brain-twisters
+
+  qwen3.6-35b:
+    concurrency: 2
+    suites:
+      - architecture
+      - coding
+      - function-call
+      - brain-twisters
+
+  qwen3.5-9b:
+    concurrency: 4
+    suites:
+      - architecture
+      - coding
+      - function-call
+      - brain-twisters
+
+  qwen3-coder-next:
+    concurrency: 1
+    suites:
+      - architecture
+      - coding
+      - function-call
+      - brain-twisters

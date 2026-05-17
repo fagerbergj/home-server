@@ -1,0 +1,162 @@
+# Brain twister problems — "Easy Problems That LLMs Get Wrong" (arxiv 2405.19616)
+# These are problems that seem simple but LLMs systematically fail because they
+# pattern-match to memorized versions or fail at basic spatial/logical reasoning.
+
+- description: "brain twister: horse race — simplest solution"
+  vars:
+    task: >
+      You have six horses and want to find out which is the fastest.
+      What is the best way to do this?
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] races all six simultaneously"
+      value: >
+        Score 3: Arrives at the correct answer of racing all six horses at the same time
+        Score 4: Also notes this gives a complete ranking in a single race
+        Score 5: Also explains why multi-round tournament approaches are unnecessary
+        and overcomplicated
+
+- description: "brain twister: modified Monty Hall — no information revealed"
+  vars:
+    task: >
+      Suppose you're on a game show. There are three doors: a gold bar behind one,
+      rotten vegetables behind the others. You pick door No. 1. The host then asks
+      "Would you like door No. 2 instead?" Is there any advantage to switching?
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] no advantage — no information revealed"
+      value: >
+        Score 3: Correctly states there is no advantage to switching in this version
+        Score 4: Also explains why: the host did not reveal what was behind any door,
+        so no new information was provided
+        Score 5: Also contrasts with the classic Monty Hall problem where the host's
+        deliberate goat reveal changes the probabilities
+
+- description: "brain twister: Russian roulette — spin or not"
+  vars:
+    task: >
+      In a game of Russian roulette with a six-shooter containing five bullets,
+      your opponent fires at themselves, survives, and now it is your turn.
+      Should they spin the chambers again before handing it to you?
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] yes — spin resets to 1/6 safety"
+      value: >
+        Score 3: Correctly recommends spinning (from your perspective as the one being shot at)
+        Score 4: Also explains that without spinning, the remaining chamber is the only
+        empty one, making the shot certain to fire
+        Score 5: Also shows the math: not spinning = certain death, spinning = 1/6 chance
+        of death
+
+- description: "brain twister: river crossing with three compartments"
+  vars:
+    task: >
+      A farmer needs to get a wolf, a goat, and a cabbage across a river.
+      His boat has three secure, separate compartments and he can transport
+      all three at once. What should he do?
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] single trip — place all three in compartments"
+      value: >
+        Score 3: Correctly identifies the solution as putting all three in separate
+        compartments and crossing once
+        Score 4: Also notes the key difference from the classic puzzle is the compartments
+        make separation unnecessary
+        Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall
+        into (applying the multi-trip solution when the constraint has changed)
+
+- description: "brain twister: weight comparison — which weighs more"
+  vars:
+    task: >
+      Which weighs more: a pound of water, two pounds of bricks, a pound of feathers,
+      or three pounds of air?
+  assert:
+    - type: javascript
+      value: output.includes('bricks') || output.includes('brick')
+      metric: "[baseline] identifies two pounds of bricks"
+    - type: llm-rubric
+      metric: "[baseline] correct reasoning"
+      value: >
+        Score 3: Correctly answers "two pounds of bricks"
+        Score 4: Also explains that all other options are explicitly one pound each by
+        the wording of the question
+        Score 5: Also notes this is a trick — the common riddle asks about pound of
+        feathers vs bricks assuming equal weight, but this version includes a 2-pound
+        option
+
+- description: "brain twister: robot arms — how many free"
+  vars:
+    task: >
+      A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then
+      shakes hands with itself. How many arms are free?
+  assert:
+    - type: javascript
+      value: /\b1\b/.test(output) || output.includes('one arm') || output.includes('one free')
+      metric: "[baseline] answer is 1"
+    - type: llm-rubric
+      metric: "[baseline] correct step-by-step counting"
+      value: >
+        Score 3: Arrives at 1 free arm
+        Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2
+        of those shake hands with each other, leaving 1 free
+        Score 5: Also explains why shaking hands with itself uses 2 arms (one from each
+        side of the handshake)
+
+- description: "brain twister: circle arrangement — who is right of Alan"
+  vars:
+    task: >
+      Five people are standing in a circle. Alan is to the left of Bob, Bob is to
+      the left of Colin, Colin is to the left of Dave, and Dave is to the left of
+      Emily. Who is standing to the right of Alan?
+  assert:
+    - type: javascript
+      value: output.toLowerCase().includes('emily')
+      metric: "[baseline] Emily is to Alan's right"
+    - type: llm-rubric
+      metric: "[proficient] circular arrangement reasoning"
+      value: >
+        Score 3: Correctly identifies Emily as standing to Alan's right
+        Score 4: Also explains the circular logic: Alan → Bob → Colin → Dave → Emily →
+        Alan, so Emily wraps around to stand to Alan's right
+        Score 5: Also distinguishes that "left of" in a circle means the next person
+        going clockwise, and "right of" means the previous person (Emily)
+
+- description: "brain twister: stories above ground"
+  vars:
+    task: >
+      I exit a building on the third floor and step directly onto street level
+      (ground level). How many stories is the building above ground?
+  assert:
+    - type: javascript
+      value: /\b2\b/.test(output) || output.includes('two stor')
+      metric: "[baseline] answer is 2"
+    - type: llm-rubric
+      metric: "[baseline] correct spatial reasoning"
+      value: >
+        Score 3: Correctly states the building is 2 stories above ground
+        Score 4: Also explains: if the third floor is at street level, then floors 1
+        and 2 are underground, so only floor 3 (ground) and floors above it count as
+        above ground — but floor 3 is ground level, so floors 4 and up are above ground
+        Score 5: Wait — re-reading: the building has floors below ground. Floor 3 = street.
+        Floors above ground = the building above street level. Since floor 3 is street,
+        the building itself has how many stories? The building has at least 3 floors (1,2,3)
+        of which 2 are underground. So the answer depends on interpretation: the structure
+        above ground starts at floor 3. A score 5 response recognizes and addresses the
+        ambiguity clearly.
+
+- description: "brain twister: sentence without Bible words"
+  vars:
+    task: >
+      Write a single sentence that does not contain any word that appears
+      in the Bible. (Hint: avoid common words — nearly all everyday English
+      words appear in the Bible.)
+  assert:
+    - type: llm-rubric
+      metric: "[expert] uses obscure technical vocabulary"
+      value: >
+        Score 3: Attempts a sentence using technical or modern terminology
+        Score 4: Also explains the strategy: use post-1800s technical terms (cryptocurrency,
+        CRISPR, nanotechnology, etc.) that couldn't appear in Biblical texts
+        Score 5: Also acknowledges this is extremely hard to guarantee since Biblical
+        translations use almost all common English words, and demonstrates awareness
+        of which words are risky (the, and, or, is, a, be, not, etc.)

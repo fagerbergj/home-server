@@ -1,52 +1,70 @@
 #!/usr/bin/env bash
-# Run promptfoo evals against the llm-swap stack, one model at a time.
+# Run promptfoo evals against the llm-swap stack.
 # Judge (llm-judge) must be running: make -C .. judge-up
 #
 # Usage:
-#   ./eval.sh                         # general knowledge, all models
-#   ./eval.sh qwen3.5-9b             # general knowledge, single model
-#   ./eval.sh --math [model]          # GSM8K math word problems
-#   ./eval.sh --coding [model]        # HumanEval Python coding
-#   ./eval.sh --function-call [model] # BFCL function calling
-#   ./eval.sh --tools [model]         # document-pipeline tool routing
+#   ./eval.sh                             # all models, their default suites
+#   ./eval.sh llama-3.3-70b              # one model, its default suites
+#   ./eval.sh --suite coding             # one suite, all models
+#   ./eval.sh --suite math qwen3.6-35b  # one suite, one model
+#   ./eval.sh --tools [model]            # document-pipeline routing (opt-in)
 
 set -euo pipefail
 
-# Select test suite from first arg
-CONFIG=promptfooconfig.llm-swap.yaml
-case "${1:-}" in
-  --math)          CONFIG=promptfooconfig.math.yaml;          shift ;;
-  --coding)        CONFIG=promptfooconfig.coding.yaml;        shift ;;
-  --function-call) CONFIG=promptfooconfig.function-call.yaml; shift ;;
-  --tools)         CONFIG=promptfooconfig.tools.yaml;         shift ;;
-esac
+python3 - "$@" << 'EOF'
+import sys, os, subprocess, yaml
 
-# Model → max concurrent test cases.
-# Bigger/slower models get lower concurrency to avoid timeout pile-ups.
-declare -A CONCURRENCY=(
-  ["llama-3.3-70b"]=1
-  ["qwen3.6-35b"]=2
-  ["qwen3.5-9b"]=4
-  ["qwen3-coder-next"]=1
-)
+CONFIG_FILE = 'eval-config.yaml'
+SUITE_CONFIG = {
+    'architecture':   'promptfooconfig.architecture.yaml',
+    'coding':         'promptfooconfig.coding.yaml',
+    'math':           'promptfooconfig.math.yaml',
+    'function-call':  'promptfooconfig.function-call.yaml',
+    'brain-twisters': 'promptfooconfig.brain-twisters.yaml',
+    'tools':          'promptfooconfig.tools.yaml',
+}
 
-if [[ $# -gt 0 ]]; then
-  MODELS=("$@")
-else
-  MODELS=("${!CONCURRENCY[@]}")
-fi
+args = sys.argv[1:]
+suite_filter = None
+model_filter = None
 
-for model in "${MODELS[@]}"; do
-  concurrency="${CONCURRENCY[$model]:-2}"
-  echo ""
-  echo "════════════════════════════════════════"
-  echo "  Suite: $CONFIG"
-  echo "  Model: $model  (concurrency: $concurrency)"
-  echo "════════════════════════════════════════"
-  export MODEL="$model"
-  npx promptfoo@latest eval -c "$CONFIG" --max-concurrency "$concurrency" \
-    --output "evals/${model}-$(basename $CONFIG .yaml).json"
-done
+if args and args[0] == '--tools':
+    suite_filter = 'tools'
+    args = args[1:]
+elif args and args[0] == '--suite':
+    suite_filter = args[1]
+    args = args[2:]
 
-echo ""
-echo "All done. View results: npx promptfoo@latest view"
+if args:
+    model_filter = args[0]
+
+config = yaml.safe_load(open(CONFIG_FILE))
+
+for model, cfg in config['models'].items():
+    if model_filter and model != model_filter:
+        continue
+    concurrency = cfg['concurrency']
+    if suite_filter:
+        suites = [suite_filter]
+    else:
+        suites = cfg['suites']
+
+    for suite in suites:
+        cfgfile = SUITE_CONFIG.get(suite)
+        if not cfgfile:
+            print(f'Unknown suite: {suite}', file=sys.stderr)
+            continue
+        print(f'\n{"═"*50}')
+        print(f'  Suite: {suite:<16} Model: {model}  (×{concurrency})')
+        print(f'{"═"*50}')
+        env = {**os.environ, 'MODEL': model}
+        subprocess.run(
+            ['npx', 'promptfoo@latest', 'eval',
+             '-c', cfgfile,
+             '--max-concurrency', str(concurrency),
+             '--output', f'evals/{model}-{suite}.json'],
+            env=env, check=False
+        )
+
+print('\nAll done. View: npx promptfoo@latest view')
+EOF
