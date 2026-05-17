@@ -25,11 +25,11 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
-  # Always-on judge for promptfoo — runs alongside any llama-swap model (~5 GB, fits fine).
+  # Always-on judge for promptfoo — runs alongside any llm-swap model (~5 GB, fits fine).
   # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
-  llama-judge:
+  llm-judge:
     image: ghcr.io/ggml-org/llama.cpp:server-rocm
-    container_name: llama-judge
+    container_name: llm-judge
     profiles: ["judge"]
     ports:
       - "11437:11437"
@@ -53,14 +53,14 @@ services:
       - "993"
     restart: unless-stopped
 
-  # Opt-in: `docker compose --profile swap up -d --build llama-swap`
-  # OpenAI-compatible API on port 11436 backed by llama-swap + llama.cpp.
-  # Model routing is in llama-swap.yaml — update document-pipeline env vars to point here.
-  llama-swap:
+  # Opt-in: `docker compose --profile swap up -d --build llm-swap`
+  # OpenAI-compatible API on port 11436 backed by llm-swap + llama.cpp.
+  # Model routing is in llm-swap.yaml — update document-pipeline env vars to point here.
+  llm-swap:
     build:
       context: .
-      dockerfile: llama-swap.Dockerfile
-    container_name: llama-swap
+      dockerfile: llm-swap.Dockerfile
+    container_name: llm-swap
     profiles: ["swap"]
     ports:
       - "11436:11436"
@@ -68,7 +68,7 @@ services:
       - ROCBLAS_USE_HIPBLASLT=0
       - HF_TOKEN=${HF_TOKEN:-}
     volumes:
-      - ./llama-swap.yaml:/app/config.yaml:ro
+      - ./llm-swap.yaml:/app/config.yaml:ro
       - /mnt/cache/huggingface:/root/.cache/huggingface
     devices:
       - /dev/kfd
