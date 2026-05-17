@@ -44,15 +44,27 @@ RUN wget -qO ffmpeg.tar.xz https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.
     && make install
 
 # Stage 2: runtime
-FROM rocm/pytorch:rocm7.2.3_ubuntu22.04_py3.10_pytorch_release_2.10.0
+# rocm/pytorch (used in the build stages above) ships a full CUDA-built
+# PyTorch we don't use, plus MIOpen kernels for every GPU, build tools,
+# and multiple Python envs — ~50 GB of dead weight in the final image.
+# rocm/dev-ubuntu-22.04:7.2.3-complete provides the ROCm 7.2.3 userspace
+# (hipblas, hip-runtime, hsa-runtime) that whisper.cpp links against,
+# without any of that. PyTorch comes from the ROCm wheel below; its wheel
+# bundles its own ROCm libs but coexists fine with the SDK's.
+FROM rocm/dev-ubuntu-22.04:7.2.3-complete
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HF_HOME=/root/.cache/huggingface
 
+# python3.10 matches the version the ROCm PyTorch wheels target. libsndfile1
+# is for soundfile (used in app.py's _load_audio_dict).
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3.10 python3-pip python3.10-venv \
         libsndfile1 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3 /usr/local/bin/python3
 
 # Install our self-built FFmpeg 6 (binary + shared libs) under /opt/ffmpeg6.
 COPY --from=ffmpeg6-build /opt/ffmpeg6 /opt/ffmpeg6
@@ -67,14 +79,9 @@ RUN ln -s /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
 
 WORKDIR /app
 
-# Replace the base image's bundled PyTorch (which is the CUDA 12.8 build,
-# torch==2.10.0+cu128, despite the rocm/pytorch image tag) with an actual
-# ROCm-built PyTorch from pytorch.org's ROCm wheel index. The ROCm 6.4
-# wheels bundle their own ROCm runtime libs and work fine on top of the
-# ROCm 7.2.3 SDK from the base image — HIP ABI is backwards-compatible.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 uninstall -y torch torchaudio torchvision pytorch-triton triton || true
-
+# Install ROCm-built PyTorch from pytorch.org's ROCm wheel index. The wheel
+# bundles its own ROCm runtime libs and works fine on top of the ROCm 7.2.3
+# userspace from the base image — HIP ABI is backwards-compatible.
 # pytorch.org doesn't publish torchcodec for the ROCm index, so we don't
 # include it here. pyannote will install the PyPI torchcodec as a dep; that
 # wheel was compiled against the CUDA torch ABI and dlopen-fails on our
