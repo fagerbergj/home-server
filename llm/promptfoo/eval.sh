@@ -32,8 +32,8 @@ for model in "${MODELS[@]}"; do
   echo "════════════════════════════════════════"
   echo "  Model: $model  (concurrency: $concurrency)"
   echo "════════════════════════════════════════"
-  MODEL="$model" \
-    npx promptfoo@latest eval -c "$CONFIG" --max-concurrency "$concurrency" --output "evals/${model}.json"
+  export MODEL="$model"
+  npx promptfoo@latest eval -c "$CONFIG" --max-concurrency "$concurrency" --output "evals/${model}.json"
 done
 
 echo ""

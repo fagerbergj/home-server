@@ -13,10 +13,10 @@ evaluateOptions:
   timeoutMs: 600000
 
 providers:
-  - id: openai:chat:${MODEL:-qwen3.5-9b}
+  - id: openai:chat:$MODEL
     config:
       baseURL: http://jason-server:11436/v1
-      apiKey: none
+      apiKey: ignored
 
 prompts:
   - "{{task}}"
@@ -32,7 +32,7 @@ defaultTest:
       id: openai:chat:prometheus-7b
       config:
         baseURL: http://jason-server:11437/v1
-        apiKey: none
+        apiKey: ignored
     rubricPrompt: |
       ###Task Description:
       An instruction (might include an Input inside it), a response to evaluate, a reference answer that gets a score of 5, and a score rubric representing a evaluation criteria are given.
