@@ -28,6 +28,9 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
+      --no-mmap
+      --split-mode tensor
+      -fit off
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -70,12 +73,19 @@ models:
       -c 8192
       --port 9999
 
+  # --no-mmap is critical for large models (>30GB): mmap'd reads serialize on
+  # page faults (single-threaded), turning a 1-min load into 30+ minutes.
+  # Direct sequential reads load 45GB in ~37s. Costs: higher peak RSS during
+  # load (full model in RAM, ~45GB) and no warm-restart page cache benefit.
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
+      --no-mmap
+      --split-mode tensor
+      -fit off
       -ngl 999
       -c 16384
       --port 9999
