@@ -25,32 +25,26 @@ services:
       - "993"   # render GID on host (group name doesn't exist inside ollama:rocm image)
     restart: unless-stopped
 
-  # Always-on judge for promptfoo — runs alongside any llm-swap model (~5 GB, fits fine).
+  # Always-on judge for promptfoo — CPU-only (-ngl 0) to keep VRAM free for the
+  # model under test. Evals are batch jobs so slower CPU inference is acceptable.
   # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
   llm-judge:
-    image: ghcr.io/ggml-org/llama.cpp:server-rocm
+    image: ghcr.io/ggml-org/llama.cpp:server-cpu
     container_name: llm-judge
     profiles: ["judge"]
     ports:
       - "11437:11437"
     environment:
-      - ROCBLAS_USE_HIPBLASLT=0
       - HF_TOKEN=${HF_TOKEN:-}
     command: >
       -hf prometheus-eval/prometheus-7b-v2.0-GGUF:Q4_K_M
       --alias prometheus-7b
-      -ngl 999
+      -ngl 0
       -c 8192
       --host 0.0.0.0
       --port 11437
     volumes:
       - /mnt/cache/huggingface:/root/.cache/huggingface
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-      - "993"
     restart: unless-stopped
 
   # Opt-in: `docker compose --profile swap up -d --build llm-swap`
