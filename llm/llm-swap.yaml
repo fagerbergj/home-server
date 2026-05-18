@@ -80,9 +80,7 @@ models:
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
       --split-mode layer
       -ngl 999
-      -c 65536
-      --cache-type-k q8_0
-      --cache-type-v q8_0
+      -c 16384
       --port 9999
 
   "qwen3-embed":
