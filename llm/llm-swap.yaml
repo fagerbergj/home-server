@@ -33,8 +33,6 @@ models:
       -fit off
       -ngl 999
       -c 16384
-      --cache-type-k q8_0
-      --cache-type-v q8_0
       --port 9999
 
   "qwen3.6-35b":
