@@ -15,7 +15,7 @@ services:
       # netns-sharing dependents (qbittorrent, prowlarr, jackett, flaresolverr),
       # which forces a 15-30 min peer-pool rebuild and qBit "firewalled" status
       # during recovery. Update manually with `docker compose pull && up -d`.
-      - WATCHTOWER_DISABLE_CONTAINERS=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,document-pipeline,nginx-proxy-manager,authentik-server,authentik-worker,authentik-postgres,authentik-redis,faster-whisper,gluetun,qbittorrent,prowlarr,jackett,flaresolverr
+      - WATCHTOWER_DISABLE_CONTAINERS=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,document-pipeline,nginx-proxy-manager,authentik-server,authentik-worker,authentik-postgres,authentik-redis,faster-whisper,gluetun,qbittorrent,prowlarr,jackett,flaresolverr,ollama,llm-swap,llm-judge
       - WATCHTOWER_NOTIFICATIONS=email
       - WATCHTOWER_NOTIFICATION_EMAIL_FROM=jf.fagerberg@gmail.com
       - WATCHTOWER_NOTIFICATION_EMAIL_TO=jf.fagerberg@gmail.com
