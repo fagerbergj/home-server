@@ -1,5 +1,5 @@
 healthCheckTimeout: 1200  # 70b loading + large KV cache init takes time
-logLevel: info
+logLevel: debug
 
 groups:
   # Only one chat model loaded at a time; won't evict the embed group.
