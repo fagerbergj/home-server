@@ -1,4 +1,4 @@
-healthCheckTimeout: 600   # 70b loading takes time
+healthCheckTimeout: 1200  # 70b loading + large KV cache init takes time
 logLevel: info
 
 groups:
@@ -80,9 +80,9 @@ models:
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
       --split-mode layer
       -ngl 999
-      -c 262144
-      --cache-type-k q4_0
-      --cache-type-v q4_0
+      -c 65536
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --port 9999
 
   "qwen3-embed":
