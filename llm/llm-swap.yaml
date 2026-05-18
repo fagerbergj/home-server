@@ -78,7 +78,6 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
-      --split-mode layer
       -ngl 999
       -c 16384
       --port 9999
