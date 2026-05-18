@@ -1,0 +1,1834 @@
+{
+  "evalId": "eval-8qC-2026-05-17T23:33:26",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-05-17T23:33:26.218Z",
+    "prompts": [
+      {
+        "id": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "raw": "{{task}}",
+        "label": "{{task}}",
+        "provider": "openai:chat:qwen3.5-9b",
+        "metrics": {
+          "score": 30.4,
+          "testPassCount": 8,
+          "testFailCount": 1,
+          "testErrorCount": 0,
+          "assertPassCount": 13,
+          "assertFailCount": 0,
+          "totalLatencyMs": 79400,
+          "tokenUsage": {
+            "prompt": 438,
+            "completion": 2959,
+            "cached": 0,
+            "total": 3397,
+            "numRequests": 9,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 6043,
+              "prompt": 4901,
+              "completion": 1142,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {
+            "[proficient] yes — spin resets to 1/6 safety": 5,
+            "[baseline] single trip — place all three in compartments": 5,
+            "[proficient] no advantage — no information revealed": 5,
+            "[baseline] races all six simultaneously": 0.4,
+            "[baseline] identifies two pounds of bricks": 1,
+            "[baseline] correct reasoning": 5,
+            "[baseline] answer is 2": 1,
+            "[baseline] correct spatial reasoning": 5,
+            "[expert] uses obscure technical vocabulary": 3,
+            "[baseline] Emily is to Alan's right": 1,
+            "[proficient] circular arrangement reasoning": 5,
+            "[baseline] answer is 1": 1,
+            "[baseline] correct step-by-step counting": 5
+          },
+          "namedScoresCount": {
+            "[proficient] yes — spin resets to 1/6 safety": 1,
+            "[baseline] single trip — place all three in compartments": 1,
+            "[proficient] no advantage — no information revealed": 1,
+            "[baseline] races all six simultaneously": 1,
+            "[baseline] identifies two pounds of bricks": 1,
+            "[baseline] correct reasoning": 1,
+            "[baseline] answer is 2": 1,
+            "[baseline] correct spatial reasoning": 1,
+            "[expert] uses obscure technical vocabulary": 1,
+            "[baseline] Emily is to Alan's right": 1,
+            "[proficient] circular arrangement reasoning": 1,
+            "[baseline] answer is 1": 1,
+            "[baseline] correct step-by-step counting": 1
+          },
+          "namedScoreWeights": {
+            "[proficient] yes — spin resets to 1/6 safety": 1,
+            "[baseline] single trip — place all three in compartments": 1,
+            "[proficient] no advantage — no information revealed": 1,
+            "[baseline] races all six simultaneously": 1,
+            "[baseline] identifies two pounds of bricks": 1,
+            "[baseline] correct reasoning": 1,
+            "[baseline] answer is 2": 1,
+            "[baseline] correct spatial reasoning": 1,
+            "[expert] uses obscure technical vocabulary": 1,
+            "[baseline] Emily is to Alan's right": 1,
+            "[proficient] circular arrangement reasoning": 1,
+            "[baseline] answer is 1": 1,
+            "[baseline] correct step-by-step counting": 1
+          },
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "Aggregate score 0.40 < 0.8 threshold",
+        "gradingResult": {
+          "pass": false,
+          "score": 0.4,
+          "reason": "Aggregate score 0.40 < 0.8 threshold",
+          "namedScores": {
+            "[baseline] races all six simultaneously": 0.4
+          },
+          "namedScoreWeights": {
+            "[baseline] races all six simultaneously": 1
+          },
+          "tokensUsed": {
+            "total": 1075,
+            "prompt": 808,
+            "completion": 267,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[baseline] races all six simultaneously",
+                "value": "Score 3: Arrives at the correct answer of racing all six horses at the same time Score 4: Also notes this gives a complete ranking in a single race Score 5: Also explains why multi-round tournament approaches are unnecessary and overcomplicated\n"
+              },
+              "pass": true,
+              "score": 0.4,
+              "reason": "The response correctly identifies the need for a tournament-style elimination method and explains the process in detail. However, it does not explicitly state that multi-round tournament approaches are unnecessary and overcomplicated, nor does it provide a clear conclusion that the winner of the final race is guaranteed to be the fastest horse overall.",
+              "tokensUsed": {
+                "total": 1075,
+                "prompt": 808,
+                "completion": 267,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1964",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Arrives at the correct answer of racing all six horses at the same time Score 4: Also notes this gives a complete ranking in a single race Score 5: Also explains why multi-round tournament approaches are unnecessary and overcomplicated\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nTo find the fastest horse among six with the fewest number of races, you can use a tournament-style elimination method. Here is the optimal step-by-step approach:\n\n### Step 1: Initial Group Races\nDivide the 6 horses into two groups of 3 and race them.\n*   **Race 1:** Horses A1, A2, A3\n*   **Race 2:** Horses B1, B2, B3\n\n*(Assume the horses are labeled A1-A3 and B1-B3 based on their finishing order in these races, where the number indicates rank within the group, e.g., A1 is faster than A2).*\n\n**Result:** We now know the ranking within each group, but we don't know how the two groups compare to each other.\n*   Fastest in Group A: A1\n*   Fastest in Group B: B1\n\n### Step 2: The Championship Race\nRace the winners of the two initial groups against each other.\n*   **Race 3:** A1 vs. B1 (plus one other horse from each group, usually the second place, to maximize information, but strictly speaking, just racing the winners is the critical step).\n\nLet's assume the result of Race 3 is: **A1 > B1 > A2** (or any other order).\n\n**Logical Deduction:**\n1.  **A1** is the fastest overall because it beat B1 (the winner of the other group) and was the winner of its own group.\n2.  **B1** is the second-fastest candidate because it lost only to A1.\n3.  **A2** is a candidate because it lost only to A1 in its group, but we don't know if it's faster than B1.\n4.  **B2** cannot be in the top 2 because it lost to B1, and B1 lost to A1.\n5.  **A3, B3**, etc., are eliminated because they lost to horses that are already eliminated or slower than the current leaders.\n\n### The Conclusion\nIf you simply want to identify **the single fastest horse**, you do not need a complex elimination bracket.\n\n1.  **Race 1:** Race 3 horses.\n2.  **Race 2:** Race the remaining 3 horses.\n3.  **Race 3:** Race the winners of Race 1 and Race 2.\n\nThe winner of **Race 3** is guaranteed to be the fastest horse overall.\n\n**Answer:**\nThe best way is to hold **3 races**:\n1.  Split the 6 horses into two groups of 3 and race them.\n2.  Take the winner from each of those two races.\n3.  Race those two winners against each other. The winner of this final race is the fastest horse.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "e5eaad1e-a332-42ac-9801-15faa0fe4914",
+        "latencyMs": 14851,
+        "namedScores": {
+          "[baseline] races all six simultaneously": 0.4
+        },
+        "prompt": {
+          "raw": "You have six horses and want to find out which is the fastest. What is the best way to do this?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "To find the fastest horse among six with the fewest number of races, you can use a tournament-style elimination method. Here is the optimal step-by-step approach:\n\n### Step 1: Initial Group Races\nDivide the 6 horses into two groups of 3 and race them.\n*   **Race 1:** Horses A1, A2, A3\n*   **Race 2:** Horses B1, B2, B3\n\n*(Assume the horses are labeled A1-A3 and B1-B3 based on their finishing order in these races, where the number indicates rank within the group, e.g., A1 is faster than A2).*\n\n**Result:** We now know the ranking within each group, but we don't know how the two groups compare to each other.\n*   Fastest in Group A: A1\n*   Fastest in Group B: B1\n\n### Step 2: The Championship Race\nRace the winners of the two initial groups against each other.\n*   **Race 3:** A1 vs. B1 (plus one other horse from each group, usually the second place, to maximize information, but strictly speaking, just racing the winners is the critical step).\n\nLet's assume the result of Race 3 is: **A1 > B1 > A2** (or any other order).\n\n**Logical Deduction:**\n1.  **A1** is the fastest overall because it beat B1 (the winner of the other group) and was the winner of its own group.\n2.  **B1** is the second-fastest candidate because it lost only to A1.\n3.  **A2** is a candidate because it lost only to A1 in its group, but we don't know if it's faster than B1.\n4.  **B2** cannot be in the top 2 because it lost to B1, and B1 lost to A1.\n5.  **A3, B3**, etc., are eliminated because they lost to horses that are already eliminated or slower than the current leaders.\n\n### The Conclusion\nIf you simply want to identify **the single fastest horse**, you do not need a complex elimination bracket.\n\n1.  **Race 1:** Race 3 horses.\n2.  **Race 2:** Race the remaining 3 horses.\n3.  **Race 3:** Race the winners of Race 1 and Race 2.\n\nThe winner of **Race 3** is guaranteed to be the fastest horse overall.\n\n**Answer:**\nThe best way is to hold **3 races**:\n1.  Split the 6 horses into two groups of 3 and race them.\n2.  Take the winner from each of those two races.\n3.  Race those two winners against each other. The winner of this final race is the fastest horse.",
+          "tokenUsage": {
+            "total": 645,
+            "prompt": 35,
+            "completion": 610,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 14851,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "2840",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:41 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 0.4,
+        "success": false,
+        "testCase": {
+          "description": "brain twister: horse race — simplest solution",
+          "vars": {
+            "task": "You have six horses and want to find out which is the fastest. What is the best way to do this?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] races all six simultaneously",
+              "value": "Score 3: Arrives at the correct answer of racing all six horses at the same time Score 4: Also notes this gives a complete ranking in a single race Score 5: Also explains why multi-round tournament approaches are unnecessary and overcomplicated\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "task": "You have six horses and want to find out which is the fastest. What is the best way to do this?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "2840",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:41 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 1
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 5,
+          "reason": "Aggregate score 5.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[proficient] no advantage — no information revealed": 5
+          },
+          "namedScoreWeights": {
+            "[proficient] no advantage — no information revealed": 1
+          },
+          "tokensUsed": {
+            "total": 944,
+            "prompt": 830,
+            "completion": 114,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[proficient] no advantage — no information revealed",
+                "value": "Score 3: Correctly states there is no advantage to switching in this version Score 4: Also explains why: the host did not reveal what was behind any door, so no new information was provided Score 5: Also contrasts with the classic Monty Hall problem where the host's deliberate goat reveal changes the probabilities\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly states that there is no advantage to switching in this specific scenario, and it provides a clear and logical explanation as to why. It contrasts the scenario with the classic Monty Hall problem, explaining the difference in the host's actions and the resulting probabilities. The response also correctly identifies the initial probabilities and the implications of switching or staying. The explanation is thorough and aligns with the rubric's requirements for a score of 5.",
+              "tokensUsed": {
+                "total": 944,
+                "prompt": 830,
+                "completion": 114,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1184",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly states there is no advantage to switching in this version Score 4: Also explains why: the host did not reveal what was behind any door, so no new information was provided Score 5: Also contrasts with the classic Monty Hall problem where the host's deliberate goat reveal changes the probabilities\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nNo, there is **no advantage** to switching in this specific scenario.\n\nHere is the step-by-step logical deduction:\n\n### 1. The Standard Monty Hall Problem vs. Your Scenario\nIn the classic \"Monty Hall\" problem, the host **must** open a door that reveals a goat (rotten vegetables) and **must** offer you the chance to switch. This constraint forces the host to reveal information, which changes the probabilities.\n\nHowever, your scenario describes a different situation:\n*   You pick Door 1.\n*   The host simply asks, \"Would you like Door 2 instead?\"\n*   **Crucially**, the host has not opened any doors, nor has he guaranteed that Door 2 contains vegetables. He might be offering Door 2 because it has the gold bar, or because it has vegetables.\n\n### 2. Analyzing the Probabilities\nLet's look at the initial probabilities before any doors are opened:\n*   Probability Gold is behind Door 1: $1/3$\n*   Probability Gold is behind Door 2: $1/3$\n*   Probability Gold is behind Door 3: $1/3$\n\nSince the host has not revealed any information (by opening a door), the probability that the gold bar is behind Door 2 remains exactly **$1/3$**.\n\nIf you switch to Door 2, you are essentially betting that the gold bar is behind Door 2. Since the probability is $1/3$, your chance of winning is the same as if you had stayed with Door 1 (which also has a $1/3$ chance).\n\n### 3. Why the \"Switching Advantage\" Doesn't Apply Here\nThe advantage of switching in the classic problem arises because the host's action is **forced**.\n*   **Classic Scenario:** If you pick Door 1, and the gold is behind Door 2, the host *must* show you Door 3. If the gold is behind Door 3, the host *must* show you Door 2. By showing you a specific door, he concentrates the $2/3$ probability of the other two doors onto the single unopened door he didn't show.\n*   **Your Scenario:** The host is making a voluntary offer. He could be offering you the winning door. There is no mechanism forcing him to eliminate a losing option. Therefore, Door 2 is just another random door with a $1/3$ chance of holding the prize.\n\n### Conclusion\nIn this specific variation where the host voluntarily offers a switch without opening a door to reveal a loser:\n*   Probability of winning by staying (Door 1): **$1/3$**\n*   Probability of winning by switching (Door 2): **$1/3$**\n\n**Answer:** It does not matter whether you switch or stay; your chances of winning are equal.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "232f51dd-4a9e-4859-bbe3-0230396fa061",
+        "latencyMs": 14835,
+        "namedScores": {
+          "[proficient] no advantage — no information revealed": 5
+        },
+        "prompt": {
+          "raw": "Suppose you're on a game show. There are three doors: a gold bar behind one, rotten vegetables behind the others. You pick door No. 1. The host then asks \"Would you like door No. 2 instead?\" Is there any advantage to switching?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "No, there is **no advantage** to switching in this specific scenario.\n\nHere is the step-by-step logical deduction:\n\n### 1. The Standard Monty Hall Problem vs. Your Scenario\nIn the classic \"Monty Hall\" problem, the host **must** open a door that reveals a goat (rotten vegetables) and **must** offer you the chance to switch. This constraint forces the host to reveal information, which changes the probabilities.\n\nHowever, your scenario describes a different situation:\n*   You pick Door 1.\n*   The host simply asks, \"Would you like Door 2 instead?\"\n*   **Crucially**, the host has not opened any doors, nor has he guaranteed that Door 2 contains vegetables. He might be offering Door 2 because it has the gold bar, or because it has vegetables.\n\n### 2. Analyzing the Probabilities\nLet's look at the initial probabilities before any doors are opened:\n*   Probability Gold is behind Door 1: $1/3$\n*   Probability Gold is behind Door 2: $1/3$\n*   Probability Gold is behind Door 3: $1/3$\n\nSince the host has not revealed any information (by opening a door), the probability that the gold bar is behind Door 2 remains exactly **$1/3$**.\n\nIf you switch to Door 2, you are essentially betting that the gold bar is behind Door 2. Since the probability is $1/3$, your chance of winning is the same as if you had stayed with Door 1 (which also has a $1/3$ chance).\n\n### 3. Why the \"Switching Advantage\" Doesn't Apply Here\nThe advantage of switching in the classic problem arises because the host's action is **forced**.\n*   **Classic Scenario:** If you pick Door 1, and the gold is behind Door 2, the host *must* show you Door 3. If the gold is behind Door 3, the host *must* show you Door 2. By showing you a specific door, he concentrates the $2/3$ probability of the other two doors onto the single unopened door he didn't show.\n*   **Your Scenario:** The host is making a voluntary offer. He could be offering you the winning door. There is no mechanism forcing him to eliminate a losing option. Therefore, Door 2 is just another random door with a $1/3$ chance of holding the prize.\n\n### Conclusion\nIn this specific variation where the host voluntarily offers a switch without opening a door to reveal a loser:\n*   Probability of winning by staying (Door 1): **$1/3$**\n*   Probability of winning by switching (Door 2): **$1/3$**\n\n**Answer:** It does not matter whether you switch or stay; your chances of winning are equal.",
+          "tokenUsage": {
+            "total": 677,
+            "prompt": 68,
+            "completion": 609,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 14835,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "3107",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:41 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 5,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: modified Monty Hall — no information revealed",
+          "vars": {
+            "task": "Suppose you're on a game show. There are three doors: a gold bar behind one, rotten vegetables behind the others. You pick door No. 1. The host then asks \"Would you like door No. 2 instead?\" Is there any advantage to switching?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] no advantage — no information revealed",
+              "value": "Score 3: Correctly states there is no advantage to switching in this version Score 4: Also explains why: the host did not reveal what was behind any door, so no new information was provided Score 5: Also contrasts with the classic Monty Hall problem where the host's deliberate goat reveal changes the probabilities\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "task": "Suppose you're on a game show. There are three doors: a gold bar behind one, rotten vegetables behind the others. You pick door No. 1. The host then asks \"Would you like door No. 2 instead?\" Is there any advantage to switching?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "3107",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:41 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 5,
+          "reason": "Aggregate score 5.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[proficient] yes — spin resets to 1/6 safety": 5
+          },
+          "namedScoreWeights": {
+            "[proficient] yes — spin resets to 1/6 safety": 1
+          },
+          "tokensUsed": {
+            "total": 694,
+            "prompt": 600,
+            "completion": 94,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[proficient] yes — spin resets to 1/6 safety",
+                "value": "Score 3: Correctly recommends spinning (from your perspective as the one being shot at) Score 4: Also explains that without spinning, the remaining chamber is the only empty one, making the shot certain to fire Score 5: Also shows the math: not spinning = certain death, spinning = 1/6 chance of death\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies the best strategy by comparing the probabilities of being shot in two scenarios. It also correctly calculates the probability of survival in each scenario, showing that spinning the cylinder gives a non-zero chance of survival, while not spinning guarantees death. The response also correctly applies the principles of probability to reach the conclusion that spinning is the best strategy.",
+              "tokensUsed": {
+                "total": 694,
+                "prompt": 600,
+                "completion": 94,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1107",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly recommends spinning (from your perspective as the one being shot at) Score 4: Also explains that without spinning, the remaining chamber is the only empty one, making the shot certain to fire Score 5: Also shows the math: not spinning = certain death, spinning = 1/6 chance of death\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nThis is a classic probability puzzle. To determine the best strategy, we need to compare the probability of being shot in two scenarios: **spinning the cylinder again** versus **not spinning**.\n\n### Scenario 1: Spin the Cylinder Again\nIf your opponent spins the cylinder again, the position of the bullets is randomized.\n*   Total chambers: 6\n*   Number of bullets: 5\n*   Probability of firing a bullet: $5/6$\n*   Probability of survival: $1/6$\n\n### Scenario 2: Do Not Spin (Pass the Gun)\nIf the cylinder is not spun, the gun remains in the exact same configuration it was in when your opponent fired.\n*   We know the gun fired an empty chamber (since your opponent survived).\n*   This means the \"empty\" chamber is currently in the firing position.\n*   Since there are 5 bullets and 1 empty chamber, and the gun just fired the empty chamber, the next chamber in the sequence must contain a bullet.\n*   Probability of firing a bullet: $1$ (or $100\\%$)\n*   Probability of survival: $0$\n\n### Logical Deduction\n*   If you **spin**, you have a $1/6$ ($\\approx 16.7\\%$) chance of surviving.\n*   If you **do not spin**, you have a $0\\%$ chance of surviving because the empty chamber has just been fired, leaving only bullets for the next shot.\n\nTherefore, spinning the cylinder gives you a non-zero chance of survival, whereas not spinning guarantees you will be shot.\n\n### Conclusion\n**Yes, they should spin the chambers again.**\n\nSpinning resets the probability to $1/6$ in your favor, while not spinning guarantees death because the single empty chamber has already been used.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "345ba8c5-f5ae-4343-ab7c-08de53180aef",
+        "latencyMs": 10557,
+        "namedScores": {
+          "[proficient] yes — spin resets to 1/6 safety": 5
+        },
+        "prompt": {
+          "raw": "In a game of Russian roulette with a six-shooter containing five bullets, your opponent fires at themselves, survives, and now it is your turn. Should they spin the chambers again before handing it to you?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "This is a classic probability puzzle. To determine the best strategy, we need to compare the probability of being shot in two scenarios: **spinning the cylinder again** versus **not spinning**.\n\n### Scenario 1: Spin the Cylinder Again\nIf your opponent spins the cylinder again, the position of the bullets is randomized.\n*   Total chambers: 6\n*   Number of bullets: 5\n*   Probability of firing a bullet: $5/6$\n*   Probability of survival: $1/6$\n\n### Scenario 2: Do Not Spin (Pass the Gun)\nIf the cylinder is not spun, the gun remains in the exact same configuration it was in when your opponent fired.\n*   We know the gun fired an empty chamber (since your opponent survived).\n*   This means the \"empty\" chamber is currently in the firing position.\n*   Since there are 5 bullets and 1 empty chamber, and the gun just fired the empty chamber, the next chamber in the sequence must contain a bullet.\n*   Probability of firing a bullet: $1$ (or $100\\%$)\n*   Probability of survival: $0$\n\n### Logical Deduction\n*   If you **spin**, you have a $1/6$ ($\\approx 16.7\\%$) chance of surviving.\n*   If you **do not spin**, you have a $0\\%$ chance of surviving because the empty chamber has just been fired, leaving only bullets for the next shot.\n\nTherefore, spinning the cylinder gives you a non-zero chance of survival, whereas not spinning guarantees you will be shot.\n\n### Conclusion\n**Yes, they should spin the chambers again.**\n\nSpinning resets the probability to $1/6$ in your favor, while not spinning guarantees death because the single empty chamber has already been used.",
+          "tokenUsage": {
+            "total": 446,
+            "prompt": 54,
+            "completion": 392,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 10557,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "2254",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:36 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 5,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: Russian roulette — spin or not",
+          "vars": {
+            "task": "In a game of Russian roulette with a six-shooter containing five bullets, your opponent fires at themselves, survives, and now it is your turn. Should they spin the chambers again before handing it to you?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] yes — spin resets to 1/6 safety",
+              "value": "Score 3: Correctly recommends spinning (from your perspective as the one being shot at) Score 4: Also explains that without spinning, the remaining chamber is the only empty one, making the shot certain to fire Score 5: Also shows the math: not spinning = certain death, spinning = 1/6 chance of death\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 2,
+        "vars": {
+          "task": "In a game of Russian roulette with a six-shooter containing five bullets, your opponent fires at themselves, survives, and now it is your turn. Should they spin the chambers again before handing it to you?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "2254",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:36 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 5,
+          "reason": "Aggregate score 5.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[baseline] single trip — place all three in compartments": 5
+          },
+          "namedScoreWeights": {
+            "[baseline] single trip — place all three in compartments": 1
+          },
+          "tokensUsed": {
+            "total": 545,
+            "prompt": 438,
+            "completion": 107,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[baseline] single trip — place all three in compartments",
+                "value": "Score 3: Correctly identifies the solution as putting all three in separate compartments and crossing once Score 4: Also notes the key difference from the classic puzzle is the compartments make separation unnecessary Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall into (applying the multi-trip solution when the constraint has changed)\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies the solution as putting all three in separate compartments and crossing once. It also notes the key difference from the classic puzzle is the compartments make separation unnecessary. Furthermore, it demonstrates awareness of the classic puzzle trap that LLMs fall into (applying the multi-trip solution when the constraint has changed). The response is concise and directly addresses the problem, providing a clear and correct solution.",
+              "tokensUsed": {
+                "total": 545,
+                "prompt": 438,
+                "completion": 107,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1157",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly identifies the solution as putting all three in separate compartments and crossing once Score 4: Also notes the key difference from the classic puzzle is the compartments make separation unnecessary Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall into (applying the multi-trip solution when the constraint has changed)\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nThis is a variation of the classic \"Wolf, Goat, and Cabbage\" riddle, but with a crucial twist that changes the solution entirely.\n\nIn the traditional version, the boat can only hold the farmer and one item at a time, creating a dilemma where the farmer must leave items alone on the bank (leading to the wolf eating the goat or the goat eating the cabbage).\n\nHowever, in your scenario, **the boat has three secure, separate compartments** and can transport **all three at once**.\n\n### The Solution\n\nThe farmer simply needs to:\n\n1.  Load the **wolf**, the **goat**, and the **cabbage** into the three separate compartments of the boat.\n2.  Row the boat across the river.\n3.  Unload all three items on the other side.\n\n### Why this works\nBecause the compartments are **secure and separate**, the wolf cannot eat the goat, and the goat cannot eat the cabbage while they are in the boat. There is no need for any complex back-and-forth trips or leaving items behind. The problem is solved in a single trip.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "aad7f82d-4d3a-41dd-aea9-417d58474cf3",
+        "latencyMs": 6030,
+        "namedScores": {
+          "[baseline] single trip — place all three in compartments": 5
+        },
+        "prompt": {
+          "raw": "A farmer needs to get a wolf, a goat, and a cabbage across a river. His boat has three secure, separate compartments and he can transport all three at once. What should he do?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "This is a variation of the classic \"Wolf, Goat, and Cabbage\" riddle, but with a crucial twist that changes the solution entirely.\n\nIn the traditional version, the boat can only hold the farmer and one item at a time, creating a dilemma where the farmer must leave items alone on the bank (leading to the wolf eating the goat or the goat eating the cabbage).\n\nHowever, in your scenario, **the boat has three secure, separate compartments** and can transport **all three at once**.\n\n### The Solution\n\nThe farmer simply needs to:\n\n1.  Load the **wolf**, the **goat**, and the **cabbage** into the three separate compartments of the boat.\n2.  Row the boat across the river.\n3.  Unload all three items on the other side.\n\n### Why this works\nBecause the compartments are **secure and separate**, the wolf cannot eat the goat, and the goat cannot eat the cabbage while they are in the boat. There is no need for any complex back-and-forth trips or leaving items behind. The problem is solved in a single trip.",
+          "tokenUsage": {
+            "total": 284,
+            "prompt": 52,
+            "completion": 232,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 6030,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "1666",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:32 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 5,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: river crossing with three compartments",
+          "vars": {
+            "task": "A farmer needs to get a wolf, a goat, and a cabbage across a river. His boat has three secure, separate compartments and he can transport all three at once. What should he do?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] single trip — place all three in compartments",
+              "value": "Score 3: Correctly identifies the solution as putting all three in separate compartments and crossing once Score 4: Also notes the key difference from the classic puzzle is the compartments make separation unnecessary Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall into (applying the multi-trip solution when the constraint has changed)\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 3,
+        "vars": {
+          "task": "A farmer needs to get a wolf, a goat, and a cabbage across a river. His boat has three secure, separate compartments and he can transport all three at once. What should he do?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "1666",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:32 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 3,
+          "reason": "Aggregate score 3.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[baseline] identifies two pounds of bricks": 1,
+            "[baseline] correct reasoning": 5
+          },
+          "namedScoreWeights": {
+            "[baseline] identifies two pounds of bricks": 1,
+            "[baseline] correct reasoning": 1
+          },
+          "tokensUsed": {
+            "total": 453,
+            "prompt": 337,
+            "completion": 116,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "output.includes('bricks') || output.includes('brick')",
+                "metric": "[baseline] identifies two pounds of bricks"
+              }
+            },
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[baseline] correct reasoning",
+                "value": "Score 3: Correctly answers \"two pounds of bricks\" Score 4: Also explains that all other options are explicitly one pound each by the wording of the question Score 5: Also notes this is a trick — the common riddle asks about pound of feathers vs bricks assuming equal weight, but this version includes a 2-pound option\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies the heaviest option as 'Three pounds of air' and also notes that the question is a trick, which is a key aspect of the rubric. It correctly interprets the numerical values and provides a clear and concise conclusion. The response also correctly identifies that the question is a trick, which is a critical part of the rubric. Therefore, the response meets all the criteria of the rubric, making it a high-quality response.",
+              "tokensUsed": {
+                "total": 453,
+                "prompt": 337,
+                "completion": 116,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1141",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly answers \"two pounds of bricks\" Score 4: Also explains that all other options are explicitly one pound each by the wording of the question Score 5: Also notes this is a trick — the common riddle asks about pound of feathers vs bricks assuming equal weight, but this version includes a 2-pound option\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nTo determine which weighs more, we simply need to compare the numerical values of the weights provided in the question:\n\n1.  **A pound of water**: 1 pound\n2.  **Two pounds of bricks**: 2 pounds\n3.  **A pound of feathers**: 1 pound\n4.  **Three pounds of air**: 3 pounds\n\nWhile riddles often trick us by comparing a pound of feathers to a pound of lead (where they weigh the same but have different volumes), this specific question includes a third option with a higher numerical value.\n\nComparing the numbers: $3 > 2 > 1$.\n\n**Conclusion:**\n**Three pounds of air** weighs the most.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "ce0e1f56-672b-4cf6-bb39-c3be2083d5dc",
+        "latencyMs": 5422,
+        "namedScores": {
+          "[baseline] identifies two pounds of bricks": 1,
+          "[baseline] correct reasoning": 5
+        },
+        "prompt": {
+          "raw": "Which weighs more: a pound of water, two pounds of bricks, a pound of feathers, or three pounds of air?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "To determine which weighs more, we simply need to compare the numerical values of the weights provided in the question:\n\n1.  **A pound of water**: 1 pound\n2.  **Two pounds of bricks**: 2 pounds\n3.  **A pound of feathers**: 1 pound\n4.  **Three pounds of air**: 3 pounds\n\nWhile riddles often trick us by comparing a pound of feathers to a pound of lead (where they weigh the same but have different volumes), this specific question includes a third option with a higher numerical value.\n\nComparing the numbers: $3 > 2 > 1$.\n\n**Conclusion:**\n**Three pounds of air** weighs the most.",
+          "tokenUsage": {
+            "total": 184,
+            "prompt": 37,
+            "completion": 147,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 5422,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "1237",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:49 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 3,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: weight comparison — which weighs more",
+          "vars": {
+            "task": "Which weighs more: a pound of water, two pounds of bricks, a pound of feathers, or three pounds of air?\n"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.includes('bricks') || output.includes('brick')",
+              "metric": "[baseline] identifies two pounds of bricks"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] correct reasoning",
+              "value": "Score 3: Correctly answers \"two pounds of bricks\" Score 4: Also explains that all other options are explicitly one pound each by the wording of the question Score 5: Also notes this is a trick — the common riddle asks about pound of feathers vs bricks assuming equal weight, but this version includes a 2-pound option\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 4,
+        "vars": {
+          "task": "Which weighs more: a pound of water, two pounds of bricks, a pound of feathers, or three pounds of air?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "1237",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:49 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 3,
+          "reason": "Aggregate score 3.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[baseline] answer is 1": 1,
+            "[baseline] correct step-by-step counting": 5
+          },
+          "namedScoreWeights": {
+            "[baseline] answer is 1": 1,
+            "[baseline] correct step-by-step counting": 1
+          },
+          "tokensUsed": {
+            "total": 781,
+            "prompt": 630,
+            "completion": 151,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "/\\b1\\b/.test(output) || output.includes('one arm') || output.includes('one free')",
+                "metric": "[baseline] answer is 1"
+              }
+            },
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[baseline] correct step-by-step counting",
+                "value": "Score 3: Arrives at 1 free arm Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2 of those shake hands with each other, leaving 1 free Score 5: Also explains why shaking hands with itself uses 2 arms (one from each side of the handshake)\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies the initial state, analyzes the actions taken by the robot, and provides a clear and logical explanation of the reasoning behind the handshake action. It also correctly calculates the number of free arms remaining after the handshake. The response demonstrates a thorough understanding of the problem and applies logical reasoning to arrive at the correct answer. The explanation is concise and directly addresses the problem, making it easy to follow and understand. The response is well-structured and adheres to the logical flow required by the rubric. Therefore, the response meets all the criteria set out in the rubric for a score of 5.",
+              "tokensUsed": {
+                "total": 781,
+                "prompt": 630,
+                "completion": 151,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1362",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Arrives at 1 free arm Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2 of those shake hands with each other, leaving 1 free Score 5: Also explains why shaking hands with itself uses 2 arms (one from each side of the handshake)\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nHere is the step-by-step logical deduction to solve the problem:\n\n### Step 1: Determine the initial state\nThe robot starts with a total of **8 arms**.\n\n### Step 2: Analyze the first action (Picking up objects)\nThe robot picks up 5 objects, placing one in each of 5 arms.\n*   Arms occupied: 5\n*   Arms free: $8 - 5 = 3$\n\n### Step 3: Analyze the second action (Shaking hands with itself)\nThe robot shakes hands with itself.\n*   To shake hands, two arms must be involved (one acting as the \"left\" hand and one as the \"right\" hand).\n*   The problem implies the robot uses two of its currently free arms to perform this action.\n*   Arms used for shaking hands: 2\n*   Arms remaining free: $3 - 2 = 1$\n\n*(Note: Even if the robot used an occupied arm to shake hands, the phrasing \"shakes hands with itself\" in the context of a riddle usually implies using the available free limbs to perform the gesture, or simply that 2 arms are engaged in the handshake regardless of their previous state. However, the standard interpretation for this specific riddle is that the handshake consumes 2 free arms.)*\n\nLet's re-evaluate based on the most logical physical constraint:\n1.  **Start**: 8 arms.\n2.  **Pick up 5 objects**: 5 arms are holding objects. **3 arms are free**.\n3.  **Shake hands**: A handshake requires 2 arms. The robot uses 2 of the **3 free arms** to shake hands.\n4.  **Result**: $3 - 2 = 1$ arm remains free.\n\n### Conclusion\nAfter picking up 5 objects (leaving 3 free) and using 2 of those free arms to shake hands, there is **1** arm left free.\n\n**Answer:** 1\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "50a16a71-1550-48b6-a05e-313123736f5a",
+        "latencyMs": 12222,
+        "namedScores": {
+          "[baseline] answer is 1": 1,
+          "[baseline] correct step-by-step counting": 5
+        },
+        "prompt": {
+          "raw": "A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then shakes hands with itself. How many arms are free?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "Here is the step-by-step logical deduction to solve the problem:\n\n### Step 1: Determine the initial state\nThe robot starts with a total of **8 arms**.\n\n### Step 2: Analyze the first action (Picking up objects)\nThe robot picks up 5 objects, placing one in each of 5 arms.\n*   Arms occupied: 5\n*   Arms free: $8 - 5 = 3$\n\n### Step 3: Analyze the second action (Shaking hands with itself)\nThe robot shakes hands with itself.\n*   To shake hands, two arms must be involved (one acting as the \"left\" hand and one as the \"right\" hand).\n*   The problem implies the robot uses two of its currently free arms to perform this action.\n*   Arms used for shaking hands: 2\n*   Arms remaining free: $3 - 2 = 1$\n\n*(Note: Even if the robot used an occupied arm to shake hands, the phrasing \"shakes hands with itself\" in the context of a riddle usually implies using the available free limbs to perform the gesture, or simply that 2 arms are engaged in the handshake regardless of their previous state. However, the standard interpretation for this specific riddle is that the handshake consumes 2 free arms.)*\n\nLet's re-evaluate based on the most logical physical constraint:\n1.  **Start**: 8 arms.\n2.  **Pick up 5 objects**: 5 arms are holding objects. **3 arms are free**.\n3.  **Shake hands**: A handshake requires 2 arms. The robot uses 2 of the **3 free arms** to shake hands.\n4.  **Result**: $3 - 2 = 1$ arm remains free.\n\n### Conclusion\nAfter picking up 5 objects (leaving 3 free) and using 2 of those free arms to shake hands, there is **1** arm left free.\n\n**Answer:** 1",
+          "tokenUsage": {
+            "total": 471,
+            "prompt": 46,
+            "completion": 425,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 12222,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "2243",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:56 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 3,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: robot arms — how many free",
+          "vars": {
+            "task": "A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then shakes hands with itself. How many arms are free?\n"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "/\\b1\\b/.test(output) || output.includes('one arm') || output.includes('one free')",
+              "metric": "[baseline] answer is 1"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] correct step-by-step counting",
+              "value": "Score 3: Arrives at 1 free arm Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2 of those shake hands with each other, leaving 1 free Score 5: Also explains why shaking hands with itself uses 2 arms (one from each side of the handshake)\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 5,
+        "vars": {
+          "task": "A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then shakes hands with itself. How many arms are free?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "2243",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:56 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 3,
+          "reason": "Aggregate score 3.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[baseline] Emily is to Alan's right": 1,
+            "[proficient] circular arrangement reasoning": 5
+          },
+          "namedScoreWeights": {
+            "[baseline] Emily is to Alan's right": 1,
+            "[proficient] circular arrangement reasoning": 1
+          },
+          "tokensUsed": {
+            "total": 703,
+            "prompt": 607,
+            "completion": 96,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "output.toLowerCase().includes('emily')",
+                "metric": "[baseline] Emily is to Alan's right"
+              }
+            },
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[proficient] circular arrangement reasoning",
+                "value": "Score 3: Correctly identifies Emily as standing to Alan's right Score 4: Also explains the circular logic: Alan → Bob → Colin → Dave → Emily → Alan, so Emily wraps around to stand to Alan's right Score 5: Also distinguishes that \"left of\" in a circle means the next person going clockwise, and \"right of\" means the previous person (Emily)\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies Emily as standing to Alan's right, explains the circular logic, and distinguishes that 'left of' in a circle means the next person going clockwise, and 'right of' means the previous person (Emily). The response also provides a clear and concise verification of the answer, which is that Bob is standing to the right of Alan.",
+              "tokensUsed": {
+                "total": 703,
+                "prompt": 607,
+                "completion": 96,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "reasoning": 0,
+                  "acceptedPrediction": 0,
+                  "rejectedPrediction": 0
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1040",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly identifies Emily as standing to Alan's right Score 4: Also explains the circular logic: Alan → Bob → Colin → Dave → Emily → Alan, so Emily wraps around to stand to Alan's right Score 5: Also distinguishes that \"left of\" in a circle means the next person going clockwise, and \"right of\" means the previous person (Emily)\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nTo solve this, let's break down the positions based on the rules of a circle where \"left\" and \"right\" are relative to the person facing the center.\n\n1.  **Analyze the sequence**:\n    *   Alan is to the left of Bob.\n    *   Bob is to the left of Colin.\n    *   Colin is to the left of Dave.\n    *   Dave is to the left of Emily.\n\n    This creates a continuous chain moving in one direction (let's say clockwise):\n    **Alan $\\rightarrow$ Bob $\\rightarrow$ Colin $\\rightarrow$ Dave $\\rightarrow$ Emily**\n\n2.  **Determine the circle's closure**:\n    Since there are exactly five people and they are standing in a circle, the person at the end of the chain must connect back to the beginning.\n    *   The chain ends with Emily.\n    *   Therefore, Emily must be to the left of Alan to complete the circle.\n\n3.  **Identify the person to the right**:\n    *   If Emily is to the **left** of Alan, then the person standing immediately to the **right** of Alan is the one who is to Alan's left in the reverse direction.\n    *   Looking at our chain: Alan is to the left of Bob. This means Bob is to the right of Alan.\n\n**Verification**:\nImagine the circle clockwise:\n1.  Alan\n2.  Bob (Right of Alan)\n3.  Colin (Right of Bob)\n4.  Dave (Right of Colin)\n5.  Emily (Right of Dave, Left of Alan)\n\nThe question asks: Who is standing to the **right** of Alan?\nBased on the statement \"Alan is to the left of Bob,\" Bob must be to the right of Alan.\n\n**Answer:**\n**Bob** is standing to the right of Alan.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "f9768c42-1b34-4f82-bbb6-f58767bea638",
+        "latencyMs": 11571,
+        "namedScores": {
+          "[baseline] Emily is to Alan's right": 1,
+          "[proficient] circular arrangement reasoning": 5
+        },
+        "prompt": {
+          "raw": "Five people are standing in a circle. Alan is to the left of Bob, Bob is to the left of Colin, Colin is to the left of Dave, and Dave is to the left of Emily. Who is standing to the right of Alan?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "To solve this, let's break down the positions based on the rules of a circle where \"left\" and \"right\" are relative to the person facing the center.\n\n1.  **Analyze the sequence**:\n    *   Alan is to the left of Bob.\n    *   Bob is to the left of Colin.\n    *   Colin is to the left of Dave.\n    *   Dave is to the left of Emily.\n\n    This creates a continuous chain moving in one direction (let's say clockwise):\n    **Alan $\\rightarrow$ Bob $\\rightarrow$ Colin $\\rightarrow$ Dave $\\rightarrow$ Emily**\n\n2.  **Determine the circle's closure**:\n    Since there are exactly five people and they are standing in a circle, the person at the end of the chain must connect back to the beginning.\n    *   The chain ends with Emily.\n    *   Therefore, Emily must be to the left of Alan to complete the circle.\n\n3.  **Identify the person to the right**:\n    *   If Emily is to the **left** of Alan, then the person standing immediately to the **right** of Alan is the one who is to Alan's left in the reverse direction.\n    *   Looking at our chain: Alan is to the left of Bob. This means Bob is to the right of Alan.\n\n**Verification**:\nImagine the circle clockwise:\n1.  Alan\n2.  Bob (Right of Alan)\n3.  Colin (Right of Bob)\n4.  Dave (Right of Colin)\n5.  Emily (Right of Dave, Left of Alan)\n\nThe question asks: Who is standing to the **right** of Alan?\nBased on the statement \"Alan is to the left of Bob,\" Bob must be to the right of Alan.\n\n**Answer:**\n**Bob** is standing to the right of Alan.",
+          "tokenUsage": {
+            "total": 460,
+            "prompt": 62,
+            "completion": 398,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 11571,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "2174",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:56 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 3,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: circle arrangement — who is right of Alan",
+          "vars": {
+            "task": "Five people are standing in a circle. Alan is to the left of Bob, Bob is to the left of Colin, Colin is to the left of Dave, and Dave is to the left of Emily. Who is standing to the right of Alan?\n"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "output.toLowerCase().includes('emily')",
+              "metric": "[baseline] Emily is to Alan's right"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] circular arrangement reasoning",
+              "value": "Score 3: Correctly identifies Emily as standing to Alan's right Score 4: Also explains the circular logic: Alan → Bob → Colin → Dave → Emily → Alan, so Emily wraps around to stand to Alan's right Score 5: Also distinguishes that \"left of\" in a circle means the next person going clockwise, and \"right of\" means the previous person (Emily)\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 6,
+        "vars": {
+          "task": "Five people are standing in a circle. Alan is to the left of Bob, Bob is to the left of Colin, Colin is to the left of Dave, and Dave is to the left of Emily. Who is standing to the right of Alan?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "2174",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:56 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 3,
+          "reason": "Aggregate score 3.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[baseline] answer is 2": 1,
+            "[baseline] correct spatial reasoning": 5
+          },
+          "namedScoreWeights": {
+            "[baseline] answer is 2": 1,
+            "[baseline] correct spatial reasoning": 1
+          },
+          "tokensUsed": {
+            "total": 534,
+            "prompt": 413,
+            "completion": 121,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Assertion passed",
+              "assertion": {
+                "type": "javascript",
+                "value": "/\\b2\\b/.test(output) || output.includes('two stor')",
+                "metric": "[baseline] answer is 2"
+              }
+            },
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[baseline] correct spatial reasoning",
+                "value": "Score 3: Correctly states the building is 2 stories above ground Score 4: Also explains: if the third floor is at street level, then floors 1 and 2 are underground, so only floor 3 (ground) and floors above it count as above ground — but floor 3 is ground level, so floors 4 and up are above ground Score 5: Wait — re-reading: the building has floors below ground. Floor 3 = street. Floors above ground = the building above street level. Since floor 3 is street, the building itself has how many stories? The building has at least 3 floors (1,2,3) of which 2 are underground. So the answer depends on interpretation: the structure above ground starts at floor 3. A score 5 response recognizes and addresses the ambiguity clearly.\n"
+              },
+              "pass": true,
+              "score": 5,
+              "reason": "The response correctly identifies the ambiguity in the prompt and provides a clear explanation of the situation. It acknowledges that the third floor is the topmost floor and that the building has at least 3 stories, with 2 of them being underground. The response also correctly interprets the situation by stating that the structure above ground starts at floor 3. This interpretation aligns with the rubric's requirement for a score of 5, which is to recognize and address the ambiguity clearly.",
+              "tokensUsed": {
+                "total": 534,
+                "prompt": 413,
+                "completion": 121,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "cacheReadInputTokens": 53
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "1174",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Correctly states the building is 2 stories above ground Score 4: Also explains: if the third floor is at street level, then floors 1 and 2 are underground, so only floor 3 (ground) and floors above it count as above ground — but floor 3 is ground level, so floors 4 and up are above ground Score 5: Wait — re-reading: the building has floors below ground. Floor 3 = street. Floors above ground = the building above street level. Since floor 3 is street, the building itself has how many stories? The building has at least 3 floors (1,2,3) of which 2 are underground. So the answer depends on interpretation: the structure above ground starts at floor 3. A score 5 response recognizes and addresses the ambiguity clearly.\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nIf you exit a building on the **third floor** and step directly onto the **street level** (ground level), it implies that the third floor is the topmost floor of the structure.\n\nHere is the breakdown:\n1.  **Ground Level**: This is the base of the building (Floor 1).\n2.  **Second Floor**: One story above the ground.\n3.  **Third Floor**: Two stories above the ground.\n\nSince you stepped off the third floor directly to the street, there are no higher floors. Therefore, the building has **3 stories** above ground.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "996c76d9-b64b-474c-a388-bc2d1eb1e2ad",
+        "latencyMs": 3112,
+        "namedScores": {
+          "[baseline] answer is 2": 1,
+          "[baseline] correct spatial reasoning": 5
+        },
+        "prompt": {
+          "raw": "I exit a building on the third floor and step directly onto street level (ground level). How many stories is the building above ground?",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "If you exit a building on the **third floor** and step directly onto the **street level** (ground level), it implies that the third floor is the topmost floor of the structure.\n\nHere is the breakdown:\n1.  **Ground Level**: This is the base of the building (Floor 1).\n2.  **Second Floor**: One story above the ground.\n3.  **Third Floor**: Two stories above the ground.\n\nSince you stepped off the third floor directly to the street, there are no higher floors. Therefore, the building has **3 stories** above ground.",
+          "tokenUsage": {
+            "total": 164,
+            "prompt": 39,
+            "completion": 125,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 3112,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "1170",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:49 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 3,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: stories above ground",
+          "vars": {
+            "task": "I exit a building on the third floor and step directly onto street level (ground level). How many stories is the building above ground?\n"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "value": "/\\b2\\b/.test(output) || output.includes('two stor')",
+              "metric": "[baseline] answer is 2"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] correct spatial reasoning",
+              "value": "Score 3: Correctly states the building is 2 stories above ground Score 4: Also explains: if the third floor is at street level, then floors 1 and 2 are underground, so only floor 3 (ground) and floors above it count as above ground — but floor 3 is ground level, so floors 4 and up are above ground Score 5: Wait — re-reading: the building has floors below ground. Floor 3 = street. Floors above ground = the building above street level. Since floor 3 is street, the building itself has how many stories? The building has at least 3 floors (1,2,3) of which 2 are underground. So the answer depends on interpretation: the structure above ground starts at floor 3. A score 5 response recognizes and addresses the ambiguity clearly.\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 7,
+        "vars": {
+          "task": "I exit a building on the third floor and step directly onto street level (ground level). How many stories is the building above ground?\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "1170",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:49 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0,
+        "gradingResult": {
+          "pass": true,
+          "score": 3,
+          "reason": "Aggregate score 3.00 ≥ 0.8 threshold",
+          "namedScores": {
+            "[expert] uses obscure technical vocabulary": 3
+          },
+          "namedScoreWeights": {
+            "[expert] uses obscure technical vocabulary": 1
+          },
+          "tokensUsed": {
+            "total": 314,
+            "prompt": 238,
+            "completion": 76,
+            "cached": 0,
+            "numRequests": 1
+          },
+          "componentResults": [
+            {
+              "assertion": {
+                "type": "llm-rubric",
+                "metric": "[expert] uses obscure technical vocabulary",
+                "value": "Score 3: Attempts a sentence using technical or modern terminology Score 4: Also explains the strategy: use post-1800s technical terms (cryptocurrency, CRISPR, nanotechnology, etc.) that couldn't appear in Biblical texts Score 5: Also acknowledges this is extremely hard to guarantee since Biblical translations use almost all common English words, and demonstrates awareness of which words are risky (the, and, or, is, a, be, not, etc.)\n"
+              },
+              "pass": true,
+              "score": 3,
+              "reason": "The response uses technical terminology such as 'quantum fluctuation', 'vacuum state', and 'virtual particle pair'. However, it does not explain the strategy or acknowledge the difficulty in guaranteeing the absence of risky words, which is a requirement for a higher score.",
+              "tokensUsed": {
+                "total": 314,
+                "prompt": 238,
+                "completion": 76,
+                "cached": 0,
+                "numRequests": 1,
+                "completionDetails": {
+                  "cacheReadInputTokens": 49
+                }
+              },
+              "metadata": {
+                "http": {
+                  "status": 200,
+                  "statusText": "OK",
+                  "headers": {
+                    "access-control-allow-origin": "",
+                    "content-length": "956",
+                    "content-type": "application/json; charset=utf-8",
+                    "keep-alive": "timeout=5, max=100",
+                    "server": "llama.cpp"
+                  }
+                },
+                "renderedGradingPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\nScore 3: Attempts a sentence using technical or modern terminology Score 4: Also explains the strategy: use post-1800s technical terms (cryptocurrency, CRISPR, nanotechnology, etc.) that couldn't appear in Biblical texts Score 5: Also acknowledges this is extremely hard to guarantee since Biblical translations use almost all common English words, and demonstrates awareness of which words are risky (the, and, or, is, a, be, not, etc.)\n\n\nPrompt given to the model:\n\n\nResponse to grade:\nThe quantum fluctuation within the vacuum state generates a virtual particle pair that annihilates itself before detection.\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+              }
+            }
+          ]
+        },
+        "id": "85cb5c44-ff4b-4a9b-b1b7-98c0f47cbf55",
+        "latencyMs": 800,
+        "namedScores": {
+          "[expert] uses obscure technical vocabulary": 3
+        },
+        "prompt": {
+          "raw": "Write a single sentence that does not contain any word that appears in the Bible. (Hint: avoid common words — nearly all everyday English words appear in the Bible.)",
+          "label": "{{task}}",
+          "config": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          }
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3.5-9b",
+          "label": ""
+        },
+        "response": {
+          "output": "The quantum fluctuation within the vacuum state generates a virtual particle pair that annihilates itself before detection.",
+          "tokenUsage": {
+            "total": 66,
+            "prompt": 45,
+            "completion": 21,
+            "numRequests": 1
+          },
+          "cached": false,
+          "latencyMs": 800,
+          "finishReason": "stop",
+          "guardrails": {
+            "flagged": false
+          },
+          "metadata": {
+            "http": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": {
+                "access-control-allow-origin": "",
+                "content-length": "766",
+                "content-type": "application/json; charset=utf-8",
+                "date": "Sun, 17 May 2026 23:33:55 GMT",
+                "server": "llama.cpp"
+              }
+            }
+          }
+        },
+        "score": 3,
+        "success": true,
+        "testCase": {
+          "description": "brain twister: sentence without Bible words",
+          "vars": {
+            "task": "Write a single sentence that does not contain any word that appears in the Bible. (Hint: avoid common words — nearly all everyday English words appear in the Bible.)\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] uses obscure technical vocabulary",
+              "value": "Score 3: Attempts a sentence using technical or modern terminology Score 4: Also explains the strategy: use post-1800s technical terms (cryptocurrency, CRISPR, nanotechnology, etc.) that couldn't appear in Biblical texts Score 5: Also acknowledges this is extremely hard to guarantee since Biblical translations use almost all common English words, and demonstrates awareness of which words are risky (the, and, or, is, a, be, not, etc.)\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 8,
+        "vars": {
+          "task": "Write a single sentence that does not contain any word that appears in the Bible. (Hint: avoid common words — nearly all everyday English words appear in the Bible.)\n"
+        },
+        "metadata": {
+          "http": {
+            "status": 200,
+            "statusText": "OK",
+            "headers": {
+              "access-control-allow-origin": "",
+              "content-length": "766",
+              "content-type": "application/json; charset=utf-8",
+              "date": "Sun, 17 May 2026 23:33:55 GMT",
+              "server": "llama.cpp"
+            }
+          },
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      }
+    ],
+    "stats": {
+      "successes": 8,
+      "failures": 1,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 438,
+        "completion": 2959,
+        "cached": 0,
+        "total": 3397,
+        "numRequests": 9,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 6043,
+          "prompt": 4901,
+          "completion": 1142,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 33703,
+      "evaluationDurationMs": 33703
+    }
+  },
+  "config": {
+    "tags": {},
+    "prompts": [
+      "{{task}}"
+    ],
+    "providers": [
+      {
+        "id": "openai:chat:qwen3.5-9b",
+        "config": {
+          "apiBaseUrl": "http://jason-server:11436/v1",
+          "apiKey": "[REDACTED]"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "description": "brain twister: horse race — simplest solution",
+        "vars": {
+          "task": "You have six horses and want to find out which is the fastest. What is the best way to do this?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] races all six simultaneously",
+            "value": "Score 3: Arrives at the correct answer of racing all six horses at the same time Score 4: Also notes this gives a complete ranking in a single race Score 5: Also explains why multi-round tournament approaches are unnecessary and overcomplicated\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: modified Monty Hall — no information revealed",
+        "vars": {
+          "task": "Suppose you're on a game show. There are three doors: a gold bar behind one, rotten vegetables behind the others. You pick door No. 1. The host then asks \"Would you like door No. 2 instead?\" Is there any advantage to switching?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] no advantage — no information revealed",
+            "value": "Score 3: Correctly states there is no advantage to switching in this version Score 4: Also explains why: the host did not reveal what was behind any door, so no new information was provided Score 5: Also contrasts with the classic Monty Hall problem where the host's deliberate goat reveal changes the probabilities\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: Russian roulette — spin or not",
+        "vars": {
+          "task": "In a game of Russian roulette with a six-shooter containing five bullets, your opponent fires at themselves, survives, and now it is your turn. Should they spin the chambers again before handing it to you?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] yes — spin resets to 1/6 safety",
+            "value": "Score 3: Correctly recommends spinning (from your perspective as the one being shot at) Score 4: Also explains that without spinning, the remaining chamber is the only empty one, making the shot certain to fire Score 5: Also shows the math: not spinning = certain death, spinning = 1/6 chance of death\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: river crossing with three compartments",
+        "vars": {
+          "task": "A farmer needs to get a wolf, a goat, and a cabbage across a river. His boat has three secure, separate compartments and he can transport all three at once. What should he do?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] single trip — place all three in compartments",
+            "value": "Score 3: Correctly identifies the solution as putting all three in separate compartments and crossing once Score 4: Also notes the key difference from the classic puzzle is the compartments make separation unnecessary Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall into (applying the multi-trip solution when the constraint has changed)\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: weight comparison — which weighs more",
+        "vars": {
+          "task": "Which weighs more: a pound of water, two pounds of bricks, a pound of feathers, or three pounds of air?\n"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.includes('bricks') || output.includes('brick')",
+            "metric": "[baseline] identifies two pounds of bricks"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] correct reasoning",
+            "value": "Score 3: Correctly answers \"two pounds of bricks\" Score 4: Also explains that all other options are explicitly one pound each by the wording of the question Score 5: Also notes this is a trick — the common riddle asks about pound of feathers vs bricks assuming equal weight, but this version includes a 2-pound option\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: robot arms — how many free",
+        "vars": {
+          "task": "A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then shakes hands with itself. How many arms are free?\n"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "/\\b1\\b/.test(output) || output.includes('one arm') || output.includes('one free')",
+            "metric": "[baseline] answer is 1"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] correct step-by-step counting",
+            "value": "Score 3: Arrives at 1 free arm Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2 of those shake hands with each other, leaving 1 free Score 5: Also explains why shaking hands with itself uses 2 arms (one from each side of the handshake)\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: circle arrangement — who is right of Alan",
+        "vars": {
+          "task": "Five people are standing in a circle. Alan is to the left of Bob, Bob is to the left of Colin, Colin is to the left of Dave, and Dave is to the left of Emily. Who is standing to the right of Alan?\n"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "output.toLowerCase().includes('emily')",
+            "metric": "[baseline] Emily is to Alan's right"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] circular arrangement reasoning",
+            "value": "Score 3: Correctly identifies Emily as standing to Alan's right Score 4: Also explains the circular logic: Alan → Bob → Colin → Dave → Emily → Alan, so Emily wraps around to stand to Alan's right Score 5: Also distinguishes that \"left of\" in a circle means the next person going clockwise, and \"right of\" means the previous person (Emily)\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: stories above ground",
+        "vars": {
+          "task": "I exit a building on the third floor and step directly onto street level (ground level). How many stories is the building above ground?\n"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "value": "/\\b2\\b/.test(output) || output.includes('two stor')",
+            "metric": "[baseline] answer is 2"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] correct spatial reasoning",
+            "value": "Score 3: Correctly states the building is 2 stories above ground Score 4: Also explains: if the third floor is at street level, then floors 1 and 2 are underground, so only floor 3 (ground) and floors above it count as above ground — but floor 3 is ground level, so floors 4 and up are above ground Score 5: Wait — re-reading: the building has floors below ground. Floor 3 = street. Floors above ground = the building above street level. Since floor 3 is street, the building itself has how many stories? The building has at least 3 floors (1,2,3) of which 2 are underground. So the answer depends on interpretation: the structure above ground starts at floor 3. A score 5 response recognizes and addresses the ambiguity clearly.\n"
+          }
+        ]
+      },
+      {
+        "description": "brain twister: sentence without Bible words",
+        "vars": {
+          "task": "Write a single sentence that does not contain any word that appears in the Bible. (Hint: avoid common words — nearly all everyday English words appear in the Bible.)\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] uses obscure technical vocabulary",
+            "value": "Score 3: Attempts a sentence using technical or modern terminology Score 4: Also explains the strategy: use post-1800s technical terms (cryptocurrency, CRISPR, nanotechnology, etc.) that couldn't appear in Biblical texts Score 5: Also acknowledges this is extremely hard to guarantee since Biblical translations use almost all common English words, and demonstrates awareness of which words are risky (the, and, or, is, a, be, not, etc.)\n"
+          }
+        ]
+      }
+    ],
+    "scenarios": [],
+    "env": {},
+    "defaultTest": {
+      "threshold": 0.8,
+      "options": {
+        "provider": {
+          "id": "openai:chat:prometheus-7b",
+          "config": {
+            "apiBaseUrl": "http://jason-server:11437/v1",
+            "apiKey": "[REDACTED]"
+          }
+        },
+        "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+        "rubricPrompt": "You are grading a logical reasoning response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+      },
+      "vars": {},
+      "assert": [],
+      "metadata": {}
+    },
+    "outputPath": [
+      "evals/qwen3.5-9b-brain-twisters.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {
+      "timeoutMs": 120000
+    }
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.121.11",
+    "nodeVersion": "v24.14.1",
+    "platform": "linux",
+    "arch": "x64",
+    "exportedAt": "2026-05-17T23:34:00.124Z",
+    "evaluationCreatedAt": "2026-05-17T23:33:26.218Z"
+  }
+}

@@ -1,0 +1,2416 @@
+{
+  "evalId": "eval-KcL-2026-05-17T23:34:03",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-05-17T23:34:03.236Z",
+    "prompts": [
+      {
+        "id": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "raw": "{{task}}",
+        "label": "{{task}}",
+        "provider": "openai:chat:qwen3-coder-next",
+        "metrics": {
+          "score": 0,
+          "testPassCount": 0,
+          "testFailCount": 0,
+          "testErrorCount": 32,
+          "assertPassCount": 0,
+          "assertFailCount": 0,
+          "totalLatencyMs": 9600000,
+          "tokenUsage": {
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "total": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {},
+          "namedScoresCount": {},
+          "namedScoreWeights": {},
+          "cost": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "319b39c6-c030-4e25-96e4-33d7f7d9e1e1",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Go: goroutine concurrency model",
+          "vars": {
+            "task": "Explain how Go's goroutine model works and why it's well-suited for handling concurrent HTTP connections.\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] goroutine model",
+              "value": "Score 3: Explains goroutines as lightweight threads managed by the Go runtime Score 4: Also explains they're cheap to spawn (small initial stack), multiplexed onto OS threads by the scheduler Score 5: Also explains why this lets a server handle many simultaneous connections without the overhead of one OS thread per connection\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 0,
+        "vars": {
+          "task": "Explain how Go's goroutine model works and why it's well-suited for handling concurrent HTTP connections.\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "9076cc41-b6bf-46e9-8e81-fe6df11a8000",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Python: GIL and async for REST APIs",
+          "vars": {
+            "task": "How does Python's GIL affect REST API server performance, and how do async frameworks like uvicorn or asyncio address it?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] GIL limits parallelism",
+              "value": "Score 3: Explains that the GIL prevents multiple Python threads from executing Python bytecode simultaneously, meaning CPU-bound work can't be parallelized across threads Score 4: Also explains that for IO-bound workloads (the typical REST API case), async frameworks largely sidestep the GIL — the runtime releases the GIL during IO waits, allowing cooperative multitasking without true thread parallelism Score 5: Also provides concrete examples of async frameworks like uvicorn or asyncio and how they achieve this\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 1,
+        "vars": {
+          "task": "How does Python's GIL affect REST API server performance, and how do async frameworks like uvicorn or asyncio address it?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "0c9d4165-97cc-4629-91ec-572a0b5ae729",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Go vs Python vs Kotlin: deployment artifacts",
+          "vars": {
+            "task": "When containerizing or deploying a backend service, how do Go, Python, and Kotlin differ in their runtime requirements and startup characteristics?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] deployment differences",
+              "value": "Score 3: Covers Go compiles to a single static binary with no runtime dependency Score 4: Also covers Python requiring the interpreter and dependencies Score 5: Also covers Kotlin/JVM requiring a JVM with its associated startup time and memory overhead\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 2,
+        "vars": {
+          "task": "When containerizing or deploying a backend service, how do Go, Python, and Kotlin differ in their runtime requirements and startup characteristics?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "b8a557de-3e0f-4596-8ca4-f385a119b92a",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Kotlin: JVM ecosystem and type system",
+          "vars": {
+            "task": "I'm considering Kotlin for a new backend service. What am I committing to beyond the language syntax itself — including what the type system enforces at compile time?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] JVM ecosystem commitment",
+              "value": "Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics, memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types enforced at compile time) as a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses sealed classes as another compile-time mechanism for catching invalid state representations\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] type system depth",
+              "value": "Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a compile-time bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting valid state representations Score 5: Also explains how both mechanisms work together to eliminate whole classes of runtime errors\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 3,
+        "vars": {
+          "task": "I'm considering Kotlin for a new backend service. What am I committing to beyond the language syntax itself — including what the type system enforces at compile time?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "e755a834-b07b-4ce9-b42d-8e5c7b7177c1",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Kafka vs RabbitMQ: log retention vs delete-on-ack",
+          "vars": {
+            "task": "What's the fundamental architectural difference between how Kafka and RabbitMQ store and deliver messages?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] log retention vs delete-on-ack",
+              "value": "Score 3: Explains that Kafka retains messages as a persistent, replayable log independent of consumer acknowledgement Score 4: Also explains that RabbitMQ deletes messages once they are acknowledged Score 5: Also explains why this difference matters for system design decisions\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 4,
+        "vars": {
+          "task": "What's the fundamental architectural difference between how Kafka and RabbitMQ store and deliver messages?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "c4347edd-3999-4f66-9859-87db568fb42b",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Kafka: ordering guarantees",
+          "vars": {
+            "task": "What ordering guarantees does Kafka provide, and what does that mean in practice when designing a multi-consumer system?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] partition-level ordering",
+              "value": "Score 3: Explains that Kafka guarantees message ordering within a partition but not across partitions Score 4: Also applies this concretely — e.g., route all events for the same entity to the same partition to preserve ordering for that entity Score 5: Also explains the implications for designing a multi-consumer system where ordering matters\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 5,
+        "vars": {
+          "task": "What ordering guarantees does Kafka provide, and what does that mean in practice when designing a multi-consumer system?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "bdbf8dd8-a9f0-4cb9-849f-4a33dd293029",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Kafka: consumer groups and backpressure",
+          "vars": {
+            "task": "How do Kafka consumer groups work, and what happens when a consumer can't keep up with the rate of incoming messages?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] consumer group model",
+              "value": "Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks its own position in the topic Score 4: Also explains that multiple groups can each read the full message stream independently, and consumers within a group divide the partitions among themselves Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and Kafka doesn't block the producer or drop messages, so lag grows unboundedly until the consumer catches up\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] consumer lag and backpressure",
+              "value": "Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also explains that Kafka doesn't block the producer or drop messages Score 5: Also explains that lag grows unboundedly until the consumer catches up and what operational implications this has\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 6,
+        "vars": {
+          "task": "How do Kafka consumer groups work, and what happens when a consumer can't keep up with the rate of incoming messages?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "4fd0cf1c-afb7-440b-a020-37fdeda8d706",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Kafka: when is the complexity justified",
+          "vars": {
+            "task": "Kafka is often described as overkill for small systems. When is Kafka's operational overhead actually worth it?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] when Kafka is justified",
+              "value": "Score 3: Explains that Kafka is justified when you need multiple independent consumer groups replaying the same stream Score 4: Also covers event sourcing/audit log replay or persistent event history Score 5: Also explains why high throughput alone is not sufficient justification for Kafka's operational overhead\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 7,
+        "vars": {
+          "task": "Kafka is often described as overkill for small systems. When is Kafka's operational overhead actually worth it?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "98ba488a-07a2-415d-9ae0-6888d1e3f437",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Batch vs streaming: latency as the primary driver",
+          "vars": {
+            "task": "What's the most important factor to nail down when deciding between a batch and a streaming architecture for a data pipeline?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] latency requirement is the primary driver",
+              "value": "Score 3: Identifies the required data freshness or latency SLA as the primary deciding factor Score 4: Also explains how quickly consumers need results after events occur Score 5: Also explains why throughput, cost, or complexity are secondary to the latency requirement\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 8,
+        "vars": {
+          "task": "What's the most important factor to nail down when deciding between a batch and a streaming architecture for a data pipeline?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "02a91ffb-c0c6-404e-bbf1-696ff3c4cb36",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Batch: correctness and testability advantages",
+          "vars": {
+            "task": "Why is a batch pipeline generally easier to reason about for correctness than a streaming pipeline?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] fixed input deterministic output",
+              "value": "Score 3: Explains that batch pipelines operate on a fixed, bounded dataset Score 4: Also explains they produce deterministic output that can be fully reproduced by re-running the same job — making bugs easier to isolate and reproduce Score 5: Also contrasts this with streaming's lack of fixed boundaries\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] streaming testing complexity",
+              "value": "Score 3: Explains that streaming introduces time-dependent behavior — event ordering, late arrivals, windowing Score 4: Also explains that this makes tests harder to write and reliably reproduce compared to a batch job with static input and output Score 5: Also provides specific examples of streaming testing challenges unique to time-dependent behavior\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 9,
+        "vars": {
+          "task": "Why is a batch pipeline generally easier to reason about for correctness than a streaming pipeline?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "f0011eb2-840b-4b0e-8265-0310b8420bdd",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Streaming: operational challenges",
+          "vars": {
+            "task": "What operational challenges does a streaming pipeline introduce that a batch pipeline doesn't have?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] state management",
+              "value": "Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers checkpointing state and managing state store growth over time Score 5: Also explains how the system recovers after a failure when in-flight state must be rebuilt\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] reprocessing and backfill",
+              "value": "Score 3: Explains that reprocessing and backfill are significantly harder with streaming than with batch Score 4: Also explains that streaming requires offset management and replaying from a source Score 5: Also contrasts with batch where you simply re-run the job against the same input\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 10,
+        "vars": {
+          "task": "What operational challenges does a streaming pipeline introduce that a batch pipeline doesn't have?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "4abc92cb-15e3-4ae1-b2f8-80cdea0483d3",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "PostgreSQL JSONB: viability and transaction support",
+          "vars": {
+            "task": "Is PostgreSQL with JSONB a realistic alternative to MongoDB for storing semi-structured documents? What's the most important difference in transaction support?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] JSONB as viable alternative",
+              "value": "Score 3: Explains that PostgreSQL's JSONB can store, index, and query semi-structured data Score 4: Also explains it's a genuine alternative to MongoDB rather than a tool only for fully relational data Score 5: Also addresses the transaction support comparison\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] transaction support differences",
+              "value": "Score 3: Explains that PostgreSQL has full ACID multi-table transactions Score 4: Also explains MongoDB's multi-document transactions are more limited Score 5: Also explains they carry meaningful performance costs compared to single-document operations\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 11,
+        "vars": {
+          "task": "Is PostgreSQL with JSONB a realistic alternative to MongoDB for storing semi-structured documents? What's the most important difference in transaction support?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "2028fc9a-083c-49cd-a1fc-ea2743d5a75d",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "PostgreSQL JSONB vs MongoDB: query ergonomics",
+          "vars": {
+            "task": "How does querying deeply nested documents compare between PostgreSQL JSONB and MongoDB's native query language?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] query ergonomics",
+              "value": "Score 3: Explains that MongoDB's query language is designed natively for nested document structures Score 4: Also explains PostgreSQL's JSONB operators (->, ->>, #>) are more verbose and harder to read and optimize for deeply nested access patterns Score 5: Also provides concrete examples comparing the query syntax of both\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 12,
+        "vars": {
+          "task": "How does querying deeply nested documents compare between PostgreSQL JSONB and MongoDB's native query language?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "3fb98e1d-36bd-48b8-b124-a6e738986a3d",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Variable schema data: what it usually looks like in practice",
+          "vars": {
+            "task": "My application data has \"variable schema\" — different records have different fields. How should I think about the PostgreSQL vs MongoDB decision given that?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] stable core schema insight",
+              "value": "Score 3: Explains that most \"variable schema\" data has a stable core (fields common across all records) Score 4: Also explains only the edges being truly variable Score 5: Also recommends a relational table with fixed columns plus a JSONB column for the variable parts as a practical middle ground\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 13,
+        "vars": {
+          "task": "My application data has \"variable schema\" — different records have different fields. How should I think about the PostgreSQL vs MongoDB decision given that?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "379b71b2-561b-4b38-8676-7dd461ff25d4",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "JWT: the revocation problem",
+          "vars": {
+            "task": "What is the JWT revocation problem, and why does the standard solution undermine JWT's main advantage?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] revocation undermines statelessness",
+              "value": "Score 3: Explains that JWTs can't be invalidated before expiry Score 4: Also explains that the standard solution — a server-side denylist — requires the same kind of shared state that JWTs were supposed to eliminate Score 5: Also explains how this partially defeats JWT's stateless advantage\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 14,
+        "vars": {
+          "task": "What is the JWT revocation problem, and why does the standard solution undermine JWT's main advantage?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "302c1a63-bcf5-43cc-9015-b3fa175b1049",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "JWT: payload is not encrypted",
+          "vars": {
+            "task": "What does it mean that a JWT payload is base64-encoded? What are the practical security implications?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] JWTs are not encrypted",
+              "value": "Score 3: Explains that base64 is encoding, not encryption Score 4: Also explains anyone who holds the token can decode and read the payload without any key Score 5: Also explains that sensitive data (PII, roles, secrets) should never be placed in JWT claims\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 15,
+        "vars": {
+          "task": "What does it mean that a JWT payload is base64-encoded? What are the practical security implications?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "62db891a-b684-4d86-80f2-13a207a4280c",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Token storage: localStorage vs httpOnly cookies",
+          "vars": {
+            "task": "Where should I store JWTs or session tokens on the client? What are the security tradeoffs between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] token storage tradeoffs",
+              "value": "Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it) Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] the logout problem",
+              "value": "Score 3: Addresses what \"logout\" actually means for JWTs Score 4: Also explains client-side deletion doesn't stop a copied token from working Score 5: Also explains true invalidation requires server-side state (a denylist or short expiry with refresh rotation)\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 16,
+        "vars": {
+          "task": "Where should I store JWTs or session tokens on the client? What are the security tradeoffs between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "e7fad8de-9953-4697-8005-2b76040f098e",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Queue vs HTTP: sync vs async is the primary question",
+          "vars": {
+            "task": "My services currently call each other synchronously over HTTP. What fundamentally changes about how services communicate when you introduce a message queue, and why does that matter for whether to use one?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] sync vs async as primary driver",
+              "value": "Score 3: Explains the fundamental shift is from synchronous to asynchronous communication Score 4: Also explains the sender no longer waits for a response Score 5: Also frames this as the central question: does the caller actually need an immediate result, or is fire-and-forget acceptable?\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 17,
+        "vars": {
+          "task": "My services currently call each other synchronously over HTTP. What fundamentally changes about how services communicate when you introduce a message queue, and why does that matter for whether to use one?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "e81ec2ab-175a-44b2-9322-047c42a57f27",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Queue vs HTTP: operational costs and failure modes",
+          "vars": {
+            "task": "What operational costs and failure mode differences should I understand before replacing HTTP calls with a message queue?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] operational cost of queue infra",
+              "value": "Score 3: Explains that a message broker is another production system to deploy Score 4: Also covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service calls not requiring this additional operational overhead\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] failure mode differences",
+              "value": "Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes, timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] idempotency requirements",
+              "value": "Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 18,
+        "vars": {
+          "task": "What operational costs and failure mode differences should I understand before replacing HTTP calls with a message queue?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "5450a519-f561-4f60-978e-152db2263fa5",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Queue vs HTTP: coupling and idempotency",
+          "vars": {
+            "task": "I keep hearing that message queues \"decouple\" services. Is that actually true? What stays coupled when you add a queue, and what new design constraints does the queue introduce on the consumer side?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] coupling moves to schema",
+              "value": "Score 3: Explains that queues don't eliminate coupling Score 4: Also explains they shift it from runtime API contracts to the message schema or event format Score 5: Also explains that producers and consumers must still agree on message structure\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] idempotency requirements",
+              "value": "Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 19,
+        "vars": {
+          "task": "I keep hearing that message queues \"decouple\" services. Is that actually true? What stays coupled when you add a queue, and what new design constraints does the queue introduce on the consumer side?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "56c620b7-740a-426e-aaad-6d2ec40644f7",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Microservices: real operational costs for small teams",
+          "vars": {
+            "task": "What are the real operational costs of microservices that small teams consistently underestimate when choosing them for a new product?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] microservice operational costs",
+              "value": "Score 3: Names at least one specific operational cost beyond vague \"complexity\" Score 4: Also names a second specific cost — such as distributed tracing, service discovery, per-service deployment pipelines, or the difficulty of debugging failures that span service boundaries Score 5: Also provides enough detail that the costs feel concrete and actionable\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] small team favors monolith",
+              "value": "Score 3: Argues that small teams should start with a monolith Score 4: Also provides specific reasoning — such as that a team of 2-5 engineers can't effectively own multiple independent services in production while also shipping features Score 5: Also provides additional concrete reasoning tied to small team constraints\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 20,
+        "vars": {
+          "task": "What are the real operational costs of microservices that small teams consistently underestimate when choosing them for a new product?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "b33ea700-ac14-43a4-b564-6ba941265b27",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Microservices: Conway's Law",
+          "vars": {
+            "task": "What is Conway's Law, and how should it influence decisions about where to draw microservice boundaries?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] Conway's Law",
+              "value": "Score 3: Explains Conway's Law — that systems mirror the communication structure of the organizations that build them Score 4: Also applies it: service boundaries that don't match team boundaries create ongoing friction Score 5: Also explains that someone always owns the \"wrong\" part of the system when boundaries are misaligned\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 21,
+        "vars": {
+          "task": "What is Conway's Law, and how should it influence decisions about where to draw microservice boundaries?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "03cf89ca-ccf1-4e26-b60d-05c45d131e30",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Microservices: modular monolith and cost asymmetry",
+          "vars": {
+            "task": "What is a modular monolith, and why is the cost of going microservices-first often higher than teams expect?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] modular monolith",
+              "value": "Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal module or package boundaries within a single deployable Score 5: Also explains the design intention so services can be extracted later when team size and scale justify it\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] cost asymmetry",
+              "value": "Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from a well-factored monolith is much easier than merging poorly-scoped microservices back together Score 5: Also explains why this makes the monolith-first approach lower risk even if you plan to split later\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 22,
+        "vars": {
+          "task": "What is a modular monolith, and why is the cost of going microservices-first often higher than teams expect?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "feac7737-c06e-49d3-bbc7-0512ce80db47",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Abstraction: when to extract",
+          "vars": {
+            "task": "What's a concrete heuristic for deciding when to extract a function or abstraction vs leaving code duplicated? And how do you recognize when you've already waited too long to extract it?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] concrete heuristic",
+              "value": "Score 3: Gives a concrete, actionable heuristic — such as the rule of three (wait until the pattern appears three times) Score 4: Also covers at least one additional heuristic — only when you can give the abstraction a meaningful domain name, only when the duplicated code represents the same concept (not just the same structure), or only when callers don't need to know the internals Score 5: Also provides enough detail that the heuristic feels practical and actionable in real development\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] signs of waiting too long",
+              "value": "Score 3: Names concrete signs you've waited too long — such as fixing the same bug in multiple places Score 4: Also names making a change that requires updating N copies of similar logic in lockstep Score 5: Also explains how these signs manifest in practice for a development team\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 23,
+        "vars": {
+          "task": "What's a concrete heuristic for deciding when to extract a function or abstraction vs leaving code duplicated? And how do you recognize when you've already waited too long to extract it?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "9ac50b9f-93f9-42e2-911a-a25d74dd7874",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Abstraction: the cost of getting it wrong",
+          "vars": {
+            "task": "What's the actual cost of creating the wrong abstraction? Why is duplicated code sometimes preferable to a premature abstraction?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] wrong abstraction locks you in",
+              "value": "Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains when the abstracted cases later diverge, you're forced into awkward workarounds or a painful refactor of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken abstraction across all its call sites\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] wrong abstraction worse than duplication",
+              "value": "Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also explains duplicated code can be changed independently Score 5: Also explains a shared abstraction makes both callers harder to evolve when the abstraction is wrong\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 24,
+        "vars": {
+          "task": "What's the actual cost of creating the wrong abstraction? Why is duplicated code sometimes preferable to a premature abstraction?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "82cb1546-baf2-4db2-9d49-58b4a598a2e5",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Structured output: JSON failure modes and constrained decoding",
+          "vars": {
+            "task": "What are the specific ways an LLM can produce invalid JSON, and what's the most reliable engineering approach to prevent it?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] JSON failure modes",
+              "value": "Score 3: Names at least one specific LLM failure mode for JSON — such as unclosed brackets, invalid string escaping, trailing commas, or output truncated mid-object due to token limits Score 4: Names additional specific failure modes showing depth of understanding Score 5: Covers the full range of common JSON failure modes LLMs exhibit\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] constrained decoding",
+              "value": "Score 3: Mentions constrained decoding, guided generation, or provider JSON mode (e.g., Anthropic tool use, OpenAI response_format) Score 4: Also explains these shift the problem from syntax to semantics Score 5: Also explains why constrained approaches are more reliable than post-hoc validation and repair\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 25,
+        "vars": {
+          "task": "What are the specific ways an LLM can produce invalid JSON, and what's the most reliable engineering approach to prevent it?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "ad57ce01-aff0-4725-a300-21cf29778d24",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Structured output: XML and custom delimiters",
+          "vars": {
+            "task": "When would XML be a better LLM output format than JSON? What about custom delimiters?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] XML verbosity tradeoff",
+              "value": "Score 3: Explains XML's explicit closing tags make partial or truncated output more recoverable (you can detect where the model stopped) Score 4: Also explains explicit closing tags cost significantly more tokens than equivalent JSON Score 5: Also explains when the recoverability benefit outweighs the token cost\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] custom delimiters need custom parsers",
+              "value": "Score 3: Explains custom delimiters require writing and maintaining custom parsing logic Score 4: Also explains this is itself a source of bugs Score 5: Also contrasts with using a battle-tested JSON or XML parser\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 26,
+        "vars": {
+          "task": "When would XML be a better LLM output format than JSON? What about custom delimiters?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "0b7755cc-0b81-44da-8fad-3b8aa0d1e38d",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "CoT: when it hurts accuracy",
+          "vars": {
+            "task": "When does chain-of-thought prompting hurt model accuracy rather than improve it?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] CoT introduces errors on simple tasks",
+              "value": "Score 3: Explains that on simple tasks, chain-of-thought creates more opportunities for the model to reason itself into a wrong answer Score 4: Also explains more steps mean more surface area for errors compared to a direct response Score 5: Also explains this with specific reasoning about why intermediate steps amplify error probability on simple tasks\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] concrete example where CoT hurts",
+              "value": "Score 3: Gives a specific task type where forcing CoT produces worse results Score 4: Also covers examples like simple factual retrieval, sentiment classification, direct entity extraction, or other tasks where the answer doesn't require intermediate steps Score 5: Also explains why CoT specifically hurts each example task type\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 27,
+        "vars": {
+          "task": "When does chain-of-thought prompting hurt model accuracy rather than improve it?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "52aa09b6-1545-42ee-a07b-2d0afe51c486",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "CoT: zero-shot vs few-shot, and model size",
+          "vars": {
+            "task": "What's the difference between zero-shot and few-shot chain-of-thought prompting? Does model size affect whether CoT helps?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] zero-shot vs few-shot CoT",
+              "value": "Score 3: Distinguishes zero-shot CoT (\"think step by step\") from few-shot CoT (providing worked example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness profiles Score 5: Also explains what makes each approach effective in different contexts\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] model size dependence",
+              "value": "Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also explains smaller models can degrade in performance when given intermediate reasoning steps Score 5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning steps\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 28,
+        "vars": {
+          "task": "What's the difference between zero-shot and few-shot chain-of-thought prompting? Does model size affect whether CoT helps?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "50c05b18-514e-459c-a6a7-d11284555f5a",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Prompt chains: the silent error propagation risk",
+          "vars": {
+            "task": "What's the hidden risk in chained LLM prompts that people overlook when they focus on the observability benefits of chaining?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] error propagation in chains",
+              "value": "Score 3: Explains that a semantically wrong but plausible-looking output from an early step flows silently into later steps Score 4: Also explains the downstream output still looks reasonable, making the corruption hard to detect without inspecting intermediate outputs Score 5: Also explains why this risk is uniquely dangerous compared to other failure modes in LLM pipelines\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 29,
+        "vars": {
+          "task": "What's the hidden risk in chained LLM prompts that people overlook when they focus on the observability benefits of chaining?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "1a981e12-34f5-40b9-8615-2fa69e29f8eb",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Prompt chains: observability and cost optimization",
+          "vars": {
+            "task": "What are the concrete advantages of chaining separate prompts for a multi-step pipeline, compared to a single large prompt?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[baseline] observability advantage of chaining",
+              "value": "Score 3: Explains that chaining makes intermediate outputs inspectable Score 4: Also explains failures are easier to isolate to a specific step Score 5: Also covers debugging and retry advantages compared to a monolithic prompt where only the final output is visible\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] cost optimization with different models",
+              "value": "Score 3: Explains that chaining lets you assign different models to different steps Score 4: Also explains a cheap, fast model for classification or extraction and an expensive model only for the steps that require deep reasoning Score 5: Also provides concrete examples of cost-optimal model assignment across steps\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 30,
+        "vars": {
+          "task": "What are the concrete advantages of chaining separate prompts for a multi-step pipeline, compared to a single large prompt?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      },
+      {
+        "cost": 0,
+        "error": "Evaluation timed out after 300000ms: Error: Evaluation timed out after 300000ms",
+        "gradingResult": null,
+        "id": "ea6a255b-1429-4a0d-9bd2-eeebba31dc7a",
+        "latencyMs": 300000,
+        "namedScores": {},
+        "prompt": {
+          "raw": "{{task}}",
+          "label": "{{task}}"
+        },
+        "promptId": "ec1aefd522ceea4dbc16cd07da0dccd9fce23abef66cb24e561eb6956c67f536",
+        "promptIdx": 0,
+        "provider": {
+          "id": "openai:chat:qwen3-coder-next",
+          "label": ""
+        },
+        "score": 0,
+        "success": false,
+        "testCase": {
+          "description": "Prompt chains: latency and interface contracts",
+          "vars": {
+            "task": "What are the main engineering drawbacks of chaining prompts, and how should you design the handoff between steps?\n"
+          },
+          "assert": [
+            {
+              "type": "llm-rubric",
+              "metric": "[proficient] latency — sequential round trips",
+              "value": "Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N times the latency of a single call\n"
+            },
+            {
+              "type": "llm-rubric",
+              "metric": "[expert] interface design between chain steps",
+              "value": "Score 3: Addresses the interface contract problem — each step's output is the next step's input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema validation between steps\n"
+            }
+          ],
+          "threshold": 0.8,
+          "options": {
+            "provider": {
+              "id": "openai:chat:prometheus-7b",
+              "config": {
+                "apiBaseUrl": "http://jason-server:11437/v1",
+                "apiKey": "[REDACTED]"
+              }
+            },
+            "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+            "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+          },
+          "metadata": {}
+        },
+        "testIdx": 31,
+        "vars": {
+          "task": "What are the main engineering drawbacks of chaining prompts, and how should you design the handoff between steps?\n"
+        },
+        "metadata": {},
+        "failureReason": 2
+      }
+    ],
+    "stats": {
+      "successes": 0,
+      "failures": 0,
+      "errors": 32,
+      "tokenUsage": {
+        "prompt": 0,
+        "completion": 0,
+        "cached": 0,
+        "total": 0,
+        "numRequests": 0,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 9630036,
+      "evaluationDurationMs": 9630036
+    }
+  },
+  "config": {
+    "tags": {},
+    "prompts": [
+      "{{task}}"
+    ],
+    "providers": [
+      {
+        "id": "openai:chat:qwen3-coder-next",
+        "config": {
+          "apiBaseUrl": "http://jason-server:11436/v1",
+          "apiKey": "[REDACTED]"
+        }
+      }
+    ],
+    "tests": [
+      {
+        "description": "Go: goroutine concurrency model",
+        "vars": {
+          "task": "Explain how Go's goroutine model works and why it's well-suited for handling concurrent HTTP connections.\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] goroutine model",
+            "value": "Score 3: Explains goroutines as lightweight threads managed by the Go runtime Score 4: Also explains they're cheap to spawn (small initial stack), multiplexed onto OS threads by the scheduler Score 5: Also explains why this lets a server handle many simultaneous connections without the overhead of one OS thread per connection\n"
+          }
+        ]
+      },
+      {
+        "description": "Python: GIL and async for REST APIs",
+        "vars": {
+          "task": "How does Python's GIL affect REST API server performance, and how do async frameworks like uvicorn or asyncio address it?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] GIL limits parallelism",
+            "value": "Score 3: Explains that the GIL prevents multiple Python threads from executing Python bytecode simultaneously, meaning CPU-bound work can't be parallelized across threads Score 4: Also explains that for IO-bound workloads (the typical REST API case), async frameworks largely sidestep the GIL — the runtime releases the GIL during IO waits, allowing cooperative multitasking without true thread parallelism Score 5: Also provides concrete examples of async frameworks like uvicorn or asyncio and how they achieve this\n"
+          }
+        ]
+      },
+      {
+        "description": "Go vs Python vs Kotlin: deployment artifacts",
+        "vars": {
+          "task": "When containerizing or deploying a backend service, how do Go, Python, and Kotlin differ in their runtime requirements and startup characteristics?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] deployment differences",
+            "value": "Score 3: Covers Go compiles to a single static binary with no runtime dependency Score 4: Also covers Python requiring the interpreter and dependencies Score 5: Also covers Kotlin/JVM requiring a JVM with its associated startup time and memory overhead\n"
+          }
+        ]
+      },
+      {
+        "description": "Kotlin: JVM ecosystem and type system",
+        "vars": {
+          "task": "I'm considering Kotlin for a new backend service. What am I committing to beyond the language syntax itself — including what the type system enforces at compile time?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] JVM ecosystem commitment",
+            "value": "Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics, memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types enforced at compile time) as a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses sealed classes as another compile-time mechanism for catching invalid state representations\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] type system depth",
+            "value": "Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a compile-time bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting valid state representations Score 5: Also explains how both mechanisms work together to eliminate whole classes of runtime errors\n"
+          }
+        ]
+      },
+      {
+        "description": "Kafka vs RabbitMQ: log retention vs delete-on-ack",
+        "vars": {
+          "task": "What's the fundamental architectural difference between how Kafka and RabbitMQ store and deliver messages?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] log retention vs delete-on-ack",
+            "value": "Score 3: Explains that Kafka retains messages as a persistent, replayable log independent of consumer acknowledgement Score 4: Also explains that RabbitMQ deletes messages once they are acknowledged Score 5: Also explains why this difference matters for system design decisions\n"
+          }
+        ]
+      },
+      {
+        "description": "Kafka: ordering guarantees",
+        "vars": {
+          "task": "What ordering guarantees does Kafka provide, and what does that mean in practice when designing a multi-consumer system?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] partition-level ordering",
+            "value": "Score 3: Explains that Kafka guarantees message ordering within a partition but not across partitions Score 4: Also applies this concretely — e.g., route all events for the same entity to the same partition to preserve ordering for that entity Score 5: Also explains the implications for designing a multi-consumer system where ordering matters\n"
+          }
+        ]
+      },
+      {
+        "description": "Kafka: consumer groups and backpressure",
+        "vars": {
+          "task": "How do Kafka consumer groups work, and what happens when a consumer can't keep up with the rate of incoming messages?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] consumer group model",
+            "value": "Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks its own position in the topic Score 4: Also explains that multiple groups can each read the full message stream independently, and consumers within a group divide the partitions among themselves Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and Kafka doesn't block the producer or drop messages, so lag grows unboundedly until the consumer catches up\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] consumer lag and backpressure",
+            "value": "Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also explains that Kafka doesn't block the producer or drop messages Score 5: Also explains that lag grows unboundedly until the consumer catches up and what operational implications this has\n"
+          }
+        ]
+      },
+      {
+        "description": "Kafka: when is the complexity justified",
+        "vars": {
+          "task": "Kafka is often described as overkill for small systems. When is Kafka's operational overhead actually worth it?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] when Kafka is justified",
+            "value": "Score 3: Explains that Kafka is justified when you need multiple independent consumer groups replaying the same stream Score 4: Also covers event sourcing/audit log replay or persistent event history Score 5: Also explains why high throughput alone is not sufficient justification for Kafka's operational overhead\n"
+          }
+        ]
+      },
+      {
+        "description": "Batch vs streaming: latency as the primary driver",
+        "vars": {
+          "task": "What's the most important factor to nail down when deciding between a batch and a streaming architecture for a data pipeline?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] latency requirement is the primary driver",
+            "value": "Score 3: Identifies the required data freshness or latency SLA as the primary deciding factor Score 4: Also explains how quickly consumers need results after events occur Score 5: Also explains why throughput, cost, or complexity are secondary to the latency requirement\n"
+          }
+        ]
+      },
+      {
+        "description": "Batch: correctness and testability advantages",
+        "vars": {
+          "task": "Why is a batch pipeline generally easier to reason about for correctness than a streaming pipeline?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] fixed input deterministic output",
+            "value": "Score 3: Explains that batch pipelines operate on a fixed, bounded dataset Score 4: Also explains they produce deterministic output that can be fully reproduced by re-running the same job — making bugs easier to isolate and reproduce Score 5: Also contrasts this with streaming's lack of fixed boundaries\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] streaming testing complexity",
+            "value": "Score 3: Explains that streaming introduces time-dependent behavior — event ordering, late arrivals, windowing Score 4: Also explains that this makes tests harder to write and reliably reproduce compared to a batch job with static input and output Score 5: Also provides specific examples of streaming testing challenges unique to time-dependent behavior\n"
+          }
+        ]
+      },
+      {
+        "description": "Streaming: operational challenges",
+        "vars": {
+          "task": "What operational challenges does a streaming pipeline introduce that a batch pipeline doesn't have?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] state management",
+            "value": "Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers checkpointing state and managing state store growth over time Score 5: Also explains how the system recovers after a failure when in-flight state must be rebuilt\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] reprocessing and backfill",
+            "value": "Score 3: Explains that reprocessing and backfill are significantly harder with streaming than with batch Score 4: Also explains that streaming requires offset management and replaying from a source Score 5: Also contrasts with batch where you simply re-run the job against the same input\n"
+          }
+        ]
+      },
+      {
+        "description": "PostgreSQL JSONB: viability and transaction support",
+        "vars": {
+          "task": "Is PostgreSQL with JSONB a realistic alternative to MongoDB for storing semi-structured documents? What's the most important difference in transaction support?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] JSONB as viable alternative",
+            "value": "Score 3: Explains that PostgreSQL's JSONB can store, index, and query semi-structured data Score 4: Also explains it's a genuine alternative to MongoDB rather than a tool only for fully relational data Score 5: Also addresses the transaction support comparison\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] transaction support differences",
+            "value": "Score 3: Explains that PostgreSQL has full ACID multi-table transactions Score 4: Also explains MongoDB's multi-document transactions are more limited Score 5: Also explains they carry meaningful performance costs compared to single-document operations\n"
+          }
+        ]
+      },
+      {
+        "description": "PostgreSQL JSONB vs MongoDB: query ergonomics",
+        "vars": {
+          "task": "How does querying deeply nested documents compare between PostgreSQL JSONB and MongoDB's native query language?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] query ergonomics",
+            "value": "Score 3: Explains that MongoDB's query language is designed natively for nested document structures Score 4: Also explains PostgreSQL's JSONB operators (->, ->>, #>) are more verbose and harder to read and optimize for deeply nested access patterns Score 5: Also provides concrete examples comparing the query syntax of both\n"
+          }
+        ]
+      },
+      {
+        "description": "Variable schema data: what it usually looks like in practice",
+        "vars": {
+          "task": "My application data has \"variable schema\" — different records have different fields. How should I think about the PostgreSQL vs MongoDB decision given that?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] stable core schema insight",
+            "value": "Score 3: Explains that most \"variable schema\" data has a stable core (fields common across all records) Score 4: Also explains only the edges being truly variable Score 5: Also recommends a relational table with fixed columns plus a JSONB column for the variable parts as a practical middle ground\n"
+          }
+        ]
+      },
+      {
+        "description": "JWT: the revocation problem",
+        "vars": {
+          "task": "What is the JWT revocation problem, and why does the standard solution undermine JWT's main advantage?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] revocation undermines statelessness",
+            "value": "Score 3: Explains that JWTs can't be invalidated before expiry Score 4: Also explains that the standard solution — a server-side denylist — requires the same kind of shared state that JWTs were supposed to eliminate Score 5: Also explains how this partially defeats JWT's stateless advantage\n"
+          }
+        ]
+      },
+      {
+        "description": "JWT: payload is not encrypted",
+        "vars": {
+          "task": "What does it mean that a JWT payload is base64-encoded? What are the practical security implications?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] JWTs are not encrypted",
+            "value": "Score 3: Explains that base64 is encoding, not encryption Score 4: Also explains anyone who holds the token can decode and read the payload without any key Score 5: Also explains that sensitive data (PII, roles, secrets) should never be placed in JWT claims\n"
+          }
+        ]
+      },
+      {
+        "description": "Token storage: localStorage vs httpOnly cookies",
+        "vars": {
+          "task": "Where should I store JWTs or session tokens on the client? What are the security tradeoffs between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] token storage tradeoffs",
+            "value": "Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it) Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] the logout problem",
+            "value": "Score 3: Addresses what \"logout\" actually means for JWTs Score 4: Also explains client-side deletion doesn't stop a copied token from working Score 5: Also explains true invalidation requires server-side state (a denylist or short expiry with refresh rotation)\n"
+          }
+        ]
+      },
+      {
+        "description": "Queue vs HTTP: sync vs async is the primary question",
+        "vars": {
+          "task": "My services currently call each other synchronously over HTTP. What fundamentally changes about how services communicate when you introduce a message queue, and why does that matter for whether to use one?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] sync vs async as primary driver",
+            "value": "Score 3: Explains the fundamental shift is from synchronous to asynchronous communication Score 4: Also explains the sender no longer waits for a response Score 5: Also frames this as the central question: does the caller actually need an immediate result, or is fire-and-forget acceptable?\n"
+          }
+        ]
+      },
+      {
+        "description": "Queue vs HTTP: operational costs and failure modes",
+        "vars": {
+          "task": "What operational costs and failure mode differences should I understand before replacing HTTP calls with a message queue?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] operational cost of queue infra",
+            "value": "Score 3: Explains that a message broker is another production system to deploy Score 4: Also covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service calls not requiring this additional operational overhead\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] failure mode differences",
+            "value": "Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes, timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] idempotency requirements",
+            "value": "Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default\n"
+          }
+        ]
+      },
+      {
+        "description": "Queue vs HTTP: coupling and idempotency",
+        "vars": {
+          "task": "I keep hearing that message queues \"decouple\" services. Is that actually true? What stays coupled when you add a queue, and what new design constraints does the queue introduce on the consumer side?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] coupling moves to schema",
+            "value": "Score 3: Explains that queues don't eliminate coupling Score 4: Also explains they shift it from runtime API contracts to the message schema or event format Score 5: Also explains that producers and consumers must still agree on message structure\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] idempotency requirements",
+            "value": "Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default\n"
+          }
+        ]
+      },
+      {
+        "description": "Microservices: real operational costs for small teams",
+        "vars": {
+          "task": "What are the real operational costs of microservices that small teams consistently underestimate when choosing them for a new product?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] microservice operational costs",
+            "value": "Score 3: Names at least one specific operational cost beyond vague \"complexity\" Score 4: Also names a second specific cost — such as distributed tracing, service discovery, per-service deployment pipelines, or the difficulty of debugging failures that span service boundaries Score 5: Also provides enough detail that the costs feel concrete and actionable\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] small team favors monolith",
+            "value": "Score 3: Argues that small teams should start with a monolith Score 4: Also provides specific reasoning — such as that a team of 2-5 engineers can't effectively own multiple independent services in production while also shipping features Score 5: Also provides additional concrete reasoning tied to small team constraints\n"
+          }
+        ]
+      },
+      {
+        "description": "Microservices: Conway's Law",
+        "vars": {
+          "task": "What is Conway's Law, and how should it influence decisions about where to draw microservice boundaries?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] Conway's Law",
+            "value": "Score 3: Explains Conway's Law — that systems mirror the communication structure of the organizations that build them Score 4: Also applies it: service boundaries that don't match team boundaries create ongoing friction Score 5: Also explains that someone always owns the \"wrong\" part of the system when boundaries are misaligned\n"
+          }
+        ]
+      },
+      {
+        "description": "Microservices: modular monolith and cost asymmetry",
+        "vars": {
+          "task": "What is a modular monolith, and why is the cost of going microservices-first often higher than teams expect?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] modular monolith",
+            "value": "Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal module or package boundaries within a single deployable Score 5: Also explains the design intention so services can be extracted later when team size and scale justify it\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] cost asymmetry",
+            "value": "Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from a well-factored monolith is much easier than merging poorly-scoped microservices back together Score 5: Also explains why this makes the monolith-first approach lower risk even if you plan to split later\n"
+          }
+        ]
+      },
+      {
+        "description": "Abstraction: when to extract",
+        "vars": {
+          "task": "What's a concrete heuristic for deciding when to extract a function or abstraction vs leaving code duplicated? And how do you recognize when you've already waited too long to extract it?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] concrete heuristic",
+            "value": "Score 3: Gives a concrete, actionable heuristic — such as the rule of three (wait until the pattern appears three times) Score 4: Also covers at least one additional heuristic — only when you can give the abstraction a meaningful domain name, only when the duplicated code represents the same concept (not just the same structure), or only when callers don't need to know the internals Score 5: Also provides enough detail that the heuristic feels practical and actionable in real development\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] signs of waiting too long",
+            "value": "Score 3: Names concrete signs you've waited too long — such as fixing the same bug in multiple places Score 4: Also names making a change that requires updating N copies of similar logic in lockstep Score 5: Also explains how these signs manifest in practice for a development team\n"
+          }
+        ]
+      },
+      {
+        "description": "Abstraction: the cost of getting it wrong",
+        "vars": {
+          "task": "What's the actual cost of creating the wrong abstraction? Why is duplicated code sometimes preferable to a premature abstraction?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] wrong abstraction locks you in",
+            "value": "Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains when the abstracted cases later diverge, you're forced into awkward workarounds or a painful refactor of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken abstraction across all its call sites\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] wrong abstraction worse than duplication",
+            "value": "Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also explains duplicated code can be changed independently Score 5: Also explains a shared abstraction makes both callers harder to evolve when the abstraction is wrong\n"
+          }
+        ]
+      },
+      {
+        "description": "Structured output: JSON failure modes and constrained decoding",
+        "vars": {
+          "task": "What are the specific ways an LLM can produce invalid JSON, and what's the most reliable engineering approach to prevent it?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] JSON failure modes",
+            "value": "Score 3: Names at least one specific LLM failure mode for JSON — such as unclosed brackets, invalid string escaping, trailing commas, or output truncated mid-object due to token limits Score 4: Names additional specific failure modes showing depth of understanding Score 5: Covers the full range of common JSON failure modes LLMs exhibit\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] constrained decoding",
+            "value": "Score 3: Mentions constrained decoding, guided generation, or provider JSON mode (e.g., Anthropic tool use, OpenAI response_format) Score 4: Also explains these shift the problem from syntax to semantics Score 5: Also explains why constrained approaches are more reliable than post-hoc validation and repair\n"
+          }
+        ]
+      },
+      {
+        "description": "Structured output: XML and custom delimiters",
+        "vars": {
+          "task": "When would XML be a better LLM output format than JSON? What about custom delimiters?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] XML verbosity tradeoff",
+            "value": "Score 3: Explains XML's explicit closing tags make partial or truncated output more recoverable (you can detect where the model stopped) Score 4: Also explains explicit closing tags cost significantly more tokens than equivalent JSON Score 5: Also explains when the recoverability benefit outweighs the token cost\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] custom delimiters need custom parsers",
+            "value": "Score 3: Explains custom delimiters require writing and maintaining custom parsing logic Score 4: Also explains this is itself a source of bugs Score 5: Also contrasts with using a battle-tested JSON or XML parser\n"
+          }
+        ]
+      },
+      {
+        "description": "CoT: when it hurts accuracy",
+        "vars": {
+          "task": "When does chain-of-thought prompting hurt model accuracy rather than improve it?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] CoT introduces errors on simple tasks",
+            "value": "Score 3: Explains that on simple tasks, chain-of-thought creates more opportunities for the model to reason itself into a wrong answer Score 4: Also explains more steps mean more surface area for errors compared to a direct response Score 5: Also explains this with specific reasoning about why intermediate steps amplify error probability on simple tasks\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] concrete example where CoT hurts",
+            "value": "Score 3: Gives a specific task type where forcing CoT produces worse results Score 4: Also covers examples like simple factual retrieval, sentiment classification, direct entity extraction, or other tasks where the answer doesn't require intermediate steps Score 5: Also explains why CoT specifically hurts each example task type\n"
+          }
+        ]
+      },
+      {
+        "description": "CoT: zero-shot vs few-shot, and model size",
+        "vars": {
+          "task": "What's the difference between zero-shot and few-shot chain-of-thought prompting? Does model size affect whether CoT helps?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] zero-shot vs few-shot CoT",
+            "value": "Score 3: Distinguishes zero-shot CoT (\"think step by step\") from few-shot CoT (providing worked example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness profiles Score 5: Also explains what makes each approach effective in different contexts\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] model size dependence",
+            "value": "Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also explains smaller models can degrade in performance when given intermediate reasoning steps Score 5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning steps\n"
+          }
+        ]
+      },
+      {
+        "description": "Prompt chains: the silent error propagation risk",
+        "vars": {
+          "task": "What's the hidden risk in chained LLM prompts that people overlook when they focus on the observability benefits of chaining?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] error propagation in chains",
+            "value": "Score 3: Explains that a semantically wrong but plausible-looking output from an early step flows silently into later steps Score 4: Also explains the downstream output still looks reasonable, making the corruption hard to detect without inspecting intermediate outputs Score 5: Also explains why this risk is uniquely dangerous compared to other failure modes in LLM pipelines\n"
+          }
+        ]
+      },
+      {
+        "description": "Prompt chains: observability and cost optimization",
+        "vars": {
+          "task": "What are the concrete advantages of chaining separate prompts for a multi-step pipeline, compared to a single large prompt?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[baseline] observability advantage of chaining",
+            "value": "Score 3: Explains that chaining makes intermediate outputs inspectable Score 4: Also explains failures are easier to isolate to a specific step Score 5: Also covers debugging and retry advantages compared to a monolithic prompt where only the final output is visible\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] cost optimization with different models",
+            "value": "Score 3: Explains that chaining lets you assign different models to different steps Score 4: Also explains a cheap, fast model for classification or extraction and an expensive model only for the steps that require deep reasoning Score 5: Also provides concrete examples of cost-optimal model assignment across steps\n"
+          }
+        ]
+      },
+      {
+        "description": "Prompt chains: latency and interface contracts",
+        "vars": {
+          "task": "What are the main engineering drawbacks of chaining prompts, and how should you design the handoff between steps?\n"
+        },
+        "assert": [
+          {
+            "type": "llm-rubric",
+            "metric": "[proficient] latency — sequential round trips",
+            "value": "Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N times the latency of a single call\n"
+          },
+          {
+            "type": "llm-rubric",
+            "metric": "[expert] interface design between chain steps",
+            "value": "Score 3: Addresses the interface contract problem — each step's output is the next step's input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema validation between steps\n"
+          }
+        ]
+      }
+    ],
+    "scenarios": [],
+    "env": {},
+    "defaultTest": {
+      "threshold": 0.8,
+      "options": {
+        "provider": {
+          "id": "openai:chat:prometheus-7b",
+          "config": {
+            "apiBaseUrl": "http://jason-server:11437/v1",
+            "apiKey": "[REDACTED]"
+          }
+        },
+        "transform": "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()",
+        "rubricPrompt": "You are grading a technical response. Use the rubric to assess quality,\nthen output ONLY a JSON object on the last line — nothing after it.\n\nRubric:\n{{rubric}}\n\nPrompt given to the model:\n{{prompt}}\n\nResponse to grade:\n{{output}}\n\nThen output ONLY this JSON (no trailing text):\n{\"pass\": true/false, \"score\": 0.0, \"reason\": \"one sentence\"}\n"
+      },
+      "vars": {},
+      "assert": [],
+      "metadata": {}
+    },
+    "outputPath": [
+      "evals/qwen3-coder-next-architecture.json"
+    ],
+    "extensions": [],
+    "metadata": {},
+    "evaluateOptions": {
+      "timeoutMs": 300000
+    }
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.121.11",
+    "nodeVersion": "v24.14.1",
+    "platform": "linux",
+    "arch": "x64",
+    "exportedAt": "2026-05-18T02:14:34.340Z",
+    "evaluationCreatedAt": "2026-05-17T23:34:03.236Z"
+  }
+}
