@@ -28,8 +28,6 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
-      --split-mode tensor
-      -fit off
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -78,8 +76,6 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
-      --split-mode tensor
-      -fit off
       -ngl 999
       -c 16384
       --port 9999
