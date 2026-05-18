@@ -29,7 +29,7 @@ services:
   # model under test. Evals are batch jobs so slower CPU inference is acceptable.
   # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
   llm-judge:
-    image: ghcr.io/ggml-org/llama.cpp:server-cpu
+    image: ghcr.io/ggml-org/llama.cpp:server
     container_name: llm-judge
     profiles: ["judge"]
     ports:
