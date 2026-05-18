@@ -68,3 +68,5 @@ for model, cfg in config['models'].items():
 
 print('\nAll done. View: npx promptfoo@latest view')
 EOF
+
+bash summarize.sh
