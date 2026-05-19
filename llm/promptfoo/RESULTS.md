@@ -10,7 +10,9 @@
 | qwen3.6-35b | ✅ 30/32 (94%) | ❌ 7/12 (58%) | ⚠️ 6/9 (67%) |
 
 **Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors
-
 **tok/s:** median decode speed across all tests in that suite
-
 **Suites:** architecture (32) · coding (12) · function-call (11) · brain-twisters (9) · math (9) · tools (14)
+
+## Failures
+
+*No failures — all tests passed.*
