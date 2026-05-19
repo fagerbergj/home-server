@@ -6,7 +6,10 @@
 #   function-call  (11 tests) — BFCL + structured output + tool routing
 #   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
 #   cruxeval       (15 tests) — predict-the-output + code gotchas
-#   calibration    (10 tests) — does the model admit "I don't know"?
+#   calibration    (10 tests) — opt-in only (./eval.sh --suite calibration);
+#                                saturated — even 9B nails obvious unanswerables.
+#                                Needs subtler traps (50/50 facts, training-cutoff
+#                                edges) to actually differentiate.
 #   hard-reasoning (15 tests) — GPQA-style science MCQ + ZebraLogic puzzles
 #   large-code     (5 tests)  — compile + pytest graded (Trie, Markdown, JobQueue, RateLimiter, FlappyBird)
 #   math           (9 tests)  — GSM8K word problems
@@ -21,7 +24,6 @@ models:
       - function-call
       - brain-twisters
       - cruxeval
-      - calibration
       - hard-reasoning
       - large-code
       - math
@@ -35,7 +37,6 @@ models:
       - function-call
       - brain-twisters
       - cruxeval
-      - calibration
       - hard-reasoning
       - large-code
       - math
@@ -49,7 +50,6 @@ models:
       - function-call
       - brain-twisters
       - cruxeval
-      - calibration
       - hard-reasoning
       - large-code
 
@@ -61,7 +61,6 @@ models:
       - function-call
       - brain-twisters
       - cruxeval
-      - calibration
       - hard-reasoning
       - large-code
       - math
