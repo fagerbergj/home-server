@@ -33,4 +33,4 @@ defaultTest:
       {{output}}
 
       Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
+      {"pass": true/false, "score": <score (1-5) you gave that answer>, "reason": "<one sentance explaining why you gave that score>"}

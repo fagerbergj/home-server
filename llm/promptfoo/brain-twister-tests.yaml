@@ -65,43 +65,6 @@
         Score 5: Also demonstrates awareness of the classic puzzle trap that LLMs fall
         into (applying the multi-trip solution when the constraint has changed)
 
-- description: "brain twister: weight comparison — which weighs more"
-  vars:
-    task: >
-      Which weighs more: a pound of water, two pounds of bricks, a pound of feathers,
-      or three pounds of air?
-  assert:
-    - type: javascript
-      value: output.includes('bricks') || output.includes('brick')
-      metric: "[baseline] identifies two pounds of bricks"
-    - type: llm-rubric
-      metric: "[baseline] correct reasoning"
-      value: >
-        Score 3: Correctly answers "two pounds of bricks"
-        Score 4: Also explains that all other options are explicitly one pound each by
-        the wording of the question
-        Score 5: Also notes this is a trick — the common riddle asks about pound of
-        feathers vs bricks assuming equal weight, but this version includes a 2-pound
-        option
-
-- description: "brain twister: robot arms — how many free"
-  vars:
-    task: >
-      A robot has 8 arms. It picks up 5 objects (one in each of 5 arms), then
-      shakes hands with itself. How many arms are free?
-  assert:
-    - type: javascript
-      value: /\b1\b/.test(output) || output.includes('one arm') || output.includes('one free')
-      metric: "[baseline] answer is 1"
-    - type: llm-rubric
-      metric: "[baseline] correct step-by-step counting"
-      value: >
-        Score 3: Arrives at 1 free arm
-        Score 4: Also shows the counting: 8 arms − 5 holding objects = 3 free, then 2
-        of those shake hands with each other, leaving 1 free
-        Score 5: Also explains why shaking hands with itself uses 2 arms (one from each
-        side of the handshake)
-
 - description: "brain twister: circle arrangement — who is right of Alan"
   vars:
     task: >
@@ -160,3 +123,20 @@
         Score 5: Also acknowledges this is extremely hard to guarantee since Biblical
         translations use almost all common English words, and demonstrates awareness
         of which words are risky (the, and, or, is, a, be, not, etc.)
+- description: "brain twister: How many Rs in Strawberry"
+  vars:
+    task: >
+      How many Rs in the word Strawberry?
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] correct answer"
+      value: >
+        Score 0: Any other number of Rs other than 3
+        Score 5: 3 Rs in the word 
+- description: "brain twister: Carwash"
+  vars:
+    task: "I want to wash my car. The car wash is 50 meters away. Should I walk or drive?"
+    metric: "[baseline] correct answer"
+    value: >
+      Score 0: Answers that you should walk
+      Score 5: Answers that you should drive since you need the car to be at the car wash 

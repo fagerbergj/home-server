@@ -1,661 +1,518 @@
-# ── REST server / language choice ─────────────────────────────────────────
+# Software architecture & systems design questions — 26 tests
+# (Saturated tests dropped 2026-05-19 after Selene judge showed all-models-pass)
 
-- description: "Go: goroutine concurrency model"
+- description: 'Go vs Python vs Kotlin: deployment artifacts'
   vars:
-    task: >
-      Explain how Go's goroutine model works and why it's well-suited for
-      handling concurrent HTTP connections.
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] goroutine model"
-      value: >
-        Score 3: Explains goroutines as lightweight threads managed by the Go runtime
-        Score 4: Also explains they're cheap to spawn (small initial stack), multiplexed
-        onto OS threads by the scheduler
-        Score 5: Also explains why this lets a server handle many simultaneous connections
-        without the overhead of one OS thread per connection
+    task: 'When containerizing or deploying a backend service, how do Go, Python, and Kotlin differ in
+      their runtime requirements and startup characteristics?
 
-- description: "Python: GIL and async for REST APIs"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] deployment differences'
+    value: 'Score 3: Covers Go compiles to a single static binary with no runtime dependency Score 4:
+      Also covers Python requiring the interpreter and dependencies Score 5: Also covers Kotlin/JVM requiring
+      a JVM with its associated startup time and memory overhead
+
+      '
+- description: 'Kotlin: JVM ecosystem and type system'
   vars:
-    task: >
-      How does Python's GIL affect REST API server performance, and how do async
-      frameworks like uvicorn or asyncio address it?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] GIL limits parallelism"
-      value: >
-        Score 3: Explains that the GIL prevents multiple Python threads from executing
-        Python bytecode simultaneously, meaning CPU-bound work can't be parallelized
-        across threads
-        Score 4: Also explains that for IO-bound workloads (the typical REST API case),
-        async frameworks largely sidestep the GIL — the runtime releases the GIL during
-        IO waits, allowing cooperative multitasking without true thread parallelism
-        Score 5: Also provides concrete examples of async frameworks like uvicorn or
-        asyncio and how they achieve this
+    task: 'I''m considering Kotlin for a new backend service. What am I committing to beyond the language
+      syntax itself — including what the type system enforces at compile time?
 
-- description: "Go vs Python vs Kotlin: deployment artifacts"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] JVM ecosystem commitment'
+    value: 'Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics,
+      memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4:
+      Also discusses Kotlin''s null safety (nullable vs non-nullable types enforced at compile time) as
+      a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses
+      sealed classes as another compile-time mechanism for catching invalid state representations
+
+      '
+  - type: llm-rubric
+    metric: '[expert] type system depth'
+    value: 'Score 3: Discusses Kotlin''s null safety (nullable vs non-nullable types) as a compile-time
+      bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting
+      valid state representations Score 5: Also explains how both mechanisms work together to eliminate
+      whole classes of runtime errors
+
+      '
+- description: 'Kafka: consumer groups and backpressure'
   vars:
-    task: >
-      When containerizing or deploying a backend service, how do Go, Python, and
-      Kotlin differ in their runtime requirements and startup characteristics?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] deployment differences"
-      value: >
-        Score 3: Covers Go compiles to a single static binary with no runtime dependency
-        Score 4: Also covers Python requiring the interpreter and dependencies
-        Score 5: Also covers Kotlin/JVM requiring a JVM with its associated startup time
-        and memory overhead
+    task: 'How do Kafka consumer groups work, and what happens when a consumer can''t keep up with the
+      rate of incoming messages?
 
-- description: "Kotlin: JVM ecosystem and type system"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] consumer group model'
+    value: 'Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks
+      its own position in the topic Score 4: Also explains that multiple groups can each read the full
+      message stream independently, and consumers within a group divide the partitions among themselves
+      Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and
+      Kafka doesn''t block the producer or drop messages, so lag grows unboundedly until the consumer
+      catches up
+
+      '
+  - type: llm-rubric
+    metric: '[expert] consumer lag and backpressure'
+    value: 'Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also
+      explains that Kafka doesn''t block the producer or drop messages Score 5: Also explains that lag
+      grows unboundedly until the consumer catches up and what operational implications this has
+
+      '
+- description: 'Kafka: when is the complexity justified'
   vars:
-    task: >
-      I'm considering Kotlin for a new backend service. What am I committing to
-      beyond the language syntax itself — including what the type system enforces
-      at compile time?
+    task: 'Kafka is often described as overkill for small systems. When is Kafka''s operational overhead
+      actually worth it?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] JVM ecosystem commitment"
-      value: >
-        Score 3: Explains that choosing Kotlin means committing to the JVM — its startup
-        characteristics, memory model, GC tuning, and the Java library ecosystem —
-        not just a syntax preference
-        Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types
-        enforced at compile time) as a mechanism for catching a class of bugs at
-        compile time rather than at runtime
-        Score 5: Also discusses sealed classes as another compile-time mechanism for
-        catching invalid state representations
-    - type: llm-rubric
-      metric: "[expert] type system depth"
-      value: >
-        Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a
-        compile-time bug-catching mechanism
-        Score 4: Also discusses sealed classes as a compile-time mechanism for restricting
-        valid state representations
-        Score 5: Also explains how both mechanisms work together to eliminate whole classes
-        of runtime errors
+  - type: llm-rubric
+    metric: '[proficient] when Kafka is justified'
+    value: 'Score 3: Explains that Kafka is justified when you need multiple independent consumer groups
+      replaying the same stream Score 4: Also covers event sourcing/audit log replay or persistent event
+      history Score 5: Also explains why high throughput alone is not sufficient justification for Kafka''s
+      operational overhead
 
-# ── Messaging ─────────────────────────────────────────────────────────────
-
-- description: "Kafka vs RabbitMQ: log retention vs delete-on-ack"
+      '
+- description: 'Batch vs streaming: latency as the primary driver'
   vars:
-    task: >
-      What's the fundamental architectural difference between how Kafka and
-      RabbitMQ store and deliver messages?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] log retention vs delete-on-ack"
-      value: >
-        Score 3: Explains that Kafka retains messages as a persistent, replayable log
-        independent of consumer acknowledgement
-        Score 4: Also explains that RabbitMQ deletes messages once they are acknowledged
-        Score 5: Also explains why this difference matters for system design decisions
+    task: 'What''s the most important factor to nail down when deciding between a batch and a streaming
+      architecture for a data pipeline?
 
-- description: "Kafka: ordering guarantees"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] latency requirement is the primary driver'
+    value: 'Score 3: Identifies the required data freshness or latency SLA as the primary deciding factor
+      Score 4: Also explains how quickly consumers need results after events occur Score 5: Also explains
+      why throughput, cost, or complexity are secondary to the latency requirement
+
+      '
+- description: 'Batch: correctness and testability advantages'
   vars:
-    task: >
-      What ordering guarantees does Kafka provide, and what does that mean in
-      practice when designing a multi-consumer system?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] partition-level ordering"
-      value: >
-        Score 3: Explains that Kafka guarantees message ordering within a partition but
-        not across partitions
-        Score 4: Also applies this concretely — e.g., route all events for the same
-        entity to the same partition to preserve ordering for that entity
-        Score 5: Also explains the implications for designing a multi-consumer system
-        where ordering matters
+    task: 'Why is a batch pipeline generally easier to reason about for correctness than a streaming pipeline?
 
-- description: "Kafka: consumer groups and backpressure"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] fixed input deterministic output'
+    value: 'Score 3: Explains that batch pipelines operate on a fixed, bounded dataset Score 4: Also explains
+      they produce deterministic output that can be fully reproduced by re-running the same job — making
+      bugs easier to isolate and reproduce Score 5: Also contrasts this with streaming''s lack of fixed
+      boundaries
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] streaming testing complexity'
+    value: 'Score 3: Explains that streaming introduces time-dependent behavior — event ordering, late
+      arrivals, windowing Score 4: Also explains that this makes tests harder to write and reliably reproduce
+      compared to a batch job with static input and output Score 5: Also provides specific examples of
+      streaming testing challenges unique to time-dependent behavior
+
+      '
+- description: 'Streaming: operational challenges'
   vars:
-    task: >
-      How do Kafka consumer groups work, and what happens when a consumer
-      can't keep up with the rate of incoming messages?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] consumer group model"
-      value: >
-        Score 3: Explains that Kafka consumer groups are offset-based — each group
-        independently tracks its own position in the topic
-        Score 4: Also explains that multiple groups can each read the full message stream
-        independently, and consumers within a group divide the partitions among themselves
-        Score 5: Also explains what happens when a consumer falls behind — consumer lag
-        accumulates and Kafka doesn't block the producer or drop messages, so lag grows
-        unboundedly until the consumer catches up
-    - type: llm-rubric
-      metric: "[expert] consumer lag and backpressure"
-      value: >
-        Score 3: Explains that consumer lag accumulates when a consumer falls behind
-        Score 4: Also explains that Kafka doesn't block the producer or drop messages
-        Score 5: Also explains that lag grows unboundedly until the consumer catches up
-        and what operational implications this has
+    task: 'What operational challenges does a streaming pipeline introduce that a batch pipeline doesn''t
+      have?
 
-- description: "Kafka: when is the complexity justified"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] state management'
+    value: 'Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers
+      checkpointing state and managing state store growth over time Score 5: Also explains how the system
+      recovers after a failure when in-flight state must be rebuilt
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] reprocessing and backfill'
+    value: 'Score 3: Explains that reprocessing and backfill are significantly harder with streaming than
+      with batch Score 4: Also explains that streaming requires offset management and replaying from a
+      source Score 5: Also contrasts with batch where you simply re-run the job against the same input
+
+      '
+- description: 'PostgreSQL JSONB vs MongoDB: query ergonomics'
   vars:
-    task: >
-      Kafka is often described as overkill for small systems. When is Kafka's
-      operational overhead actually worth it?
+    task: 'How does querying deeply nested documents compare between PostgreSQL JSONB and MongoDB''s native
+      query language?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] when Kafka is justified"
-      value: >
-        Score 3: Explains that Kafka is justified when you need multiple independent
-        consumer groups replaying the same stream
-        Score 4: Also covers event sourcing/audit log replay or persistent event history
-        Score 5: Also explains why high throughput alone is not sufficient justification
-        for Kafka's operational overhead
+  - type: llm-rubric
+    metric: '[proficient] query ergonomics'
+    value: 'Score 3: Explains that MongoDB''s query language is designed natively for nested document
+      structures Score 4: Also explains PostgreSQL''s JSONB operators (->, ->>, #>) are more verbose and
+      harder to read and optimize for deeply nested access patterns Score 5: Also provides concrete examples
+      comparing the query syntax of both
 
-# ── Data pipeline ──────────────────────────────────────────────────────────
-
-- description: "Batch vs streaming: latency as the primary driver"
+      '
+- description: 'Variable schema data: what it usually looks like in practice'
   vars:
-    task: >
-      What's the most important factor to nail down when deciding between a
-      batch and a streaming architecture for a data pipeline?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] latency requirement is the primary driver"
-      value: >
-        Score 3: Identifies the required data freshness or latency SLA as the primary
-        deciding factor
-        Score 4: Also explains how quickly consumers need results after events occur
-        Score 5: Also explains why throughput, cost, or complexity are secondary to the
-        latency requirement
+    task: 'My application data has "variable schema" — different records have different fields. How should
+      I think about the PostgreSQL vs MongoDB decision given that?
 
-- description: "Batch: correctness and testability advantages"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] stable core schema insight'
+    value: 'Score 3: Explains that most "variable schema" data has a stable core (fields common across
+      all records) Score 4: Also explains only the edges being truly variable Score 5: Also recommends
+      a relational table with fixed columns plus a JSONB column for the variable parts as a practical
+      middle ground
+
+      '
+- description: 'JWT: the revocation problem'
   vars:
-    task: >
-      Why is a batch pipeline generally easier to reason about for correctness
-      than a streaming pipeline?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] fixed input deterministic output"
-      value: >
-        Score 3: Explains that batch pipelines operate on a fixed, bounded dataset
-        Score 4: Also explains they produce deterministic output that can be fully
-        reproduced by re-running the same job — making bugs easier to isolate and
-        reproduce
-        Score 5: Also contrasts this with streaming's lack of fixed boundaries
-    - type: llm-rubric
-      metric: "[proficient] streaming testing complexity"
-      value: >
-        Score 3: Explains that streaming introduces time-dependent behavior — event
-        ordering, late arrivals, windowing
-        Score 4: Also explains that this makes tests harder to write and reliably
-        reproduce compared to a batch job with static input and output
-        Score 5: Also provides specific examples of streaming testing challenges
-        unique to time-dependent behavior
+    task: 'What is the JWT revocation problem, and why does the standard solution undermine JWT''s main
+      advantage?
 
-- description: "Streaming: operational challenges"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] revocation undermines statelessness'
+    value: 'Score 3: Explains that JWTs can''t be invalidated before expiry Score 4: Also explains that
+      the standard solution — a server-side denylist — requires the same kind of shared state that JWTs
+      were supposed to eliminate Score 5: Also explains how this partially defeats JWT''s stateless advantage
+
+      '
+- description: 'Token storage: localStorage vs httpOnly cookies'
   vars:
-    task: >
-      What operational challenges does a streaming pipeline introduce that a
-      batch pipeline doesn't have?
+    task: 'Where should I store JWTs or session tokens on the client? What are the security tradeoffs
+      between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] state management"
-      value: >
-        Score 3: Discusses stateful streaming as a core operational challenge
-        Score 4: Also covers checkpointing state and managing state store growth over time
-        Score 5: Also explains how the system recovers after a failure when in-flight
-        state must be rebuilt
-    - type: llm-rubric
-      metric: "[proficient] reprocessing and backfill"
-      value: >
-        Score 3: Explains that reprocessing and backfill are significantly harder with
-        streaming than with batch
-        Score 4: Also explains that streaming requires offset management and replaying
-        from a source
-        Score 5: Also contrasts with batch where you simply re-run the job against
-        the same input
+  - type: llm-rubric
+    metric: '[proficient] token storage tradeoffs'
+    value: 'Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it)
+      Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection
+      Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer
 
-# ── Database ─────────────────────────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[expert] the logout problem'
+    value: 'Score 3: Addresses what "logout" actually means for JWTs Score 4: Also explains client-side
+      deletion doesn''t stop a copied token from working Score 5: Also explains true invalidation requires
+      server-side state (a denylist or short expiry with refresh rotation)
 
-- description: "PostgreSQL JSONB: viability and transaction support"
+      '
+- description: 'Queue vs HTTP: sync vs async is the primary question'
   vars:
-    task: >
-      Is PostgreSQL with JSONB a realistic alternative to MongoDB for storing
-      semi-structured documents? What's the most important difference in
-      transaction support?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] JSONB as viable alternative"
-      value: >
-        Score 3: Explains that PostgreSQL's JSONB can store, index, and query
-        semi-structured data
-        Score 4: Also explains it's a genuine alternative to MongoDB rather than
-        a tool only for fully relational data
-        Score 5: Also addresses the transaction support comparison
-    - type: llm-rubric
-      metric: "[baseline] transaction support differences"
-      value: >
-        Score 3: Explains that PostgreSQL has full ACID multi-table transactions
-        Score 4: Also explains MongoDB's multi-document transactions are more limited
-        Score 5: Also explains they carry meaningful performance costs compared to
-        single-document operations
+    task: 'My services currently call each other synchronously over HTTP. What fundamentally changes about
+      how services communicate when you introduce a message queue, and why does that matter for whether
+      to use one?
 
-- description: "PostgreSQL JSONB vs MongoDB: query ergonomics"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] sync vs async as primary driver'
+    value: 'Score 3: Explains the fundamental shift is from synchronous to asynchronous communication
+      Score 4: Also explains the sender no longer waits for a response Score 5: Also frames this as the
+      central question: does the caller actually need an immediate result, or is fire-and-forget acceptable?
+
+      '
+- description: 'Queue vs HTTP: operational costs and failure modes'
   vars:
-    task: >
-      How does querying deeply nested documents compare between PostgreSQL
-      JSONB and MongoDB's native query language?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] query ergonomics"
-      value: >
-        Score 3: Explains that MongoDB's query language is designed natively for nested
-        document structures
-        Score 4: Also explains PostgreSQL's JSONB operators (->, ->>, #>) are more
-        verbose and harder to read and optimize for deeply nested access patterns
-        Score 5: Also provides concrete examples comparing the query syntax of both
+    task: 'What operational costs and failure mode differences should I understand before replacing HTTP
+      calls with a message queue?
 
-- description: "Variable schema data: what it usually looks like in practice"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] operational cost of queue infra'
+    value: 'Score 3: Explains that a message broker is another production system to deploy Score 4: Also
+      covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service
+      calls not requiring this additional operational overhead
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] failure mode differences'
+    value: 'Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes,
+      timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also
+      covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes
+
+      '
+  - type: llm-rubric
+    metric: '[expert] idempotency requirements'
+    value: 'Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4:
+      Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this
+      is a design constraint that HTTP calls don''t impose by default
+
+      '
+- description: 'Queue vs HTTP: coupling and idempotency'
   vars:
-    task: >
-      My application data has "variable schema" — different records have different
-      fields. How should I think about the PostgreSQL vs MongoDB decision given that?
+    task: 'I keep hearing that message queues "decouple" services. Is that actually true? What stays coupled
+      when you add a queue, and what new design constraints does the queue introduce on the consumer side?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] stable core schema insight"
-      value: >
-        Score 3: Explains that most "variable schema" data has a stable core (fields
-        common across all records)
-        Score 4: Also explains only the edges being truly variable
-        Score 5: Also recommends a relational table with fixed columns plus a JSONB
-        column for the variable parts as a practical middle ground
+  - type: llm-rubric
+    metric: '[proficient] coupling moves to schema'
+    value: 'Score 3: Explains that queues don''t eliminate coupling Score 4: Also explains they shift
+      it from runtime API contracts to the message schema or event format Score 5: Also explains that
+      producers and consumers must still agree on message structure
 
-# ── Auth ───────────────────────────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[expert] idempotency requirements'
+    value: 'Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4:
+      Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this
+      is a design constraint that HTTP calls don''t impose by default
 
-- description: "JWT: the revocation problem"
+      '
+- description: 'Microservices: real operational costs for small teams'
   vars:
-    task: >
-      What is the JWT revocation problem, and why does the standard solution
-      undermine JWT's main advantage?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] revocation undermines statelessness"
-      value: >
-        Score 3: Explains that JWTs can't be invalidated before expiry
-        Score 4: Also explains that the standard solution — a server-side denylist —
-        requires the same kind of shared state that JWTs were supposed to eliminate
-        Score 5: Also explains how this partially defeats JWT's stateless advantage
+    task: 'What are the real operational costs of microservices that small teams consistently underestimate
+      when choosing them for a new product?
 
-- description: "JWT: payload is not encrypted"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] microservice operational costs'
+    value: 'Score 3: Names at least one specific operational cost beyond vague "complexity" Score 4: Also
+      names a second specific cost — such as distributed tracing, service discovery, per-service deployment
+      pipelines, or the difficulty of debugging failures that span service boundaries Score 5: Also provides
+      enough detail that the costs feel concrete and actionable
+
+      '
+  - type: llm-rubric
+    metric: '[baseline] small team favors monolith'
+    value: 'Score 3: Argues that small teams should start with a monolith Score 4: Also provides specific
+      reasoning — such as that a team of 2-5 engineers can''t effectively own multiple independent services
+      in production while also shipping features Score 5: Also provides additional concrete reasoning
+      tied to small team constraints
+
+      '
+- description: 'Microservices: Conway''s Law'
   vars:
-    task: >
-      What does it mean that a JWT payload is base64-encoded? What are the
-      practical security implications?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] JWTs are not encrypted"
-      value: >
-        Score 3: Explains that base64 is encoding, not encryption
-        Score 4: Also explains anyone who holds the token can decode and read the
-        payload without any key
-        Score 5: Also explains that sensitive data (PII, roles, secrets) should never
-        be placed in JWT claims
+    task: 'What is Conway''s Law, and how should it influence decisions about where to draw microservice
+      boundaries?
 
-- description: "Token storage: localStorage vs httpOnly cookies"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] Conway''s Law'
+    value: 'Score 3: Explains Conway''s Law — that systems mirror the communication structure of the organizations
+      that build them Score 4: Also applies it: service boundaries that don''t match team boundaries create
+      ongoing friction Score 5: Also explains that someone always owns the "wrong" part of the system
+      when boundaries are misaligned
+
+      '
+- description: 'Microservices: modular monolith and cost asymmetry'
   vars:
-    task: >
-      Where should I store JWTs or session tokens on the client? What are the
-      security tradeoffs between localStorage and httpOnly cookies? And what
-      does logout actually mean for a JWT-based system?
+    task: 'What is a modular monolith, and why is the cost of going microservices-first often higher than
+      teams expect?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] token storage tradeoffs"
-      value: >
-        Score 3: Explains that localStorage is vulnerable to XSS (any injected script
-        can read it)
-        Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but
-        require CSRF protection
-        Score 5: Also explains that this is a genuine security tradeoff with no
-        universally correct answer
-    - type: llm-rubric
-      metric: "[expert] the logout problem"
-      value: >
-        Score 3: Addresses what "logout" actually means for JWTs
-        Score 4: Also explains client-side deletion doesn't stop a copied token from
-        working
-        Score 5: Also explains true invalidation requires server-side state (a denylist
-        or short expiry with refresh rotation)
+  - type: llm-rubric
+    metric: '[proficient] modular monolith'
+    value: 'Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal
+      module or package boundaries within a single deployable Score 5: Also explains the design intention
+      so services can be extracted later when team size and scale justify it
 
-# ── Queue vs HTTP ──────────────────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[expert] cost asymmetry'
+    value: 'Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from
+      a well-factored monolith is much easier than merging poorly-scoped microservices back together Score
+      5: Also explains why this makes the monolith-first approach lower risk even if you plan to split
+      later
 
-- description: "Queue vs HTTP: sync vs async is the primary question"
+      '
+- description: 'Abstraction: when to extract'
   vars:
-    task: >
-      My services currently call each other synchronously over HTTP. What
-      fundamentally changes about how services communicate when you introduce
-      a message queue, and why does that matter for whether to use one?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] sync vs async as primary driver"
-      value: >
-        Score 3: Explains the fundamental shift is from synchronous to asynchronous
-        communication
-        Score 4: Also explains the sender no longer waits for a response
-        Score 5: Also frames this as the central question: does the caller actually
-        need an immediate result, or is fire-and-forget acceptable?
+    task: 'What''s a concrete heuristic for deciding when to extract a function or abstraction vs leaving
+      code duplicated? And how do you recognize when you''ve already waited too long to extract it?
 
-- description: "Queue vs HTTP: operational costs and failure modes"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] concrete heuristic'
+    value: 'Score 3: Gives a concrete, actionable heuristic — such as the rule of three (wait until the
+      pattern appears three times) Score 4: Also covers at least one additional heuristic — only when
+      you can give the abstraction a meaningful domain name, only when the duplicated code represents
+      the same concept (not just the same structure), or only when callers don''t need to know the internals
+      Score 5: Also provides enough detail that the heuristic feels practical and actionable in real development
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] signs of waiting too long'
+    value: 'Score 3: Names concrete signs you''ve waited too long — such as fixing the same bug in multiple
+      places Score 4: Also names making a change that requires updating N copies of similar logic in lockstep
+      Score 5: Also explains how these signs manifest in practice for a development team
+
+      '
+- description: 'Abstraction: the cost of getting it wrong'
   vars:
-    task: >
-      What operational costs and failure mode differences should I understand
-      before replacing HTTP calls with a message queue?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] operational cost of queue infra"
-      value: >
-        Score 3: Explains that a message broker is another production system to deploy
-        Score 4: Also covers monitor, scale, and maintain aspects
-        Score 5: Also contrasts with HTTP service-to-service calls not requiring this
-        additional operational overhead
-    - type: llm-rubric
-      metric: "[proficient] failure mode differences"
-      value: >
-        Score 3: Explains that HTTP failures are immediate and visible to the caller
-        (error codes, timeouts)
-        Score 4: Also explains queue failures are deferred and harder to detect
-        Score 5: Also covers dead letter queues, silent drops, or unbounded consumer
-        lag as specific queue failure modes
-    - type: llm-rubric
-      metric: "[expert] idempotency requirements"
-      value: >
-        Score 3: Explains that message queues introduce at-least-once delivery semantics
-        Score 4: Also explains consumers must handle duplicate messages idempotently
-        Score 5: Also explains this is a design constraint that HTTP calls don't impose
-        by default
+    task: 'What''s the actual cost of creating the wrong abstraction? Why is duplicated code sometimes
+      preferable to a premature abstraction?
 
-- description: "Queue vs HTTP: coupling and idempotency"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] wrong abstraction locks you in'
+    value: 'Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains
+      when the abstracted cases later diverge, you''re forced into awkward workarounds or a painful refactor
+      of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken
+      abstraction across all its call sites
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] wrong abstraction worse than duplication'
+    value: 'Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also
+      explains duplicated code can be changed independently Score 5: Also explains a shared abstraction
+      makes both callers harder to evolve when the abstraction is wrong
+
+      '
+- description: 'Structured output: JSON failure modes and constrained decoding'
   vars:
-    task: >
-      I keep hearing that message queues "decouple" services. Is that actually
-      true? What stays coupled when you add a queue, and what new design
-      constraints does the queue introduce on the consumer side?
+    task: 'What are the specific ways an LLM can produce invalid JSON, and what''s the most reliable engineering
+      approach to prevent it?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] coupling moves to schema"
-      value: >
-        Score 3: Explains that queues don't eliminate coupling
-        Score 4: Also explains they shift it from runtime API contracts to the message
-        schema or event format
-        Score 5: Also explains that producers and consumers must still agree on
-        message structure
-    - type: llm-rubric
-      metric: "[expert] idempotency requirements"
-      value: >
-        Score 3: Explains that message queues introduce at-least-once delivery semantics
-        Score 4: Also explains consumers must handle duplicate messages idempotently
-        Score 5: Also explains this is a design constraint that HTTP calls don't impose
-        by default
+  - type: llm-rubric
+    metric: '[baseline] JSON failure modes'
+    value: 'Score 3: Names at least one specific LLM failure mode for JSON — such as unclosed brackets,
+      invalid string escaping, trailing commas, or output truncated mid-object due to token limits Score
+      4: Names additional specific failure modes showing depth of understanding Score 5: Covers the full
+      range of common JSON failure modes LLMs exhibit
 
-# ── Monolith vs microservices ──────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[proficient] constrained decoding'
+    value: 'Score 3: Mentions constrained decoding, guided generation, or provider JSON mode (e.g., Anthropic
+      tool use, OpenAI response_format) Score 4: Also explains these shift the problem from syntax to
+      semantics Score 5: Also explains why constrained approaches are more reliable than post-hoc validation
+      and repair
 
-- description: "Microservices: real operational costs for small teams"
+      '
+- description: 'Structured output: XML and custom delimiters'
   vars:
-    task: >
-      What are the real operational costs of microservices that small teams
-      consistently underestimate when choosing them for a new product?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] microservice operational costs"
-      value: >
-        Score 3: Names at least one specific operational cost beyond vague "complexity"
-        Score 4: Also names a second specific cost — such as distributed tracing,
-        service discovery, per-service deployment pipelines, or the difficulty of
-        debugging failures that span service boundaries
-        Score 5: Also provides enough detail that the costs feel concrete and actionable
-    - type: llm-rubric
-      metric: "[baseline] small team favors monolith"
-      value: >
-        Score 3: Argues that small teams should start with a monolith
-        Score 4: Also provides specific reasoning — such as that a team of 2-5
-        engineers can't effectively own multiple independent services in production
-        while also shipping features
-        Score 5: Also provides additional concrete reasoning tied to small team constraints
+    task: 'When would XML be a better LLM output format than JSON? What about custom delimiters?
 
-- description: "Microservices: Conway's Law"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] XML verbosity tradeoff'
+    value: 'Score 3: Explains XML''s explicit closing tags make partial or truncated output more recoverable
+      (you can detect where the model stopped) Score 4: Also explains explicit closing tags cost significantly
+      more tokens than equivalent JSON Score 5: Also explains when the recoverability benefit outweighs
+      the token cost
+
+      '
+  - type: llm-rubric
+    metric: '[baseline] custom delimiters need custom parsers'
+    value: 'Score 3: Explains custom delimiters require writing and maintaining custom parsing logic Score
+      4: Also explains this is itself a source of bugs Score 5: Also contrasts with using a battle-tested
+      JSON or XML parser
+
+      '
+- description: 'CoT: when it hurts accuracy'
   vars:
-    task: >
-      What is Conway's Law, and how should it influence decisions about where
-      to draw microservice boundaries?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] Conway's Law"
-      value: >
-        Score 3: Explains Conway's Law — that systems mirror the communication structure
-        of the organizations that build them
-        Score 4: Also applies it: service boundaries that don't match team boundaries
-        create ongoing friction
-        Score 5: Also explains that someone always owns the "wrong" part of the system
-        when boundaries are misaligned
+    task: 'When does chain-of-thought prompting hurt model accuracy rather than improve it?
 
-- description: "Microservices: modular monolith and cost asymmetry"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[proficient] CoT introduces errors on simple tasks'
+    value: 'Score 3: Explains that on simple tasks, chain-of-thought creates more opportunities for the
+      model to reason itself into a wrong answer Score 4: Also explains more steps mean more surface area
+      for errors compared to a direct response Score 5: Also explains this with specific reasoning about
+      why intermediate steps amplify error probability on simple tasks
+
+      '
+  - type: llm-rubric
+    metric: '[proficient] concrete example where CoT hurts'
+    value: 'Score 3: Gives a specific task type where forcing CoT produces worse results Score 4: Also
+      covers examples like simple factual retrieval, sentiment classification, direct entity extraction,
+      or other tasks where the answer doesn''t require intermediate steps Score 5: Also explains why CoT
+      specifically hurts each example task type
+
+      '
+- description: 'CoT: zero-shot vs few-shot, and model size'
   vars:
-    task: >
-      What is a modular monolith, and why is the cost of going microservices-first
-      often higher than teams expect?
+    task: 'What''s the difference between zero-shot and few-shot chain-of-thought prompting? Does model
+      size affect whether CoT helps?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] modular monolith"
-      value: >
-        Score 3: Explains the modular monolith as a middle path
-        Score 4: Also explains clear internal module or package boundaries within a
-        single deployable
-        Score 5: Also explains the design intention so services can be extracted later
-        when team size and scale justify it
-    - type: llm-rubric
-      metric: "[expert] cost asymmetry"
-      value: >
-        Score 3: Explains the cost asymmetry concept
-        Score 4: Also explains extracting a service from a well-factored monolith is
-        much easier than merging poorly-scoped microservices back together
-        Score 5: Also explains why this makes the monolith-first approach lower risk
-        even if you plan to split later
+  - type: llm-rubric
+    metric: '[expert] zero-shot vs few-shot CoT'
+    value: 'Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT (providing worked
+      example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness
+      profiles Score 5: Also explains what makes each approach effective in different contexts
 
-# ── Abstraction vs inline ────────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[expert] model size dependence'
+    value: 'Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also
+      explains smaller models can degrade in performance when given intermediate reasoning steps Score
+      5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning
+      steps
 
-- description: "Abstraction: when to extract"
+      '
+- description: 'Prompt chains: the silent error propagation risk'
   vars:
-    task: >
-      What's a concrete heuristic for deciding when to extract a function or
-      abstraction vs leaving code duplicated? And how do you recognize when
-      you've already waited too long to extract it?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] concrete heuristic"
-      value: >
-        Score 3: Gives a concrete, actionable heuristic — such as the rule of three
-        (wait until the pattern appears three times)
-        Score 4: Also covers at least one additional heuristic — only when you can give
-        the abstraction a meaningful domain name, only when the duplicated code
-        represents the same concept (not just the same structure), or only when
-        callers don't need to know the internals
-        Score 5: Also provides enough detail that the heuristic feels practical and
-        actionable in real development
-    - type: llm-rubric
-      metric: "[proficient] signs of waiting too long"
-      value: >
-        Score 3: Names concrete signs you've waited too long — such as fixing the same
-        bug in multiple places
-        Score 4: Also names making a change that requires updating N copies of similar
-        logic in lockstep
-        Score 5: Also explains how these signs manifest in practice for a development team
+    task: 'What''s the hidden risk in chained LLM prompts that people overlook when they focus on the
+      observability benefits of chaining?
 
-- description: "Abstraction: the cost of getting it wrong"
+      '
+  assert:
+  - type: llm-rubric
+    metric: '[baseline] error propagation in chains'
+    value: 'Score 3: Explains that a semantically wrong but plausible-looking output from an early step
+      flows silently into later steps Score 4: Also explains the downstream output still looks reasonable,
+      making the corruption hard to detect without inspecting intermediate outputs Score 5: Also explains
+      why this risk is uniquely dangerous compared to other failure modes in LLM pipelines
+
+      '
+- description: 'Prompt chains: observability and cost optimization'
   vars:
-    task: >
-      What's the actual cost of creating the wrong abstraction? Why is duplicated
-      code sometimes preferable to a premature abstraction?
+    task: 'What are the concrete advantages of chaining separate prompts for a multi-step pipeline, compared
+      to a single large prompt?
+
+      '
   assert:
-    - type: llm-rubric
-      metric: "[baseline] wrong abstraction locks you in"
-      value: >
-        Score 3: Explains that a wrong abstraction locks you into an interface
-        Score 4: Also explains when the abstracted cases later diverge, you're forced
-        into awkward workarounds or a painful refactor of the abstraction and all
-        its callers
-        Score 5: Also explains the cascading cost of fixing the broken abstraction
-        across all its call sites
-    - type: llm-rubric
-      metric: "[proficient] wrong abstraction worse than duplication"
-      value: >
-        Score 3: Makes the point that the wrong abstraction is worse than duplication
-        Score 4: Also explains duplicated code can be changed independently
-        Score 5: Also explains a shared abstraction makes both callers harder to evolve
-        when the abstraction is wrong
+  - type: llm-rubric
+    metric: '[baseline] observability advantage of chaining'
+    value: 'Score 3: Explains that chaining makes intermediate outputs inspectable Score 4: Also explains
+      failures are easier to isolate to a specific step Score 5: Also covers debugging and retry advantages
+      compared to a monolithic prompt where only the final output is visible
 
-# ── LLM / prompt engineering ───────────────────────────────────────────────
+      '
+  - type: llm-rubric
+    metric: '[proficient] cost optimization with different models'
+    value: 'Score 3: Explains that chaining lets you assign different models to different steps Score
+      4: Also explains a cheap, fast model for classification or extraction and an expensive model only
+      for the steps that require deep reasoning Score 5: Also provides concrete examples of cost-optimal
+      model assignment across steps
 
-- description: "Structured output: JSON failure modes and constrained decoding"
+      '
+- description: 'Prompt chains: latency and interface contracts'
   vars:
-    task: >
-      What are the specific ways an LLM can produce invalid JSON, and what's
-      the most reliable engineering approach to prevent it?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] JSON failure modes"
-      value: >
-        Score 3: Names at least one specific LLM failure mode for JSON — such as
-        unclosed brackets, invalid string escaping, trailing commas, or output
-        truncated mid-object due to token limits
-        Score 4: Names additional specific failure modes showing depth of understanding
-        Score 5: Covers the full range of common JSON failure modes LLMs exhibit
-    - type: llm-rubric
-      metric: "[proficient] constrained decoding"
-      value: >
-        Score 3: Mentions constrained decoding, guided generation, or provider JSON mode
-        (e.g., Anthropic tool use, OpenAI response_format)
-        Score 4: Also explains these shift the problem from syntax to semantics
-        Score 5: Also explains why constrained approaches are more reliable than post-hoc
-        validation and repair
+    task: 'What are the main engineering drawbacks of chaining prompts, and how should you design the
+      handoff between steps?
 
-- description: "Structured output: XML and custom delimiters"
-  vars:
-    task: >
-      When would XML be a better LLM output format than JSON? What about
-      custom delimiters?
+      '
   assert:
-    - type: llm-rubric
-      metric: "[proficient] XML verbosity tradeoff"
-      value: >
-        Score 3: Explains XML's explicit closing tags make partial or truncated output
-        more recoverable (you can detect where the model stopped)
-        Score 4: Also explains explicit closing tags cost significantly more tokens than
-        equivalent JSON
-        Score 5: Also explains when the recoverability benefit outweighs the token cost
-    - type: llm-rubric
-      metric: "[baseline] custom delimiters need custom parsers"
-      value: >
-        Score 3: Explains custom delimiters require writing and maintaining custom
-        parsing logic
-        Score 4: Also explains this is itself a source of bugs
-        Score 5: Also contrasts with using a battle-tested JSON or XML parser
+  - type: llm-rubric
+    metric: '[proficient] latency — sequential round trips'
+    value: 'Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each
+      step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N
+      times the latency of a single call
 
-- description: "CoT: when it hurts accuracy"
-  vars:
-    task: >
-      When does chain-of-thought prompting hurt model accuracy rather than
-      improve it?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] CoT introduces errors on simple tasks"
-      value: >
-        Score 3: Explains that on simple tasks, chain-of-thought creates more
-        opportunities for the model to reason itself into a wrong answer
-        Score 4: Also explains more steps mean more surface area for errors compared
-        to a direct response
-        Score 5: Also explains this with specific reasoning about why intermediate
-        steps amplify error probability on simple tasks
-    - type: llm-rubric
-      metric: "[proficient] concrete example where CoT hurts"
-      value: >
-        Score 3: Gives a specific task type where forcing CoT produces worse results
-        Score 4: Also covers examples like simple factual retrieval, sentiment
-        classification, direct entity extraction, or other tasks where the answer
-        doesn't require intermediate steps
-        Score 5: Also explains why CoT specifically hurts each example task type
+      '
+  - type: llm-rubric
+    metric: '[expert] interface design between chain steps'
+    value: 'Score 3: Addresses the interface contract problem — each step''s output is the next step''s
+      input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected
+      types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema
+      validation between steps
 
-- description: "CoT: zero-shot vs few-shot, and model size"
-  vars:
-    task: >
-      What's the difference between zero-shot and few-shot chain-of-thought
-      prompting? Does model size affect whether CoT helps?
-  assert:
-    - type: llm-rubric
-      metric: "[expert] zero-shot vs few-shot CoT"
-      value: >
-        Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT
-        (providing worked example reasoning chains in the prompt)
-        Score 4: Also explains they have different effectiveness profiles
-        Score 5: Also explains what makes each approach effective in different contexts
-    - type: llm-rubric
-      metric: "[expert] model size dependence"
-      value: >
-        Score 3: Explains that CoT is most effective on larger, more capable models
-        Score 4: Also explains smaller models can degrade in performance when given
-        intermediate reasoning steps
-        Score 5: Also explains smaller models lack sufficient capacity to benefit from
-        intermediate reasoning steps
-
-- description: "Prompt chains: the silent error propagation risk"
-  vars:
-    task: >
-      What's the hidden risk in chained LLM prompts that people overlook when
-      they focus on the observability benefits of chaining?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] error propagation in chains"
-      value: >
-        Score 3: Explains that a semantically wrong but plausible-looking output from
-        an early step flows silently into later steps
-        Score 4: Also explains the downstream output still looks reasonable, making
-        the corruption hard to detect without inspecting intermediate outputs
-        Score 5: Also explains why this risk is uniquely dangerous compared to other
-        failure modes in LLM pipelines
-
-- description: "Prompt chains: observability and cost optimization"
-  vars:
-    task: >
-      What are the concrete advantages of chaining separate prompts for a
-      multi-step pipeline, compared to a single large prompt?
-  assert:
-    - type: llm-rubric
-      metric: "[baseline] observability advantage of chaining"
-      value: >
-        Score 3: Explains that chaining makes intermediate outputs inspectable
-        Score 4: Also explains failures are easier to isolate to a specific step
-        Score 5: Also covers debugging and retry advantages compared to a monolithic
-        prompt where only the final output is visible
-    - type: llm-rubric
-      metric: "[proficient] cost optimization with different models"
-      value: >
-        Score 3: Explains that chaining lets you assign different models to different steps
-        Score 4: Also explains a cheap, fast model for classification or extraction and
-        an expensive model only for the steps that require deep reasoning
-        Score 5: Also provides concrete examples of cost-optimal model assignment across steps
-
-- description: "Prompt chains: latency and interface contracts"
-  vars:
-    task: >
-      What are the main engineering drawbacks of chaining prompts, and how
-      should you design the handoff between steps?
-  assert:
-    - type: llm-rubric
-      metric: "[proficient] latency — sequential round trips"
-      value: >
-        Score 3: Explains that chaining adds sequential API round trips
-        Score 4: Also explains each step waits for the previous to complete
-        Score 5: Also explains an N-step chain has at minimum N times the latency of
-        a single call
-    - type: llm-rubric
-      metric: "[expert] interface design between chain steps"
-      value: >
-        Score 3: Addresses the interface contract problem — each step's output is the
-        next step's input
-        Score 4: Also explains structural mismatches (wrong field names, missing keys,
-        unexpected types) tend to fail silently rather than loudly
-        Score 5: Also explains the need for explicit schema validation between steps
-
+      '

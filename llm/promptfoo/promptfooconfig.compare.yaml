@@ -1,0 +1,46 @@
+# Blind A/B comparison: all 4 models run the same prompts, Selene judge picks
+# the best response anonymously. Invoked by eval.sh after per-model evals.
+#
+# COMPARE_TESTS_FILE env var picks which suite's tests to compare on.
+# Examples: architecture-tests.yaml, calibration-tests.yaml, etc.
+
+evaluateOptions:
+  timeoutMs: 600000
+
+providers:
+  - id: openai:chat:llama-3.3-70b
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+  - id: openai:chat:qwen3.6-35b
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+  - id: openai:chat:qwen3.5-9b
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+  - id: openai:chat:qwen3-coder-next
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+
+prompts:
+  - "{{task}}"
+
+tests: "{{ env.COMPARE_TESTS_FILE }}"
+
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11437/v1
+        apiKey: llm-judge
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
+  assert:
+    - type: select-best
+      value: >
+        Pick the single best response based on accuracy, completeness, and clarity.
+        Ignore presentation differences (markdown, length) and focus on whether the
+        substance is correct and addresses the prompt fully.

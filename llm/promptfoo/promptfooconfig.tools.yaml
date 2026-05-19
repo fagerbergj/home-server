@@ -21,7 +21,7 @@ prompts:
   - |
     You have access to four tools for a personal document management system.
     Given a scenario, respond with exactly one JSON object on the last line:
-    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<one sentence>"}
+    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<<one sentance explaining why you gave that score>>"}
     If multiple tool calls are needed, describe the first one only.
     If no tool should be called, use {"tool": null, "args": {}, "reason": "..."}.
 

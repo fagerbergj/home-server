@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Generate RESULTS.md from eval JSON files in evals/.
+# Generate RESULTS.md (per-model pass/fail) and COMPARE.md (blind A/B
+# pairwise win matrix) from eval JSON files in evals/.
 # Called automatically by eval.sh after each run.
 # Usage: ./summarize.sh
 
@@ -7,16 +8,21 @@ set -euo pipefail
 
 python3 - << 'EOF'
 import json, glob, os, datetime, statistics
+from collections import defaultdict
 
 files = sorted(glob.glob('evals/*.json'))
 if not files:
     print("No eval results found in evals/")
     exit(0)
 
-VALID_SUITES = ['architecture','coding','math','function-call','brain-twisters','tools']
+VALID_SUITES = ['architecture','coding','math','function-call','brain-twisters',
+                'cruxeval','calibration','hard-reasoning','large-code','tools']
 
 def parse_name(name):
-    # Match longest suite suffix first so 'brain-twisters' wins over 'twisters'
+    """parse 'qwen3.6-35b-architecture' -> ('qwen3.6-35b', 'architecture').
+    Returns (None, None) for compare-* or unknown names."""
+    if name.startswith('compare-'):
+        return None, None
     for suite in sorted(VALID_SUITES, key=len, reverse=True):
         if name.endswith('-' + suite):
             return name[:-len(suite)-1], suite
@@ -26,8 +32,8 @@ def truncate(s, n=500):
     s = str(s or '').strip()
     return s if len(s) <= n else s[:n] + ' …'
 
-# data: model -> suite -> {pass, total, errors, tps, failures: [{desc, output, reasons}]}
-data = {}
+# ── Phase 1: per-model results (RESULTS.md) ────────────────────────────────
+data = {}  # model -> suite -> {pass, total, errors, tps, failures}
 for f in files:
     name = os.path.basename(f).replace('.json', '')
     model, suite = parse_name(name)
@@ -37,8 +43,6 @@ for f in files:
         d = json.load(open(f))
         results = d.get('results', {}).get('results', [])
         passed = sum(1 for r in results if r.get('success'))
-        # failureReason: 1=assertion failure, 2=hard error.
-        # `error` field is set for both, so it's not a reliable error indicator.
         errors = sum(1 for r in results if r.get('failureReason') == 2)
         total = len(results)
 
@@ -46,15 +50,11 @@ for f in files:
         failures = []
         for r in results:
             resp = r.get('response', {}) or {}
-
-            # tok/s extraction
             tps = None
             raw = resp.get('raw') or (resp.get('metadata', {}).get('raw') if isinstance(resp.get('metadata'), dict) else None)
             if isinstance(raw, str):
-                try:
-                    raw = json.loads(raw)
-                except Exception:
-                    raw = None
+                try: raw = json.loads(raw)
+                except Exception: raw = None
             if isinstance(raw, dict):
                 t = raw.get('timings')
                 if isinstance(t, dict):
@@ -68,106 +68,160 @@ for f in files:
             if tps and tps > 0:
                 tps_values.append(tps)
 
-            # Collect failure details (assertion failures, not hard errors)
             if r.get('failureReason') == 1:
                 tc = r.get('testCase', {}) or {}
                 desc = tc.get('description') or '(no description)'
                 output = resp.get('output', '')
                 g = r.get('gradingResult', {}) or {}
                 reasons = []
-                # Include every component's judge reasoning + score; threshold
-                # logic doesn't always reflect in component.pass, so include all.
                 for c in g.get('componentResults', []) or []:
                     metric = (c.get('assertion', {}) or {}).get('metric') or ''
                     score = c.get('score')
-                    reasons.append({
-                        'metric': metric,
-                        'score': score,
-                        'reason': truncate(c.get('reason'), 500),
-                    })
+                    reasons.append({'metric': metric, 'score': score,
+                                    'reason': truncate(c.get('reason'), 500)})
                 if not reasons:
-                    reasons.append({'metric': '', 'score': None, 'reason': truncate(g.get('reason'), 500)})
-                failures.append({
-                    'desc': desc,
-                    'output': truncate(output, 800),
-                    'reasons': reasons,
-                })
+                    reasons.append({'metric': '', 'score': None,
+                                    'reason': truncate(g.get('reason'), 500)})
+                failures.append({'desc': desc, 'output': truncate(output, 800),
+                                 'reasons': reasons})
 
         data.setdefault(model, {})[suite] = {
-            'pass': passed,
-            'total': total,
-            'errors': errors,
+            'pass': passed, 'total': total, 'errors': errors,
             'tps': statistics.median(tps_values) if tps_values else None,
             'failures': failures,
         }
     except Exception:
         pass
 
-if not data:
-    print("No suite results found.")
+if data:
+    suites = [s for s in VALID_SUITES if any(s in m for m in data.values())]
+    models = sorted(data.keys())
+
+    lines = [f"# Eval Results\n", f"*Last updated: {datetime.date.today()}*\n"]
+    lines.append("| Model | " + " | ".join(suites) + " |")
+    lines.append("| --- | " + " | ".join("---" for _ in suites) + " |")
+    for model in models:
+        row = f"| {model} |"
+        for suite in suites:
+            r = data.get(model, {}).get(suite)
+            if r is None:
+                row += " — |"
+            elif r['errors'] > 0 and r['pass'] == 0:
+                row += f" ❌ {r['errors']} err |"
+            else:
+                pct = round(100 * r['pass'] / r['total']) if r['total'] else 0
+                icon = "✅" if pct >= 80 else ("⚠️" if pct >= 60 else "❌")
+                tps_str = f" {r['tps']:.0f}t/s" if r['tps'] else ""
+                row += f" {icon} {r['pass']}/{r['total']} ({pct}%){tps_str} |"
+        lines.append(row)
+    lines.append("")
+    lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors")
+    lines.append("**tok/s:** median decode speed across all tests in that suite")
+    lines.append("")
+
+    lines.append("## Failures\n")
+    any_failures = False
+    for model in models:
+        for suite in suites:
+            r = data.get(model, {}).get(suite)
+            if not r or not r.get('failures'):
+                continue
+            any_failures = True
+            lines.append(f"### {model} — {suite} ({len(r['failures'])} failures)\n")
+            for fail in r['failures']:
+                lines.append(f"<details>")
+                lines.append(f"<summary>{fail['desc']}</summary>\n")
+                lines.append(f"**Output:**\n")
+                lines.append(f"```\n{fail['output']}\n```\n")
+                lines.append(f"**Judge reasoning:**")
+                for rsn in fail['reasons']:
+                    score_str = f" (score: {rsn['score']:.2f})" if rsn['score'] is not None else ""
+                    metric_str = f" *{rsn['metric']}*" if rsn['metric'] else ""
+                    lines.append(f"-{metric_str}{score_str} {rsn['reason']}")
+                lines.append(f"\n</details>\n")
+    if not any_failures:
+        lines.append("*No failures — all tests passed.*")
+
+    with open('RESULTS.md', 'w') as f:
+        f.write('\n'.join(lines))
+    print(f"Wrote RESULTS.md")
+
+# ── Phase 2: A/B comparison (COMPARE.md) ────────────────────────────────────
+compare_files = sorted(glob.glob('evals/compare-*.json'))
+if not compare_files:
+    print("No compare-*.json files; skipping COMPARE.md")
     exit(0)
 
-all_suites = ['architecture', 'coding', 'function-call', 'brain-twisters', 'math', 'tools']
-suites = [s for s in all_suites if any(s in m for m in data.values())]
-models = sorted(data.keys())
+def provider_id_to_model(pid):
+    """openai:chat:qwen3.6-35b -> qwen3.6-35b"""
+    return pid.split(':')[-1] if pid else '(unknown)'
 
-lines = []
-lines.append("# Eval Results\n")
-lines.append(f"*Last updated: {datetime.date.today()}*\n")
+# wins[suite][model] = count of times model won that suite's tests
+wins = defaultdict(lambda: defaultdict(int))
+# per_test[suite] = [{'desc': ..., 'winner': ..., 'reason': ...}]
+per_test = defaultdict(list)
+totals = defaultdict(int)  # suite -> total comparable tests
 
-# Summary table
-header = "| Model | " + " | ".join(suites) + " |"
-sep = "| --- | " + " | ".join("---" for _ in suites) + " |"
-lines.append(header)
-lines.append(sep)
-for model in models:
-    row = f"| {model} |"
-    for suite in suites:
-        r = data.get(model, {}).get(suite)
-        if r is None:
-            row += " — |"
-        elif r['errors'] > 0 and r['pass'] == 0:
-            row += f" ❌ {r['errors']} err |"
-        else:
-            pct = round(100 * r['pass'] / r['total']) if r['total'] else 0
-            icon = "✅" if pct >= 80 else ("⚠️" if pct >= 60 else "❌")
-            tps_str = f" {r['tps']:.0f}t/s" if r['tps'] else ""
-            row += f" {icon} {r['pass']}/{r['total']} ({pct}%){tps_str} |"
-    lines.append(row)
+for f in compare_files:
+    suite = os.path.basename(f).replace('compare-', '').replace('.json', '')
+    try:
+        d = json.load(open(f))
+    except Exception:
+        continue
+    results = d.get('results', {}).get('results', [])
 
-lines.append("")
-lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors")
-lines.append("**tok/s:** median decode speed across all tests in that suite")
-lines.append("**Suites:** architecture (32) · coding (12) · function-call (11) · brain-twisters (9) · math (9) · tools (14)")
-lines.append("")
+    # Group results by test case index — each test_idx has N entries (one per provider)
+    by_test = defaultdict(list)
+    for r in results:
+        by_test[r.get('testIdx')].append(r)
 
-# Failures detail
-lines.append("## Failures\n")
-any_failures = False
-for model in models:
-    for suite in suites:
-        r = data.get(model, {}).get(suite)
-        if not r or not r.get('failures'):
+    for test_idx, group in by_test.items():
+        if not group:
             continue
-        any_failures = True
-        lines.append(f"### {model} — {suite} ({len(r['failures'])} failures)\n")
-        for fail in r['failures']:
-            lines.append(f"<details>")
-            lines.append(f"<summary>{fail['desc']}</summary>\n")
-            lines.append(f"**Output:**\n")
-            lines.append(f"```\n{fail['output']}\n```\n")
-            lines.append(f"**Judge reasoning:**")
-            for rsn in fail['reasons']:
-                score_str = f" (score: {rsn['score']:.2f})" if rsn['score'] is not None else ""
-                metric_str = f" *{rsn['metric']}*" if rsn['metric'] else ""
-                lines.append(f"-{metric_str}{score_str} {rsn['reason']}")
-            lines.append(f"\n</details>\n")
+        totals[suite] += 1
+        desc = (group[0].get('testCase', {}) or {}).get('description') or f'test #{test_idx}'
+        winner_r = next((r for r in group if r.get('success')), None)
+        if winner_r:
+            model = provider_id_to_model(winner_r.get('provider', {}).get('id') or '')
+            wins[suite][model] += 1
+            g = winner_r.get('gradingResult', {}) or {}
+            per_test[suite].append({
+                'desc': desc, 'winner': model,
+                'reason': truncate(g.get('reason'), 200),
+            })
+        else:
+            per_test[suite].append({'desc': desc, 'winner': '(no winner)', 'reason': ''})
 
-if not any_failures:
-    lines.append("*No failures — all tests passed.*")
+# Build COMPARE.md
+clines = [f"# Blind A/B Comparison\n", f"*Last updated: {datetime.date.today()}*\n"]
+clines.append("Selene judge picked the best of all 4 models' anonymized responses on each prompt.\n")
 
-out = '\n'.join(lines)
-with open('RESULTS.md', 'w') as f:
-    f.write(out)
-print(f"Wrote RESULTS.md ({len(out)} bytes)")
+# Suite table
+all_models = sorted({m for s in wins.values() for m in s})
+clines.append("## Win rate per suite\n")
+clines.append("| Suite | " + " | ".join(all_models) + " |")
+clines.append("| --- | " + " | ".join("---" for _ in all_models) + " |")
+for suite in sorted(wins.keys()):
+    total = totals[suite]
+    row = f"| {suite} |"
+    for m in all_models:
+        n = wins[suite].get(m, 0)
+        pct = round(100 * n / total) if total else 0
+        row += f" {n}/{total} ({pct}%) |"
+    clines.append(row)
+clines.append("")
+
+# Per-test winners
+clines.append("## Per-test winners\n")
+for suite in sorted(per_test.keys()):
+    clines.append(f"### {suite}\n")
+    for entry in per_test[suite]:
+        clines.append(f"- **{entry['winner']}** — {entry['desc']}")
+        if entry['reason']:
+            clines.append(f"  - _{entry['reason']}_")
+    clines.append("")
+
+with open('COMPARE.md', 'w') as f:
+    f.write('\n'.join(clines))
+print(f"Wrote COMPARE.md")
 EOF

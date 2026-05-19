@@ -1,0 +1,16 @@
+# Large code generation — compile + pytest grading via large-code-runner.sh
+# Run: ./eval.sh --suite large-code [model]
+#
+# Requires: python3 + pytest installed on the host running eval.sh
+# (pytest is invoked by large-code-runner.sh)
+evaluateOptions:
+  timeoutMs: 600000
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+prompts:
+  - "{{task}}"
+tests: large-code-tests.yaml
+# No judge needed — grading is deterministic via pytest. defaultTest omitted.

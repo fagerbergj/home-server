@@ -1,5 +1,5 @@
-# Brain twisters — arxiv.org/abs/2405.19616 "Easy Problems That LLMs Get Wrong"
-# Run: ./eval.sh --suite brain-twisters [model]
+# CRUXEval (predict output) + custom code gotchas
+# Run: ./eval.sh --suite cruxeval [model]
 evaluateOptions:
   timeoutMs: 600000
 providers:
@@ -9,7 +9,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: brain-twister-tests.yaml
+tests: cruxeval-tests.yaml
 defaultTest:
   threshold: 0.8
   options:
@@ -20,7 +20,7 @@ defaultTest:
         apiKey: llm-judge
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
-      You are grading a logical reasoning response. Use the rubric to assess quality,
+      You are grading a code-reasoning response. Use the rubric to assess quality,
       then output ONLY a JSON object on the last line — nothing after it.
 
       Rubric:

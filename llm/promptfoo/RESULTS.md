@@ -139,7 +139,7 @@ The *xenophobic* *quizzical* *rhubarb* *juxtaposed* *sycamore* *gymnast* *fjord*
 ```
 
 **Judge reasoning:**
-- *[expert] uses obscure technical vocabulary* (score: 0.00) one sentence
+- *[expert] uses obscure technical vocabulary* (score: 0.00) <one sentance explaining why you gave that score>
 
 </details>
 

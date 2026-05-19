@@ -51,6 +51,6 @@ defaultTest:
       3. If partial credit is warranted, explain why.
 
       Then output ONLY a JSON object on the last line:
-      {"pass": true/false, "score": 0.0, "reason": "one sentence"}
+      {"pass": true/false, "score": <score (1-5) you gave that answer>, "reason": "<one sentance explaining why you gave that score>"}
 
       Score guide: 1.0 = fully satisfies criterion, 0.5 = partially, 0.0 = not addressed.
