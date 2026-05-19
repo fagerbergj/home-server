@@ -1,14 +1,15 @@
 # promptfoo config — tool-call reasoning tests for document-pipeline ADK tools.
 #
-# Tool descriptions below are copied verbatim from the production tool
-# registrations in ~/workspace/document-pipeline/server/core/adk/tools/*.go —
-# we want to measure routing under the SAME prompt the model sees in
-# production. Re-sync if the production descriptions change.
+# Uses real OpenAI-style tool calling (config.tools) so the model exercises the
+# same code path as production. Requires `--jinja` on each llama-server cmd in
+# llm-swap.yaml (otherwise llama.cpp silently ignores the `tools` parameter and
+# returns plain text). Tool definitions below are the same descriptions
+# registered in ~/workspace/document-pipeline/server/core/adk/tools/*.go — keep
+# in sync if the production registrations change.
 #
-# Run all models:  ./eval.sh --tools
-# Run one model:   MODEL=qwen3.6-35b ./eval-tools.sh
-#
-# Grading is deterministic (file://tools-grader.js) — no judge needed.
+# Grading: deterministic via tools-grader.js. promptfoo surfaces tool calls as
+# the assertion's `output` directly when content is empty (array of
+# {id, type:"function", function:{name, arguments:"<json>"}}).
 
 evaluateOptions:
   timeoutMs: 600000
@@ -18,70 +19,95 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      # tool_choice: auto — the "no_empty_search" / "no_retry_after_reject" /
+      # "no_empty_get" tests EXPECT the model to NOT call a tool. With
+      # `required` the model would be forced to invent a call.
+      tool_choice: auto
+      tools:
+        - type: function
+          function:
+            name: search_documents
+            description: |
+              Lucene search for specific documents by title, tag, content, date, or series.
+              Returns lean summaries (id, title, tags, date) — call get_document on a result's id
+              to fetch its full text.
+              Use whenever the user names a specific document, date, tag, or series, or whenever
+              your query has a colon (`title:foo`, `tags:invoice`, `series:notebooks`,
+              `date_month:2026-05`, `stage:done`). Bare words search full text; combine with
+              AND / OR.
+              IMPORTANT: quote multi-word field values, otherwise Lucene splits on the space
+              and only matches the first word.
+              Correct: `series:"Secret Campaign"`, `title:"may 16"`.
+              Wrong: `series:Secret Campaign` (parses as series:Secret AND Campaign).
+              For fuzzy or cross-doc topical questions use rag_search instead.
+              Never call with an empty query.
+            parameters:
+              type: object
+              properties:
+                query: { type: string }
+              required: [query]
+
+        - type: function
+          function:
+            name: get_document
+            description: |
+              Fetch the full polished text (clarified_text) of a specific document by its UUID.
+              Use after search_documents returns a candidate id, or when the user references a doc
+              by an id you already have. Also returns the doc's summary, tags, and date.
+              Never call with an empty id — run search_documents first to find one.
+            parameters:
+              type: object
+              properties:
+                id: { type: string }
+              required: [id]
+
+        - type: function
+          function:
+            name: rag_search
+            description: |
+              Semantic search across the personal knowledge base.
+              Use for fuzzy / topical questions like "what's been said about X?" or when
+              you need passages from many docs.
+              Query must be PLAIN WORDS — no field:value syntax.
+              If your query contains a colon (e.g. `series:foo`, `tags:bar`), use
+              search_documents instead — this tool will match the colon literally and return junk.
+              Never call with an empty query.
+            parameters:
+              type: object
+              properties:
+                query: { type: string }
+              required: [query]
+
+        - type: function
+          function:
+            name: update_document
+            description: |
+              Propose an edit to a specific stage output of a document. Requires user approval
+              before applying. After approval, downstream stages (including embed) automatically
+              re-run.
+              Allowed `field` values: raw_text, narrative_summary, clarified_text, summary
+              (summary is the classify output, not the narrative one).
+              Status semantics:
+                - pending  → user is deciding
+                - applied  → edit was written and downstream stages requeued
+                - rejected → user declined; do NOT immediately retry; ask the user instead
+              The stage must be in 'done' status — otherwise the tool returns an error.
+            parameters:
+              type: object
+              properties:
+                id:      { type: string }
+                field:   { type: string, enum: [raw_text, narrative_summary, clarified_text, summary] }
+                content: { type: string }
+              required: [id, field, content]
 
 prompts:
   - |
-    You have access to four tools for a personal document management system.
-    Given a scenario, respond with exactly one JSON object on the last line:
-    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<one sentence explaining your choice>"}
-    If multiple tool calls are needed, describe the first one only.
-    If no tool should be called, use {"tool": null, "args": {}, "reason": "..."}.
+    You are a personal document management agent. Decide whether and which tool
+    to call for the user's request. If no tool is appropriate (e.g. you need to
+    ask the user a clarifying question first), respond with plain text instead
+    of calling a tool.
 
-    TOOLS:
-
-    search_documents(query: string)
-      Lucene search for specific documents by title, tag, content, date, or series.
-      Returns lean summaries (id, title, tags, date) — call get_document on a result's id
-      to fetch its full text.
-      Use whenever the user names a specific document, date, tag, or series, or whenever
-      your query has a colon (`title:foo`, `tags:invoice`, `series:notebooks`,
-      `date_month:2026-05`, `stage:done`). Bare words search full text; combine with
-      AND / OR.
-      IMPORTANT: quote multi-word field values, otherwise Lucene splits on the space
-      and only matches the first word.
-      Correct: `series:"Secret Campaign"`, `title:"may 16"`.
-      Wrong: `series:Secret Campaign` (parses as series:Secret AND Campaign).
-      For fuzzy or cross-doc topical questions use rag_search instead.
-      Never call with an empty query.
-
-    get_document(id: string)
-      Fetch the full polished text (clarified_text) of a specific document by its UUID.
-      Use after search_documents returns a candidate id, or when the user references a doc
-      by an id you already have. Also returns the doc's summary, tags, and date.
-      Never call with an empty id — run search_documents first to find one.
-
-    rag_search(query: string)
-      Semantic search across the personal knowledge base.
-      Use for fuzzy / topical questions like "what's been said about X?" or when
-      you need passages from many docs.
-      Query must be PLAIN WORDS — no field:value syntax.
-      If your query contains a colon (e.g. `series:foo`, `tags:bar`), use
-      search_documents instead — this tool will match the colon literally and return junk.
-      Never call with an empty query.
-
-    update_document(id: string, field: string, content: string)
-      Propose an edit to a specific stage output of a document. Requires user approval
-      before applying — the runtime will pause and show the user a confirmation card with the
-      before/after diff. The user may edit your proposed content before approving.
-
-      Allowed `field` values:
-        - raw_text          (transcribe/ocr output)
-        - narrative_summary (summarize output)
-        - clarified_text    (clarify output)
-        - summary           (classify output — not the narrative one)
-
-      After approval, downstream stages (including embed) automatically re-run, so the corrected
-      text propagates through the pipeline.
-
-      Status semantics:
-        - pending  → user is deciding; you will see this only briefly
-        - applied  → the edit was written and downstream stages requeued
-        - rejected → user declined; do NOT immediately retry the same edit; ask the user what they want instead
-
-      Errors: the stage must be in 'done' status. If the stage is still running/waiting/error,
-      the tool returns an error — tell the user to wait and try again.
-
-    SCENARIO: {{scenario}}
+    User: {{scenario}}
 
 tests: tool-tests.yaml
 

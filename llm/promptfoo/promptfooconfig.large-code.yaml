@@ -1,23 +1,50 @@
-# Large code generation — compile + pytest grading via large-code-runner.sh
+# Large code generation — compile + pytest grading via large-code-runner.sh.
 # Run: ./eval.sh --suite large-code [model]
 #
-# Requires: python3 + pytest installed on the host running eval.sh
-# (pytest is invoked by large-code-runner.sh)
+# Uses real tool calling: the model writes its final solution to disk via
+# write_file(path, content) — the same pattern Cursor / Aider / Claude Code
+# use. This frees the model to reason in message.content as long as it wants,
+# then deliver the implementation in a structured call. Avoids the "ran out
+# of tokens before closing the markdown fence" failure mode.
+#
+# Requires `--jinja` on each llama-server cmd in llm-swap.yaml so llama.cpp
+# honors the `tools` parameter.
+#
+# Requires: ~/.venvs/eval with pytest + aiohttp + pygame installed.
+
 evaluateOptions:
   timeoutMs: 600000
+
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
-      max_tokens: 6000   # full implementations can be long; default truncates
+      max_tokens: 8000
+      tool_choice: required
+      tools:
+        - type: function
+          function:
+            name: write_file
+            description: |
+              Write text content to a file in the workspace. Use this to deliver
+              the final implementation — the file you write will be imported and
+              tested.
+            parameters:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Workspace-relative path (e.g. "solution.py").
+                content:
+                  type: string
+                  description: The complete file contents as a single string (raw source, no markdown fences).
+              required: [path, content]
+
 prompts:
-  # Suffix forbids the thinking preamble — qwen3.6-35b was burning its entire
-  # token budget on chain-of-thought and never reaching the implementation.
   - |
     {{task}}
 
-    Output ONLY the complete Python solution in a single fenced ```python``` block.
-    No reasoning, no planning, no preamble, no commentary after the code.
+    Write your solution to `solution.py` using the write_file tool.
+
 tests: large-code-tests.yaml
-# No judge needed — grading is deterministic via pytest. defaultTest omitted.

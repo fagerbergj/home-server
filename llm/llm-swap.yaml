@@ -28,6 +28,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
+      --jinja
       --no-mmap
       --split-mode tensor
       -fit off
@@ -41,6 +42,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
+      --jinja
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -53,6 +55,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3.5-9B-GGUF:Q4_K_M
+      --jinja
       -ngl 999
       -c 16384
       --cache-type-k q8_0
@@ -67,6 +70,7 @@ models:
       /app/llama-server
       -hf unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M
       --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F16
+      --jinja
       -ngl 999
       -c 8192
       --port 9999
@@ -81,6 +85,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
+      --jinja
       --no-mmap
       --split-mode tensor
       -fit off

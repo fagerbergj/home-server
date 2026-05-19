@@ -1,43 +1,48 @@
-// Deterministic grader for the tools suite. Tests output a JSON object of the
-// shape {"tool": "...", "args": {...}, "reason": "..."} — we parse the last
-// balanced JSON object in the response and check the routing.
+// Deterministic grader for the tools suite. Uses real OpenAI tool calling:
+// promptfoo sets `output` to the tool_calls array directly when the model's
+// message.content is empty (which it is when `tool_choice: auto` triggers a
+// tool). When the model returns plain text instead (e.g. asking a clarifying
+// question), `output` is the content string.
 //
-// 8B judge models can't reliably grade structured output (judge confused
-// `series:"Secret Campaign"` for "did not quote"), so we grade routing
-// deterministically and skip the rubric entirely.
-//
-// Dispatch is by `vars.check`; each test names the check it wants.
+// Source for the output-assignment logic: promptfoo
+// src/providers/openai/chat.ts ~L631-650.
 
-function extractLastJson(output) {
-  let depth = 0, end = -1, start = -1;
-  for (let i = output.length - 1; i >= 0; i--) {
-    const ch = output[i];
-    if (ch === '}') {
-      if (end === -1) end = i;
-      depth++;
-    } else if (ch === '{') {
-      depth--;
-      if (depth === 0 && end !== -1) { start = i; break; }
-    }
+function extractCall(output) {
+  // Case 1: array of tool_calls (content was empty)
+  if (Array.isArray(output)) {
+    return output[0] || null;
   }
-  if (start === -1) return null;
-  try { return JSON.parse(output.substring(start, end + 1)); } catch { return null; }
+  // Case 2: full message object with both content + tool_calls
+  if (output && typeof output === 'object' && Array.isArray(output.tool_calls)) {
+    return output.tool_calls[0] || null;
+  }
+  // Case 3: plain string — no tool call. Treated as "tool=null" intent.
+  return null;
+}
+
+function parseArgs(call) {
+  if (!call || !call.function) return {};
+  const raw = call.function.arguments;
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return {}; }
+  }
+  return raw || {};
 }
 
 const hasFieldSyntax = (q) => /\b\w+:[^\s]/.test(q);
 
 module.exports = (output, context) => {
   const check = context.vars.check;
-  const j = extractLastJson(output);
-  if (!j) return { pass: false, score: 0, reason: 'no valid JSON object in output' };
-
-  const tool = j.tool;
-  const args = j.args || {};
+  const call = extractCall(output);
+  const tool = call ? call.function?.name : null;
+  const args = parseArgs(call);
   const q = args.query || '';
   const field = args.field;
   const id = args.id;
   const result = (ok, why) => ({ pass: ok, score: ok ? 5 : 0, reason: why });
-  const seen = `tool=${JSON.stringify(tool)} args=${JSON.stringify(args)}`;
+  const seen = call
+    ? `tool=${tool} args=${JSON.stringify(args)}`
+    : `no tool call (output=${typeof output === 'string' ? JSON.stringify(output.slice(0, 100)) : JSON.stringify(output).slice(0, 100)})`;
 
   switch (check) {
     case 'tag_query':
@@ -65,25 +70,21 @@ module.exports = (output, context) => {
       );
 
     case 'no_field_in_rag':
-      // Acceptable: redirect to search_documents OR call rag_search without field:value.
       if (tool === 'search_documents') return result(true, 'redirected to search_documents');
       if (tool === 'rag_search') return result(!hasFieldSyntax(q), seen);
       return result(false, seen);
 
     case 'no_empty_search':
-      // Must not call search_documents with empty query.
       if (tool === 'search_documents') return result(q.trim().length > 0, seen);
-      // Acceptable: ask for clarification (tool=null) or any non-search tool.
-      return result(tool === null, seen);
+      // Acceptable: no tool call (asked for clarification).
+      return result(call === null, seen);
 
     case 'no_empty_get':
-      // Must not call get_document with empty / placeholder id.
       if (tool === 'get_document') {
         const realId = typeof id === 'string' && id.length > 0 && !/placeholder|none|null|<.*>/i.test(id);
         return result(realId, seen);
       }
-      // Acceptable: search first or ask.
-      return result(tool === 'search_documents' || tool === null, seen);
+      return result(tool === 'search_documents' || call === null, seen);
 
     case 'update_summary':
       return result(
@@ -92,7 +93,6 @@ module.exports = (output, context) => {
       );
 
     case 'reject_invalid_field':
-      // Must not accept field='embedding'.
       if (tool === 'update_document' && field === 'embedding') return result(false, seen);
       return result(true, seen);
 
@@ -100,7 +100,6 @@ module.exports = (output, context) => {
       return result(tool !== 'update_document', seen);
 
     case 'search_before_get':
-      // First action must be search_documents (not get_document).
       return result(tool === 'search_documents', seen);
 
     default:

@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# large-code-runner.sh — extracts Python code from stdin (model output),
-# writes to a tmpdir, runs compile check + pytest, emits JSON result.
+# large-code-runner.sh — receives a write_file(path, content) tool call as JSON
+# on stdin, writes the content to <tmp_dir>/solution.py, runs compile check +
+# pytest. Emits {"compile": bool, "passed": N, "total": M, "reason": "..."}.
 #
 # Usage:
-#   echo "<model output>" | ./large-code-runner.sh <test_name> <tmp_dir>
+#   echo "<json tool_call args>" | ./large-code-runner.sh <test_name> <tmp_dir>
 #
-# Outputs JSON: {"compile": bool, "passed": N, "total": M, "reason": "..."}
+# The grader extracts content from the tool call and pipes raw text — we no
+# longer parse markdown fences or model prose.
 
 set -euo pipefail
 
 # Use a dedicated venv if one exists (avoids PEP 668 issues on modern Debian/Ubuntu).
-# Set up once with: python3 -m venv ~/.venvs/eval && ~/.venvs/eval/bin/pip install pytest aiohttp
+# Set up once with:
+#   python3 -m venv ~/.venvs/eval && \
+#   ~/.venvs/eval/bin/pip install pytest aiohttp pygame
 VENV_PY="${EVAL_VENV_PYTHON:-$HOME/.venvs/eval/bin/python3}"
 if [[ -x "$VENV_PY" ]]; then
   PYTHON="$VENV_PY"
@@ -27,34 +31,11 @@ if [[ ! -d "$TEST_DIR" ]]; then
   exit 0
 fi
 
-# Read model output from stdin, extract all ```python ... ``` blocks (or fall
-# back to the whole output). The output is passed via an env var with a
-# *quoted* heredoc delimiter so bash performs no interpolation — earlier
-# versions used `o = """$OUTPUT"""` which broke whenever the model emitted
-# Python docstrings (`"""..."""`) since the closing quotes terminated the
-# string early and the remainder leaked back to bash/python.
-OUTPUT="$(cat)"
-CODE="$(OUTPUT="$OUTPUT" python3 - <<'PYEOF'
-import os, re, textwrap
-o = os.environ['OUTPUT']
-# Allow indented opening and closing fences (qwen wrapped code in bullet lists).
-# Pick the LARGEST block — models often emit small partial snippets while
-# reasoning, then the complete implementation at the end.
-blocks = re.findall(
-    r'(?:^|\n)[ \t]*```(?:python|py)?[ \t]*\n([\s\S]*?)\n[ \t]*```',
-    o,
-)
-if blocks:
-    best = max(blocks, key=len)
-    # Dedent — indented bullet-list snippets need column-0 to parse.
-    print(textwrap.dedent(best))
-else:
-    print(o)
-PYEOF
-)"
-
 mkdir -p "$TMP_DIR"
-echo "$CODE" > "$TMP_DIR/solution.py"
+
+# stdin is the raw file content (already extracted from the tool call by the
+# grader). Write it verbatim — no markdown parsing.
+cat > "$TMP_DIR/solution.py"
 cp "$TEST_DIR/test_solution.py" "$TMP_DIR/test_solution.py"
 
 cd "$TMP_DIR"
@@ -74,7 +55,6 @@ ERRORED=$(echo "$PYTEST_OUT" | grep -oE '[0-9]+ error' | head -1 | grep -oE '[0-
 TOTAL=$((PASSED + FAILED + ERRORED))
 
 if [[ "$TOTAL" -eq 0 ]]; then
-  # Surface the actual pytest tail so we can debug collection failures.
   reason="$(echo "$PYTEST_OUT" | tail -c 400 | python3 -c "import sys,json;print(json.dumps('pytest collected no tests — output: '+sys.stdin.read()))")"
   echo "{\"compile\": true, \"passed\": 0, \"total\": 0, \"reason\": $reason}"
   exit 0
