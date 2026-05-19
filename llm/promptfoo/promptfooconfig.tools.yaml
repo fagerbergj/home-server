@@ -1,15 +1,17 @@
-# promptfoo config — tool-call reasoning tests for document-pipeline ADK tools
+# promptfoo config — tool-call reasoning tests for document-pipeline ADK tools.
 #
-# Tests verify the model makes correct tool routing decisions and forms
-# valid arguments without actually invoking the tools.
+# Tool descriptions below are copied verbatim from the production tool
+# registrations in ~/workspace/document-pipeline/server/core/adk/tools/*.go —
+# we want to measure routing under the SAME prompt the model sees in
+# production. Re-sync if the production descriptions change.
 #
 # Run all models:  ./eval.sh --tools
 # Run one model:   MODEL=qwen3.6-35b ./eval-tools.sh
 #
-# See eval.sh — the tool config is selected via the --tools flag.
+# Grading is deterministic (file://tools-grader.js) — no judge needed.
 
 evaluateOptions:
-  timeoutMs: 600000   # tool reasoning calls are fast
+  timeoutMs: 600000
 
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
@@ -21,34 +23,63 @@ prompts:
   - |
     You have access to four tools for a personal document management system.
     Given a scenario, respond with exactly one JSON object on the last line:
-    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<<one sentance explaining why you gave that score>>"}
+    {"tool": "<tool_name>", "args": {<arguments>}, "reason": "<one sentence explaining your choice>"}
     If multiple tool calls are needed, describe the first one only.
     If no tool should be called, use {"tool": null, "args": {}, "reason": "..."}.
 
     TOOLS:
 
     search_documents(query: string)
-      Lucene search by title, tag, date, series, or content.
-      Returns lean summaries — call get_document for full text.
-      Use when the query has field:value syntax (tags:, title:, series:, date_month:).
-      IMPORTANT: quote multi-word field values or Lucene splits on spaces.
-        Correct: series:"Secret Campaign"   Wrong: series:Secret Campaign
+      Lucene search for specific documents by title, tag, content, date, or series.
+      Returns lean summaries (id, title, tags, date) — call get_document on a result's id
+      to fetch its full text.
+      Use whenever the user names a specific document, date, tag, or series, or whenever
+      your query has a colon (`title:foo`, `tags:invoice`, `series:notebooks`,
+      `date_month:2026-05`, `stage:done`). Bare words search full text; combine with
+      AND / OR.
+      IMPORTANT: quote multi-word field values, otherwise Lucene splits on the space
+      and only matches the first word.
+      Correct: `series:"Secret Campaign"`, `title:"may 16"`.
+      Wrong: `series:Secret Campaign` (parses as series:Secret AND Campaign).
+      For fuzzy or cross-doc topical questions use rag_search instead.
       Never call with an empty query.
 
     get_document(id: string)
-      Fetch full text of a specific document by UUID.
-      Must have an ID from a prior search_documents call.
-      Never call with an empty id.
+      Fetch the full polished text (clarified_text) of a specific document by its UUID.
+      Use after search_documents returns a candidate id, or when the user references a doc
+      by an id you already have. Also returns the doc's summary, tags, and date.
+      Never call with an empty id — run search_documents first to find one.
 
     rag_search(query: string)
-      Semantic search for fuzzy or cross-document topical questions.
+      Semantic search across the personal knowledge base.
+      Use for fuzzy / topical questions like "what's been said about X?" or when
+      you need passages from many docs.
       Query must be PLAIN WORDS — no field:value syntax.
+      If your query contains a colon (e.g. `series:foo`, `tags:bar`), use
+      search_documents instead — this tool will match the colon literally and return junk.
       Never call with an empty query.
 
     update_document(id: string, field: string, content: string)
-      Propose an edit to a document field. Always requires user approval first.
-      Allowed fields: raw_text, narrative_summary, clarified_text, summary
-      Never retry if status="rejected" without asking the user.
+      Propose an edit to a specific stage output of a document. Requires user approval
+      before applying — the runtime will pause and show the user a confirmation card with the
+      before/after diff. The user may edit your proposed content before approving.
+
+      Allowed `field` values:
+        - raw_text          (transcribe/ocr output)
+        - narrative_summary (summarize output)
+        - clarified_text    (clarify output)
+        - summary           (classify output — not the narrative one)
+
+      After approval, downstream stages (including embed) automatically re-run, so the corrected
+      text propagates through the pipeline.
+
+      Status semantics:
+        - pending  → user is deciding; you will see this only briefly
+        - applied  → the edit was written and downstream stages requeued
+        - rejected → user declined; do NOT immediately retry the same edit; ask the user what they want instead
+
+      Errors: the stage must be in 'done' status. If the stage is still running/waiting/error,
+      the tool returns an error — tell the user to wait and try again.
 
     SCENARIO: {{scenario}}
 
@@ -56,25 +87,3 @@ tests: tool-tests.yaml
 
 defaultTest:
   threshold: 4
-  options:
-    provider:
-      id: openai:chat:selene
-      config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
-    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
-    rubricPrompt: |
-      You are grading a tool-call routing response. Use the rubric to assess quality,
-      then output ONLY a JSON object on the last line — nothing after it.
-
-      Rubric:
-      {{rubric}}
-
-      Prompt given to the model:
-      {{prompt}}
-
-      Response to grade:
-      {{output}}
-
-      Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": <integer 1-5 from rubric>, "reason": "<one sentence explaining why you gave that score>"}
