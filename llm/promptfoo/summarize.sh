@@ -37,7 +37,9 @@ for f in files:
         d = json.load(open(f))
         results = d.get('results', {}).get('results', [])
         passed = sum(1 for r in results if r.get('success'))
-        errors = sum(1 for r in results if r.get('error'))
+        # failureReason: 1=assertion failure, 2=hard error.
+        # `error` field is set for both, so it's not a reliable error indicator.
+        errors = sum(1 for r in results if r.get('failureReason') == 2)
         total = len(results)
 
         tps_values = []
@@ -66,22 +68,25 @@ for f in files:
             if tps and tps > 0:
                 tps_values.append(tps)
 
-            # Collect failure details
-            if not r.get('success') and not r.get('error'):
+            # Collect failure details (assertion failures, not hard errors)
+            if r.get('failureReason') == 1:
                 tc = r.get('testCase', {}) or {}
                 desc = tc.get('description') or '(no description)'
                 output = resp.get('output', '')
                 g = r.get('gradingResult', {}) or {}
                 reasons = []
+                # Include every component's judge reasoning + score; threshold
+                # logic doesn't always reflect in component.pass, so include all.
                 for c in g.get('componentResults', []) or []:
-                    if not c.get('pass'):
-                        metric = (c.get('assertion', {}) or {}).get('metric') or ''
-                        reasons.append({
-                            'metric': metric,
-                            'reason': truncate(c.get('reason'), 400),
-                        })
+                    metric = (c.get('assertion', {}) or {}).get('metric') or ''
+                    score = c.get('score')
+                    reasons.append({
+                        'metric': metric,
+                        'score': score,
+                        'reason': truncate(c.get('reason'), 500),
+                    })
                 if not reasons:
-                    reasons.append({'metric': '', 'reason': truncate(g.get('reason'), 400)})
+                    reasons.append({'metric': '', 'score': None, 'reason': truncate(g.get('reason'), 500)})
                 failures.append({
                     'desc': desc,
                     'output': truncate(output, 800),
@@ -151,10 +156,11 @@ for model in models:
             lines.append(f"<summary>{fail['desc']}</summary>\n")
             lines.append(f"**Output:**\n")
             lines.append(f"```\n{fail['output']}\n```\n")
-            lines.append(f"**Why it failed:**")
+            lines.append(f"**Judge reasoning:**")
             for rsn in fail['reasons']:
-                metric = f" *{rsn['metric']}*" if rsn['metric'] else ""
-                lines.append(f"-{metric} {rsn['reason']}")
+                score_str = f" (score: {rsn['score']:.2f})" if rsn['score'] is not None else ""
+                metric_str = f" *{rsn['metric']}*" if rsn['metric'] else ""
+                lines.append(f"-{metric_str}{score_str} {rsn['reason']}")
             lines.append(f"\n</details>\n")
 
 if not any_failures:
