@@ -1,7 +1,7 @@
 # Maps each model to its test suites and concurrency.
 #
 # Suites (run with: ./eval.sh [model]):
-#   architecture   (26 tests) — software systems & design (saturated tests culled)
+#   architecture   (10 tests) — only expert-level/known-discriminating tests kept
 #   coding         (9 tests)  — HumanEval + debugging (trivial ones culled)
 #   function-call  (11 tests) — BFCL + structured output + tool routing
 #   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
