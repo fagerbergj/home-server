@@ -31,8 +31,8 @@
             input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
           }).toString());
           if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? r.passed / r.total : 0;
-          return { pass: score >= 0.8, score, reason: r.reason };
+          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
+          return { pass: score >= 4, score, reason: r.reason };
         } finally {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }
@@ -66,8 +66,8 @@
             input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
           }).toString());
           if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? r.passed / r.total : 0;
-          return { pass: score >= 0.75, score, reason: r.reason };
+          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
+          return { pass: score >= 3.75, score, reason: r.reason };
         } finally {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }
@@ -99,8 +99,8 @@
             input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
           }).toString());
           if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? r.passed / r.total : 0;
-          return { pass: score >= 0.7, score, reason: r.reason };
+          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
+          return { pass: score >= 3.5, score, reason: r.reason };
         } finally {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }
@@ -135,8 +135,8 @@
             input: output, timeout: 180000, maxBuffer: 10 * 1024 * 1024
           }).toString());
           if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? r.passed / r.total : 0;
-          return { pass: score >= 0.5, score, reason: r.reason };
+          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
+          return { pass: score >= 2.5, score, reason: r.reason };
         } finally {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }
@@ -170,8 +170,8 @@
             input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
           }).toString());
           if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? r.passed / r.total : 0;
-          return { pass: score >= 0.6, score, reason: r.reason };
+          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
+          return { pass: score >= 3, score, reason: r.reason };
         } finally {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }

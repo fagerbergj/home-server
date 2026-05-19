@@ -25,7 +25,7 @@ tests: tests.yaml
 # Judge: selene-1-mini-llama-3.1-8b (always-on, port 11437)
 # Ensure it's running: make -C .. judge-up
 defaultTest:
-  threshold: 0.8
+  threshold: 4
   options:
     provider:
       id: openai:chat:selene
@@ -51,4 +51,4 @@ defaultTest:
       2. Does the response satisfy it? Quote the key part.
 
       Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": <decimal — convert your 1-5 rubric score: Score 1→0.2, Score 2→0.4, Score 3→0.6, Score 4→0.8, Score 5→1.0>, "reason": "<one sentence explaining why you gave that score>"}
+      {"pass": true/false, "score": <integer 1-5 from rubric>, "reason": "<one sentence explaining why you gave that score>"}

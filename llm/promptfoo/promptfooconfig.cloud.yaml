@@ -8,7 +8,7 @@
 #   ollama pull ggozad/prometheus2
 #
 # Models evaluated: deepseek-r1:70b, qwen3.6:35b, gemma4:31b, gpt-oss:120b
-# Judge threshold: 0.8 (score >= 4 out of 5)
+# Judge threshold: 4 (score >= 4 out of 5)
 
 evaluateOptions:
   maxConcurrency: 2
@@ -28,7 +28,7 @@ tests: tests.yaml
 # Judge: Prometheus2 (local Ollama, ABS_SYSTEM_PROMPT built in)
 # Uses 1-5 absolute grading scale; threshold 0.8 = score >= 4
 defaultTest:
-  threshold: 0.8
+  threshold: 4
   options:
     provider: ollama:ggozad/prometheus2
     rubricPrompt: |
