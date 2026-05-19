@@ -21,6 +21,9 @@ providers:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
       max_tokens: 8000
+      # temp=0 makes llama.cpp's tool parser fail (it picks raw JSON over the
+      # <|python_tag|> token). See promptfooconfig.tools.yaml for details.
+      temperature: 0.2
       tool_choice: required
       tools:
         - type: function
