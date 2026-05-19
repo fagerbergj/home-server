@@ -10,7 +10,14 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 6000   # full implementations can be long; default truncates
 prompts:
-  - "{{task}}"
+  # Suffix forbids the thinking preamble — qwen3.6-35b was burning its entire
+  # token budget on chain-of-thought and never reaching the implementation.
+  - |
+    {{task}}
+
+    Output ONLY the complete Python solution in a single fenced ```python``` block.
+    No reasoning, no planning, no preamble, no commentary after the code.
 tests: large-code-tests.yaml
 # No judge needed — grading is deterministic via pytest. defaultTest omitted.

@@ -35,10 +35,21 @@ fi
 # string early and the remainder leaked back to bash/python.
 OUTPUT="$(cat)"
 CODE="$(OUTPUT="$OUTPUT" python3 - <<'PYEOF'
-import os, re
+import os, re, textwrap
 o = os.environ['OUTPUT']
-blocks = re.findall(r'```(?:python|py)?\s*\n(.*?)\n```', o, re.DOTALL)
-print('\n\n'.join(blocks) if blocks else o)
+# Allow indented opening and closing fences (qwen wrapped code in bullet lists).
+# Pick the LARGEST block — models often emit small partial snippets while
+# reasoning, then the complete implementation at the end.
+blocks = re.findall(
+    r'(?:^|\n)[ \t]*```(?:python|py)?[ \t]*\n([\s\S]*?)\n[ \t]*```',
+    o,
+)
+if blocks:
+    best = max(blocks, key=len)
+    # Dedent — indented bullet-list snippets need column-0 to parse.
+    print(textwrap.dedent(best))
+else:
+    print(o)
 PYEOF
 )"
 
