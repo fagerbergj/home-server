@@ -1,4 +1,4 @@
-# promptfoo config — llm-swap stack judged by prometheus-7b
+# promptfoo config — llm-swap stack judged by selene-mini
 #
 # Don't run directly — use eval.sh which sets MODEL and concurrency:
 #
@@ -22,13 +22,13 @@ prompts:
 
 tests: tests.yaml
 
-# Judge: prometheus-7b-v2.0 (always-on, port 11437)
+# Judge: selene-1-mini-llama-3.1-8b (always-on, port 11437)
 # Ensure it's running: make -C .. judge-up
 defaultTest:
   threshold: 0.8
   options:
     provider:
-      id: openai:chat:prometheus-7b
+      id: openai:chat:selene
       config:
         apiBaseUrl: http://jason-server:11437/v1
         apiKey: llm-judge

@@ -37,8 +37,8 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
     command: >
-      -hf prometheus-eval/prometheus-7b-v2.0-GGUF:Q4_K_M
-      --alias prometheus-7b
+      -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
+      --alias selene
       -ngl 0
       -c 8192
       --host 0.0.0.0

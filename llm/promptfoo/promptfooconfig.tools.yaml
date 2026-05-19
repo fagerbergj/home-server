@@ -60,7 +60,7 @@ defaultTest:
   threshold: 0.8
   options:
     provider:
-      id: openai:chat:prometheus-7b
+      id: openai:chat:selene
       config:
         apiBaseUrl: http://jason-server:11437/v1
         apiKey: llm-judge
