@@ -11,7 +11,7 @@ prompts:
   - "{{task}}"
 tests: brain-twister-tests.yaml
 defaultTest:
-  threshold: 4
+  threshold: 0.8
   options:
     provider:
       id: openai:chat:selene
@@ -33,4 +33,4 @@ defaultTest:
       {{output}}
 
       Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": <score (1-5) you gave that answer>, "reason": "<one sentance explaining why you gave that score>"}
+      {"pass": true/false, "score": <decimal — convert your 1-5 rubric score: Score 1→0.2, Score 2→0.4, Score 3→0.6, Score 4→0.8, Score 5→1.0>, "reason": "<one sentence explaining why you gave that score>"}
