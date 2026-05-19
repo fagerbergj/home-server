@@ -9,11 +9,11 @@
 #   calibration    (10 tests) — does the model admit "I don't know"?
 #   hard-reasoning (15 tests) — GPQA-style science MCQ + ZebraLogic puzzles
 #   large-code     (5 tests)  — compile + pytest graded (Trie, Markdown, JobQueue, RateLimiter, FlappyBird)
-#   math           (9 tests)  — GSM8K word problems
+#   math           (9 tests)  — competition algebra/NT (MATH500-style)
 #   tools         (14 tests)  — document-pipeline specific tool routing
 
 models:
-  llama-3.3-70b:
+  gpt-oss-120b:
     concurrency: 1
     suites:
       - architecture
@@ -41,18 +41,6 @@ models:
       - math
       - tools
 
-  qwen3.5-9b:
-    concurrency: 4
-    suites:
-      - architecture
-      - coding
-      - function-call
-      - brain-twisters
-      - cruxeval
-      - calibration
-      - hard-reasoning
-      - large-code
-
   qwen3-coder-next:
     concurrency: 1
     suites:
@@ -66,3 +54,13 @@ models:
       - large-code
       - math
       - tools
+
+  qwen3.5-9b:
+    concurrency: 4
+    suites:
+      - architecture
+      - coding
+      - function-call
+      - brain-twisters
+      - cruxeval
+      - math
