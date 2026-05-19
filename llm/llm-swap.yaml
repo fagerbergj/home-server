@@ -25,6 +25,14 @@ models:
   "llama-3.3-70b":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
+    # --skip-chat-parsing: workaround for unfixed Llama 3.x tool-call parser
+    # bug — when tool descriptions are long, the model mimics the OpenAI
+    # envelope shape ({"type":"function","name":...,"parameters":...}) instead
+    # of canonical Meta format ({"name":...,"parameters":...} or
+    # <|python_tag|>{...}), llama-server's parser returns HTTP 500 instead of
+    # degrading to text. See PRs #20800 / #20806 (both closed without merge)
+    # and umbrella issue #20650. With this flag, llama-server returns raw
+    # model output as `content` and the client parses tool calls itself.
     cmd: >
       /app/llama-server
       -hf unsloth/Llama-3.3-70B-Instruct-GGUF:Q4_K_M
@@ -35,6 +43,7 @@ models:
       -ngl 999
       -c 16384
       --port 9999
+      --skip-chat-parsing
 
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
