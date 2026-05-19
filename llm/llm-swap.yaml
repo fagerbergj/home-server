@@ -88,6 +88,8 @@ models:
       -c 16384
       --port 9999
 
+  # CPU-only (-ngl 0): 0.6B model is fast on CPU anyway, frees ~0.7 GB VRAM
+  # and avoids any GPU contention with the main group's chat/coder models.
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     ttl: -1
@@ -96,5 +98,5 @@ models:
       -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
       --embedding
       --pooling cls
-      -ngl 999
+      -ngl 0
       --port 9998
