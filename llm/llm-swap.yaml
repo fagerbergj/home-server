@@ -79,6 +79,11 @@ models:
       -c 8192
       --port 9999
 
+  # Hybrid Gated-DeltaNet + Attention MoE (80B/3B active, 12 of 48 layers
+  # use real KV cache). KV quantization (--cache-type-k/v) is incompatible
+  # with this architecture — causes segfault on init. The model's actual
+  # KV cache is small enough (2 KV heads × 12 attention layers) that fp16
+  # at 256K still fits comfortably.
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
@@ -91,8 +96,6 @@ models:
       -fit off
       -ngl 999
       -c 262144
-      --cache-type-k q8_0
-      --cache-type-v q8_0
       --port 9999
 
   # CPU-only (-ngl 0): 0.6B model is fast on CPU anyway, frees ~0.7 GB VRAM
