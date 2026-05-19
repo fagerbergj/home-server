@@ -63,7 +63,9 @@ ERRORED=$(echo "$PYTEST_OUT" | grep -oE '[0-9]+ error' | head -1 | grep -oE '[0-
 TOTAL=$((PASSED + FAILED + ERRORED))
 
 if [[ "$TOTAL" -eq 0 ]]; then
-  echo "{\"compile\": true, \"passed\": 0, \"total\": 0, \"reason\": \"pytest collected no tests\"}"
+  # Surface the actual pytest tail so we can debug collection failures.
+  reason="$(echo "$PYTEST_OUT" | tail -c 400 | python3 -c "import sys,json;print(json.dumps('pytest collected no tests — output: '+sys.stdin.read()))")"
+  echo "{\"compile\": true, \"passed\": 0, \"total\": 0, \"reason\": $reason}"
   exit 0
 fi
 
