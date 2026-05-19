@@ -19,6 +19,11 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      # temperature: promptfoo defaults to 0 which makes Llama 3.3 emit raw
+      # JSON instead of <|python_tag|>-prefixed tool calls — llama.cpp's
+      # parser then returns 500. A small non-zero temp restores the native
+      # token preference.
+      temperature: 0.2
       # tool_choice: auto — the "no_empty_search" / "no_retry_after_reject" /
       # "no_empty_get" tests EXPECT the model to NOT call a tool. With
       # `required` the model would be forced to invent a call.
