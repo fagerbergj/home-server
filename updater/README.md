@@ -5,7 +5,7 @@ Automatically pulls and restarts containers when new images are available. Runs 
 Excluded from auto-update (manual updates required):
 - `immich-server`, `immich-machine-learning`, `immich-redis`, `immich-postgres`
 - `minecraft`
-- `remarkable-bridge`, `nginx-proxy-manager`, `faster-whisper` (locally built images)
+- `document-pipeline`, `nginx-proxy-manager`, `faster-whisper`, `llm-swap` (locally built images)
 
 Sends email notification after each run.
 
