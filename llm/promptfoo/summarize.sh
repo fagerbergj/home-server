@@ -13,17 +13,23 @@ if not files:
     print("No eval results found in evals/")
     exit(0)
 
-VALID_SUITES = {'architecture','coding','math','function-call','brain-twisters','tools'}
+VALID_SUITES = ['architecture','coding','math','function-call','brain-twisters','tools']
+
+def parse_name(name):
+    # Match longest suite suffix first so 'brain-twisters' wins over 'twisters'
+    for suite in sorted(VALID_SUITES, key=len, reverse=True):
+        if name.endswith('-' + suite):
+            return name[:-len(suite)-1], suite
+    return None, None
 
 # Parse results
 # data: model -> suite -> {pass, total, errors, tps (list of per-test tok/s)}
 data = {}
 for f in files:
     name = os.path.basename(f).replace('.json', '')
-    parts = name.rsplit('-', 1)
-    if len(parts) != 2 or parts[1] not in VALID_SUITES:
+    model, suite = parse_name(name)
+    if model is None:
         continue
-    model, suite = parts[0], parts[1]
     try:
         d = json.load(open(f))
         results = d.get('results', {}).get('results', [])
