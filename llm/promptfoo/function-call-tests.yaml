@@ -21,10 +21,10 @@
       value: output.includes('calculate_triangle_area')
       metric: "[baseline] calls correct function"
     - type: javascript
-      value: output.includes('"base"') && (output.includes('"base": 10') || output.includes('"base":10'))
+      value: 'output.includes(''"base"'') && (output.includes(''"base": 10'') || output.includes(''"base":10''))'
       metric: "[baseline] base=10"
     - type: javascript
-      value: output.includes('"height"') && (output.includes('"height": 5') || output.includes('"height":5'))
+      value: 'output.includes(''"height"'') && (output.includes(''"height": 5'') || output.includes(''"height":5''))'
       metric: "[baseline] height=5"
 
 - description: "BFCL simple_1: math.factorial"
@@ -42,7 +42,7 @@
       value: output.includes('factorial')
       metric: "[baseline] calls factorial function"
     - type: javascript
-      value: output.includes('"number"') && (output.includes('"number": 5') || output.includes('"number":5'))
+      value: 'output.includes(''"number"'') && (output.includes(''"number": 5'') || output.includes(''"number":5''))'
       metric: "[baseline] number=5"
 
 - description: "BFCL simple_2: math.hypot"
@@ -81,7 +81,7 @@
       value: output.includes('quadratic')
       metric: "[baseline] calls quadratic function"
     - type: javascript
-      value: (output.includes('"a": 1') || output.includes('"a":1')) && (output.includes('"b": -3') || output.includes('"b":-3')) && (output.includes('"c": 2') || output.includes('"c":2'))
+      value: '(output.includes(''"a": 1'') || output.includes(''"a":1'')) && (output.includes(''"b": -3'') || output.includes(''"b":-3'')) && (output.includes(''"c": 2'') || output.includes(''"c":2''))'
       metric: "[baseline] correct coefficients a=1, b=-3, c=2"
 
 - description: "BFCL simple_4: solve_quadratic a=2, b=6, c=5"
@@ -99,7 +99,7 @@
       value: output.includes('solve_quadratic')
       metric: "[baseline] calls correct function"
     - type: javascript
-      value: (output.includes('"a": 2') || output.includes('"a":2')) && (output.includes('"b": 6') || output.includes('"b":6')) && (output.includes('"c": 5') || output.includes('"c":5'))
+      value: '(output.includes(''"a": 2'') || output.includes(''"a":2'')) && (output.includes(''"b": 6'') || output.includes(''"b":6'')) && (output.includes(''"c": 5'') || output.includes(''"c":5''))'
       metric: "[baseline] correct coefficients a=2, b=6, c=5"
 
 - description: "BFCL simple_5: solve_quadratic a=3, b=-11, c=-4"
@@ -117,7 +117,7 @@
       value: output.includes('solve_quadratic')
       metric: "[baseline] calls correct function"
     - type: javascript
-      value: (output.includes('"a": 3') || output.includes('"a":3')) && (output.includes('"b": -11') || output.includes('"b":-11')) && (output.includes('"c": -4') || output.includes('"c":-4'))
+      value: '(output.includes(''"a": 3'') || output.includes(''"a":3'')) && (output.includes(''"b": -11'') || output.includes(''"b":-11'')) && (output.includes(''"c": -4'') || output.includes(''"c":-4''))'
       metric: "[baseline] correct coefficients"
     - type: llm-rubric
       metric: "[proficient] uses root_type=all for 'find all roots'"
