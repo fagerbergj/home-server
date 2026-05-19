@@ -40,6 +40,7 @@ services:
       -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
       --alias selene
       -ngl 0
+      --threads 32
       -c 8192
       --host 0.0.0.0
       --port 11437
