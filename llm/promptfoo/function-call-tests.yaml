@@ -1,10 +1,4 @@
-# Berkeley Function Calling Leaderboard (BFCL) — simple subset
-# Source: https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard
-# Entries: simple_0 through simple_5
-#
-# The model is given a function schema and a user request.
-# It must call the right function with the right arguments.
-# Assertions check function name and required argument values.
+
 
 - description: "BFCL simple_0: calculate_triangle_area"
   vars:
@@ -163,7 +157,7 @@
           return { pass: false, score: 0, reason: 'missing or empty role' };
         if (typeof d.city !== 'string' || !d.city.trim())
           return { pass: false, score: 0, reason: 'missing or empty city' };
-        return true;
+        return { pass: true, score: 5, reason: 'all checks passed' };
 
 - description: "JSON: generate object satisfying a TypeScript interface"
   vars:
@@ -195,7 +189,7 @@
           return { pass: false, score: 0, reason: 'invalid environment: ' + d.environment };
         if (!Array.isArray(d.tags) || d.tags.length === 0)
           return { pass: false, score: 0, reason: 'tags must be a non-empty array' };
-        return true;
+        return { pass: true, score: 5, reason: 'all checks passed' };
 
 - description: "Tool use: select the right tool and format the call as JSON"
   vars:
@@ -221,7 +215,7 @@
           return { pass: false, score: 0, reason: 'should call search_web for current weather, got: ' + call.tool };
         if (typeof call.params?.query !== 'string' || !call.params.query.trim())
           return { pass: false, score: 0, reason: 'params.query must be a non-empty string' };
-        return true;
+        return { pass: true, score: 5, reason: 'all checks passed' };
 
 - description: "Tool use: pick between two plausible tools"
   vars:
@@ -249,7 +243,7 @@
           return { pass: false, score: 0, reason: 'signups data is in the local DB — should call query_db, got: ' + call.tool };
         if (typeof call.params?.sql !== 'string' || !call.params.sql.trim())
           return { pass: false, score: 0, reason: 'params.sql must be a non-empty string' };
-        return true;
+        return { pass: true, score: 5, reason: 'all checks passed' };
 
 - description: "YAML: generate a valid Docker Compose service definition"
   vars:
@@ -278,7 +272,7 @@
           return { pass: false, score: 0, reason: 'missing POSTGRES_DB=myapp env var' };
         if (!yaml.includes('pgdata'))
           return { pass: false, score: 0, reason: 'missing pgdata volume reference' };
-        return true;
+        return { pass: true, score: 5, reason: 'all checks passed' };
     - type: javascript
       metric: "[proficient] parseable YAML with correct structure"
       value: |
@@ -291,12 +285,12 @@
           const db = doc?.services?.db;
           if (!db) return { pass: false, score: 0, reason: 'services.db not found in parsed YAML' };
           if (!db.image?.startsWith('postgres:')) return { pass: false, score: 0, reason: 'wrong image: ' + db.image };
-          return true;
+          return { pass: true, score: 5, reason: 'all checks passed' };
         } catch (e) {
           if (e.code === 'MODULE_NOT_FOUND') {
             if (!raw.match(/^\s+db:/m)) return { pass: false, score: 0, reason: 'services.db key not found' };
             if (!raw.match(/image:\s*postgres:15/)) return { pass: false, score: 0, reason: 'missing postgres:15 image' };
-            return true;
+            return { pass: true, score: 5, reason: 'all checks passed' };
           }
           return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };
         }
