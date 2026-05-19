@@ -178,7 +178,7 @@ emit_json_array() {
 
 emit_ext4_drives() {
     # Emits the ext4_drives array. Each detected SSD becomes an entry.
-    # The first SSD defaults to /mnt/cache + label=cache + ollama/scratch
+    # The first SSD defaults to /mnt/cache + label=cache + huggingface/scratch
     # subdirs (the documented "primary" cache use). Additional SSDs get
     # /mnt/cache2, /mnt/cache3, ... — operator can rename in drives.json.
     # If zero SSDs found, emit an empty array so the schema is always
@@ -200,7 +200,7 @@ emit_ext4_drives() {
             printf '      "device": "%s",\n' "$dev"
             printf '      "mountpoint": "/mnt/cache",\n'
             printf '      "label": "cache",\n'
-            printf '      "subdirs": ["ollama", "scratch"],\n'
+            printf '      "subdirs": ["huggingface", "scratch"],\n'
             printf '      "owner": "%s"\n' "${SUDO_USER:-$USER}"
             printf '    }'
         else
