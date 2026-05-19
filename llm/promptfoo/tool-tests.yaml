@@ -1,23 +1,10 @@
-# Tool-call reasoning tests for the document-pipeline ADK tools:
-#   search_documents — Lucene search, returns lean summaries
-#   get_document     — fetch full text by ID
-#   rag_search       — semantic/vector search, plain words only
-#   update_document  — propose a field edit (requires approval)
-#
-# Each test gives the model the tool descriptions and asks it to output
-# {"tool": "...", "args": {...}, "reason": "..."} so we can grade
-# deterministically. Grading is done by tools-grader.js (file:// reference)
-# — the 8B judge was unreliable for structured-output grading.
 
-# ─── search_documents routing ─────────────────────────────────────────────────
 
 - description: "routes to search_documents for tag query"
   vars:
     check: "tag_query"
     scenario: |
       The user says: "Find all my documents tagged with invoice"
-    guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] search_documents with tags:invoice"
@@ -28,8 +15,6 @@
     check: "date_query"
     scenario: |
       The user says: "Show me documents from May 2026"
-    guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] search_documents with date_month:2026-05"
@@ -40,8 +25,6 @@
     check: "title_keyword"
     scenario: |
       The user says: "Find the document about the quarterly review"
-    guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] search_documents for title match"
@@ -52,8 +35,6 @@
     check: "rag_topical"
     scenario: |
       The user asks: "What have I written about machine learning over the past year?"
-    guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] rag_search with plain 'machine learning'"
@@ -64,8 +45,6 @@
     check: "rag_synthesis"
     scenario: |
       The user asks: "Summarise everything I know about the Westbrook project"
-    guidance: |
-      search_documents is for Lucene field:value queries. rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] rag_search with plain 'Westbrook'"
@@ -76,8 +55,6 @@
     check: "series_quoted"
     scenario: |
       The user asks: "Show me everything in the Secret Campaign series"
-    guidance: |
-      search_documents uses Lucene syntax. Multi-word field values MUST be quoted: series:"Secret Campaign" is correct. series:Secret Campaign is wrong (Lucene parses it as series:Secret AND Campaign).
   assert:
     - type: javascript
       metric: "[proficient] series:\"Secret Campaign\" quoted correctly"
@@ -88,8 +65,6 @@
     check: "title_quoted"
     scenario: |
       The user says: "Find the document titled may 16 meeting notes"
-    guidance: |
-      search_documents uses Lucene syntax. Multi-word field values MUST be quoted: title:"may 16 meeting notes" is correct. title:may 16 meeting notes is wrong.
   assert:
     - type: javascript
       metric: "[proficient] title:\"...\" quoted correctly"
@@ -100,8 +75,6 @@
     check: "no_field_in_rag"
     scenario: |
       The user asks you to search for documents about tags:invoice using semantic search.
-    guidance: |
-      rag_search accepts PLAIN WORDS only. Field:value syntax like tags:invoice will match the colon literally and return junk. The model should redirect to search_documents or strip the field syntax.
   assert:
     - type: javascript
       metric: "[proficient] redirect to search_documents OR plain rag_search"
@@ -112,8 +85,6 @@
     check: "no_empty_search"
     scenario: |
       The user says: "Search for something" without specifying what. You are not sure what to search for.
-    guidance: |
-      search_documents must never be called with an empty query. If the user has not provided enough information, the model should ask for clarification by returning {"tool": null, "args": {}}.
   assert:
     - type: javascript
       metric: "[baseline] no empty search_documents query"
@@ -124,8 +95,6 @@
     check: "no_empty_get"
     scenario: |
       The user asks: "Show me the full text of that document." There are no search results in context — no document IDs have been mentioned.
-    guidance: |
-      get_document requires a real document UUID. If no ID is available, the model must run search_documents first to find a candidate, then pass its ID to get_document. Never call get_document with an empty or placeholder ID.
   assert:
     - type: javascript
       metric: "[baseline] no empty/placeholder get_document ID"
@@ -136,8 +105,6 @@
     check: "update_summary"
     scenario: |
       The user says: "The summary for document abc-123 is wrong, please fix it to say 'Quarterly review covering Q2 sales performance and pipeline forecast'."
-    guidance: |
-      update_document allowed fields: raw_text, narrative_summary, clarified_text, summary. The user is asking to fix the summary.
   assert:
     - type: javascript
       metric: "[baseline] update_document field=summary id=abc-123"
@@ -148,8 +115,6 @@
     check: "reject_invalid_field"
     scenario: |
       The user asks you to update the "embedding" field of document abc-123.
-    guidance: |
-      update_document only allows: raw_text, narrative_summary, clarified_text, summary. "embedding" is not an allowed field. The model should refuse — do NOT call update_document with field="embedding".
   assert:
     - type: javascript
       metric: "[proficient] does not call update_document with field=embedding"
@@ -160,8 +125,6 @@
     check: "no_retry_after_reject"
     scenario: |
       You previously called update_document and it returned {"status": "rejected"}. The user has not said anything new.
-    guidance: |
-      When update_document returns status="rejected", the model must NOT immediately retry update_document. It should ask the user what they want to do instead (return {"tool": null, ...}).
   assert:
     - type: javascript
       metric: "[proficient] does not immediately re-call update_document"
@@ -172,8 +135,6 @@
     check: "search_before_get"
     scenario: |
       The user asks: "Show me the full text of my meeting notes from March 2026." You have no document IDs in context.
-    guidance: |
-      To fetch full text of a specific document: first call search_documents to find candidates, then call get_document on the best match's ID. Never call get_document without an ID from a prior search.
   assert:
     - type: javascript
       metric: "[proficient] first call is search_documents"

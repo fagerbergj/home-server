@@ -52,8 +52,6 @@ prompts:
 
     SCENARIO: {{scenario}}
 
-    {{guidance}}
-
 tests: tool-tests.yaml
 
 defaultTest:
