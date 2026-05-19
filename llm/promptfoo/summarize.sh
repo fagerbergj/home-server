@@ -22,8 +22,11 @@ def parse_name(name):
             return name[:-len(suite)-1], suite
     return None, None
 
-# Parse results
-# data: model -> suite -> {pass, total, errors, tps (list of per-test tok/s)}
+def truncate(s, n=500):
+    s = str(s or '').strip()
+    return s if len(s) <= n else s[:n] + ' …'
+
+# data: model -> suite -> {pass, total, errors, tps, failures: [{desc, output, reasons}]}
 data = {}
 for f in files:
     name = os.path.basename(f).replace('.json', '')
@@ -37,14 +40,14 @@ for f in files:
         errors = sum(1 for r in results if r.get('error'))
         total = len(results)
 
-        # Extract tok/s per test. Prefer llama.cpp's `timings.predicted_per_second`
-        # (decode-only, excludes prompt eval). Fall back to tokenUsage/latencyMs.
         tps_values = []
+        failures = []
         for r in results:
             resp = r.get('response', {}) or {}
-            # Try cached raw response → timings.predicted_per_second
+
+            # tok/s extraction
             tps = None
-            raw = resp.get('raw') or resp.get('metadata', {}).get('raw') if isinstance(resp.get('metadata'), dict) else None
+            raw = resp.get('raw') or (resp.get('metadata', {}).get('raw') if isinstance(resp.get('metadata'), dict) else None)
             if isinstance(raw, str):
                 try:
                     raw = json.loads(raw)
@@ -54,7 +57,6 @@ for f in files:
                 t = raw.get('timings')
                 if isinstance(t, dict):
                     tps = t.get('predicted_per_second')
-            # Fallback: tokenUsage + latencyMs
             if tps is None:
                 usage = resp.get('tokenUsage') or {}
                 completion = usage.get('completion') or usage.get('completionTokens')
@@ -64,11 +66,34 @@ for f in files:
             if tps and tps > 0:
                 tps_values.append(tps)
 
+            # Collect failure details
+            if not r.get('success') and not r.get('error'):
+                tc = r.get('testCase', {}) or {}
+                desc = tc.get('description') or '(no description)'
+                output = resp.get('output', '')
+                g = r.get('gradingResult', {}) or {}
+                reasons = []
+                for c in g.get('componentResults', []) or []:
+                    if not c.get('pass'):
+                        metric = (c.get('assertion', {}) or {}).get('metric') or ''
+                        reasons.append({
+                            'metric': metric,
+                            'reason': truncate(c.get('reason'), 400),
+                        })
+                if not reasons:
+                    reasons.append({'metric': '', 'reason': truncate(g.get('reason'), 400)})
+                failures.append({
+                    'desc': desc,
+                    'output': truncate(output, 800),
+                    'reasons': reasons,
+                })
+
         data.setdefault(model, {})[suite] = {
             'pass': passed,
             'total': total,
             'errors': errors,
             'tps': statistics.median(tps_values) if tps_values else None,
+            'failures': failures,
         }
     except Exception:
         pass
@@ -81,17 +106,15 @@ all_suites = ['architecture', 'coding', 'function-call', 'brain-twisters', 'math
 suites = [s for s in all_suites if any(s in m for m in data.values())]
 models = sorted(data.keys())
 
-# Build markdown
 lines = []
 lines.append("# Eval Results\n")
 lines.append(f"*Last updated: {datetime.date.today()}*\n")
 
-# Header
+# Summary table
 header = "| Model | " + " | ".join(suites) + " |"
 sep = "| --- | " + " | ".join("---" for _ in suites) + " |"
 lines.append(header)
 lines.append(sep)
-
 for model in models:
     row = f"| {model} |"
     for suite in suites:
@@ -108,13 +131,37 @@ for model in models:
     lines.append(row)
 
 lines.append("")
-lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors\n")
-lines.append("**tok/s:** median decode speed across all tests in that suite\n")
-lines.append("**Suites:** architecture (32) · coding (12) · function-call (11) · brain-twisters (9) · math (9) · tools (14)\n")
+lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors")
+lines.append("**tok/s:** median decode speed across all tests in that suite")
+lines.append("**Suites:** architecture (32) · coding (12) · function-call (11) · brain-twisters (9) · math (9) · tools (14)")
+lines.append("")
+
+# Failures detail
+lines.append("## Failures\n")
+any_failures = False
+for model in models:
+    for suite in suites:
+        r = data.get(model, {}).get(suite)
+        if not r or not r.get('failures'):
+            continue
+        any_failures = True
+        lines.append(f"### {model} — {suite} ({len(r['failures'])} failures)\n")
+        for fail in r['failures']:
+            lines.append(f"<details>")
+            lines.append(f"<summary>{fail['desc']}</summary>\n")
+            lines.append(f"**Output:**\n")
+            lines.append(f"```\n{fail['output']}\n```\n")
+            lines.append(f"**Why it failed:**")
+            for rsn in fail['reasons']:
+                metric = f" *{rsn['metric']}*" if rsn['metric'] else ""
+                lines.append(f"-{metric} {rsn['reason']}")
+            lines.append(f"\n</details>\n")
+
+if not any_failures:
+    lines.append("*No failures — all tests passed.*")
 
 out = '\n'.join(lines)
 with open('RESULTS.md', 'w') as f:
     f.write(out)
-print(out)
-print("\nWrote RESULTS.md")
+print(f"Wrote RESULTS.md ({len(out)} bytes)")
 EOF
