@@ -1,14 +1,18 @@
 # Large code generation tests — graded by compile + pytest coverage.
-# Each test invokes large-code-runner.sh which:
+# Each test invokes large-code-runner.sh via large-code-grader.js, which:
 #   1. Extracts Python code from the model output (```python blocks)
 #   2. Writes to a tmpdir as solution.py
 #   3. Runs `python3 -c 'import solution'` (compile check)
 #   4. Runs the corresponding pytest file
 #   5. Emits JSON: {compile, passed, total, reason}
+#
+# The grader is in a file:// module because promptfoo's inline `type: javascript`
+# runs in a sandboxed ESM context where `require` is undefined.
 
 - description: "Large code: Trie data structure"
   vars:
     test_name: "trie"
+    pass_threshold: 4
     task: |
       Implement a Trie (prefix tree) data structure in Python. Expose a class `Trie` with:
         - `insert(word: str) -> None`
@@ -20,26 +24,12 @@
   assert:
     - type: javascript
       metric: "[code] trie compiles + passes pytest"
-      value: |
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        const path = require('path');
-        const tmpDir = fs.mkdtempSync('/tmp/eval-trie-');
-        try {
-          const runner = path.join(process.cwd(), 'large-code-runner.sh');
-          const r = JSON.parse(execSync(`bash ${runner} trie ${tmpDir}`, {
-            input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
-          }).toString());
-          if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
-          return { pass: score >= 4, score, reason: r.reason };
-        } finally {
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        }
+      value: "file://large-code-grader.js"
 
 - description: "Large code: Markdown to HTML converter"
   vars:
     test_name: "markdown"
+    pass_threshold: 3.75
     task: |
       Implement a markdown-to-HTML converter in Python. Expose a function
       `to_html(markdown_text: str) -> str` that handles:
@@ -55,26 +45,12 @@
   assert:
     - type: javascript
       metric: "[code] markdown compiles + passes pytest"
-      value: |
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        const path = require('path');
-        const tmpDir = fs.mkdtempSync('/tmp/eval-md-');
-        try {
-          const runner = path.join(process.cwd(), 'large-code-runner.sh');
-          const r = JSON.parse(execSync(`bash ${runner} markdown ${tmpDir}`, {
-            input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
-          }).toString());
-          if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
-          return { pass: score >= 3.75, score, reason: r.reason };
-        } finally {
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        }
+      value: "file://large-code-grader.js"
 
 - description: "Large code: SQLite job queue"
   vars:
     test_name: "job_queue"
+    pass_threshold: 3.5
     task: |
       Implement a SQLite-backed job queue in Python. Expose a class `JobQueue(db_path)` with:
         - `enqueue(payload: dict) -> int`  (returns job id)
@@ -88,26 +64,13 @@
   assert:
     - type: javascript
       metric: "[code] job_queue compiles + passes pytest"
-      value: |
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        const path = require('path');
-        const tmpDir = fs.mkdtempSync('/tmp/eval-jq-');
-        try {
-          const runner = path.join(process.cwd(), 'large-code-runner.sh');
-          const r = JSON.parse(execSync(`bash ${runner} job_queue ${tmpDir}`, {
-            input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
-          }).toString());
-          if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
-          return { pass: score >= 3.5, score, reason: r.reason };
-        } finally {
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        }
+      value: "file://large-code-grader.js"
 
 - description: "Large code: Rate-limited async HTTP client"
   vars:
     test_name: "rate_limiter"
+    pass_threshold: 2.5
+    timeout_ms: 180000
     task: |
       Implement an async, rate-limited HTTP client in Python. Expose:
         `async def fetch(urls: list[str], rate: int) -> list[dict]`
@@ -124,26 +87,12 @@
   assert:
     - type: javascript
       metric: "[code] rate_limiter compiles + passes pytest"
-      value: |
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        const path = require('path');
-        const tmpDir = fs.mkdtempSync('/tmp/eval-rl-');
-        try {
-          const runner = path.join(process.cwd(), 'large-code-runner.sh');
-          const r = JSON.parse(execSync(`bash ${runner} rate_limiter ${tmpDir}`, {
-            input: output, timeout: 180000, maxBuffer: 10 * 1024 * 1024
-          }).toString());
-          if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
-          return { pass: score >= 2.5, score, reason: r.reason };
-        } finally {
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        }
+      value: "file://large-code-grader.js"
 
 - description: "Large code: Flappy Bird in Python"
   vars:
     test_name: "flappy_bird"
+    pass_threshold: 3
     task: |
       Implement a Flappy Bird clone in Python using pygame. The solution must expose
       these classes (importable from the module):
@@ -158,20 +107,5 @@
       time — the tests will instantiate the classes directly. Single Python file.
   assert:
     - type: javascript
-      metric: "[code] flappy_bird compiles + has required structure"
-      value: |
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        const path = require('path');
-        const tmpDir = fs.mkdtempSync('/tmp/eval-fb-');
-        try {
-          const runner = path.join(process.cwd(), 'large-code-runner.sh');
-          const r = JSON.parse(execSync(`bash ${runner} flappy_bird ${tmpDir}`, {
-            input: output, timeout: 120000, maxBuffer: 10 * 1024 * 1024
-          }).toString());
-          if (!r.compile) return { pass: false, score: 0, reason: 'compile fail: ' + r.reason };
-          const score = r.total > 0 ? (r.passed / r.total) * 5 : 0;
-          return { pass: score >= 3, score, reason: r.reason };
-        } finally {
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        }
+      metric: "[code] flappy_bird compiles + passes pytest"
+      value: "file://large-code-grader.js"

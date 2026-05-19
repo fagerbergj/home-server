@@ -235,7 +235,7 @@
   assert:
     - type: javascript
       metric: "[baseline] answer: P"
-      value: "(/^P|\\bP\\b/.test(output.trim().slice(0, 40))) ? 5 : 0"
+      value: "(/\\bP\\b/.test(output.trim().slice(-120))) ? 5 : 0"
 
 - description: "ZebraLogic 5x5: classic zebra-style"
   vars:
