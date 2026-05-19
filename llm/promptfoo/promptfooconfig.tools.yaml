@@ -101,13 +101,11 @@ providers:
               required: [id, field, content]
 
 prompts:
-  - |
-    You are a personal document management agent. Decide whether and which tool
-    to call for the user's request. If no tool is appropriate (e.g. you need to
-    ask the user a clarifying question first), respond with plain text instead
-    of calling a tool.
-
-    User: {{scenario}}
+  # Send the scenario as the bare user message. Llama 3.3's chat template
+  # (activated by --jinja) injects tool-call instructions automatically;
+  # adding our own 'decide whether to call a tool' wording confuses the
+  # model into emitting JSON instead of native tool calls.
+  - "{{scenario}}"
 
 tests: tool-tests.yaml
 
