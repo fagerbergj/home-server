@@ -27,17 +27,18 @@ if [[ ! -d "$TEST_DIR" ]]; then
   exit 0
 fi
 
-# Read model output from stdin, extract first ```python ... ``` block (or all of it)
+# Read model output from stdin, extract all ```python ... ``` blocks (or fall
+# back to the whole output). The output is passed via an env var with a
+# *quoted* heredoc delimiter so bash performs no interpolation — earlier
+# versions used `o = """$OUTPUT"""` which broke whenever the model emitted
+# Python docstrings (`"""..."""`) since the closing quotes terminated the
+# string early and the remainder leaked back to bash/python.
 OUTPUT="$(cat)"
-CODE="$(python3 - <<PYEOF
-import re, sys
-o = """$OUTPUT"""
-# Find all ```python / ```py blocks; if none, use the whole output
-blocks = re.findall(r'\`\`\`(?:python|py)?\s*\n(.*?)\n\`\`\`', o, re.DOTALL)
-if blocks:
-    print('\n\n'.join(blocks))
-else:
-    print(o)
+CODE="$(OUTPUT="$OUTPUT" python3 - <<'PYEOF'
+import os, re
+o = os.environ['OUTPUT']
+blocks = re.findall(r'```(?:python|py)?\s*\n(.*?)\n```', o, re.DOTALL)
+print('\n\n'.join(blocks) if blocks else o)
 PYEOF
 )"
 
