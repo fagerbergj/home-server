@@ -29,7 +29,7 @@
     scenario: |
       The user says: "Show me documents from May 2026"
     guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). date_month uses YYYY-MM format. rag_search is for fuzzy topical questions in plain words.
+      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] search_documents with date_month:2026-05"
@@ -41,7 +41,7 @@
     scenario: |
       The user says: "Find the document about the quarterly review"
     guidance: |
-      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). For finding a specific document, prefer search_documents over rag_search.
+      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] search_documents for title match"
@@ -53,7 +53,7 @@
     scenario: |
       The user asks: "What have I written about machine learning over the past year?"
     guidance: |
-      search_documents is for Lucene queries with field:value syntax. rag_search is for fuzzy topical questions in plain words (no field:value syntax allowed).
+      search_documents is for Lucene queries with field:value syntax (tags:, title:, series:, date_month:). rag_search is for fuzzy topical questions in plain words.
   assert:
     - type: javascript
       metric: "[baseline] rag_search with plain 'machine learning'"
