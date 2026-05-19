@@ -32,7 +32,7 @@ Tailnet (100.64.0.0/10)
                                   ──► :8989  Sonarr
                                   ──► :7878  Radarr
                                   ──► :9000  Authentik (break-glass)
-                                  ──► :11434 Ollama raw API
+                                  ──► :11436 llm-swap API
                                   ──► 192.168.50.0/24 (subnet route — full LAN access)
 ```
 
@@ -70,7 +70,7 @@ Reachable only from devices enrolled in the tailnet. MagicDNS resolves `jason-se
 | Sonarr | `http://jason-server:8989` |
 | Radarr | `http://jason-server:7878` |
 | Authentik (break-glass) | `http://jason-server:9000` |
-| Ollama raw API | `http://jason-server:11434` |
+| llm-swap API | `http://jason-server:11436/v1` |
 
 ## NPM Admin
 

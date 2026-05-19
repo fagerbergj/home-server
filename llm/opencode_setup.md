@@ -1,57 +1,64 @@
 # OpenCode Setup
 
-Configures [OpenCode](https://opencode.ai) to use the local Ollama instance as its LLM backend.
+Configures [OpenCode](https://opencode.ai) to use the local llm-swap instance as its LLM backend.
 
 ## Config file
 
 Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a project root (per-project):
 
-> Context length can be found by doing `docker exec ollama ollama show <model>`
+> Model keys come from `llm-swap.yaml`. Context limits should match the `-c` flag in that model's `cmd`.
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "ollama": {
+    "llm-swap": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (Local)",
+      "name": "llm-swap (Local)",
       "options": {
-        "baseURL": "http://jason-server:11434/v1",
+        "baseURL": "http://jason-server:11436/v1",
         "apiKey": "unused"
       },
       "models": {
-        "qwen35-coding": {
-          "name": "Qwen3.5 35B Coding (128K)",
+        "qwen3-coder-next": {
+          "name": "Qwen3 Coder Next (256K)",
           "limit": {
-            "context": 131072,
+            "context": 262144,
             "output": 8192
           }
         },
-        "qwen35-chat": {
-          "name": "Qwen3.5 35B Chat (8K)",
+        "gpt-oss-120b": {
+          "name": "gpt-oss-120b (32K)",
           "limit": {
-            "context": 8192,
+            "context": 32768,
+            "output": 8192
+          }
+        },
+        "qwen3.6-35b": {
+          "name": "Qwen3.6 35B (32K)",
+          "limit": {
+            "context": 32768,
             "output": 8192
           }
         }
       }
     }
   },
-  "model": "ollama/qwen35-coding"
+  "model": "llm-swap/qwen3-coder-next"
 }
 ```
 
 ## Access
 
-`jason-server` resolves via Tailscale MagicDNS once the client is enrolled (see [networking/setup.md](../networking/setup.md) Phase 7) — the same `baseURL` works on LAN and remotely. Ollama doesn't enforce API keys; tailnet membership is the access boundary. The `"unused"` placeholder is just to satisfy OpenCode's required-field validation.
+`jason-server` resolves via Tailscale MagicDNS once the client is enrolled (see [networking/setup.md](../networking/setup.md) Phase 7) — the same `baseURL` works on LAN and remotely. llm-swap doesn't enforce API keys; tailnet membership is the access boundary. The `"unused"` placeholder is just to satisfy OpenCode's required-field validation.
 
 ## Verify
 
 1. Run `opencode` in any project
-2. Run `/models` — you should see Qwen3.5 35B Coding (128K) and Qwen3.5 35B Chat (8K) listed
+2. Run `/models` — you should see the three models listed above
 3. Send a test message and confirm a response
-4. Check the model loaded on GPU:
+4. Confirm the model loaded on GPU:
    ```bash
-   ssh jason-server 'docker exec ollama ollama ps'
+   ssh jason-server 'rocm-smi'
    ```
-   Should show `qwen35-coding` with `100% GPU`
+   Should show non-trivial VRAM usage on at least one GPU during the request.

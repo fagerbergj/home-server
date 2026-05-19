@@ -148,7 +148,7 @@ echo ""
 #
 # Each entry in drives.json's `ext4_drives` array becomes a mounted ext4
 # filesystem. No redundancy by design; only put data here that's cheap to
-# recreate (Ollama models, build artifacts, Docker overlay if you decide
+# recreate (HuggingFace GGUF cache, build artifacts, Docker overlay if you decide
 # to relocate it). Multiple entries are supported — name them in
 # drives.json (mountpoint + label), each can have its own subdirs and
 # owner.

@@ -1,15 +1,15 @@
 #!/bin/bash
 # Phase 4 — Memory tuning for the ZFS + Docker + LLM workload.
 #
-# Caps ZFS ARC and lowers swappiness so that loading large mmap'd files
-# (Ollama models from /mnt/cache, big container images, etc.) doesn't
-# evict process memory to swap.
+# Caps ZFS ARC and lowers swappiness so that loading large files
+# (GGUF weights from /mnt/cache/huggingface, big container images, etc.)
+# doesn't evict process memory to swap.
 #
 # Why ARC needs a cap on this server:
 #   - Default ARC ceiling is ~50% of RAM (~24 GB on a 48 GB box).
 #   - ARC doesn't release memory promptly under pressure from non-ZFS
-#     consumers (kernel page cache for ext4 / mmap'd files).
-#   - The result: loading a 24 GB Ollama model from /mnt/cache (ext4)
+#     consumers (kernel page cache for ext4 reads).
+#   - The result: loading a 65 GB GGUF from /mnt/cache (ext4)
 #     hammers swap because the kernel can't reclaim ARC fast enough.
 #
 # 16 GB ARC is plenty for media-mostly workloads (Plex/torrents are

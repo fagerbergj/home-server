@@ -38,7 +38,7 @@ home-server/
 ├── plex/             # Plex Media Server
 ├── minecraft/        # Minecraft NeoForge server
 ├── photos/           # Immich photo storage
-├── llm/              # Ollama + Open WebUI
+├── llm/              # llm-swap (llama.cpp) + Open WebUI
 ├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── updater/          # Watchtower (auto-updates) + Diun (update notifications)

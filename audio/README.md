@@ -9,7 +9,7 @@ A locally-built FastAPI service (`pyannote-diarize/`) that runs:
 - **[whisper.cpp](https://github.com/ggml-org/whisper.cpp)** for transcription — built with HIPBLAS (`GGML_HIP=ON`, `AMDGPU_TARGETS=gfx1201`) so it runs on the R9700 via ROCm.
 - **[pyannote.audio](https://github.com/pyannote/pyannote-audio)** for speaker diarization — chosen over alternatives for hours-long multi-speaker audio (DnD sessions, podcasts, meetings).
 
-Each request runs: transcribe → diarize → stitch → return `[SPEAKER_XX]`-labelled text. Models load and unload per request so VRAM is freed between calls (the GPU is shared with Ollama).
+Each request runs: transcribe → diarize → stitch → return `[SPEAKER_XX]`-labelled text. Models load and unload per request so VRAM is freed between calls (the GPU is shared with llm-swap).
 
 The container is named `faster-whisper` for compatibility with the existing `document-pipeline` client (`WHISPER_URL=http://faster-whisper:8000`).
 
