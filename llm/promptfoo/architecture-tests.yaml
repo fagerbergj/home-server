@@ -3,230 +3,146 @@
 # (all 4 models scored 100%) and provided no signal. Kept tests have
 # expert-level rubrics or known multi-model failures from prior runs.
 
-- description: 'Kotlin: JVM ecosystem and type system'
+- description: "Kotlin: JVM ecosystem and type system"
   vars:
-    task: 'I''m considering Kotlin for a new backend service. What am I committing to beyond the language
-      syntax itself — including what the type system enforces at compile time?
-
-      '
+    task: |
+      I'm considering Kotlin for a new backend service. What am I committing to beyond the language syntax itself — including what the type system enforces at compile time?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] JVM ecosystem commitment'
-    value: 'Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics,
-      memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4:
-      Also discusses Kotlin''s null safety (nullable vs non-nullable types enforced at compile time) as
-      a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses
-      sealed classes as another compile-time mechanism for catching invalid state representations
+    - type: llm-rubric
+      metric: "[proficient] JVM ecosystem commitment"
+      value: |
+        Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics, memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types enforced at compile time) as a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses sealed classes as another compile-time mechanism for catching invalid state representations
+    - type: llm-rubric
+      metric: "[expert] type system depth"
+      value: |
+        Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a compile-time bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting valid state representations Score 5: Also explains how both mechanisms work together to eliminate whole classes of runtime errors
 
-      '
-  - type: llm-rubric
-    metric: '[expert] type system depth'
-    value: 'Score 3: Discusses Kotlin''s null safety (nullable vs non-nullable types) as a compile-time
-      bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting
-      valid state representations Score 5: Also explains how both mechanisms work together to eliminate
-      whole classes of runtime errors
-
-      '
-- description: 'Kafka: consumer groups and backpressure'
+- description: "Kafka: consumer groups and backpressure"
   vars:
-    task: 'How do Kafka consumer groups work, and what happens when a consumer can''t keep up with the
-      rate of incoming messages?
-
-      '
+    task: |
+      How do Kafka consumer groups work, and what happens when a consumer can't keep up with the rate of incoming messages?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] consumer group model'
-    value: 'Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks
-      its own position in the topic Score 4: Also explains that multiple groups can each read the full
-      message stream independently, and consumers within a group divide the partitions among themselves
-      Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and
-      Kafka doesn''t block the producer or drop messages, so lag grows unboundedly until the consumer
-      catches up
+    - type: llm-rubric
+      metric: "[proficient] consumer group model"
+      value: |
+        Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks its own position in the topic Score 4: Also explains that multiple groups can each read the full message stream independently, and consumers within a group divide the partitions among themselves Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and Kafka doesn't block the producer or drop messages, so lag grows unboundedly until the consumer catches up
+    - type: llm-rubric
+      metric: "[expert] consumer lag and backpressure"
+      value: |
+        Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also explains that Kafka doesn't block the producer or drop messages Score 5: Also explains that lag grows unboundedly until the consumer catches up and what operational implications this has
 
-      '
-  - type: llm-rubric
-    metric: '[expert] consumer lag and backpressure'
-    value: 'Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also
-      explains that Kafka doesn''t block the producer or drop messages Score 5: Also explains that lag
-      grows unboundedly until the consumer catches up and what operational implications this has
-
-      '
-- description: 'Streaming: operational challenges'
+- description: "Streaming: operational challenges"
   vars:
-    task: 'What operational challenges does a streaming pipeline introduce that a batch pipeline doesn''t
-      have?
-
-      '
+    task: |
+      What operational challenges does a streaming pipeline introduce that a batch pipeline doesn't have?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] state management'
-    value: 'Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers
-      checkpointing state and managing state store growth over time Score 5: Also explains how the system
-      recovers after a failure when in-flight state must be rebuilt
+    - type: llm-rubric
+      metric: "[proficient] state management"
+      value: |
+        Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers checkpointing state and managing state store growth over time Score 5: Also explains how the system recovers after a failure when in-flight state must be rebuilt
+    - type: llm-rubric
+      metric: "[proficient] reprocessing and backfill"
+      value: |
+        Score 3: Explains that reprocessing and backfill are significantly harder with streaming than with batch Score 4: Also explains that streaming requires offset management and replaying from a source Score 5: Also contrasts with batch where you simply re-run the job against the same input
 
-      '
-  - type: llm-rubric
-    metric: '[proficient] reprocessing and backfill'
-    value: 'Score 3: Explains that reprocessing and backfill are significantly harder with streaming than
-      with batch Score 4: Also explains that streaming requires offset management and replaying from a
-      source Score 5: Also contrasts with batch where you simply re-run the job against the same input
-
-      '
-- description: 'Token storage: localStorage vs httpOnly cookies'
+- description: "Token storage: localStorage vs httpOnly cookies"
   vars:
-    task: 'Where should I store JWTs or session tokens on the client? What are the security tradeoffs
-      between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?
-
-      '
+    task: |
+      Where should I store JWTs or session tokens on the client? What are the security tradeoffs between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] token storage tradeoffs'
-    value: 'Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it)
-      Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection
-      Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer
+    - type: llm-rubric
+      metric: "[proficient] token storage tradeoffs"
+      value: |
+        Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it) Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer
+    - type: llm-rubric
+      metric: "[expert] the logout problem"
+      value: |
+        Score 3: Addresses what "logout" actually means for JWTs Score 4: Also explains client-side deletion doesn't stop a copied token from working Score 5: Also explains true invalidation requires server-side state (a denylist or short expiry with refresh rotation)
 
-      '
-  - type: llm-rubric
-    metric: '[expert] the logout problem'
-    value: 'Score 3: Addresses what "logout" actually means for JWTs Score 4: Also explains client-side
-      deletion doesn''t stop a copied token from working Score 5: Also explains true invalidation requires
-      server-side state (a denylist or short expiry with refresh rotation)
-
-      '
-- description: 'Queue vs HTTP: operational costs and failure modes'
+- description: "Queue vs HTTP: operational costs and failure modes"
   vars:
-    task: 'What operational costs and failure mode differences should I understand before replacing HTTP
-      calls with a message queue?
-
-      '
+    task: |
+      What operational costs and failure mode differences should I understand before replacing HTTP calls with a message queue?
   assert:
-  - type: llm-rubric
-    metric: '[baseline] operational cost of queue infra'
-    value: 'Score 3: Explains that a message broker is another production system to deploy Score 4: Also
-      covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service
-      calls not requiring this additional operational overhead
+    - type: llm-rubric
+      metric: "[baseline] operational cost of queue infra"
+      value: |
+        Score 3: Explains that a message broker is another production system to deploy Score 4: Also covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service calls not requiring this additional operational overhead
+    - type: llm-rubric
+      metric: "[proficient] failure mode differences"
+      value: |
+        Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes, timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes
+    - type: llm-rubric
+      metric: "[expert] idempotency requirements"
+      value: |
+        Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default
 
-      '
-  - type: llm-rubric
-    metric: '[proficient] failure mode differences'
-    value: 'Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes,
-      timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also
-      covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes
-
-      '
-  - type: llm-rubric
-    metric: '[expert] idempotency requirements'
-    value: 'Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4:
-      Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this
-      is a design constraint that HTTP calls don''t impose by default
-
-      '
-- description: 'Queue vs HTTP: coupling and idempotency'
+- description: "Queue vs HTTP: coupling and idempotency"
   vars:
-    task: 'I keep hearing that message queues "decouple" services. Is that actually true? What stays coupled
-      when you add a queue, and what new design constraints does the queue introduce on the consumer side?
-
-      '
+    task: |
+      I keep hearing that message queues "decouple" services. Is that actually true? What stays coupled when you add a queue, and what new design constraints does the queue introduce on the consumer side?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] coupling moves to schema'
-    value: 'Score 3: Explains that queues don''t eliminate coupling Score 4: Also explains they shift
-      it from runtime API contracts to the message schema or event format Score 5: Also explains that
-      producers and consumers must still agree on message structure
+    - type: llm-rubric
+      metric: "[proficient] coupling moves to schema"
+      value: |
+        Score 3: Explains that queues don't eliminate coupling Score 4: Also explains they shift it from runtime API contracts to the message schema or event format Score 5: Also explains that producers and consumers must still agree on message structure
+    - type: llm-rubric
+      metric: "[expert] idempotency requirements"
+      value: |
+        Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default
 
-      '
-  - type: llm-rubric
-    metric: '[expert] idempotency requirements'
-    value: 'Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4:
-      Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this
-      is a design constraint that HTTP calls don''t impose by default
-
-      '
-- description: 'Microservices: modular monolith and cost asymmetry'
+- description: "Microservices: modular monolith and cost asymmetry"
   vars:
-    task: 'What is a modular monolith, and why is the cost of going microservices-first often higher than
-      teams expect?
-
-      '
+    task: |
+      What is a modular monolith, and why is the cost of going microservices-first often higher than teams expect?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] modular monolith'
-    value: 'Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal
-      module or package boundaries within a single deployable Score 5: Also explains the design intention
-      so services can be extracted later when team size and scale justify it
+    - type: llm-rubric
+      metric: "[proficient] modular monolith"
+      value: |
+        Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal module or package boundaries within a single deployable Score 5: Also explains the design intention so services can be extracted later when team size and scale justify it
+    - type: llm-rubric
+      metric: "[expert] cost asymmetry"
+      value: |
+        Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from a well-factored monolith is much easier than merging poorly-scoped microservices back together Score 5: Also explains why this makes the monolith-first approach lower risk even if you plan to split later
 
-      '
-  - type: llm-rubric
-    metric: '[expert] cost asymmetry'
-    value: 'Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from
-      a well-factored monolith is much easier than merging poorly-scoped microservices back together Score
-      5: Also explains why this makes the monolith-first approach lower risk even if you plan to split
-      later
-
-      '
-- description: 'Abstraction: the cost of getting it wrong'
+- description: "Abstraction: the cost of getting it wrong"
   vars:
-    task: 'What''s the actual cost of creating the wrong abstraction? Why is duplicated code sometimes
-      preferable to a premature abstraction?
-
-      '
+    task: |
+      What's the actual cost of creating the wrong abstraction? Why is duplicated code sometimes preferable to a premature abstraction?
   assert:
-  - type: llm-rubric
-    metric: '[baseline] wrong abstraction locks you in'
-    value: 'Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains
-      when the abstracted cases later diverge, you''re forced into awkward workarounds or a painful refactor
-      of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken
-      abstraction across all its call sites
+    - type: llm-rubric
+      metric: "[baseline] wrong abstraction locks you in"
+      value: |
+        Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains when the abstracted cases later diverge, you're forced into awkward workarounds or a painful refactor of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken abstraction across all its call sites
+    - type: llm-rubric
+      metric: "[proficient] wrong abstraction worse than duplication"
+      value: |
+        Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also explains duplicated code can be changed independently Score 5: Also explains a shared abstraction makes both callers harder to evolve when the abstraction is wrong
 
-      '
-  - type: llm-rubric
-    metric: '[proficient] wrong abstraction worse than duplication'
-    value: 'Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also
-      explains duplicated code can be changed independently Score 5: Also explains a shared abstraction
-      makes both callers harder to evolve when the abstraction is wrong
-
-      '
-- description: 'CoT: zero-shot vs few-shot, and model size'
+- description: "CoT: zero-shot vs few-shot, and model size"
   vars:
-    task: 'What''s the difference between zero-shot and few-shot chain-of-thought prompting? Does model
-      size affect whether CoT helps?
-
-      '
+    task: |
+      What's the difference between zero-shot and few-shot chain-of-thought prompting? Does model size affect whether CoT helps?
   assert:
-  - type: llm-rubric
-    metric: '[expert] zero-shot vs few-shot CoT'
-    value: 'Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT (providing worked
-      example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness
-      profiles Score 5: Also explains what makes each approach effective in different contexts
+    - type: llm-rubric
+      metric: "[expert] zero-shot vs few-shot CoT"
+      value: |
+        Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT (providing worked example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness profiles Score 5: Also explains what makes each approach effective in different contexts
+    - type: llm-rubric
+      metric: "[expert] model size dependence"
+      value: |
+        Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also explains smaller models can degrade in performance when given intermediate reasoning steps Score 5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning steps
 
-      '
-  - type: llm-rubric
-    metric: '[expert] model size dependence'
-    value: 'Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also
-      explains smaller models can degrade in performance when given intermediate reasoning steps Score
-      5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning
-      steps
-
-      '
-- description: 'Prompt chains: latency and interface contracts'
+- description: "Prompt chains: latency and interface contracts"
   vars:
-    task: 'What are the main engineering drawbacks of chaining prompts, and how should you design the
-      handoff between steps?
-
-      '
+    task: |
+      What are the main engineering drawbacks of chaining prompts, and how should you design the handoff between steps?
   assert:
-  - type: llm-rubric
-    metric: '[proficient] latency — sequential round trips'
-    value: 'Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each
-      step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N
-      times the latency of a single call
-
-      '
-  - type: llm-rubric
-    metric: '[expert] interface design between chain steps'
-    value: 'Score 3: Addresses the interface contract problem — each step''s output is the next step''s
-      input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected
-      types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema
-      validation between steps
-
-      '
+    - type: llm-rubric
+      metric: "[proficient] latency — sequential round trips"
+      value: |
+        Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N times the latency of a single call
+    - type: llm-rubric
+      metric: "[expert] interface design between chain steps"
+      value: |
+        Score 3: Addresses the interface contract problem — each step's output is the next step's input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema validation between steps

@@ -4,134 +4,282 @@
 
 # ─── CRUXEval-O: predict the output ──────────────────────────────────────────
 
-- description: 'CRUXEval: count and sort tuples'
+- description: "CRUXEval: count and sort tuples"
   vars:
-    task: "Predict the exact output of calling this function. Return ONLY the final value, no explanation.\n\n```python\ndef f(nums):\n    output = []\n    for n in nums:\n        output.append((nums.count(n),\
-      \ n))\n    output.sort(reverse=True)\n    return output\n```\nCall: `f([1, 1, 3, 1, 3, 1])`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] exact output match'
-    value: '(output.includes(''(4, 1)'') && output.includes(''(2, 3)'')) ? 5 : 0'
-- description: 'CRUXEval: dict.fromkeys default None'
-  vars:
-    task: "Predict the exact output. Return ONLY the final value, no explanation.\n\n```python\ndef f(a, b, c):\n    result = {}\n    for d in a, b, c:\n        result.update(dict.fromkeys(d))\n    return\
-      \ result\n```\nCall: `f((1,), (1,), (1, 2))`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] correct None default'
-    value: '(output.includes(''None'') && output.includes(''1'') && output.includes(''2'')) ? 5 : 0'
-- description: 'CRUXEval: list.remove only removes first instance'
-  vars:
-    task: "Predict the exact output. Return ONLY the final value, no explanation.\n\n```python\ndef f(text):\n    new_text = list(text)\n    for i in '+':\n        if i in new_text:\n            new_text.remove(i)\n\
-      \    return ''.join(new_text)\n```\nCall: `f('hbtofdeiequ')`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] no-op since ''+'' not in input'
-    value: '(output.includes(''hbtofdeiequ'')) ? 5 : 0'
-- description: 'CRUXEval: string concatenation with leading space'
-  vars:
-    task: "Predict the exact output. Return ONLY the value (within quotes).\n\n```python\ndef f(array):\n    s = ' '\n    s += ''.join(array)\n    return s\n```\nCall: `f([' ', '  ', '    ', '   '])`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] correct 11-space string'
-    value: '((output.match(/(?:''| )(\s+)(?:''|$)/) || []).some && output.replace(/[^ ]/g,'''').length >= 11) ? 5 : 0'
-- description: 'CRUXEval: dict pop in loop with all-equal sort lengths'
-  vars:
-    task: "Predict the exact output. Return ONLY the final value.\n\n```python\ndef f(dic):\n    for k,v in sorted(dic.items(), key=lambda x: len(str(x)))[:-1]:\n        dic.pop(k)\n    return list(dic.items())\n\
-      ```\nCall: `f({'11': 52, '65': 34, 'a': 12, '4': 52, '74': 31})`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] only longest item remains'
-    value: '(output.includes(''74'') && output.includes(''31'')) ? 5 : 0'
-- description: 'CRUXEval: isalpha rejects multi-word strings'
-  vars:
-    task: "Predict the exact output.\n\n```python\ndef f(names):\n    count = len(names)\n    numberOfNames = 0\n    for i in names:\n        if i.isalpha():\n            numberOfNames += 1\n    return\
-      \ numberOfNames\n```\nCall: `f(['sharron', 'Savannah', 'Mike Cherokee'])`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] answer is 2'
-    value: '(/\b2\b/.test(output)) ? 5 : 0'
-- description: 'CRUXEval: text.find returns position of comma'
-  vars:
-    task: "Predict the exact output (an integer).\n\n```python\ndef f(text):\n    return text.find(\",\")\n```\nCall: `f(\"There are, no, commas, in this text\")`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] answer is 9'
-    value: '(/\b9\b/.test(output)) ? 5 : 0'
-- description: 'CRUXEval: list.insert in loop after break'
-  vars:
-    task: "Predict the exact output (a list).\n\n```python\ndef f(array, elem):\n    k = 0\n    l = array.copy()\n    for i in l:\n        if i > elem:\n            array.insert(k, elem)\n            break\n\
-      \        k += 1\n    return array\n```\nCall: `f([5, 4, 3, 2, 1, 0], 3)`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] inserts 3 at index 0'
-    value: '(output.includes(''[3, 5, 4, 3, 2, 1, 0]'') || output.includes(''3,5,4,3,2,1,0'')) ? 5 : 0'
-- description: 'CRUXEval: dict append vs init list'
-  vars:
-    task: "Predict the exact output.\n\n```python\ndef f(a, b):\n    for key, value in b.items():\n        if key not in a:\n            a[key] = [value]\n        else:\n            a[key].append(value)\n\
-      \    return a\n```\nCall: `f({}, {'foo': 'bar'})`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] {foo: [bar]}'
-    value: '(output.includes(''foo'') && output.includes(''bar'') && output.includes(''['')) ? 5 : 0'
-- description: 'CRUXEval: isnumeric on string with #'
-  vars:
-    task: "Predict the exact output (True or False).\n\n```python\ndef f(t):\n    for c in t:\n        if not c.isnumeric():\n            return False\n    return True\n```\nCall: `f('#284376598')`\n"
-  assert:
-  - type: javascript
-    metric: '[baseline] False because of #'
-    value: '(/\bFalse\b/.test(output)) ? 5 : 0'
-- description: 'Gotcha: Kotlin runBlocking JUnit test signature'
-  vars:
-    task: "This Kotlin JUnit test is not being discovered/run by JUnit. The compiler is happy.\nWhat's the bug?\n\n```kotlin\nclass UserServiceTest {\n    @Test\n    fun `should fetch user`() = runBlocking\
-      \ {\n        val result = userService.fetchUser(\"123\")\n        assertEquals(\"Jason\", result.name)\n    }\n}\n```\n"
-  assert:
-  - type: llm-rubric
-    metric: '[proficient] identifies return type bug'
-    value: 'Score 3: Identifies that `= runBlocking { ... }` makes the function return the result type of runBlocking (the last expression) Score 4: Also explains JUnit test methods must return Unit/void
-      to be discovered Score 5: Also provides the fix — use a block body `{ runBlocking { ... } }` or `runTest`/`@Test fun foo() { runBlocking { ... } }`
+    task: |
+      Predict the exact output of calling this function. Return ONLY the final value, no explanation.
 
-      '
-- description: 'Gotcha: Python mutable default argument'
-  vars:
-    task: "This Python function returns surprising results on the second call. What's the bug?\n\n```python\ndef add_item(item, items=[]):\n    items.append(item)\n    return items\n\nprint(add_item('a'))\
-      \   # ['a']\nprint(add_item('b'))   # ['a', 'b']  <-- surprising\n```\n"
+      ```python
+      def f(nums):
+          output = []
+          for n in nums:
+              output.append((nums.count(n), n))
+          output.sort(reverse=True)
+          return output
+      ```
+      Call: `f([1, 1, 3, 1, 3, 1])`
   assert:
-  - type: llm-rubric
-    metric: '[baseline] identifies mutable default arg'
-    value: 'Score 3: Identifies that `items=[]` is a mutable default argument Score 4: Also explains the default is evaluated ONCE at function definition, then shared across all calls Score 5: Also provides
-      the canonical fix: `def add_item(item, items=None): if items is None: items = []`
+    - type: javascript
+      metric: "[baseline] exact output match"
+      value: "(output.includes('(4, 1)') && output.includes('(2, 3)')) ? 5 : 0"
 
-      '
-- description: 'Gotcha: JavaScript closure-in-loop with var'
+- description: "CRUXEval: dict.fromkeys default None"
   vars:
-    task: "This JavaScript code prints \"3\" three times instead of \"0, 1, 2\". What's the bug?\n\n```javascript\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}\n```\n"
-  assert:
-  - type: llm-rubric
-    metric: '[baseline] identifies var hoisting / closure issue'
-    value: 'Score 3: Identifies that `var` is function-scoped, so all setTimeout callbacks close over the same `i` Score 4: Also explains that by the time the callbacks run, the loop has finished and `i
-      === 3` Score 5: Also gives the fix: use `let` (block-scoped) so each iteration gets its own binding
+    task: |
+      Predict the exact output. Return ONLY the final value, no explanation.
 
-      '
-- description: 'Gotcha: Go typed-nil interface comparison'
+      ```python
+      def f(a, b, c):
+          result = {}
+          for d in a, b, c:
+              result.update(dict.fromkeys(d))
+          return result
+      ```
+      Call: `f((1,), (1,), (1, 2))`
+  assert:
+    - type: javascript
+      metric: "[baseline] correct None default"
+      value: "(output.includes('None') && output.includes('1') && output.includes('2')) ? 5 : 0"
+
+- description: "CRUXEval: list.remove only removes first instance"
   vars:
-    task: "In Go, this function returns `false` even when `p` is nil. What's the bug?\n\n```go\ntype Item struct{ Name string }\n\nfunc IsNil() bool {\n    var p *Item = nil\n    var i interface{} = p\n\
-      \    return i == nil\n}\n```\n"
-  assert:
-  - type: llm-rubric
-    metric: '[proficient] identifies typed nil interface gotcha'
-    value: 'Score 3: Identifies that the interface value `i` contains a (type, value) pair: (*Item, nil), and is NOT equal to bare nil Score 4: Also explains an interface is only equal to nil if BOTH the
-      type and value are nil Score 5: Also provides the fix — compare the underlying pointer directly, or use reflection (reflect.ValueOf(i).IsNil())
+    task: |
+      Predict the exact output. Return ONLY the final value, no explanation.
 
-      '
-- description: 'Gotcha: TypeScript as-cast bypasses runtime check'
+      ```python
+      def f(text):
+          new_text = list(text)
+          for i in '+':
+              if i in new_text:
+                  new_text.remove(i)
+          return ''.join(new_text)
+      ```
+      Call: `f('hbtofdeiequ')`
+  assert:
+    - type: javascript
+      metric: "[baseline] no-op since '+' not in input"
+      value: "(output.includes('hbtofdeiequ')) ? 5 : 0"
+
+- description: "CRUXEval: string concatenation with leading space"
   vars:
-    task: "This TypeScript code passes type-check but crashes at runtime on unexpected inputs. Why?\n\n```typescript\nfunction processEvents(events: unknown[]): string[] {\n    return events.map(e => (e\
-      \ as { userId: string }).userId);\n}\n// Called with: processEvents([null, {userId: '123'}, 42])\n```\n"
-  assert:
-  - type: llm-rubric
-    metric: '[baseline] identifies unsafe cast'
-    value: 'Score 3: Identifies that `as { userId: string }` is a compile-time assertion with no runtime validation Score 4: Also explains that `null.userId` and `(42).userId` will be undefined or throw
-      at runtime Score 5: Also recommends runtime validation (zod, type guards, or `typeof e === ''object'' && e !== null && ''userId'' in e` checks)
+    task: |
+      Predict the exact output. Return ONLY the value (within quotes).
 
-      '
+      ```python
+      def f(array):
+          s = ' '
+          s += ''.join(array)
+          return s
+      ```
+      Call: `f([' ', '  ', '    ', '   '])`
+  assert:
+    - type: javascript
+      metric: "[baseline] correct 11-space string"
+      value: >-
+        ((output.match(/(?:'| )(\s+)(?:'|$)/) || []).some && output.replace(/[^ ]/g,'').length >=
+        11) ? 5 : 0
+
+- description: "CRUXEval: dict pop in loop with all-equal sort lengths"
+  vars:
+    task: |
+      Predict the exact output. Return ONLY the final value.
+
+      ```python
+      def f(dic):
+          for k,v in sorted(dic.items(), key=lambda x: len(str(x)))[:-1]:
+              dic.pop(k)
+          return list(dic.items())
+      ```
+      Call: `f({'11': 52, '65': 34, 'a': 12, '4': 52, '74': 31})`
+  assert:
+    - type: javascript
+      metric: "[baseline] only longest item remains"
+      value: "(output.includes('74') && output.includes('31')) ? 5 : 0"
+
+- description: "CRUXEval: isalpha rejects multi-word strings"
+  vars:
+    task: |
+      Predict the exact output.
+
+      ```python
+      def f(names):
+          count = len(names)
+          numberOfNames = 0
+          for i in names:
+              if i.isalpha():
+                  numberOfNames += 1
+          return numberOfNames
+      ```
+      Call: `f(['sharron', 'Savannah', 'Mike Cherokee'])`
+  assert:
+    - type: javascript
+      metric: "[baseline] answer is 2"
+      value: "(/\\b2\\b/.test(output)) ? 5 : 0"
+
+- description: "CRUXEval: text.find returns position of comma"
+  vars:
+    task: |
+      Predict the exact output (an integer).
+
+      ```python
+      def f(text):
+          return text.find(",")
+      ```
+      Call: `f("There are, no, commas, in this text")`
+  assert:
+    - type: javascript
+      metric: "[baseline] answer is 9"
+      value: "(/\\b9\\b/.test(output)) ? 5 : 0"
+
+- description: "CRUXEval: list.insert in loop after break"
+  vars:
+    task: |
+      Predict the exact output (a list).
+
+      ```python
+      def f(array, elem):
+          k = 0
+          l = array.copy()
+          for i in l:
+              if i > elem:
+                  array.insert(k, elem)
+                  break
+              k += 1
+          return array
+      ```
+      Call: `f([5, 4, 3, 2, 1, 0], 3)`
+  assert:
+    - type: javascript
+      metric: "[baseline] inserts 3 at index 0"
+      value: "(output.includes('[3, 5, 4, 3, 2, 1, 0]') || output.includes('3,5,4,3,2,1,0')) ? 5 : 0"
+
+- description: "CRUXEval: dict append vs init list"
+  vars:
+    task: |
+      Predict the exact output.
+
+      ```python
+      def f(a, b):
+          for key, value in b.items():
+              if key not in a:
+                  a[key] = [value]
+              else:
+                  a[key].append(value)
+          return a
+      ```
+      Call: `f({}, {'foo': 'bar'})`
+  assert:
+    - type: javascript
+      metric: "[baseline] {foo: [bar]}"
+      value: "(output.includes('foo') && output.includes('bar') && output.includes('[')) ? 5 : 0"
+
+- description: "CRUXEval: isnumeric on string with #"
+  vars:
+    task: |
+      Predict the exact output (True or False).
+
+      ```python
+      def f(t):
+          for c in t:
+              if not c.isnumeric():
+                  return False
+          return True
+      ```
+      Call: `f('#284376598')`
+  assert:
+    - type: javascript
+      metric: "[baseline] False because of #"
+      value: "(/\\bFalse\\b/.test(output)) ? 5 : 0"
+
+- description: "Gotcha: Kotlin runBlocking JUnit test signature"
+  vars:
+    task: |
+      This Kotlin JUnit test is not being discovered/run by JUnit. The compiler is happy.
+      What's the bug?
+
+      ```kotlin
+      class UserServiceTest {
+          @Test
+          fun `should fetch user`() = runBlocking {
+              val result = userService.fetchUser("123")
+              assertEquals("Jason", result.name)
+          }
+      }
+      ```
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] identifies return type bug"
+      value: |
+        Score 3: Identifies that `= runBlocking { ... }` makes the function return the result type of runBlocking (the last expression) Score 4: Also explains JUnit test methods must return Unit/void to be discovered Score 5: Also provides the fix — use a block body `{ runBlocking { ... } }` or `runTest`/`@Test fun foo() { runBlocking { ... } }`
+
+- description: "Gotcha: Python mutable default argument"
+  vars:
+    task: |
+      This Python function returns surprising results on the second call. What's the bug?
+
+      ```python
+      def add_item(item, items=[]):
+          items.append(item)
+          return items
+
+      print(add_item('a'))   # ['a']
+      print(add_item('b'))   # ['a', 'b']  <-- surprising
+      ```
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] identifies mutable default arg"
+      value: |
+        Score 3: Identifies that `items=[]` is a mutable default argument Score 4: Also explains the default is evaluated ONCE at function definition, then shared across all calls Score 5: Also provides the canonical fix: `def add_item(item, items=None): if items is None: items = []`
+
+- description: "Gotcha: JavaScript closure-in-loop with var"
+  vars:
+    task: |
+      This JavaScript code prints "3" three times instead of "0, 1, 2". What's the bug?
+
+      ```javascript
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log(i), 0);
+      }
+      ```
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] identifies var hoisting / closure issue"
+      value: |
+        Score 3: Identifies that `var` is function-scoped, so all setTimeout callbacks close over the same `i` Score 4: Also explains that by the time the callbacks run, the loop has finished and `i === 3` Score 5: Also gives the fix: use `let` (block-scoped) so each iteration gets its own binding
+
+- description: "Gotcha: Go typed-nil interface comparison"
+  vars:
+    task: |
+      In Go, this function returns `false` even when `p` is nil. What's the bug?
+
+      ```go
+      type Item struct{ Name string }
+
+      func IsNil() bool {
+          var p *Item = nil
+          var i interface{} = p
+          return i == nil
+      }
+      ```
+  assert:
+    - type: llm-rubric
+      metric: "[proficient] identifies typed nil interface gotcha"
+      value: |
+        Score 3: Identifies that the interface value `i` contains a (type, value) pair: (*Item, nil), and is NOT equal to bare nil Score 4: Also explains an interface is only equal to nil if BOTH the type and value are nil Score 5: Also provides the fix — compare the underlying pointer directly, or use reflection (reflect.ValueOf(i).IsNil())
+
+- description: "Gotcha: TypeScript as-cast bypasses runtime check"
+  vars:
+    task: |
+      This TypeScript code passes type-check but crashes at runtime on unexpected inputs. Why?
+
+      ```typescript
+      function processEvents(events: unknown[]): string[] {
+          return events.map(e => (e as { userId: string }).userId);
+      }
+      // Called with: processEvents([null, {userId: '123'}, 42])
+      ```
+  assert:
+    - type: llm-rubric
+      metric: "[baseline] identifies unsafe cast"
+      value: |
+        Score 3: Identifies that `as { userId: string }` is a compile-time assertion with no runtime validation Score 4: Also explains that `null.userId` and `(42).userId` will be undefined or throw at runtime Score 5: Also recommends runtime validation (zod, type guards, or `typeof e === 'object' && e !== null && 'userId' in e` checks)

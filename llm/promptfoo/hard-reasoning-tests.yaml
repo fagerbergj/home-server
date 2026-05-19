@@ -4,398 +4,282 @@
 
 # ─── GPQA-style science MCQ (single-letter answer) ──────────────────────────
 
-- description: 'GPQA-style: thermodynamics — adiabatic expansion'
+- description: "GPQA-style: thermodynamics — adiabatic expansion"
   vars:
-    task: 'An ideal monatomic gas at 300 K and 2 atm pressure undergoes a reversible
-
+    task: |
+      An ideal monatomic gas at 300 K and 2 atm pressure undergoes a reversible
       adiabatic expansion to 1 atm. What is the final temperature, to the nearest K?
 
-
       (A) 200 K
-
       (B) 227 K
-
       (C) 250 K
-
       (D) 275 K
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer B'
-    value: '(/\bB\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: organic chemistry — SN2 stereochemistry'
-  vars:
-    task: '(S)-2-bromobutane reacts with sodium iodide in acetone via SN2. What is
+    - type: javascript
+      metric: "[baseline] correct answer B"
+      value: "(/\\bB\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "GPQA-style: organic chemistry — SN2 stereochemistry"
+  vars:
+    task: |
+      (S)-2-bromobutane reacts with sodium iodide in acetone via SN2. What is
       the stereochemistry of the major product?
 
-
       (A) (R)-2-iodobutane only
-
       (B) (S)-2-iodobutane only
-
       (C) Racemic mixture
-
       (D) Cannot be determined
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer A (Walden inversion)'
-    value: '(/\bA\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: quantum mechanics — particle in a box'
-  vars:
-    task: 'An electron is confined in a 1-D box of length L = 0.5 nm. What is the energy
+    - type: javascript
+      metric: "[baseline] correct answer A (Walden inversion)"
+      value: "(/\\bA\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "GPQA-style: quantum mechanics — particle in a box"
+  vars:
+    task: |
+      An electron is confined in a 1-D box of length L = 0.5 nm. What is the energy
       of the n=2 state, in eV? (h = 4.136e-15 eV·s, m_e = 9.109e-31 kg)
 
-
       (A) 1.50 eV
-
       (B) 3.01 eV
-
       (C) 6.02 eV
-
       (D) 9.04 eV
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer C (~6 eV)'
-    value: '(/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: molecular biology — central dogma'
+    - type: javascript
+      metric: "[baseline] correct answer C (~6 eV)"
+      value: "(/\\bC\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
+
+- description: "GPQA-style: molecular biology — central dogma"
   vars:
-    task: 'A retroviral genome encodes 3 ORFs and is 8.7 kb in length. The reverse
-
+    task: |
+      A retroviral genome encodes 3 ORFs and is 8.7 kb in length. The reverse
       transcriptase produces dsDNA from the ssRNA template. Approximately how many
-
       base pairs will the proviral DNA have, accounting for LTR duplication of
-
       ~600 bp from the U3 and U5 regions?
 
-
       (A) ~7,500 bp
-
       (B) ~8,700 bp
-
       (C) ~9,300 bp
-
       (D) ~10,000 bp
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer C'
-    value: '(/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: physics — relativistic momentum'
-  vars:
-    task: 'A particle has rest mass 1.0 GeV/c² and moves at 0.8c. What is its total
+    - type: javascript
+      metric: "[baseline] correct answer C"
+      value: "(/\\bC\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "GPQA-style: physics — relativistic momentum"
+  vars:
+    task: |
+      A particle has rest mass 1.0 GeV/c² and moves at 0.8c. What is its total
       energy?
 
-
       (A) 0.8 GeV
-
       (B) 1.0 GeV
-
       (C) 1.25 GeV
-
       (D) 1.67 GeV
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer D (E = γmc² with γ=5/3)'
-    value: '(/\bD\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: chemistry — buffer pH calculation'
-  vars:
-    task: 'You prepare a buffer with 0.10 M acetic acid (Ka = 1.8 × 10⁻⁵) and 0.10 M
+    - type: javascript
+      metric: "[baseline] correct answer D (E = γmc² with γ=5/3)"
+      value: "(/\\bD\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "GPQA-style: chemistry — buffer pH calculation"
+  vars:
+    task: |
+      You prepare a buffer with 0.10 M acetic acid (Ka = 1.8 × 10⁻⁵) and 0.10 M
       sodium acetate. What is the resulting pH?
 
-
       (A) 3.74
-
       (B) 4.74
-
       (C) 5.74
-
       (D) 7.00
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer B (pH = pKa when [HA]=[A-])'
-    value: '(/\bB\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: genetics — Hardy-Weinberg'
+    - type: javascript
+      metric: "[baseline] correct answer B (pH = pKa when [HA]=[A-])"
+      value: "(/\\bB\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
+
+- description: "GPQA-style: genetics — Hardy-Weinberg"
   vars:
-    task: 'In a population at Hardy-Weinberg equilibrium, the frequency of a recessive
-
+    task: |
+      In a population at Hardy-Weinberg equilibrium, the frequency of a recessive
       genetic disorder is 1 in 10,000. What is the frequency of heterozygous
-
       carriers?
 
-
       (A) ~0.0001
-
       (B) ~0.01
-
       (C) ~0.02
-
       (D) ~0.1
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer C (2pq ≈ 0.02 when q² = 0.0001)'
-    value: '(/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: physical chemistry — colligative properties'
+    - type: javascript
+      metric: "[baseline] correct answer C (2pq ≈ 0.02 when q² = 0.0001)"
+      value: "(/\\bC\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
+
+- description: "GPQA-style: physical chemistry — colligative properties"
   vars:
-    task: 'Dissolving 5.85 g of NaCl in 1.00 kg of water lowers the freezing point.
-
+    task: |
+      Dissolving 5.85 g of NaCl in 1.00 kg of water lowers the freezing point.
       Assuming complete dissociation and Kf = 1.86 °C·kg/mol for water, what is
-
       the freezing point depression?
 
-
       (A) 0.093 °C
-
       (B) 0.186 °C
-
       (C) 0.372 °C
-
       (D) 0.558 °C
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer C (van''t Hoff i=2, 0.1m × 1.86 × 2)'
-    value: '(/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: cell biology — membrane transport'
+    - type: javascript
+      metric: "[baseline] correct answer C (van't Hoff i=2, 0.1m × 1.86 × 2)"
+      value: "(/\\bC\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
+
+- description: "GPQA-style: cell biology — membrane transport"
   vars:
-    task: 'A cell has an intracellular K⁺ concentration of 140 mM and an extracellular
-
+    task: |
+      A cell has an intracellular K⁺ concentration of 140 mM and an extracellular
       K⁺ concentration of 5 mM at 37 °C. What is the Nernst (equilibrium) potential
-
       for K⁺ across the membrane?
 
-
       (A) +89 mV
-
       (B) -89 mV
-
       (C) +60 mV
-
       (D) -60 mV
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer B (-89 mV)'
-    value: '(/\bB\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'GPQA-style: astronomy — orbital mechanics'
-  vars:
-    task: 'An exoplanet orbits a sun-like star at a distance of 4 AU. Using Kepler''s
+    - type: javascript
+      metric: "[baseline] correct answer B (-89 mV)"
+      value: "(/\\bB\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "GPQA-style: astronomy — orbital mechanics"
+  vars:
+    task: |
+      An exoplanet orbits a sun-like star at a distance of 4 AU. Using Kepler's
       third law, what is its orbital period in years?
 
-
       (A) 2 years
-
       (B) 4 years
-
       (C) 8 years
-
       (D) 16 years
 
-
       Answer with only the letter.
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] correct answer C (T² = a³, T = 8)'
-    value: '(/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0'
-- description: 'ZebraLogic 3x3: three friends, drinks, colors'
-  vars:
-    task: 'Three friends (Alice, Bob, Carol) each ordered a different drink (coffee,
+    - type: javascript
+      metric: "[baseline] correct answer C (T² = a³, T = 8)"
+      value: "(/\\bC\\b/.test(output.trim().slice(0, 30))) ? 5 : 0"
 
+- description: "ZebraLogic 3x3: three friends, drinks, colors"
+  vars:
+    task: |
+      Three friends (Alice, Bob, Carol) each ordered a different drink (coffee,
       tea, juice) and wore a different colored shirt (red, blue, green).
 
-
       Clues:
-
       1. The person in blue ordered tea.
-
       2. Alice did not wear red.
-
       3. Bob ordered coffee.
-
       4. Carol did not wear green.
 
-
       What color was Alice wearing?
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] answer: blue'
-    value: '(/\bblue\b/i.test(output)) ? 5 : 0'
-- description: 'ZebraLogic 4x4: four houses, four pets, four colors, four hobbies'
+    - type: javascript
+      metric: "[baseline] answer: blue"
+      value: "(/\\bblue\\b/i.test(output)) ? 5 : 0"
+
+- description: "ZebraLogic 4x4: four houses, four pets, four colors, four hobbies"
   vars:
-    task: 'Four houses in a row (positions 1-4) each have a different color (red,
-
+    task: |
+      Four houses in a row (positions 1-4) each have a different color (red,
       blue, green, yellow), a different pet (dog, cat, bird, fish), and the
-
       owner has a different hobby (reading, gaming, cooking, hiking).
 
-
       Clues:
-
       1. The red house is at position 1.
-
       2. The dog owner reads.
-
       3. The blue house has a cat.
-
       4. The bird is at position 3.
-
       5. The green house owner cooks.
-
       6. The fish is at position 4.
-
       7. The yellow house is at position 2.
-
       8. The gamer is at position 4.
 
-
       What color is the house at position 3?
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] answer: green'
-    value: '(/\bgreen\b/i.test(output)) ? 5 : 0'
-- description: 'ZebraLogic 4x4: who came in what order'
-  vars:
-    task: 'Four runners (P, Q, R, S) finished a race in 1st through 4th place.
+    - type: javascript
+      metric: "[baseline] answer: green"
+      value: "(/\\bgreen\\b/i.test(output)) ? 5 : 0"
 
+- description: "ZebraLogic 4x4: who came in what order"
+  vars:
+    task: |
+      Four runners (P, Q, R, S) finished a race in 1st through 4th place.
 
       Clues:
-
       1. P finished before R.
-
       2. Q finished after S.
-
       3. R finished before Q.
-
       4. S finished in 2nd place.
 
-
       Who finished in 1st place?
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] answer: P'
-    value: '(/^P|\bP\b/.test(output.trim().slice(0, 40))) ? 5 : 0'
-- description: 'ZebraLogic 5x5: classic zebra-style'
+    - type: javascript
+      metric: "[baseline] answer: P"
+      value: "(/^P|\\bP\\b/.test(output.trim().slice(0, 40))) ? 5 : 0"
+
+- description: "ZebraLogic 5x5: classic zebra-style"
   vars:
-    task: 'Five neighbors live in five houses in a row, each painted a different color
-
+    task: |
+      Five neighbors live in five houses in a row, each painted a different color
       (red, blue, green, yellow, white). Each owns a different pet (dog, cat,
-
       bird, fish, horse) and drinks a different beverage (water, tea, milk,
-
       coffee, juice).
 
-
       Clues:
-
       1. The Norwegian lives in the first house (leftmost).
-
       2. The person in the red house owns the dog.
-
       3. The person who drinks milk lives in the middle (3rd) house.
-
       4. The person in the green house drinks coffee.
-
       5. The yellow house is immediately to the right of the white house.
-
       6. The blue house is the second from the left.
-
       7. The person in the blue house owns the cat.
-
       8. The person with the bird drinks tea.
-
       9. The fish owner lives in the rightmost house.
-
       10. The person in the white house drinks water.
 
-
       Which house (by color) contains the horse?
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] answer: yellow'
-    value: '(/\byellow\b/i.test(output)) ? 5 : 0'
-- description: 'ZebraLogic 4x4: project assignments with constraints'
+    - type: javascript
+      metric: "[baseline] answer: yellow"
+      value: "(/\\byellow\\b/i.test(output)) ? 5 : 0"
+
+- description: "ZebraLogic 4x4: project assignments with constraints"
   vars:
-    task: 'Four engineers (Ann, Ben, Cara, Dan) are each assigned to exactly one
-
+    task: |
+      Four engineers (Ann, Ben, Cara, Dan) are each assigned to exactly one
       project (Alpha, Beta, Gamma, Delta) and use one tool (Python, Java,
-
       Rust, Go).
 
-
       Clues:
-
       1. The Python user is on project Beta.
-
       2. Ann uses Rust.
-
       3. Ben is not on Alpha or Delta.
-
       4. Cara uses Java.
-
       5. The Go user is on project Delta.
-
       6. Ann is not on Gamma.
 
-
       Which project is Dan on?
-
-      '
   assert:
-  - type: javascript
-    metric: '[baseline] answer: Delta'
-    value: '(/\bDelta\b/i.test(output)) ? 5 : 0'
+    - type: javascript
+      metric: "[baseline] answer: Delta"
+      value: "(/\\bDelta\\b/i.test(output)) ? 5 : 0"

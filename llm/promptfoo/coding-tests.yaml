@@ -5,320 +5,297 @@
 # The model must complete the function body given the signature + docstring.
 # Assertions check for correct logic and edge case handling.
 
-
-- description: 'HumanEval/1: separate_paren_groups'
+- description: "HumanEval/1: separate_paren_groups"
   vars:
-    task: "Complete this Python function:\n\nfrom typing import List\n\ndef separate_paren_groups(paren_string:\
-      \ str) -> List[str]:\n    \"\"\" Input to this function is a string containing multiple groups of\
-      \ nested parentheses.\n    Your goal is to separate those group into separate strings and return\
-      \ the list of those.\n    Separate groups are balanced (each open brace is properly closed) and\
-      \ not nested within each other.\n    Ignore any spaces in the input string.\n    >>> separate_paren_groups('(\
-      \ ) (( )) (( )( ))')\n    ['()', '(())', '(()())']\n    \"\"\"\n"
+    task: |
+      Complete this Python function:
+
+      from typing import List
+
+      def separate_paren_groups(paren_string: str) -> List[str]:
+          """ Input to this function is a string containing multiple groups of nested parentheses.
+          Your goal is to separate those group into separate strings and return the list of those.
+          Separate groups are balanced (each open brace is properly closed) and not nested within each other.
+          Ignore any spaces in the input string.
+          >>> separate_paren_groups('( ) (( )) (( )( ))')
+          ['()', '(())', '(()())']
+          """
   assert:
-  - type: llm-rubric
-    metric: '[baseline] depth tracking for balanced groups'
-    value: 'Score 3: Uses a depth counter to track nesting level and split groups correctly Score 4: Also
-      strips spaces from the input before processing Score 5: Also resets state correctly between groups
-      so nested groups don''t bleed into each other
+    - type: llm-rubric
+      metric: "[baseline] depth tracking for balanced groups"
+      value: |
+        Score 3: Uses a depth counter to track nesting level and split groups correctly Score 4: Also strips spaces from the input before processing Score 5: Also resets state correctly between groups so nested groups don't bleed into each other
 
-      '
-- description: 'HumanEval/4: mean_absolute_deviation'
+- description: "HumanEval/4: mean_absolute_deviation"
   vars:
-    task: "Complete this Python function:\n\nfrom typing import List\n\ndef mean_absolute_deviation(numbers:\
-      \ List[float]) -> float:\n    \"\"\" For a given list of input numbers, calculate Mean Absolute\
-      \ Deviation\n    around the mean of this dataset.\n    Mean Absolute Deviation is the average absolute\
-      \ difference between each\n    element and a centerpoint (mean in this case):\n    MAD = average\
-      \ | x - x_mean |\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\n    1.0\n    \"\"\"\n"
+    task: |
+      Complete this Python function:
+
+      from typing import List
+
+      def mean_absolute_deviation(numbers: List[float]) -> float:
+          """ For a given list of input numbers, calculate Mean Absolute Deviation
+          around the mean of this dataset.
+          Mean Absolute Deviation is the average absolute difference between each
+          element and a centerpoint (mean in this case):
+          MAD = average | x - x_mean |
+          >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])
+          1.0
+          """
   assert:
-  - type: llm-rubric
-    metric: '[baseline] correct MAD formula'
-    value: 'Score 3: Computes the mean and then the average absolute deviation from it Score 4: Also uses
-      sum() and len() or equivalent — doesn''t reinvent them with explicit loops unnecessarily Score 5:
-      Also correct for edge cases like single-element lists (MAD = 0.0)
+    - type: llm-rubric
+      metric: "[baseline] correct MAD formula"
+      value: |
+        Score 3: Computes the mean and then the average absolute deviation from it Score 4: Also uses sum() and len() or equivalent — doesn't reinvent them with explicit loops unnecessarily Score 5: Also correct for edge cases like single-element lists (MAD = 0.0)
 
-      '
-- description: 'HumanEval/5: intersperse'
+- description: "HumanEval/5: intersperse"
   vars:
-    task: "Complete this Python function:\n\nfrom typing import List\n\ndef intersperse(numbers: List[int],\
-      \ delimeter: int) -> List[int]:\n    \"\"\" Insert a number 'delimeter' between every two consecutive\
-      \ elements of input list.\n    >>> intersperse([], 4)\n    []\n    >>> intersperse([1, 2, 3], 4)\n\
-      \    [1, 4, 2, 4, 3]\n    \"\"\"\n"
+    task: |
+      Complete this Python function:
+
+      from typing import List
+
+      def intersperse(numbers: List[int], delimeter: int) -> List[int]:
+          """ Insert a number 'delimeter' between every two consecutive elements of input list.
+          >>> intersperse([], 4)
+          []
+          >>> intersperse([1, 2, 3], 4)
+          [1, 4, 2, 4, 3]
+          """
   assert:
-  - type: llm-rubric
-    metric: '[baseline] correct intersperse without trailing delimiter'
-    value: 'Score 3: Inserts the delimiter between elements and does not add a trailing delimiter Score
-      4: Also handles the empty list case correctly Score 5: Also handles a single-element list (should
-      return [element] with no delimiter)
+    - type: llm-rubric
+      metric: "[baseline] correct intersperse without trailing delimiter"
+      value: |
+        Score 3: Inserts the delimiter between elements and does not add a trailing delimiter Score 4: Also handles the empty list case correctly Score 5: Also handles a single-element list (should return [element] with no delimiter)
 
-      '
-- description: 'HumanEval/6: parse_nested_parens depth'
+- description: "HumanEval/6: parse_nested_parens depth"
   vars:
-    task: "Complete this Python function:\n\nfrom typing import List\n\ndef parse_nested_parens(paren_string:\
-      \ str) -> List[int]:\n    \"\"\" Input to this function is a string representing multiple groups\
-      \ of nested parentheses\n    separated by spaces. For each group, output the deepest level of nesting.\n\
-      \    E.g. (()()) has maximum two levels while ((())) has three.\n    >>> parse_nested_parens('(()())\
-      \ ((())) () ((())()())')\n    [2, 3, 1, 3]\n    \"\"\"\n"
+    task: |
+      Complete this Python function:
+
+      from typing import List
+
+      def parse_nested_parens(paren_string: str) -> List[int]:
+          """ Input to this function is a string representing multiple groups of nested parentheses
+          separated by spaces. For each group, output the deepest level of nesting.
+          E.g. (()()) has maximum two levels while ((())) has three.
+          >>> parse_nested_parens('(()()) ((())) () ((())()())')
+          [2, 3, 1, 3]
+          """
   assert:
-  - type: llm-rubric
-    metric: '[baseline] max depth per group'
-    value: 'Score 3: Splits on spaces, tracks depth per group, and returns the max depth for each Score
-      4: Also correctly resets depth counter between groups Score 5: Also handles non-uniform spacing
-      (e.g., groups separated by multiple spaces) or empty groups
+    - type: llm-rubric
+      metric: "[baseline] max depth per group"
+      value: |
+        Score 3: Splits on spaces, tracks depth per group, and returns the max depth for each Score 4: Also correctly resets depth counter between groups Score 5: Also handles non-uniform spacing (e.g., groups separated by multiple spaces) or empty groups
 
-      '
-- description: 'SQL: debug unexpected query results'
+- description: "SQL: debug unexpected query results"
   vars:
-    task: 'I wrote this query to show all users with their order counts for 2024,
-
-      but users with no orders aren''t showing up at all, and I''m getting
-
-      duplicate/wrong names for some users. I also can''t filter out deleted
-
-      users — they keep appearing. What''s wrong with it?
-
+    task: |
+      I wrote this query to show all users with their order counts for 2024,
+      but users with no orders aren't showing up at all, and I'm getting
+      duplicate/wrong names for some users. I also can't filter out deleted
+      users — they keep appearing. What's wrong with it?
 
       ```sql
-
       SELECT u.name, COUNT(o.id) as order_count
-
       FROM users u
-
       LEFT JOIN orders o ON u.id = o.user_id
-
-      WHERE o.created_at > ''2024-01-01''
-
+      WHERE o.created_at > '2024-01-01'
       AND u.deleted_at = NULL
-
       GROUP BY u.id
-
       ORDER BY order_count DESC
-
       ```
-
-      '
   assert:
-  - type: llm-rubric
-    metric: '[baseline] NULL comparison bug'
-    value: 'Score 3: Identifies that `u.deleted_at = NULL` is always false Score 4: Also explains NULL
-      comparisons require `IS NULL`, not `= NULL`, because NULL is not equal to anything including itself
-      Score 5: Also explains the logical implication — the WHERE clause excludes all rows where deleted_at
-      is NULL, which may be most or all rows
+    - type: llm-rubric
+      metric: "[baseline] NULL comparison bug"
+      value: |
+        Score 3: Identifies that `u.deleted_at = NULL` is always false Score 4: Also explains NULL comparisons require `IS NULL`, not `= NULL`, because NULL is not equal to anything including itself Score 5: Also explains the logical implication — the WHERE clause excludes all rows where deleted_at is NULL, which may be most or all rows
+    - type: llm-rubric
+      metric: "[baseline] LEFT JOIN converted to INNER JOIN"
+      value: |
+        Score 3: Identifies that the WHERE clause filtering on `o.created_at` (a column from the right-side table) is the problem Score 4: Also explains this silently converts the LEFT JOIN to an INNER JOIN, excluding all users who have no orders in the date range Score 5: Also explains the fix — moving the filter to the JOIN condition instead of the WHERE clause
+    - type: llm-rubric
+      metric: "[proficient] GROUP BY non-aggregate column"
+      value: |
+        Score 3: Identifies that `u.name` is selected but not included in the GROUP BY clause and not wrapped in an aggregate Score 4: Also explains it's non-deterministic in permissive SQL modes Score 5: Also explains it's an error in strict SQL mode
+    - type: llm-rubric
+      metric: "[expert] missing index"
+      value: |
+        Score 3: Identifies that `o.user_id` (the join column) needs an index Score 4: Also identifies that `o.created_at` (the filter column) likely needs an index for this query to perform acceptably at scale Score 5: Also explains the performance impact of missing indexes on this specific query pattern
 
-      '
-  - type: llm-rubric
-    metric: '[baseline] LEFT JOIN converted to INNER JOIN'
-    value: 'Score 3: Identifies that the WHERE clause filtering on `o.created_at` (a column from the right-side
-      table) is the problem Score 4: Also explains this silently converts the LEFT JOIN to an INNER JOIN,
-      excluding all users who have no orders in the date range Score 5: Also explains the fix — moving
-      the filter to the JOIN condition instead of the WHERE clause
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] GROUP BY non-aggregate column'
-    value: 'Score 3: Identifies that `u.name` is selected but not included in the GROUP BY clause and
-      not wrapped in an aggregate Score 4: Also explains it''s non-deterministic in permissive SQL modes
-      Score 5: Also explains it''s an error in strict SQL mode
-
-      '
-  - type: llm-rubric
-    metric: '[expert] missing index'
-    value: 'Score 3: Identifies that `o.user_id` (the join column) needs an index Score 4: Also identifies
-      that `o.created_at` (the filter column) likely needs an index for this query to perform acceptably
-      at scale Score 5: Also explains the performance impact of missing indexes on this specific query
-      pattern
-
-      '
-- description: 'Docker: debug slow builds and security concerns'
+- description: "Docker: debug slow builds and security concerns"
   vars:
-    task: 'My Docker builds are painfully slow — every time I change a line of
-
-      Python code it reinstalls all my dependencies from scratch. I''m also
-
+    task: |
+      My Docker builds are painfully slow — every time I change a line of
+      Python code it reinstalls all my dependencies from scratch. I'm also
       worried about security and noticed my container might be running as
-
-      root. And sometimes my app doesn''t shut down cleanly when I stop the
-
-      container. Can you tell me what''s wrong with this Dockerfile?
-
+      root. And sometimes my app doesn't shut down cleanly when I stop the
+      container. Can you tell me what's wrong with this Dockerfile?
 
       ```dockerfile
-
       FROM ubuntu:latest
-
       RUN apt-get update && apt-get install -y python3 python3-pip
-
       COPY . /app
-
       RUN pip3 install -r /app/requirements.txt
-
       WORKDIR /app
-
       ENV DATABASE_URL=postgres://admin:secretpassword@db:5432/myapp
-
       CMD python3 app.py
-
       ```
-
-      '
   assert:
-  - type: llm-rubric
-    metric: '[baseline] secret in ENV'
-    value: 'Score 3: Identifies that hardcoding credentials in ENV bakes the secret into the image layer
-      Score 4: Also explains it''s visible via `docker history` and any registry the image is pushed to
-      Score 5: Also explains the correct approach (runtime secret injection)
+    - type: llm-rubric
+      metric: "[baseline] secret in ENV"
+      value: |
+        Score 3: Identifies that hardcoding credentials in ENV bakes the secret into the image layer Score 4: Also explains it's visible via `docker history` and any registry the image is pushed to Score 5: Also explains the correct approach (runtime secret injection)
+    - type: llm-rubric
+      metric: "[baseline] COPY ordering breaks layer cache"
+      value: |
+        Score 3: Identifies that `COPY . /app` before `pip3 install` is the problem Score 4: Also explains this invalidates the pip layer on every code change, causing a full dependency reinstall Score 5: Also explains the fix: copy requirements.txt first, run pip, then copy the rest
+    - type: llm-rubric
+      metric: "[proficient] running as root"
+      value: |
+        Score 3: Identifies that there is no USER instruction Score 4: Also explains the container process runs as root Score 5: Also explains this is a security risk if the process or a dependency is compromised
+    - type: llm-rubric
+      metric: "[expert] CMD shell vs exec form"
+      value: |
+        Score 3: Identifies that `CMD python3 app.py` uses shell form Score 4: Also explains the process runs as a child of `/bin/sh`, so signals like SIGTERM are not forwarded, preventing graceful shutdown Score 5: Also explains the fix is exec form: `CMD ["python3", "app.py"]`
 
-      '
-  - type: llm-rubric
-    metric: '[baseline] COPY ordering breaks layer cache'
-    value: 'Score 3: Identifies that `COPY . /app` before `pip3 install` is the problem Score 4: Also
-      explains this invalidates the pip layer on every code change, causing a full dependency reinstall
-      Score 5: Also explains the fix: copy requirements.txt first, run pip, then copy the rest
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] running as root'
-    value: 'Score 3: Identifies that there is no USER instruction Score 4: Also explains the container
-      process runs as root Score 5: Also explains this is a security risk if the process or a dependency
-      is compromised
-
-      '
-  - type: llm-rubric
-    metric: '[expert] CMD shell vs exec form'
-    value: 'Score 3: Identifies that `CMD python3 app.py` uses shell form Score 4: Also explains the process
-      runs as a child of `/bin/sh`, so signals like SIGTERM are not forwarded, preventing graceful shutdown
-      Score 5: Also explains the fix is exec form: `CMD ["python3", "app.py"]`
-
-      '
-- description: 'Go: debug wrong results in concurrent fetch'
+- description: "Go: debug wrong results in concurrent fetch"
   vars:
-    task: "I have a Go function that fetches a list of URLs concurrently and\nreturns the response bodies.\
-      \ It mostly works but sometimes returns\nwrong results — some slots in the results slice end up\
-      \ with the\nwrong body or are empty even when the request succeeded. I'm also\nseeing what looks\
-      \ like a file descriptor leak under load. Go 1.21.\nWhat's wrong with this code?\n\n```go\nfunc\
-      \ fetchAll(urls []string) []string {\n    results := make([]string, len(urls))\n    var wg sync.WaitGroup\n\
-      \    for i, url := range urls {\n        wg.Add(1)\n        go func() {\n            defer wg.Done()\n\
-      \            resp, err := http.Get(url)\n            if err != nil {\n              return\n   \
-      \         }\n            body, _ := io.ReadAll(resp.Body)\n            results[i] = string(body)\n\
-      \        }()\n    }\n    wg.Wait()\n    return results\n}\n```\n"
+    task: |
+      I have a Go function that fetches a list of URLs concurrently and
+      returns the response bodies. It mostly works but sometimes returns
+      wrong results — some slots in the results slice end up with the
+      wrong body or are empty even when the request succeeded. I'm also
+      seeing what looks like a file descriptor leak under load. Go 1.21.
+      What's wrong with this code?
+
+      ```go
+      func fetchAll(urls []string) []string {
+          results := make([]string, len(urls))
+          var wg sync.WaitGroup
+          for i, url := range urls {
+              wg.Add(1)
+              go func() {
+                  defer wg.Done()
+                  resp, err := http.Get(url)
+                  if err != nil {
+                    return
+                  }
+                  body, _ := io.ReadAll(resp.Body)
+                  results[i] = string(body)
+              }()
+          }
+          wg.Wait()
+          return results
+      }
+      ```
   assert:
-  - type: llm-rubric
-    metric: '[baseline] loop variable capture'
-    value: 'Score 3: Identifies the loop variable capture bug — in Go 1.21, i and url are shared across
-      goroutines Score 4: Also explains all goroutines may read the last loop values, causing incorrect
-      results Score 5: Also explains the fix — capturing loop variables as function parameters in the
-      goroutine closure
+    - type: llm-rubric
+      metric: "[baseline] loop variable capture"
+      value: |
+        Score 3: Identifies the loop variable capture bug — in Go 1.21, i and url are shared across goroutines Score 4: Also explains all goroutines may read the last loop values, causing incorrect results Score 5: Also explains the fix — capturing loop variables as function parameters in the goroutine closure
+    - type: llm-rubric
+      metric: "[baseline] resp.Body never closed"
+      value: |
+        Score 3: Identifies that resp.Body is never closed Score 4: Also explains this is a resource leak (file descriptor and memory) on every successful request Score 5: Also explains why this matters not just naming the issue
+    - type: llm-rubric
+      metric: "[proficient] io.ReadAll error ignored"
+      value: |
+        Score 3: Identifies that the io.ReadAll error is silently discarded with _ Score 4: Also explains the function may return partial or empty results without any indication of failure Score 5: Also explains the impact on debugging and reliability
+    - type: llm-rubric
+      metric: "[expert] no timeout or context"
+      value: |
+        Score 3: Identifies that http.Get has no timeout or context Score 4: Also explains goroutines can hang indefinitely on slow or unresponsive servers Score 5: Also explains there is no way for the caller to cancel in-flight requests
 
-      '
-  - type: llm-rubric
-    metric: '[baseline] resp.Body never closed'
-    value: 'Score 3: Identifies that resp.Body is never closed Score 4: Also explains this is a resource
-      leak (file descriptor and memory) on every successful request Score 5: Also explains why this matters
-      not just naming the issue
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] io.ReadAll error ignored'
-    value: 'Score 3: Identifies that the io.ReadAll error is silently discarded with _ Score 4: Also explains
-      the function may return partial or empty results without any indication of failure Score 5: Also
-      explains the impact on debugging and reliability
-
-      '
-  - type: llm-rubric
-    metric: '[expert] no timeout or context'
-    value: 'Score 3: Identifies that http.Get has no timeout or context Score 4: Also explains goroutines
-      can hang indefinitely on slow or unresponsive servers Score 5: Also explains there is no way for
-      the caller to cancel in-flight requests
-
-      '
-- description: 'Kotlin: debug NullPointerException in coroutine service'
+- description: "Kotlin: debug NullPointerException in coroutine service"
   vars:
-    task: "My Kotlin service is crashing with a NullPointerException that I can't\nreproduce consistently\
-      \ — it seems to happen more under load. I'm also\nseeing what might be a resource leak; memory creeps\
-      \ up over time even\nthough I'm not holding onto data. Can you help me figure out what's\nwrong\
-      \ with this code?\n\n```kotlin\nclass UserService(private val repo: UserRepository) {\n    private\
-      \ val scope = CoroutineScope(Dispatchers.IO)\n\n    fun getUser(id: String): UserProfile {\n   \
-      \     var result: UserProfile? = null\n        scope.launch {\n            result = repo.findById(id)\n\
-      \        }\n        Thread.sleep(1000)\n        return result!!\n    }\n\n    fun shutdown() {\n\
-      \        scope.cancel()\n    }\n}\n```\n"
+    task: |
+      My Kotlin service is crashing with a NullPointerException that I can't
+      reproduce consistently — it seems to happen more under load. I'm also
+      seeing what might be a resource leak; memory creeps up over time even
+      though I'm not holding onto data. Can you help me figure out what's
+      wrong with this code?
+
+      ```kotlin
+      class UserService(private val repo: UserRepository) {
+          private val scope = CoroutineScope(Dispatchers.IO)
+
+          fun getUser(id: String): UserProfile {
+              var result: UserProfile? = null
+              scope.launch {
+                  result = repo.findById(id)
+              }
+              Thread.sleep(1000)
+              return result!!
+          }
+
+          fun shutdown() {
+              scope.cancel()
+          }
+      }
+      ```
   assert:
-  - type: llm-rubric
-    metric: '[baseline] race condition and NPE'
-    value: 'Score 3: Identifies the race between Thread.sleep and the coroutine Score 4: Also explains
-      the coroutine may not complete within 1000ms, and result!! will throw NullPointerException Score
-      5: Also explains the mechanism, not just says "it might be null"
+    - type: llm-rubric
+      metric: "[baseline] race condition and NPE"
+      value: |
+        Score 3: Identifies the race between Thread.sleep and the coroutine Score 4: Also explains the coroutine may not complete within 1000ms, and result!! will throw NullPointerException Score 5: Also explains the mechanism, not just says "it might be null"
+    - type: llm-rubric
+      metric: "[baseline] blocking function should be suspend"
+      value: |
+        Score 3: Identifies that getUser is a blocking function pretending to be async Score 4: Also explains it should be a suspend function or return a Deferred, not use Thread.sleep to wait Score 5: Also explains why this is fundamentally wrong in the Kotlin coroutine model
+    - type: llm-rubric
+      metric: "[proficient] shared mutable variable visibility"
+      value: |
+        Score 3: Identifies that result is a shared mutable variable between the coroutine (Dispatchers.IO thread pool) and the calling thread Score 4: Also explains there is no visibility guarantee under the JVM memory model Score 5: Also explains the practical consequences of the visibility gap
+    - type: llm-rubric
+      metric: "[proficient] unscoped lifecycle"
+      value: |
+        Score 3: Identifies that scope has no lifecycle management Score 4: Also explains it leaks if shutdown() is never called Score 5: Also explains the caller has no way to know shutdown() is required
+    - type: llm-rubric
+      metric: "[expert] silent coroutine failure"
+      value: |
+        Score 3: Identifies that if repo.findById throws an exception, the coroutine fails silently Score 4: Also explains result stays null Score 5: Also explains the caller gets an NPE with no indication of the actual error
 
-      '
-  - type: llm-rubric
-    metric: '[baseline] blocking function should be suspend'
-    value: 'Score 3: Identifies that getUser is a blocking function pretending to be async Score 4: Also
-      explains it should be a suspend function or return a Deferred, not use Thread.sleep to wait Score
-      5: Also explains why this is fundamentally wrong in the Kotlin coroutine model
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] shared mutable variable visibility'
-    value: 'Score 3: Identifies that result is a shared mutable variable between the coroutine (Dispatchers.IO
-      thread pool) and the calling thread Score 4: Also explains there is no visibility guarantee under
-      the JVM memory model Score 5: Also explains the practical consequences of the visibility gap
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] unscoped lifecycle'
-    value: 'Score 3: Identifies that scope has no lifecycle management Score 4: Also explains it leaks
-      if shutdown() is never called Score 5: Also explains the caller has no way to know shutdown() is
-      required
-
-      '
-  - type: llm-rubric
-    metric: '[expert] silent coroutine failure'
-    value: 'Score 3: Identifies that if repo.findById throws an exception, the coroutine fails silently
-      Score 4: Also explains result stays null Score 5: Also explains the caller gets an NPE with no indication
-      of the actual error
-
-      '
-- description: 'TypeScript: debug silent failures in event processor'
+- description: "TypeScript: debug silent failures in event processor"
   vars:
-    task: "My TypeScript event processor seems to silently fail sometimes — some\ndelete operations don't\
-      \ run and I can't tell why, and downstream code\nis occasionally crashing on userId values it shouldn't\
-      \ be receiving.\nThe TypeScript compiler is happy with everything. What's wrong here?\n\n```typescript\n\
-      async function processEvents(events: unknown[]): Promise<void> {\n  const results = await Promise.all(\n\
-      \    events.map(async (event) => {\n      const e = event as { type: string; userId: string };\n\
-      \      if (e.type === \"delete\") {\n        await deleteUser(e.userId);\n      }\n      return\
-      \ e.userId;\n    })\n  );\n  console.log(`Processed ${results.length} events`);\n}\n```\n"
+    task: |
+      My TypeScript event processor seems to silently fail sometimes — some
+      delete operations don't run and I can't tell why, and downstream code
+      is occasionally crashing on userId values it shouldn't be receiving.
+      The TypeScript compiler is happy with everything. What's wrong here?
+
+      ```typescript
+      async function processEvents(events: unknown[]): Promise<void> {
+        const results = await Promise.all(
+          events.map(async (event) => {
+            const e = event as { type: string; userId: string };
+            if (e.type === "delete") {
+              await deleteUser(e.userId);
+            }
+            return e.userId;
+          })
+        );
+        console.log(`Processed ${results.length} events`);
+      }
+      ```
   assert:
-  - type: llm-rubric
-    metric: '[baseline] unsafe cast'
-    value: 'Score 3: Identifies that `as { type: string; userId: string }` is an unsafe cast Score 4:
-      Also explains there is no runtime validation, so any value (null, number, wrong-shaped object) passes
-      through the type system unchecked Score 5: Also explains the practical consequences of the unsafe
-      cast
-
-      '
-  - type: llm-rubric
-    metric: '[baseline] Promise.all fails fast'
-    value: 'Score 3: Identifies that Promise.all fails fast Score 4: Also explains if one deleteUser call
-      rejects, the remaining promises are abandoned and the error propagates with no cleanup Score 5:
-      Also explains the cascading failure impact on the entire batch
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] no error handling on deleteUser'
-    value: 'Score 3: Identifies that there is no error handling on deleteUser Score 4: Also explains if
-      it throws, the entire function rejects Score 5: Also explains any remaining delete operations are
-      abandoned mid-batch
-
-      '
-  - type: llm-rubric
-    metric: '[proficient] no input validation'
-    value: 'Score 3: Identifies that there is no validation of individual events Score 4: Also explains
-      nulls, primitives, or objects with unexpected shapes all silently pass the type assertion Score
-      5: Also explains they may cause runtime errors downstream
-
-      '
-  - type: llm-rubric
-    metric: '[expert] results contain untrusted data'
-    value: 'Score 3: Identifies that the results array accumulates e.userId for all events including non-delete
-      ones Score 4: Also explains these may be undefined at runtime despite the type claiming string Score
-      5: Also explains downstream consumers of this array would trust invalid data
-
-      '
+    - type: llm-rubric
+      metric: "[baseline] unsafe cast"
+      value: |
+        Score 3: Identifies that `as { type: string; userId: string }` is an unsafe cast Score 4: Also explains there is no runtime validation, so any value (null, number, wrong-shaped object) passes through the type system unchecked Score 5: Also explains the practical consequences of the unsafe cast
+    - type: llm-rubric
+      metric: "[baseline] Promise.all fails fast"
+      value: |
+        Score 3: Identifies that Promise.all fails fast Score 4: Also explains if one deleteUser call rejects, the remaining promises are abandoned and the error propagates with no cleanup Score 5: Also explains the cascading failure impact on the entire batch
+    - type: llm-rubric
+      metric: "[proficient] no error handling on deleteUser"
+      value: |
+        Score 3: Identifies that there is no error handling on deleteUser Score 4: Also explains if it throws, the entire function rejects Score 5: Also explains any remaining delete operations are abandoned mid-batch
+    - type: llm-rubric
+      metric: "[proficient] no input validation"
+      value: |
+        Score 3: Identifies that there is no validation of individual events Score 4: Also explains nulls, primitives, or objects with unexpected shapes all silently pass the type assertion Score 5: Also explains they may cause runtime errors downstream
+    - type: llm-rubric
+      metric: "[expert] results contain untrusted data"
+      value: |
+        Score 3: Identifies that the results array accumulates e.userId for all events including non-delete ones Score 4: Also explains these may be undefined at runtime despite the type claiming string Score 5: Also explains downstream consumers of this array would trust invalid data

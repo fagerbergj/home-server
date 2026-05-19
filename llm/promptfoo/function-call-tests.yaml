@@ -6,224 +6,297 @@
 # It must call the right function with the right arguments.
 # Assertions check function name and required argument values.
 
-- description: 'BFCL simple_0: calculate_triangle_area'
+- description: "BFCL simple_0: calculate_triangle_area"
   vars:
-    task: 'You have access to this function:
-
-      {"name": "calculate_triangle_area", "description": "Calculate the area of a triangle given its base and height.", "parameters": {"type": "object", "properties": {"base": {"type": "integer"}, "height":
-      {"type": "integer"}, "unit": {"type": "string"}}, "required": ["base", "height"]}}
-
+    task: |
+      You have access to this function:
+      {"name": "calculate_triangle_area", "description": "Calculate the area of a triangle given its base and height.", "parameters": {"type": "object", "properties": {"base": {"type": "integer"}, "height": {"type": "integer"}, "unit": {"type": "string"}}, "required": ["base", "height"]}}
 
       User: Find the area of a triangle with a base of 10 units and height of 5 units.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
-
-      '
   assert:
-  - type: javascript
-    value: '(output.includes(''calculate_triangle_area'')) ? 5 : 0'
-    metric: '[baseline] calls correct function'
-  - type: javascript
-    value: '(output.includes(''"base"'') && (output.includes(''"base": 10'') || output.includes(''"base":10''))) ? 5 : 0'
-    metric: '[baseline] base=10'
-  - type: javascript
-    value: '(output.includes(''"height"'') && (output.includes(''"height": 5'') || output.includes(''"height":5''))) ? 5 : 0'
-    metric: '[baseline] height=5'
-- description: 'BFCL simple_1: math.factorial'
+    - type: javascript
+      metric: "[baseline] calls correct function"
+      value: "(output.includes('calculate_triangle_area')) ? 5 : 0"
+    - type: javascript
+      metric: "[baseline] base=10"
+      value: >-
+        (output.includes('"base"') && (output.includes('"base": 10') ||
+        output.includes('"base":10'))) ? 5 : 0
+    - type: javascript
+      metric: "[baseline] height=5"
+      value: >-
+        (output.includes('"height"') && (output.includes('"height": 5') ||
+        output.includes('"height":5'))) ? 5 : 0
+
+- description: "BFCL simple_1: math.factorial"
   vars:
-    task: 'You have access to this function:
-
+    task: |
+      You have access to this function:
       {"name": "math.factorial", "description": "Calculate the factorial of a given number.", "parameters": {"type": "object", "properties": {"number": {"type": "integer"}}, "required": ["number"]}}
-
 
       User: Calculate the factorial of 5 using math functions.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
-
-      '
   assert:
-  - type: javascript
-    value: '(output.includes(''factorial'')) ? 5 : 0'
-    metric: '[baseline] calls factorial function'
-  - type: javascript
-    value: '(output.includes(''"number"'') && (output.includes(''"number": 5'') || output.includes(''"number":5''))) ? 5 : 0'
-    metric: '[baseline] number=5'
-- description: 'BFCL simple_2: math.hypot'
+    - type: javascript
+      metric: "[baseline] calls factorial function"
+      value: "(output.includes('factorial')) ? 5 : 0"
+    - type: javascript
+      metric: "[baseline] number=5"
+      value: >-
+        (output.includes('"number"') && (output.includes('"number": 5') ||
+        output.includes('"number":5'))) ? 5 : 0
+
+- description: "BFCL simple_2: math.hypot"
   vars:
-    task: 'You have access to this function:
-
-      {"name": "math.hypot", "description": "Calculate the Euclidean norm — the hypotenuse of a right triangle.", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}, "y": {"type":
-      "integer"}, "z": {"type": "integer"}}, "required": ["x", "y"]}}
-
+    task: |
+      You have access to this function:
+      {"name": "math.hypot", "description": "Calculate the Euclidean norm — the hypotenuse of a right triangle.", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}, "z": {"type": "integer"}}, "required": ["x", "y"]}}
 
       User: Calculate the hypotenuse of a right triangle given the lengths of the other two sides as 4 and 5.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
-
-      '
   assert:
-  - type: javascript
-    value: '(output.includes(''hypot'')) ? 5 : 0'
-    metric: '[baseline] calls hypot function'
-  - type: llm-rubric
-    metric: '[proficient] correct arguments for sides 4 and 5'
-    value: 'Score 3: Calls math.hypot with both x and y arguments populated Score 4: Also uses values 4 and 5 (order doesn''t matter — hypot is symmetric) Score 5: Also does not include z (it''s optional
-      and the problem doesn''t mention a z-axis)
+    - type: javascript
+      metric: "[baseline] calls hypot function"
+      value: "(output.includes('hypot')) ? 5 : 0"
+    - type: llm-rubric
+      metric: "[proficient] correct arguments for sides 4 and 5"
+      value: |
+        Score 3: Calls math.hypot with both x and y arguments populated Score 4: Also uses values 4 and 5 (order doesn't matter — hypot is symmetric) Score 5: Also does not include z (it's optional and the problem doesn't mention a z-axis)
 
-      '
-- description: 'BFCL simple_3: quadratic_roots a=1, b=-3, c=2'
+- description: "BFCL simple_3: quadratic_roots a=1, b=-3, c=2"
   vars:
-    task: 'You have access to this function:
-
-      {"name": "algebra.quadratic_roots", "description": "Find the roots of a quadratic equation ax^2 + bx + c = 0.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type":
-      "integer"}, "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
-
+    task: |
+      You have access to this function:
+      {"name": "algebra.quadratic_roots", "description": "Find the roots of a quadratic equation ax^2 + bx + c = 0.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
 
       User: Find the roots of a quadratic equation with coefficients a=1, b=-3, c=2.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
-
-      '
   assert:
-  - type: javascript
-    value: '(output.includes(''quadratic'')) ? 5 : 0'
-    metric: '[baseline] calls quadratic function'
-  - type: javascript
-    value: '((output.includes(''"a": 1'') || output.includes(''"a":1'')) && (output.includes(''"b": -3'') || output.includes(''"b":-3'')) && (output.includes(''"c": 2'') || output.includes(''"c":2'')))
-      ? 5 : 0'
-    metric: '[baseline] correct coefficients a=1, b=-3, c=2'
-- description: 'BFCL simple_4: solve_quadratic a=2, b=6, c=5'
+    - type: javascript
+      metric: "[baseline] calls quadratic function"
+      value: "(output.includes('quadratic')) ? 5 : 0"
+    - type: javascript
+      metric: "[baseline] correct coefficients a=1, b=-3, c=2"
+      value: >-
+        ((output.includes('"a": 1') || output.includes('"a":1')) && (output.includes('"b": -3') ||
+        output.includes('"b":-3')) && (output.includes('"c": 2') || output.includes('"c":2'))) ? 5
+        : 0
+
+- description: "BFCL simple_4: solve_quadratic a=2, b=6, c=5"
   vars:
-    task: 'You have access to this function:
-
-      {"name": "solve_quadratic_equation", "description": "Solve the quadratic equation and return its roots.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"},
-      "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
-
+    task: |
+      You have access to this function:
+      {"name": "solve_quadratic_equation", "description": "Solve the quadratic equation and return its roots.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}}, "required": ["a", "b", "c"]}}
 
       User: Solve a quadratic equation where a=2, b=6, and c=5.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
-
-      '
   assert:
-  - type: javascript
-    value: '(output.includes(''solve_quadratic'')) ? 5 : 0'
-    metric: '[baseline] calls correct function'
-  - type: javascript
-    value: '((output.includes(''"a": 2'') || output.includes(''"a":2'')) && (output.includes(''"b": 6'') || output.includes(''"b":6'')) && (output.includes(''"c": 5'') || output.includes(''"c":5''))) ?
-      5 : 0'
-    metric: '[baseline] correct coefficients a=2, b=6, c=5'
-- description: 'BFCL simple_5: solve_quadratic a=3, b=-11, c=-4'
+    - type: javascript
+      metric: "[baseline] calls correct function"
+      value: "(output.includes('solve_quadratic')) ? 5 : 0"
+    - type: javascript
+      metric: "[baseline] correct coefficients a=2, b=6, c=5"
+      value: >-
+        ((output.includes('"a": 2') || output.includes('"a":2')) && (output.includes('"b": 6') ||
+        output.includes('"b":6')) && (output.includes('"c": 5') || output.includes('"c":5'))) ? 5
+        : 0
+
+- description: "BFCL simple_5: solve_quadratic a=3, b=-11, c=-4"
   vars:
-    task: 'You have access to this function:
-
-      {"name": "solve_quadratic", "description": "Solve a quadratic equation. Optional root_type parameter: ''real'' for real roots only (default), ''all'' for real and complex.", "parameters": {"type":
-      "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}, "root_type": {"type": "string"}}, "required": ["a", "b", "c"]}}
-
+    task: |
+      You have access to this function:
+      {"name": "solve_quadratic", "description": "Solve a quadratic equation. Optional root_type parameter: 'real' for real roots only (default), 'all' for real and complex.", "parameters": {"type": "object", "properties": {"a": {"type": "integer"}, "b": {"type": "integer"}, "c": {"type": "integer"}, "root_type": {"type": "string"}}, "required": ["a", "b", "c"]}}
 
       User: Find all the roots of a quadratic equation given coefficients a=3, b=-11, and c=-4.
 
-
       Respond with the function call you would make in JSON:
-
       {"name": "<function_name>", "arguments": {<args>}}
+  assert:
+    - type: javascript
+      metric: "[baseline] calls correct function"
+      value: "(output.includes('solve_quadratic')) ? 5 : 0"
+    - type: javascript
+      metric: "[baseline] correct coefficients"
+      value: >-
+        ((output.includes('"a": 3') || output.includes('"a":3')) && (output.includes('"b": -11')
+        || output.includes('"b":-11')) && (output.includes('"c": -4') ||
+        output.includes('"c":-4'))) ? 5 : 0
+    - type: llm-rubric
+      metric: "[proficient] uses root_type=all for 'find all roots'"
+      value: |
+        Score 3: Calls solve_quadratic with the correct a, b, c values Score 4: Also includes root_type because the user said "find all the roots" Score 5: Sets root_type to "all" specifically (not "real") since user wants all roots
 
-      '
-  assert:
-  - type: javascript
-    value: '(output.includes(''solve_quadratic'')) ? 5 : 0'
-    metric: '[baseline] calls correct function'
-  - type: javascript
-    value: '((output.includes(''"a": 3'') || output.includes(''"a":3'')) && (output.includes(''"b": -11'') || output.includes(''"b":-11'')) && (output.includes(''"c": -4'') || output.includes(''"c":-4'')))
-      ? 5 : 0'
-    metric: '[baseline] correct coefficients'
-  - type: llm-rubric
-    metric: '[proficient] uses root_type=all for ''find all roots'''
-    value: 'Score 3: Calls solve_quadratic with the correct a, b, c values Score 4: Also includes root_type because the user said "find all the roots" Score 5: Sets root_type to "all" specifically (not
-      "real") since user wants all roots
+- description: "JSON: extract structured data from prose"
+  vars:
+    task: |
+      Extract the following information as a JSON object with exactly these fields:
+        name    (string)
+        age     (integer — not a string)
+        role    (string)
+        city    (string)
+      Return ONLY the JSON object — no markdown fences, no explanation.
 
-      '
-- description: 'JSON: extract structured data from prose'
-  vars:
-    task: "Extract the following information as a JSON object with exactly these fields:\n  name    (string)\n  age     (integer — not a string)\n  role    (string)\n  city    (string)\nReturn ONLY the\
-      \ JSON object — no markdown fences, no explanation.\n\n\"Sarah Chen is a 28-year-old DevOps engineer based in Austin, Texas.\"\n"
+      "Sarah Chen is a 28-year-old DevOps engineer based in Austin, Texas."
   assert:
-  - type: is-json
-    metric: '[baseline] syntactically valid JSON'
-  - type: javascript
-    metric: '[baseline] correct field values and types'
-    value: "const d = JSON.parse(output);\nif (d.name !== 'Sarah Chen')\n  return { pass: false, score: 0, reason: 'wrong name: ' + d.name };\nif (d.age !== 28)\n  return { pass: false, score: 0, reason:\
-      \ 'age should be integer 28, got: ' + JSON.stringify(d.age) };\nif (typeof d.role !== 'string' || !d.role.trim())\n  return { pass: false, score: 0, reason: 'missing or empty role' };\nif (typeof\
-      \ d.city !== 'string' || !d.city.trim())\n  return { pass: false, score: 0, reason: 'missing or empty city' };\nreturn true;\n"
-- description: 'JSON: generate object satisfying a TypeScript interface'
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON"
+    - type: javascript
+      metric: "[baseline] correct field values and types"
+      value: |
+        const d = JSON.parse(output);
+        if (d.name !== 'Sarah Chen')
+          return { pass: false, score: 0, reason: 'wrong name: ' + d.name };
+        if (d.age !== 28)
+          return { pass: false, score: 0, reason: 'age should be integer 28, got: ' + JSON.stringify(d.age) };
+        if (typeof d.role !== 'string' || !d.role.trim())
+          return { pass: false, score: 0, reason: 'missing or empty role' };
+        if (typeof d.city !== 'string' || !d.city.trim())
+          return { pass: false, score: 0, reason: 'missing or empty city' };
+        return true;
+
+- description: "JSON: generate object satisfying a TypeScript interface"
   vars:
-    task: "Generate a valid JSON object that satisfies this TypeScript interface.\nReturn ONLY the JSON — no markdown fences, no explanation.\n\ninterface ServiceConfig {\n  name: string;           // non-empty\n\
-      \  port: number;           // valid port: 1–65535\n  replicas: number;       // at least 1\n  environment: \"production\" | \"staging\" | \"development\";\n  tags: string[];         // at least one\
-      \ entry\n}\n"
+    task: |
+      Generate a valid JSON object that satisfies this TypeScript interface.
+      Return ONLY the JSON — no markdown fences, no explanation.
+
+      interface ServiceConfig {
+        name: string;           // non-empty
+        port: number;           // valid port: 1–65535
+        replicas: number;       // at least 1
+        environment: "production" | "staging" | "development";
+        tags: string[];         // at least one entry
+      }
   assert:
-  - type: is-json
-    metric: '[baseline] syntactically valid JSON'
-  - type: javascript
-    metric: '[baseline] satisfies interface constraints'
-    value: "const d = JSON.parse(output);\nif (typeof d.name !== 'string' || !d.name)\n  return { pass: false, score: 0, reason: 'name must be non-empty string' };\nif (typeof d.port !== 'number' || d.port\
-      \ < 1 || d.port > 65535)\n  return { pass: false, score: 0, reason: 'port out of valid range: ' + d.port };\nif (typeof d.replicas !== 'number' || d.replicas < 1)\n  return { pass: false, score: 0,\
-      \ reason: 'replicas must be >= 1' };\nif (!['production', 'staging', 'development'].includes(d.environment))\n  return { pass: false, score: 0, reason: 'invalid environment: ' + d.environment };\n\
-      if (!Array.isArray(d.tags) || d.tags.length === 0)\n  return { pass: false, score: 0, reason: 'tags must be a non-empty array' };\nreturn true;\n"
-- description: 'Tool use: select the right tool and format the call as JSON'
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON"
+    - type: javascript
+      metric: "[baseline] satisfies interface constraints"
+      value: |
+        const d = JSON.parse(output);
+        if (typeof d.name !== 'string' || !d.name)
+          return { pass: false, score: 0, reason: 'name must be non-empty string' };
+        if (typeof d.port !== 'number' || d.port < 1 || d.port > 65535)
+          return { pass: false, score: 0, reason: 'port out of valid range: ' + d.port };
+        if (typeof d.replicas !== 'number' || d.replicas < 1)
+          return { pass: false, score: 0, reason: 'replicas must be >= 1' };
+        if (!['production', 'staging', 'development'].includes(d.environment))
+          return { pass: false, score: 0, reason: 'invalid environment: ' + d.environment };
+        if (!Array.isArray(d.tags) || d.tags.length === 0)
+          return { pass: false, score: 0, reason: 'tags must be a non-empty array' };
+        return true;
+
+- description: "Tool use: select the right tool and format the call as JSON"
   vars:
-    task: "You have three tools available:\n  search_web(query: string)        — search the internet for current information\n  query_db(sql: string)            — run a read-only SQL query on the local\
-      \ DB\n  send_alert(message: string)      — page the on-call engineer\n\nUser request: \"What is the current weather in Tokyo?\"\n\nRespond with a single JSON tool call:\n  {\"tool\": \"<name>\", \"\
-      params\": {<args>}}\nReturn ONLY the JSON — no markdown, no explanation.\n"
+    task: |
+      You have three tools available:
+        search_web(query: string)        — search the internet for current information
+        query_db(sql: string)            — run a read-only SQL query on the local DB
+        send_alert(message: string)      — page the on-call engineer
+
+      User request: "What is the current weather in Tokyo?"
+
+      Respond with a single JSON tool call:
+        {"tool": "<name>", "params": {<args>}}
+      Return ONLY the JSON — no markdown, no explanation.
   assert:
-  - type: is-json
-    metric: '[baseline] syntactically valid JSON tool call'
-  - type: javascript
-    metric: '[baseline] correct tool selected with required params'
-    value: "const call = JSON.parse(output);\nif (call.tool !== 'search_web')\n  return { pass: false, score: 0, reason: 'should call search_web for current weather, got: ' + call.tool };\nif (typeof call.params?.query\
-      \ !== 'string' || !call.params.query.trim())\n  return { pass: false, score: 0, reason: 'params.query must be a non-empty string' };\nreturn true;\n"
-- description: 'Tool use: pick between two plausible tools'
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON tool call"
+    - type: javascript
+      metric: "[baseline] correct tool selected with required params"
+      value: |
+        const call = JSON.parse(output);
+        if (call.tool !== 'search_web')
+          return { pass: false, score: 0, reason: 'should call search_web for current weather, got: ' + call.tool };
+        if (typeof call.params?.query !== 'string' || !call.params.query.trim())
+          return { pass: false, score: 0, reason: 'params.query must be a non-empty string' };
+        return true;
+
+- description: "Tool use: pick between two plausible tools"
   vars:
-    task: "You are an assistant with access to an internal analytics database.\nYou have three tools available:\n  search_web(query: string)        — search the internet for current information\n  query_db(sql:\
-      \ string)            — run a read-only SQL query on the internal analytics DB\n  send_alert(message: string)      — page the on-call engineer\n\nUser request: \"How many users signed up in the last\
-      \ 7 days?\"\n(User signups are tracked in the internal DB, not on the web.)\n\nRespond with a single JSON tool call:\n  {\"tool\": \"<name>\", \"params\": {<args>}}\nReturn ONLY the JSON — no markdown,\
-      \ no explanation.\n"
+    task: |
+      You are an assistant with access to an internal analytics database.
+      You have three tools available:
+        search_web(query: string)        — search the internet for current information
+        query_db(sql: string)            — run a read-only SQL query on the internal analytics DB
+        send_alert(message: string)      — page the on-call engineer
+
+      User request: "How many users signed up in the last 7 days?"
+      (User signups are tracked in the internal DB, not on the web.)
+
+      Respond with a single JSON tool call:
+        {"tool": "<name>", "params": {<args>}}
+      Return ONLY the JSON — no markdown, no explanation.
   assert:
-  - type: is-json
-    metric: '[baseline] syntactically valid JSON tool call'
-  - type: javascript
-    metric: '[baseline] query_db selected with SQL param'
-    value: "const call = JSON.parse(output);\nif (call.tool !== 'query_db')\n  return { pass: false, score: 0, reason: 'signups data is in the local DB — should call query_db, got: ' + call.tool };\nif\
-      \ (typeof call.params?.sql !== 'string' || !call.params.sql.trim())\n  return { pass: false, score: 0, reason: 'params.sql must be a non-empty string' };\nreturn true;\n"
-- description: 'YAML: generate a valid Docker Compose service definition'
+    - type: is-json
+      metric: "[baseline] syntactically valid JSON tool call"
+    - type: javascript
+      metric: "[baseline] query_db selected with SQL param"
+      value: |
+        const call = JSON.parse(output);
+        if (call.tool !== 'query_db')
+          return { pass: false, score: 0, reason: 'signups data is in the local DB — should call query_db, got: ' + call.tool };
+        if (typeof call.params?.sql !== 'string' || !call.params.sql.trim())
+          return { pass: false, score: 0, reason: 'params.sql must be a non-empty string' };
+        return true;
+
+- description: "YAML: generate a valid Docker Compose service definition"
   vars:
-    task: "Generate a Docker Compose v3 services block for a PostgreSQL 15 database.\nRequirements:\n  - service name: db\n  - image: postgres:15\n  - host port 5432 mapped to container port 5432\n  - environment\
-      \ variable POSTGRES_DB set to myapp\n  - named volume pgdata mounted at /var/lib/postgresql/data\nReturn ONLY the YAML starting with \"services:\" — no markdown fences.\n"
+    task: |
+      Generate a Docker Compose v3 services block for a PostgreSQL 15 database.
+      Requirements:
+        - service name: db
+        - image: postgres:15
+        - host port 5432 mapped to container port 5432
+        - environment variable POSTGRES_DB set to myapp
+        - named volume pgdata mounted at /var/lib/postgresql/data
+      Return ONLY the YAML starting with "services:" — no markdown fences.
   assert:
-  - type: javascript
-    metric: '[baseline] required components present'
-    value: "// Strip markdown code fences if present\nconst yaml = output.replace(/^```[a-z]*\\n?/m, '').replace(/\\n?```$/m, '').trim();\nif (!yaml.startsWith('services:'))\n  return { pass: false, score:\
-      \ 0, reason: 'output must start with \"services:\" (got: ' + yaml.slice(0, 40) + ')' };\nif (!yaml.includes('postgres:15'))\n  return { pass: false, score: 0, reason: 'missing postgres:15 image' };\n\
-      if (!yaml.includes('5432'))\n  return { pass: false, score: 0, reason: 'missing port 5432' };\nif (!yaml.includes('POSTGRES_DB') || !yaml.includes('myapp'))\n  return { pass: false, score: 0, reason:\
-      \ 'missing POSTGRES_DB=myapp env var' };\nif (!yaml.includes('pgdata'))\n  return { pass: false, score: 0, reason: 'missing pgdata volume reference' };\nreturn true;\n"
-  - type: javascript
-    metric: '[proficient] parseable YAML with correct structure'
-    value: "// Strip markdown code fences if present\nconst raw = output.replace(/^```[a-z]*\\n?/m, '').replace(/\\n?```$/m, '').trim();\ntry {\n  if (typeof require === 'undefined') throw Object.assign(new\
-      \ Error('no require'), { code: 'MODULE_NOT_FOUND' });\n  const yaml = require('yaml');\n  const doc = yaml.parse(raw);\n  const db = doc?.services?.db;\n  if (!db) return { pass: false, score: 0,\
-      \ reason: 'services.db not found in parsed YAML' };\n  if (!db.image?.startsWith('postgres:')) return { pass: false, score: 0, reason: 'wrong image: ' + db.image };\n  return true;\n} catch (e) {\n\
-      \  if (e.code === 'MODULE_NOT_FOUND') {\n    if (!raw.match(/^\\s+db:/m)) return { pass: false, score: 0, reason: 'services.db key not found' };\n    if (!raw.match(/image:\\s*postgres:15/)) return\
-      \ { pass: false, score: 0, reason: 'missing postgres:15 image' };\n    return true;\n  }\n  return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };\n}\n"
+    - type: javascript
+      metric: "[baseline] required components present"
+      value: |
+        // Strip markdown code fences if present
+        const yaml = output.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
+        if (!yaml.startsWith('services:'))
+          return { pass: false, score: 0, reason: 'output must start with "services:" (got: ' + yaml.slice(0, 40) + ')' };
+        if (!yaml.includes('postgres:15'))
+          return { pass: false, score: 0, reason: 'missing postgres:15 image' };
+        if (!yaml.includes('5432'))
+          return { pass: false, score: 0, reason: 'missing port 5432' };
+        if (!yaml.includes('POSTGRES_DB') || !yaml.includes('myapp'))
+          return { pass: false, score: 0, reason: 'missing POSTGRES_DB=myapp env var' };
+        if (!yaml.includes('pgdata'))
+          return { pass: false, score: 0, reason: 'missing pgdata volume reference' };
+        return true;
+    - type: javascript
+      metric: "[proficient] parseable YAML with correct structure"
+      value: |
+        // Strip markdown code fences if present
+        const raw = output.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
+        try {
+          if (typeof require === 'undefined') throw Object.assign(new Error('no require'), { code: 'MODULE_NOT_FOUND' });
+          const yaml = require('yaml');
+          const doc = yaml.parse(raw);
+          const db = doc?.services?.db;
+          if (!db) return { pass: false, score: 0, reason: 'services.db not found in parsed YAML' };
+          if (!db.image?.startsWith('postgres:')) return { pass: false, score: 0, reason: 'wrong image: ' + db.image };
+          return true;
+        } catch (e) {
+          if (e.code === 'MODULE_NOT_FOUND') {
+            if (!raw.match(/^\s+db:/m)) return { pass: false, score: 0, reason: 'services.db key not found' };
+            if (!raw.match(/image:\s*postgres:15/)) return { pass: false, score: 0, reason: 'missing postgres:15 image' };
+            return true;
+          }
+          return { pass: false, score: 0, reason: 'YAML parse error: ' + e.message };
+        }
