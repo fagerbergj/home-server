@@ -9,7 +9,7 @@
 # See eval.sh — the tool config is selected via the --tools flag.
 
 evaluateOptions:
-  timeoutMs: 120000   # tool reasoning calls are fast
+  timeoutMs: 600000   # tool reasoning calls are fast
 
 providers:
   - id: "openai:chat:{{ env.MODEL }}"

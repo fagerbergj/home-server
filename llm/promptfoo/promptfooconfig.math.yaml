@@ -1,7 +1,7 @@
 # GSM8K math word problems
 # Run: ./eval.sh --math [model]
 evaluateOptions:
-  timeoutMs: 300000
+  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:

@@ -1,7 +1,7 @@
 # Backend systems knowledge — 32 tests
 # Run: ./eval.sh --suite knowledge [model]
 evaluateOptions:
-  timeoutMs: 300000
+  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:

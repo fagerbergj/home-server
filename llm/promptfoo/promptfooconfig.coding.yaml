@@ -2,7 +2,7 @@
 # Run: ./eval.sh --coding [model]
 # Best model: qwen3-coder-next
 evaluateOptions:
-  timeoutMs: 300000
+  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:

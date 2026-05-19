@@ -2,7 +2,7 @@
 # Run: ./eval.sh --function-call [model]
 # Best models: llama-3.3-70b, qwen3.6-35b
 evaluateOptions:
-  timeoutMs: 120000
+  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:

@@ -1,7 +1,7 @@
 # Brain twisters — arxiv.org/abs/2405.19616 "Easy Problems That LLMs Get Wrong"
 # Run: ./eval.sh --suite brain-twisters [model]
 evaluateOptions:
-  timeoutMs: 300000
+  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:

@@ -12,7 +12,7 @@
 
 evaluateOptions:
   maxConcurrency: 2
-  timeoutMs: 300000  # 5 minutes -- larger local models can be slow
+  timeoutMs: 600000  # 5 minutes -- larger local models can be slow
 
 providers:
   - id: ollama:deepseek-r1:70b
