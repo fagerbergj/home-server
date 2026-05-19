@@ -88,15 +88,25 @@ providers:
             name: update_document
             description: |
               Propose an edit to a specific stage output of a document. Requires user approval
-              before applying. After approval, downstream stages (including embed) automatically
-              re-run.
-              Allowed `field` values: raw_text, narrative_summary, clarified_text, summary
-              (summary is the classify output, not the narrative one).
+              before applying — the runtime will pause and show the user a confirmation card with the
+              before/after diff. The user may edit your proposed content before approving.
+
+              Allowed `field` values:
+                - raw_text          (transcribe/ocr output)
+                - narrative_summary (summarize output)
+                - clarified_text    (clarify output)
+                - summary           (classify output — not the narrative one)
+
+              After approval, downstream stages (including embed) automatically re-run, so the corrected
+              text propagates through the pipeline.
+
               Status semantics:
-                - pending  → user is deciding
-                - applied  → edit was written and downstream stages requeued
-                - rejected → user declined; do NOT immediately retry; ask the user instead
-              The stage must be in 'done' status — otherwise the tool returns an error.
+                - pending  → user is deciding; you will see this only briefly
+                - applied  → the edit was written and downstream stages requeued
+                - rejected → user declined; do NOT immediately retry the same edit; ask the user what they want instead
+
+              Errors: the stage must be in 'done' status. If the stage is still running/waiting/error,
+              the tool returns an error — tell the user to wait and try again.
             parameters:
               type: object
               properties:
