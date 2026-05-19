@@ -6,29 +6,64 @@
 set -euo pipefail
 
 python3 - << 'EOF'
-import json, glob, os, datetime
+import json, glob, os, datetime, statistics
 
 files = sorted(glob.glob('evals/*.json'))
 if not files:
     print("No eval results found in evals/")
     exit(0)
 
+VALID_SUITES = {'architecture','coding','math','function-call','brain-twisters','tools'}
+
 # Parse results
-data = {}  # model -> suite -> {pass, total}
+# data: model -> suite -> {pass, total, errors, tps (list of per-test tok/s)}
+data = {}
 for f in files:
     name = os.path.basename(f).replace('.json', '')
     parts = name.rsplit('-', 1)
-    if len(parts) == 2 and parts[1] in ('architecture','coding','math','function-call','brain-twisters','tools'):
-        model, suite = parts[0], parts[1]
-    else:
-        continue  # skip old/misc files
+    if len(parts) != 2 or parts[1] not in VALID_SUITES:
+        continue
+    model, suite = parts[0], parts[1]
     try:
         d = json.load(open(f))
         results = d.get('results', {}).get('results', [])
         passed = sum(1 for r in results if r.get('success'))
         errors = sum(1 for r in results if r.get('error'))
         total = len(results)
-        data.setdefault(model, {})[suite] = {'pass': passed, 'total': total, 'errors': errors}
+
+        # Extract tok/s per test. Prefer llama.cpp's `timings.predicted_per_second`
+        # (decode-only, excludes prompt eval). Fall back to tokenUsage/latencyMs.
+        tps_values = []
+        for r in results:
+            resp = r.get('response', {}) or {}
+            # Try cached raw response → timings.predicted_per_second
+            tps = None
+            raw = resp.get('raw') or resp.get('metadata', {}).get('raw') if isinstance(resp.get('metadata'), dict) else None
+            if isinstance(raw, str):
+                try:
+                    raw = json.loads(raw)
+                except Exception:
+                    raw = None
+            if isinstance(raw, dict):
+                t = raw.get('timings')
+                if isinstance(t, dict):
+                    tps = t.get('predicted_per_second')
+            # Fallback: tokenUsage + latencyMs
+            if tps is None:
+                usage = resp.get('tokenUsage') or {}
+                completion = usage.get('completion') or usage.get('completionTokens')
+                latency_ms = r.get('latencyMs')
+                if completion and latency_ms and latency_ms > 0:
+                    tps = completion / (latency_ms / 1000)
+            if tps and tps > 0:
+                tps_values.append(tps)
+
+        data.setdefault(model, {})[suite] = {
+            'pass': passed,
+            'total': total,
+            'errors': errors,
+            'tps': statistics.median(tps_values) if tps_values else None,
+        }
     except Exception:
         pass
 
@@ -42,11 +77,11 @@ models = sorted(data.keys())
 
 # Build markdown
 lines = []
-lines.append(f"# Eval Results\n")
+lines.append("# Eval Results\n")
 lines.append(f"*Last updated: {datetime.date.today()}*\n")
 
 # Header
-header = "| Model | " + " | ".join(f"{s}" for s in suites) + " |"
+header = "| Model | " + " | ".join(suites) + " |"
 sep = "| --- | " + " | ".join("---" for _ in suites) + " |"
 lines.append(header)
 lines.append(sep)
@@ -62,11 +97,13 @@ for model in models:
         else:
             pct = round(100 * r['pass'] / r['total']) if r['total'] else 0
             icon = "✅" if pct >= 80 else ("⚠️" if pct >= 60 else "❌")
-            row += f" {icon} {r['pass']}/{r['total']} ({pct}%) |"
+            tps_str = f" {r['tps']:.0f}t/s" if r['tps'] else ""
+            row += f" {icon} {r['pass']}/{r['total']} ({pct}%){tps_str} |"
     lines.append(row)
 
 lines.append("")
 lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors\n")
+lines.append("**tok/s:** median decode speed across all tests in that suite\n")
 lines.append("**Suites:** architecture (32) · coding (12) · function-call (11) · brain-twisters (9) · math (9) · tools (14)\n")
 
 out = '\n'.join(lines)
