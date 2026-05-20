@@ -12,6 +12,9 @@ groups:
       - qwen3.5-9b
       - qwen3-vl-8b
       - qwen3-coder-next
+      - selene   # promptfoo judge; swaps with chat models so it only competes
+                 # for VRAM during the (cached) compare phase, not alongside a
+                 # model under test
 
   # Stays loaded regardless of what the main group is doing.
   embed:
@@ -96,6 +99,23 @@ models:
       -fit off
       -ngl 999
       -c 262144
+      --port 9999
+
+  # GPU promptfoo judge (Atla Selene-1-Mini, trained for 1-5 rubric scoring).
+  # In the main group so it swaps with the model under test — only ever
+  # resident during the compare phase, which runs off cached model outputs so
+  # the full GPU is free. For per-model rubric evals use the CPU llm-judge
+  # container instead (it can coexist with any model under test).
+  "selene":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
+      --alias selene
+      --jinja
+      -ngl 999
+      -c 8192
       --port 9999
 
   # CPU-only (-ngl 0): 0.6B model is fast on CPU anyway, frees ~0.7 GB VRAM

@@ -32,12 +32,16 @@ prompts:
 tests: "{{ env.COMPARE_TESTS_FILE }}"
 
 defaultTest:
+  # GPU judge via llm-swap (model key "selene"). The compare phase runs off
+  # cached model outputs, so the GPU has no model-under-test resident and
+  # Selene judges at full speed. Per-suite configs still use the CPU judge
+  # on :11437 (those run alongside the model under test).
   options:
     provider:
       id: openai:chat:selene
       config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
   assert:
     - type: select-best
