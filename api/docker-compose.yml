@@ -211,14 +211,14 @@ services:
     env_file:
       - ../.env
     environment:
-      - OCR_MODEL=${OCR_MODEL:-glm-ocr}
+      - OCR_MODEL=${OCR_MODEL}
       - CLARIFY_MODEL=${CLARIFY_MODEL}
       - CLASSIFY_MODEL=${CLASSIFY_MODEL}
       - EMBED_MODEL=${EMBED_MODEL}
       - CONTEXTUAL_MODEL=${CONTEXTUAL_MODEL}
       - CHAT_MODEL=${CHAT_MODEL}
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_URL=http://ollama:11434
+      - LLM_URL=http://llm-swap:11436
+      - LLM_API_KEY=${LLM_API_KEY:-}
       - WHISPER_URL=${WHISPER_URL:-http://faster-whisper:8000}
       - WHISPER_MODEL=${WHISPER_MODEL:-Systran/faster-whisper-large-v3}
       - SUMMARIZE_MODEL=${SUMMARIZE_MODEL:-${CLARIFY_MODEL}}

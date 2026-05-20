@@ -101,13 +101,13 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
-> Grafana, Uptime Kuma, and the Ollama raw API used to live here. They were moved to tailnet-only access in Phase 7 — pure admin surfaces, no off-tailnet device needs them.
+> Grafana, Uptime Kuma, and the LLM API used to live here. They were moved to tailnet-only access in Phase 7 — pure admin surfaces, no off-tailnet device needs them.
 
 ---
 
 ## Phase 7 — Tailscale
 
-Tailscale gives every device in the tailnet a stable `100.x.x.x` IP and a `*.ts.net` hostname, so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, Ollama on `:11434`) become reachable from any enrolled client without touching the router. NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
+Tailscale gives every device in the tailnet a stable `100.x.x.x` IP and a `*.ts.net` hostname, so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) become reachable from any enrolled client without touching the router. NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
 
 ### Install on the Server
 
@@ -213,11 +213,11 @@ These never need to leave the tailnet — no NPM proxy host, no Authentik route.
 - AdGuard Home admin (see `adblock/`)
 - qBittorrent web UI
 - Authentik direct (`:9000`) — only useful for break-glass; normal use is the public `auth.` host
-- Ollama raw API (`:11434`) — public exposure was always API-key only; tailnet is safer
+- llm-swap API (`:11436`) — no auth on the upstream; tailnet membership is the access boundary
 - Grafana (`:3004`) — admin-only metrics dashboard
 - Uptime Kuma (`:3001`) — personal status board, not a public status page
 
-The `dashboard.`, `status.`, and `llm-api.` proxy hosts that previously fronted Grafana, Uptime Kuma, and the Ollama API have been deleted from NPM. The wildcard cert still covers the namespace if you ever want to re-add a public host.
+The `dashboard.`, `status.`, and `llm-api.` proxy hosts that previously fronted Grafana, Uptime Kuma, and the LLM API have been deleted from NPM. The wildcard cert still covers the namespace if you ever want to re-add a public host.
 
 ### Updates
 

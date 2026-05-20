@@ -14,10 +14,10 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Grafana + Prometheus | System and container metrics dashboard |
 | Immich | Personal photo backup and browsing with ML-powered search |
 | Minecraft Server | Self-hosted game server |
-| Ollama + Open WebUI | Local LLM inference via GPU |
+| llm-swap + Open WebUI | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
-| remarkable-bridge | OCRs reMarkable notes via Ollama and indexes them in Open WebUI |
+| document-pipeline | Ingests reMarkable notes + uploaded files: OCR, summarize, classify, embed |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
 | Tailscale | Mesh VPN — remote access to LAN-only admin UIs, exit node, MagicDNS |
 | Uptime Kuma | Service status page — shows each container up/down |
@@ -38,14 +38,14 @@ home-server/
 ├── plex/             # Plex Media Server
 ├── minecraft/        # Minecraft NeoForge server
 ├── photos/           # Immich photo storage
-├── llm/              # Ollama + Open WebUI
+├── llm/              # llm-swap (llama.cpp) + Open WebUI
 ├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── updater/          # Watchtower (auto-updates) + Diun (update notifications)
 ├── monitoring/       # Grafana + Prometheus + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
-├── notes/            # rmfakecloud + OCR bridge + Open WebUI knowledge base
+├── notes/            # rmfakecloud (reMarkable cloud emulator)
 ├── audio/            # faster-whisper GPU transcription
 └── README.md
 ```

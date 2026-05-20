@@ -32,7 +32,7 @@ Add each service as an **HTTP(s)** monitor using the local IP. Do not use extern
 | Plex | HTTP | `http://192.168.50.186:32400/` | — |
 | Immich | HTTP | `http://192.168.50.186:2283/api/server/ping` | — |
 | Open WebUI | HTTP | `http://192.168.50.186:3000/` | — |
-| Ollama | HTTP | `http://192.168.50.186:11434/` | — |
+| llm-swap | HTTP | `http://192.168.50.186:11436/v1/models` | — |
 | qBittorrent | HTTP | `http://192.168.50.186:8080/` | — |
 | Jackett | HTTP | `http://192.168.50.186:9117/` | — |
 | Audiobookshelf | HTTP | `http://192.168.50.186:13378/` | — |

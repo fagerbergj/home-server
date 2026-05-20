@@ -35,7 +35,7 @@ Offsite is opt-in — set `RESTIC_REPOSITORY` + `RESTIC_PASSWORD` (and provider 
 - Plex/audiobook media files (`/mnt/media/...`) — re-rippable / re-downloadable
 - Plex `Cache/` directory — regenerable thumbnails, can be tens of GB
 - Docker images / overlay2 — re-pullable from compose
-- Ollama models (`/mnt/cache/ollama/`) — `ollama pull` re-downloads
+- LLM model GGUFs (`/mnt/cache/huggingface/`) — re-pulled by `llm/download-models.sh`
 
 The offsite tier is intentionally narrow: only data where loss would be **emotionally or operationally unrecoverable**. Configs are in git; service state is rebuildable; media is re-rippable.
 

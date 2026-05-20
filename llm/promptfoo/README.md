@@ -1,113 +1,99 @@
-# Model Evaluation (promptfoo)
+# Model evaluation (promptfoo)
 
-Compares LLM models across coding, architecture decisions, and prompt engineering questions.
+Runs the llm-swap model lineup across ten test suites and an A/B compare phase. Judge is Selene-1-Mini (CPU-only via the `llm-judge` profile) — small enough to coexist with the model under test, rubric-grading-trained.
 
-## Files
+## Layout
 
-| File | Purpose |
-|---|---|
-| `promptfooconfig.yaml` | Local Ollama models, judged by Claude Sonnet |
-| `promptfooconfig.cloud.yaml` | Cloud models (Sonnet/Haiku), judged by Prometheus2 |
-| `tests.yaml` | All 36 test cases — shared by both configs |
+| Suite | Tests | Promptfoo config | Grading |
+|---|---|---|---|
+| architecture | architecture-tests.yaml | promptfooconfig.architecture.yaml | rubric |
+| coding | coding-tests.yaml | promptfooconfig.coding.yaml | rubric |
+| math | math-tests.yaml | promptfooconfig.math.yaml | deterministic (final-answer match) |
+| function-call | function-call-tests.yaml | promptfooconfig.function-call.yaml | rubric + javascript |
+| brain-twisters | brain-twister-tests.yaml | promptfooconfig.brain-twisters.yaml | rubric |
+| cruxeval | cruxeval-tests.yaml | promptfooconfig.cruxeval.yaml | deterministic |
+| calibration | calibration-tests.yaml | promptfooconfig.calibration.yaml | rubric |
+| hard-reasoning | hard-reasoning-tests.yaml | promptfooconfig.hard-reasoning.yaml | deterministic |
+| large-code | large-code-tests.yaml | promptfooconfig.large-code.yaml | compile + pytest (large-code-grader.js → large-code-runner.sh) |
+| tools | tool-tests.yaml | promptfooconfig.tools.yaml | deterministic JSON (tools-grader.js) |
+
+Model → suite assignments live in `eval-config.yaml`. `eval.sh` orchestrates everything.
 
 ## Quickstart
 
-No install needed — run via `npx`. You need Node.js 18+.
+Requires Node.js 18+ (`node --version`). promptfoo runs via `npx`, no install needed. The `llm-judge` container must be up:
 
 ```bash
-node --version   # confirm 18+
+docker compose --profile judge up -d llm-judge
 ```
 
-If you don't have Node, install it via nvm:
+For the `large-code` suite, set up a Python venv with pytest + a couple deps the test files import:
 
 ```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-nvm install --lts
+uv venv ~/.venvs/eval
+~/.venvs/eval/bin/uv pip install pytest aiohttp pygame
 ```
+
+(Plain `python3 -m venv` + `pip install` works too.)
 
 ## Running
 
-### Local models (qwen35-coder, gemma4:31b, gemma4-26b)
-
-Judged by Claude Sonnet. Requires `ANTHROPIC_API_KEY`.
-
 ```bash
 cd llm/promptfoo
-npx promptfoo@latest eval
+
+# Everything: all 4 models × their suites, then A/B compare phase
+./eval.sh
+
+# One model, all its suites
+./eval.sh llama-3.3-70b
+
+# One suite, all models
+./eval.sh --suite coding
+
+# One suite, one model (fast inner loop)
+./eval.sh --suite math qwen3.6-35b
+
+# Skip the cross-model compare phase
+./eval.sh --no-compare
+
+# Tool-call routing only (opt-in via --tools)
+./eval.sh --tools [model]
 ```
 
-Runs all 36 tests × 3 models sequentially (`maxConcurrency: 1`). Ollama automatically
-evicts the previous model from VRAM when the next one loads. Expect it to take a while.
-
-### Cloud calibration (Sonnet, Haiku)
-
-Judged by Prometheus2 (local Ollama) to avoid Claude self-bias. Runs 2 tests at a time.
+Results land in `evals/<model>-<suite>.json`. `summarize.sh` aggregates them into `RESULTS.md` (per-model table + failure details) and `COMPARE.md` (pairwise win matrix from the compare phase). Force a fresh run (bypass cache):
 
 ```bash
-npx promptfoo@latest eval -c promptfooconfig.cloud.yaml
+PROMPTFOO_CACHE_ENABLED=false ./eval.sh ...
 ```
 
-Requires Prometheus2 to be pulled in Ollama:
-
-```bash
-# One-time setup — creates a 28k-context variant
-docker exec -it ollama sh -c 'printf "FROM tensortemplar/prometheus2:8x7b-Q3_K_S\nPARAMETER num_ctx 28672\n" | ollama create prometheus2-judge -f -'
-```
-
-### View results
+## Viewing results
 
 ```bash
 npx promptfoo@latest view
 ```
 
-### Filtering
+Opens the web UI showing pass/fail per test, rubric reasons, and side-by-side completions across models.
 
-Run a single test while iterating on a prompt:
+## Test conventions
 
-```bash
-npx promptfoo@latest eval --filter-pattern "Kafka"
-```
+- Each `*-tests.yaml` is a list of `{description, vars: {task: ...}, assert: [...]}` entries.
+- Rubric assertions use Selene's native 1-5 rubric format with `threshold: 4` — Score 4 or 5 passes.
+- Deterministic assertions (`type: javascript`) return `{pass, score, reason}`. By convention, score 5 = pass, 0 = fail; intermediate scores (e.g. 2 for "right routing but PROD-BROKEN format" in tool-tests) describe the failure mode.
+- After editing a test file, run `python3 lint-tests.py` to canonicalise the YAML (round-trip safety check included).
 
-Run one provider at a time:
+## Adding a model
 
-```bash
-npx promptfoo@latest eval --filter-providers "qwen35-coder"
-```
+1. Add it to `llm/llm-swap.yaml`.
+2. Add it under `models:` in `eval-config.yaml` with the suite list.
+3. Run `./eval.sh <model>` — the per-suite configs use `{{ env.MODEL }}` interpolation so they pick up the new key automatically.
 
-## Calibration workflow
+## Adding a suite
 
-Before running local models, run the cloud calibration to validate rubrics:
+1. Write `<name>-tests.yaml` (mirror the shape of any existing one).
+2. Copy an existing `promptfooconfig.*.yaml` as `promptfooconfig.<name>.yaml`; adjust `tests:` and any rubric.
+3. Register the pair in `SUITE_CONFIG` at the top of `eval.sh`.
+4. Add `<name>` to each relevant model's `suites:` list in `eval-config.yaml`.
 
-1. `npx promptfoo@latest eval -c promptfooconfig.cloud.yaml`
-2. Check results — **Sonnet should pass ≥90%, Haiku ≥70%**
-3. If Sonnet fails a test, the prompt or rubric is too narrow — fix it before running local models
-4. Haiku at 70% is the practical bar: a local model beating Haiku is meaningful signal
+## Notes on the judge
 
-## Assertions
-
-Tests are tiered by depth:
-
-- `[baseline]` — fundamental knowledge; should always pass
-- `[proficient]` — real understanding; distinguishes good from average
-- `[expert]` — deep insight; changes how you think about the problem
-
-## What to look for
-
-**Decision/comparison questions** (REST server, Kafka vs RabbitMQ, etc.)
-- Does it go beyond surface-level trade-offs?
-- Does it explain what the answer *depends on*, not just pick a winner?
-- Red flag: confident recommendations with no caveats, or hedging with no substance.
-
-**Bug finding** (Go, Kotlin, TypeScript, SQL, Docker)
-- Did it find all the bugs, or just the obvious one?
-- Does it explain *why* each bug is a bug, not just flag it?
-- Does the proposed fix actually work?
-
-**Prompt engineering** (CoT, structured output, prompt chains)
-- Does it show genuine understanding of LLM behaviour, or just repeat blog-post takes?
-
-## Things that aren't meaningful signal
-
-- Length — longer isn't better
-- Formatting — nice headers don't mean correct content
-- Confidence — a model that sounds sure isn't more likely to be right
+Selene-1-Mini-Llama-3.1-8B (`bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M`) runs CPU-only on port 11437 via the `llm-judge` profile. CPU is intentional — keeps VRAM free for the model under test and the eval is batch-mode anyway. Selene pattern-matches keyword overlap in rubric criteria, so rubrics are phrased semantically (`"any concrete command, tool, or query counts"`) rather than naming specific keywords. See `calibration-tests.yaml` for the canonical examples.

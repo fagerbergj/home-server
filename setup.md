@@ -315,7 +315,7 @@ This wires up msmtp (Gmail relay), the ZFS Event Daemon (zed) for pool-degraded 
 sudo bash scripts/setup/phase4-tuning.sh
 ```
 
-Caps ZFS ARC at 16 GB and lowers `vm.swappiness` to 10. Without this, ARC will balloon to ~50% of RAM (~24 GB on a 48 GB box) and won't release fast enough when something else mmap's a large file (e.g., loading a 24 GB Ollama model from `/mnt/cache`) — the kernel then evicts process pages to swap. 16 GB ARC is plenty for media-mostly workloads where Plex/torrents are network-bound, not cache-bound.
+Caps ZFS ARC at 16 GB and lowers `vm.swappiness` to 10. Without this, ARC will balloon to ~50% of RAM (~24 GB on a 48 GB box) and won't release fast enough when something else reads a large file (e.g., loading a 65 GB GGUF from `/mnt/cache/huggingface`) — the kernel then evicts process pages to swap. 16 GB ARC is plenty for media-mostly workloads where Plex/torrents are network-bound, not cache-bound.
 
 ### Monthly scrubs
 
