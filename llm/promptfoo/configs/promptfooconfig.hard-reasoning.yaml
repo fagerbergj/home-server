@@ -9,7 +9,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: hard-reasoning-tests.yaml
+tests: ../test-suites/hard-reasoning.yaml
 defaultTest:
   threshold: 4
   options:

@@ -1,6 +1,5 @@
-# BFCL function calling tests
-# Run: ./eval.sh --function-call [model]
-# Best models: llama-3.3-70b, qwen3.6-35b
+# Brain twisters — arxiv.org/abs/2405.19616 "Easy Problems That LLMs Get Wrong"
+# Run: ./eval.sh --suite brain-twisters [model]
 evaluateOptions:
   timeoutMs: 600000
 providers:
@@ -10,7 +9,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: function-call-tests.yaml
+tests: ../test-suites/brain-twisters.yaml
 defaultTest:
   threshold: 4
   options:
@@ -21,7 +20,7 @@ defaultTest:
         apiKey: llm-judge
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
-      You are grading a function call response. Use the rubric to assess quality,
+      You are grading a logical reasoning response. Use the rubric to assess quality,
       then output ONLY a JSON object on the last line — nothing after it.
 
       Rubric:

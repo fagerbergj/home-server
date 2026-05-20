@@ -12,6 +12,7 @@ before writing.
 Usage:
   ./lint-tests.py [file1 file2 ...]   # default: all *-tests.yaml in cwd
 """
+import os
 import sys
 import glob
 import yaml
@@ -148,7 +149,9 @@ def lint_file(path: str) -> bool:
 
 
 def main():
-    files = sys.argv[1:] or sorted(glob.glob('*-tests.yaml'))
+    # Operate from the promptfoo root regardless of where we're invoked.
+    os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    files = sys.argv[1:] or sorted(glob.glob('test-suites/*.yaml'))
     for f in files:
         lint_file(f)
 

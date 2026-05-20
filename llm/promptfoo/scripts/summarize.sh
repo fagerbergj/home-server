@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Generate RESULTS.md (per-model pass/fail) and COMPARE.md (blind A/B
+# Generate evals/README.md (per-model pass/fail) and evals/COMPARE.md (blind A/B
 # pairwise win matrix) from eval JSON files in evals/.
 # Called automatically by eval.sh after each run.
-# Usage: ./summarize.sh
+# Usage: ./scripts/summarize.sh   (run from anywhere — cd's to promptfoo root)
 
 set -euo pipefail
+cd "$(dirname "$0")/.."   # promptfoo root
 
 python3 - << 'EOF'
 import json, glob, os, datetime, statistics
@@ -142,9 +143,9 @@ if data:
     if not any_failures:
         lines.append("*No failures — all tests passed.*")
 
-    with open('RESULTS.md', 'w') as f:
+    with open('evals/README.md', 'w') as f:
         f.write('\n'.join(lines))
-    print(f"Wrote RESULTS.md")
+    print(f"Wrote evals/README.md")
 
 # ── Phase 2: A/B comparison (COMPARE.md) ────────────────────────────────────
 compare_files = sorted(glob.glob('evals/compare-*.json'))
@@ -221,7 +222,7 @@ for suite in sorted(per_test.keys()):
             clines.append(f"  - _{entry['reason']}_")
     clines.append("")
 
-with open('COMPARE.md', 'w') as f:
+with open('evals/COMPARE.md', 'w') as f:
     f.write('\n'.join(clines))
-print(f"Wrote COMPARE.md")
+print(f"Wrote evals/COMPARE.md")
 EOF

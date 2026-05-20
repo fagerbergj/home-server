@@ -9,7 +9,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: calibration-tests.yaml
+tests: ../test-suites/calibration.yaml
 defaultTest:
   threshold: 4
   options:

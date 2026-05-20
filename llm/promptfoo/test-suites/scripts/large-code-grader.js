@@ -77,7 +77,7 @@ module.exports = (output, context) => {
 
   const tmpDir = fs.mkdtempSync(`/tmp/eval-${testName}-`);
   try {
-    const runner = path.join(process.cwd(), 'large-code-runner.sh');
+    const runner = path.join(process.cwd(), 'test-suites', 'scripts', 'large-code-runner.sh');
     const raw = execSync(`bash ${runner} ${testName} ${tmpDir}`, {
       input: args.content,
       timeout: timeoutMs,

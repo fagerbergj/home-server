@@ -8,7 +8,7 @@
   assert:
     - type: javascript
       metric: "[baseline] search_documents with tags:invoice"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "routes to search_documents for date query"
   vars:
@@ -18,7 +18,7 @@
   assert:
     - type: javascript
       metric: "[baseline] search_documents with date_month:2026-05"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "routes to search_documents for title keyword query"
   vars:
@@ -28,7 +28,7 @@
   assert:
     - type: javascript
       metric: "[baseline] search_documents for title match"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "routes to rag_search for fuzzy topical question"
   vars:
@@ -38,7 +38,7 @@
   assert:
     - type: javascript
       metric: "[baseline] rag_search with plain 'machine learning'"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "routes to rag_search for cross-doc synthesis question"
   vars:
@@ -48,7 +48,7 @@
   assert:
     - type: javascript
       metric: "[baseline] rag_search with plain 'Westbrook'"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "quotes multi-word series value in Lucene query"
   vars:
@@ -58,7 +58,7 @@
   assert:
     - type: javascript
       metric: "[proficient] series:\"Secret Campaign\" quoted correctly"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "quotes multi-word title value in Lucene query"
   vars:
@@ -68,7 +68,7 @@
   assert:
     - type: javascript
       metric: "[proficient] title:\"...\" quoted correctly"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "does not use field:value syntax in rag_search"
   vars:
@@ -78,7 +78,7 @@
   assert:
     - type: javascript
       metric: "[proficient] redirect to search_documents OR plain rag_search"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "never calls search_documents with empty query"
   vars:
@@ -88,7 +88,7 @@
   assert:
     - type: javascript
       metric: "[baseline] no empty search_documents query"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "never calls get_document without an ID"
   vars:
@@ -98,7 +98,7 @@
   assert:
     - type: javascript
       metric: "[baseline] no empty/placeholder get_document ID"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "uses correct field name for update"
   vars:
@@ -108,7 +108,7 @@
   assert:
     - type: javascript
       metric: "[baseline] update_document field=summary id=abc-123"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "rejects invalid field name for update"
   vars:
@@ -118,7 +118,7 @@
   assert:
     - type: javascript
       metric: "[proficient] does not call update_document with field=embedding"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "does not retry a rejected update"
   vars:
@@ -128,7 +128,7 @@
   assert:
     - type: javascript
       metric: "[proficient] does not immediately re-call update_document"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"
 
 - description: "chains search_documents then get_document for specific doc"
   vars:
@@ -138,4 +138,4 @@
   assert:
     - type: javascript
       metric: "[proficient] first call is search_documents"
-      value: "file://tools-grader.js"
+      value: "file://scripts/tools-grader.js"

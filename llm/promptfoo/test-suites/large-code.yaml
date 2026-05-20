@@ -24,7 +24,7 @@
   assert:
     - type: javascript
       metric: "[code] trie compiles + passes pytest"
-      value: "file://large-code-grader.js"
+      value: "file://scripts/large-code-grader.js"
 
 - description: "Large code: Markdown to HTML converter"
   vars:
@@ -45,7 +45,7 @@
   assert:
     - type: javascript
       metric: "[code] markdown compiles + passes pytest"
-      value: "file://large-code-grader.js"
+      value: "file://scripts/large-code-grader.js"
 
 - description: "Large code: SQLite job queue"
   vars:
@@ -64,7 +64,7 @@
   assert:
     - type: javascript
       metric: "[code] job_queue compiles + passes pytest"
-      value: "file://large-code-grader.js"
+      value: "file://scripts/large-code-grader.js"
 
 - description: "Large code: Rate-limited async HTTP client"
   vars:
@@ -87,7 +87,7 @@
   assert:
     - type: javascript
       metric: "[code] rate_limiter compiles + passes pytest"
-      value: "file://large-code-grader.js"
+      value: "file://scripts/large-code-grader.js"
 
 - description: "Large code: Flappy Bird in Python"
   vars:
@@ -108,4 +108,4 @@
   assert:
     - type: javascript
       metric: "[code] flappy_bird compiles + passes pytest"
-      value: "file://large-code-grader.js"
+      value: "file://scripts/large-code-grader.js"

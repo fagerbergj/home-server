@@ -5,46 +5,39 @@
 # promptfoo's cache), so this just re-judges existing responses — fast, and
 # the GPU has no model-under-test resident so Selene runs at full speed.
 #
-# Usage:
-#   ./compare.sh                 # all compare suites
-#   ./compare.sh architecture    # one suite
+# Usage (run from anywhere — the script cd's to the promptfoo root):
+#   ./scripts/compare.sh                 # all compare suites
+#   ./scripts/compare.sh architecture    # one suite
 #
-# Compare suites (subjective, rubric-gradable): architecture, calibration,
-# hard-reasoning, brain-twisters. Deterministic suites are excluded — A/B adds
-# no signal when an answer is simply right or wrong.
+# Compare suites (rubric-graded): architecture, coding, calibration,
+# brain-twisters. Deterministic suites are excluded — A/B adds no signal when
+# an answer is simply right or wrong.
 #
 # NOTE: relies on promptfoo cache for the model generations. Do NOT set
 # PROMPTFOO_CACHE_ENABLED=false or every model will reload per test (thrash).
 
 set -euo pipefail
+cd "$(dirname "$0")/.."   # promptfoo root
 
-COMPARE_SUITES=(architecture calibration hard-reasoning brain-twisters)
-
-declare -A TESTS=(
-  [architecture]=architecture-tests.yaml
-  [calibration]=calibration-tests.yaml
-  [hard-reasoning]=hard-reasoning-tests.yaml
-  [brain-twisters]=brain-twister-tests.yaml
-)
+COMPARE_SUITES=(architecture coding calibration brain-twisters)
 
 if [[ $# -gt 0 ]]; then
-  if [[ -z "${TESTS[$1]:-}" ]]; then
-    echo "error: '$1' is not a compare suite. Choose: ${COMPARE_SUITES[*]}" >&2
-    exit 1
-  fi
-  COMPARE_SUITES=("$1")
+  case " ${COMPARE_SUITES[*]} " in
+    *" $1 "*) COMPARE_SUITES=("$1") ;;
+    *) echo "error: '$1' is not a compare suite. Choose: ${COMPARE_SUITES[*]}" >&2; exit 1 ;;
+  esac
 fi
 
 for suite in "${COMPARE_SUITES[@]}"; do
   echo "──────────────────────────────────────────────────"
   echo "  A/B compare: $suite"
   echo "──────────────────────────────────────────────────"
-  COMPARE_TESTS_FILE="${TESTS[$suite]}" \
+  COMPARE_TESTS_FILE="../test-suites/${suite}.yaml" \
     npx promptfoo@latest eval \
-      -c promptfooconfig.compare.yaml \
+      -c configs/promptfooconfig.compare.yaml \
       --max-concurrency 2 \
       --output "evals/compare-${suite}.json"
 done
 
-bash summarize.sh
-echo "Wrote COMPARE.md"
+bash scripts/summarize.sh
+echo "Wrote evals/COMPARE.md"

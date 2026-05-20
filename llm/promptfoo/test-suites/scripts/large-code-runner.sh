@@ -24,7 +24,7 @@ fi
 
 TEST_NAME="${1:?test name required}"
 TMP_DIR="${2:?tmp dir required}"
-TEST_DIR="$(dirname "$(realpath "$0")")/large-code-tests/${TEST_NAME}"
+TEST_DIR="$(dirname "$(realpath "$0")")/../large-code/${TEST_NAME}"
 
 if [[ ! -d "$TEST_DIR" ]]; then
   echo '{"compile": false, "passed": 0, "total": 0, "reason": "test dir not found"}'

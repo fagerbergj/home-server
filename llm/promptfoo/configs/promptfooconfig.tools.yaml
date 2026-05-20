@@ -122,7 +122,7 @@ prompts:
   # model into emitting JSON instead of native tool calls.
   - "{{scenario}}"
 
-tests: tool-tests.yaml
+tests: ../test-suites/tools.yaml
 
 defaultTest:
   threshold: 4

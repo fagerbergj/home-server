@@ -10,7 +10,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: coding-tests.yaml
+tests: ../test-suites/coding.yaml
 defaultTest:
   threshold: 4
   options:

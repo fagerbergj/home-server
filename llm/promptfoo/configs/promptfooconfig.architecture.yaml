@@ -1,5 +1,5 @@
-# GSM8K math word problems
-# Run: ./eval.sh --math [model]
+# Backend systems knowledge — 32 tests
+# Run: ./eval.sh --suite knowledge [model]
 evaluateOptions:
   timeoutMs: 600000
 providers:
@@ -9,7 +9,7 @@ providers:
       apiKey: llm-swap
 prompts:
   - "{{task}}"
-tests: math-tests.yaml
+tests: ../test-suites/architecture.yaml
 defaultTest:
   threshold: 4
   options:

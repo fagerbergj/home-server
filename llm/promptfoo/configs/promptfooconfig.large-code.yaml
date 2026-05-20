@@ -50,4 +50,4 @@ prompts:
 
     Write your solution to `solution.py` using the write_file tool.
 
-tests: large-code-tests.yaml
+tests: ../test-suites/large-code.yaml
