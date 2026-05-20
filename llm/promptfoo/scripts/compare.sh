@@ -32,11 +32,14 @@ for suite in "${COMPARE_SUITES[@]}"; do
   echo "──────────────────────────────────────────────────"
   echo "  A/B compare: $suite"
   echo "──────────────────────────────────────────────────"
+  # promptfoo exits non-zero when any test "fails" — in a select-best compare
+  # only the winner passes, so that's every run. Tolerate it so the loop
+  # continues through all suites.
   COMPARE_TESTS_FILE="../test-suites/${suite}.yaml" \
     npx promptfoo@latest eval \
       -c configs/promptfooconfig.compare.yaml \
       --max-concurrency 2 \
-      --output "evals/compare-${suite}.json"
+      --output "evals/compare-${suite}.json" || true
 done
 
 bash scripts/summarize.sh
