@@ -1,5 +1,6 @@
-# Blind A/B comparison: all 4 models run the same prompts, Selene judge picks
+# Blind A/B comparison: all chat models run the same prompts, Selene judge picks
 # the best response anonymously. Invoked by eval.sh after per-model evals.
+# Keep this provider list in sync with the chat models in eval-config.yaml.
 #
 # COMPARE_TESTS_FILE env var picks which suite's tests to compare on.
 # Examples: architecture-tests.yaml, calibration-tests.yaml, etc.
@@ -8,7 +9,7 @@ evaluateOptions:
   timeoutMs: 600000
 
 providers:
-  - id: openai:chat:llama-3.3-70b
+  - id: openai:chat:gpt-oss-120b
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
