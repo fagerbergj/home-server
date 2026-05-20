@@ -45,7 +45,7 @@ home-server/
 ├── monitoring/       # Grafana + Prometheus + Uptime Kuma
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
-├── notes/            # rmfakecloud + OCR bridge + Open WebUI knowledge base
+├── notes/            # rmfakecloud (reMarkable cloud emulator)
 ├── audio/            # faster-whisper GPU transcription
 └── README.md
 ```

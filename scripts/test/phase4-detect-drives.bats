@@ -326,7 +326,7 @@ gb_bytes() { echo $(( $1 * 1000 * 1000 * 1000 )); }
     run jq -r '.ext4_drives[0].label' "$TEST_DIR/drives.json"
     [ "$output" = "cache" ]
     run jq -r '.ext4_drives[0].subdirs | join(",")' "$TEST_DIR/drives.json"
-    [ "$output" = "ollama,scratch" ]
+    [ "$output" = "huggingface,scratch" ]
     run jq -r '.ext4_drives[0].device' "$TEST_DIR/drives.json"
     [[ "$output" == *"/by-id/ata-MODEL-sdh"* ]]
 }

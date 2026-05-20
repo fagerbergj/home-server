@@ -20,7 +20,7 @@
       "device": "/dev/disk/by-id/ata-ADATA_SU650-SERIAL",
       "mountpoint": "/mnt/cache",
       "label": "cache",
-      "subdirs": ["ollama", "scratch"],
+      "subdirs": ["huggingface", "scratch"],
       "owner": "jason-server"
     }
   ]

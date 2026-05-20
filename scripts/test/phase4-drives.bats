@@ -160,7 +160,7 @@ EOF
 # test fixture device path doesn't actually exist as a block device.
 add_ext4_entry() {
     local device="$1" label="${2:-cache}"
-    local subdirs="${3:-[\"ollama\",\"scratch\"]}"
+    local subdirs="${3:-[\"huggingface\",\"scratch\"]}"
     local sandbox_mnt="$TEST_DIR/mnt/cache"
     jq --arg dev "$device" --arg mnt "$sandbox_mnt" --arg lbl "$label" \
        --argjson subs "$subdirs" \
@@ -349,7 +349,7 @@ run_script() {
     # fstab gained the new entry
     grep -q "$TEST_DIR/mnt/cache  ext4" "$TEST_DIR/etc/fstab"
     # Subdirs created
-    [ -d "$TEST_DIR/mnt/cache/ollama" ]
+    [ -d "$TEST_DIR/mnt/cache/huggingface" ]
     [ -d "$TEST_DIR/mnt/cache/scratch" ]
 }
 
