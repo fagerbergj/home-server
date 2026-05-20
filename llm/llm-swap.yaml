@@ -109,4 +109,6 @@ models:
       --embedding
       --pooling cls
       -ngl 0
+      -ub 2048
+      -b 2048
       --port 9998
