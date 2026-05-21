@@ -6,8 +6,7 @@ Skips the multi-minute wait on the first request to a model.
 
 ```bash
 cd ~/workspace/home-server/llm
-./download-models.sh           # chat + vision + embed
-./download-models.sh --judge   # adds Selene for promptfoo evals
+./download-models.sh   # all models incl. the Selene judge
 ```
 
 Requires `HF_TOKEN` in the environment for gated repos.
@@ -19,13 +18,7 @@ docker compose up -d --build llm-swap
 docker compose up -d open-webui qdrant
 ```
 
-llm-swap is built locally (`llm-swap.Dockerfile`); the build is fast after the first run because the base image is cached.
-
-To bring up the promptfoo judge as well:
-
-```bash
-docker compose --profile judge up -d llm-judge
-```
+llm-swap is built locally (`llm-swap.Dockerfile`); the build is fast after the first run because the base image is cached. The promptfoo judge (`selene`) is a model in `llm-swap.yaml` and loads on demand — nothing extra to start.
 
 ## 3. Verify llm-swap
 

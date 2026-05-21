@@ -1,148 +1,190 @@
-# Software architecture & systems design — 10 tests
-# Only the hardest, most differentiating tests. The rest were saturated
-# (all 4 models scored 100%) and provided no signal. Kept tests have
-# expert-level rubrics or known multi-model failures from prior runs.
+# Software architecture & systems design — 10 tests, g-eval graded.
+# The hardest, most differentiating prompts. Each rubric tier is expressed as a
+# discrete g-eval criterion, graded independently 0-1 with chain-of-thought and
+# averaged. Pass threshold is set in configs/promptfooconfig.architecture.yaml.
 
 - description: "Kotlin: JVM ecosystem and type system"
   vars:
     task: |
       I'm considering Kotlin for a new backend service. What am I committing to beyond the language syntax itself — including what the type system enforces at compile time?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] JVM ecosystem commitment"
-      value: |
-        Score 3: Explains that choosing Kotlin means committing to the JVM — its startup characteristics, memory model, GC tuning, and the Java library ecosystem — not just a syntax preference Score 4: Also discusses Kotlin's null safety (nullable vs non-nullable types enforced at compile time) as a mechanism for catching a class of bugs at compile time rather than at runtime Score 5: Also discusses sealed classes as another compile-time mechanism for catching invalid state representations
-    - type: llm-rubric
+      value:
+        - "Explains that choosing Kotlin commits you to the JVM — its startup characteristics, memory model, GC tuning, and the Java library ecosystem — not just a syntax preference"
+        - "Discusses null safety (nullable vs non-nullable types enforced at compile time) as a mechanism for catching a class of bugs at compile time rather than at runtime"
+        - "Discusses sealed classes as another compile-time mechanism for catching invalid state representations"
+    - type: g-eval
       metric: "[expert] type system depth"
-      value: |
-        Score 3: Discusses Kotlin's null safety (nullable vs non-nullable types) as a compile-time bug-catching mechanism Score 4: Also discusses sealed classes as a compile-time mechanism for restricting valid state representations Score 5: Also explains how both mechanisms work together to eliminate whole classes of runtime errors
+      value:
+        - "Discusses null safety (nullable vs non-nullable types) as a compile-time bug-catching mechanism"
+        - "Discusses sealed classes as a compile-time mechanism for restricting valid state representations"
+        - "Explains how null safety and sealed classes work together to eliminate whole classes of runtime errors"
 
 - description: "Kafka: consumer groups and backpressure"
   vars:
     task: |
       How do Kafka consumer groups work, and what happens when a consumer can't keep up with the rate of incoming messages?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] consumer group model"
-      value: |
-        Score 3: Explains that Kafka consumer groups are offset-based — each group independently tracks its own position in the topic Score 4: Also explains that multiple groups can each read the full message stream independently, and consumers within a group divide the partitions among themselves Score 5: Also explains what happens when a consumer falls behind — consumer lag accumulates and Kafka doesn't block the producer or drop messages, so lag grows unboundedly until the consumer catches up
-    - type: llm-rubric
+      value:
+        - "Explains that Kafka consumer groups are offset-based — each group independently tracks its own position in the topic"
+        - "Explains that multiple groups can each read the full message stream independently, and consumers within a group divide the partitions among themselves"
+        - "Explains that when a consumer falls behind, consumer lag accumulates and Kafka doesn't block the producer or drop messages, so lag grows unboundedly until the consumer catches up"
+    - type: g-eval
       metric: "[expert] consumer lag and backpressure"
-      value: |
-        Score 3: Explains that consumer lag accumulates when a consumer falls behind Score 4: Also explains that Kafka doesn't block the producer or drop messages Score 5: Also explains that lag grows unboundedly until the consumer catches up and what operational implications this has
+      value:
+        - "Explains that consumer lag accumulates when a consumer falls behind"
+        - "Explains that Kafka doesn't block the producer or drop messages"
+        - "Explains that lag grows unboundedly until the consumer catches up, and what operational implications this has"
 
 - description: "Streaming: operational challenges"
   vars:
     task: |
       What operational challenges does a streaming pipeline introduce that a batch pipeline doesn't have?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] state management"
-      value: |
-        Score 3: Discusses stateful streaming as a core operational challenge Score 4: Also covers checkpointing state and managing state store growth over time Score 5: Also explains how the system recovers after a failure when in-flight state must be rebuilt
-    - type: llm-rubric
+      value:
+        - "Discusses stateful streaming as a core operational challenge"
+        - "Covers checkpointing state and managing state store growth over time"
+        - "Explains how the system recovers after a failure when in-flight state must be rebuilt"
+    - type: g-eval
       metric: "[proficient] reprocessing and backfill"
-      value: |
-        Score 3: Explains that reprocessing and backfill are significantly harder with streaming than with batch Score 4: Also explains that streaming requires offset management and replaying from a source Score 5: Also contrasts with batch where you simply re-run the job against the same input
+      value:
+        - "Explains that reprocessing and backfill are significantly harder with streaming than with batch"
+        - "Explains that streaming requires offset management and replaying from a source"
+        - "Contrasts with batch where you simply re-run the job against the same input"
 
 - description: "Token storage: localStorage vs httpOnly cookies"
   vars:
     task: |
       Where should I store JWTs or session tokens on the client? What are the security tradeoffs between localStorage and httpOnly cookies? And what does logout actually mean for a JWT-based system?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] token storage tradeoffs"
-      value: |
-        Score 3: Explains that localStorage is vulnerable to XSS (any injected script can read it) Score 4: Also explains httpOnly cookies are inaccessible to JavaScript but require CSRF protection Score 5: Also explains that this is a genuine security tradeoff with no universally correct answer
-    - type: llm-rubric
+      value:
+        - "Explains that localStorage is vulnerable to XSS (any injected script can read it)"
+        - "Explains that httpOnly cookies are inaccessible to JavaScript but require CSRF protection"
+        - "Explains that this is a genuine security tradeoff with no universally correct answer"
+    - type: g-eval
       metric: "[expert] the logout problem"
-      value: |
-        Score 3: Addresses what "logout" actually means for JWTs Score 4: Also explains client-side deletion doesn't stop a copied token from working Score 5: Also explains true invalidation requires server-side state (a denylist or short expiry with refresh rotation)
+      value:
+        - "Addresses what \"logout\" actually means for JWTs"
+        - "Explains that client-side deletion doesn't stop a copied token from working"
+        - "Explains that true invalidation requires server-side state (a denylist or short expiry with refresh rotation)"
 
 - description: "Queue vs HTTP: operational costs and failure modes"
   vars:
     task: |
       What operational costs and failure mode differences should I understand before replacing HTTP calls with a message queue?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] operational cost of queue infra"
-      value: |
-        Score 3: Explains that a message broker is another production system to deploy Score 4: Also covers monitor, scale, and maintain aspects Score 5: Also contrasts with HTTP service-to-service calls not requiring this additional operational overhead
-    - type: llm-rubric
+      value:
+        - "Explains that a message broker is another production system to deploy"
+        - "Covers monitoring, scaling, and maintaining the broker"
+        - "Contrasts with HTTP service-to-service calls not requiring this additional operational overhead"
+    - type: g-eval
       metric: "[proficient] failure mode differences"
-      value: |
-        Score 3: Explains that HTTP failures are immediate and visible to the caller (error codes, timeouts) Score 4: Also explains queue failures are deferred and harder to detect Score 5: Also covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes
-    - type: llm-rubric
+      value:
+        - "Explains that HTTP failures are immediate and visible to the caller (error codes, timeouts)"
+        - "Explains that queue failures are deferred and harder to detect"
+        - "Covers dead letter queues, silent drops, or unbounded consumer lag as specific queue failure modes"
+    - type: g-eval
       metric: "[expert] idempotency requirements"
-      value: |
-        Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default
+      value:
+        - "Explains that message queues introduce at-least-once delivery semantics"
+        - "Explains that consumers must handle duplicate messages idempotently"
+        - "Explains that this is a design constraint that HTTP calls don't impose by default"
 
 - description: "Queue vs HTTP: coupling and idempotency"
   vars:
     task: |
       I keep hearing that message queues "decouple" services. Is that actually true? What stays coupled when you add a queue, and what new design constraints does the queue introduce on the consumer side?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] coupling moves to schema"
-      value: |
-        Score 3: Explains that queues don't eliminate coupling Score 4: Also explains they shift it from runtime API contracts to the message schema or event format Score 5: Also explains that producers and consumers must still agree on message structure
-    - type: llm-rubric
+      value:
+        - "Explains that queues don't eliminate coupling"
+        - "Explains that they shift it from runtime API contracts to the message schema or event format"
+        - "Explains that producers and consumers must still agree on message structure"
+    - type: g-eval
       metric: "[expert] idempotency requirements"
-      value: |
-        Score 3: Explains that message queues introduce at-least-once delivery semantics Score 4: Also explains consumers must handle duplicate messages idempotently Score 5: Also explains this is a design constraint that HTTP calls don't impose by default
+      value:
+        - "Explains that message queues introduce at-least-once delivery semantics"
+        - "Explains that consumers must handle duplicate messages idempotently"
+        - "Explains that this is a design constraint that HTTP calls don't impose by default"
 
 - description: "Microservices: modular monolith and cost asymmetry"
   vars:
     task: |
       What is a modular monolith, and why is the cost of going microservices-first often higher than teams expect?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] modular monolith"
-      value: |
-        Score 3: Explains the modular monolith as a middle path Score 4: Also explains clear internal module or package boundaries within a single deployable Score 5: Also explains the design intention so services can be extracted later when team size and scale justify it
-    - type: llm-rubric
+      value:
+        - "Explains the modular monolith as a middle path"
+        - "Explains clear internal module or package boundaries within a single deployable"
+        - "Explains the design intention so services can be extracted later when team size and scale justify it"
+    - type: g-eval
       metric: "[expert] cost asymmetry"
-      value: |
-        Score 3: Explains the cost asymmetry concept Score 4: Also explains extracting a service from a well-factored monolith is much easier than merging poorly-scoped microservices back together Score 5: Also explains why this makes the monolith-first approach lower risk even if you plan to split later
+      value:
+        - "Explains the cost asymmetry concept"
+        - "Explains that extracting a service from a well-factored monolith is much easier than merging poorly-scoped microservices back together"
+        - "Explains why this makes the monolith-first approach lower risk even if you plan to split later"
 
 - description: "Abstraction: the cost of getting it wrong"
   vars:
     task: |
       What's the actual cost of creating the wrong abstraction? Why is duplicated code sometimes preferable to a premature abstraction?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] wrong abstraction locks you in"
-      value: |
-        Score 3: Explains that a wrong abstraction locks you into an interface Score 4: Also explains when the abstracted cases later diverge, you're forced into awkward workarounds or a painful refactor of the abstraction and all its callers Score 5: Also explains the cascading cost of fixing the broken abstraction across all its call sites
-    - type: llm-rubric
+      value:
+        - "Explains that a wrong abstraction locks you into an interface"
+        - "Explains that when the abstracted cases later diverge, you're forced into awkward workarounds or a painful refactor of the abstraction and all its callers"
+        - "Explains the cascading cost of fixing the broken abstraction across all its call sites"
+    - type: g-eval
       metric: "[proficient] wrong abstraction worse than duplication"
-      value: |
-        Score 3: Makes the point that the wrong abstraction is worse than duplication Score 4: Also explains duplicated code can be changed independently Score 5: Also explains a shared abstraction makes both callers harder to evolve when the abstraction is wrong
+      value:
+        - "Makes the point that the wrong abstraction is worse than duplication"
+        - "Explains that duplicated code can be changed independently"
+        - "Explains that a shared abstraction makes both callers harder to evolve when the abstraction is wrong"
 
 - description: "CoT: zero-shot vs few-shot, and model size"
   vars:
     task: |
       What's the difference between zero-shot and few-shot chain-of-thought prompting? Does model size affect whether CoT helps?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[expert] zero-shot vs few-shot CoT"
-      value: |
-        Score 3: Distinguishes zero-shot CoT ("think step by step") from few-shot CoT (providing worked example reasoning chains in the prompt) Score 4: Also explains they have different effectiveness profiles Score 5: Also explains what makes each approach effective in different contexts
-    - type: llm-rubric
+      value:
+        - "Distinguishes zero-shot CoT (\"think step by step\") from few-shot CoT (providing worked example reasoning chains in the prompt)"
+        - "Explains that they have different effectiveness profiles"
+        - "Explains what makes each approach effective in different contexts"
+    - type: g-eval
       metric: "[expert] model size dependence"
-      value: |
-        Score 3: Explains that CoT is most effective on larger, more capable models Score 4: Also explains smaller models can degrade in performance when given intermediate reasoning steps Score 5: Also explains smaller models lack sufficient capacity to benefit from intermediate reasoning steps
+      value:
+        - "Explains that CoT is most effective on larger, more capable models"
+        - "Explains that smaller models can degrade in performance when given intermediate reasoning steps"
+        - "Explains that smaller models lack sufficient capacity to benefit from intermediate reasoning steps"
 
 - description: "Prompt chains: latency and interface contracts"
   vars:
     task: |
       What are the main engineering drawbacks of chaining prompts, and how should you design the handoff between steps?
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[proficient] latency — sequential round trips"
-      value: |
-        Score 3: Explains that chaining adds sequential API round trips Score 4: Also explains each step waits for the previous to complete Score 5: Also explains an N-step chain has at minimum N times the latency of a single call
-    - type: llm-rubric
+      value:
+        - "Explains that chaining adds sequential API round trips"
+        - "Explains that each step waits for the previous to complete"
+        - "Explains that an N-step chain has at minimum N times the latency of a single call"
+    - type: g-eval
       metric: "[expert] interface design between chain steps"
-      value: |
-        Score 3: Addresses the interface contract problem — each step's output is the next step's input Score 4: Also explains structural mismatches (wrong field names, missing keys, unexpected types) tend to fail silently rather than loudly Score 5: Also explains the need for explicit schema validation between steps
+      value:
+        - "Addresses the interface contract problem — each step's output is the next step's input"
+        - "Explains that structural mismatches (wrong field names, missing keys, unexpected types) tend to fail silently rather than loudly"
+        - "Explains the need for explicit schema validation between steps"

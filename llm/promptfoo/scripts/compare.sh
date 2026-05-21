@@ -38,7 +38,7 @@ for suite in "${COMPARE_SUITES[@]}"; do
   COMPARE_TESTS_FILE="../test-suites/${suite}.yaml" \
     npx promptfoo@latest eval \
       -c configs/promptfooconfig.compare.yaml \
-      --max-concurrency 4 \
+      --max-concurrency 1 \
       --output "evals/compare-${suite}.json" || true
 done
 

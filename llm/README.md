@@ -34,8 +34,7 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 First request to a never-pulled model blocks while llama-server downloads the GGUF (can take minutes for the 65 GB ones). To warm the cache up front:
 
 ```bash
-./download-models.sh           # all chat + vision + embed models
-./download-models.sh --judge   # also pull the Selene judge model for promptfoo
+./download-models.sh   # all models incl. the Selene judge
 ```
 
 GGUFs land in `/mnt/cache/huggingface/`. Re-runs are cheap (HF cache dedupes).

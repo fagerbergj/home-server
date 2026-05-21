@@ -10,26 +10,12 @@ prompts:
   - "{{task}}"
 tests: ../test-suites/brain-twisters.yaml
 defaultTest:
-  threshold: 4
   options:
+    factuality:
+      differButFactual: 0
     provider:
       id: openai:chat:selene
       config:
         apiBaseUrl: http://jason-server:11436/v1
         apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
-    rubricPrompt: |
-      You are grading a logical reasoning response. Use the rubric to assess quality,
-      then output ONLY a JSON object on the last line — nothing after it.
-
-      Rubric:
-      {{rubric}}
-
-      Prompt given to the model:
-      {{prompt}}
-
-      Response to grade:
-      {{output}}
-
-      Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": <integer 1-5 from rubric>, "reason": "<one sentence explaining why you gave that score>"}

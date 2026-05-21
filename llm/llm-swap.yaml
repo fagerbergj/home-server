@@ -12,9 +12,9 @@ groups:
       - qwen3.5-9b
       - qwen3-vl-8b
       - qwen3-coder-next
-      - selene   # promptfoo judge; swaps with chat models so it only competes
-                 # for VRAM during the (cached) compare phase, not alongside a
-                 # model under test
+      - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
+                 # grading phase after generation, so it never competes for VRAM
+                 # with a model under test
 
   # Stays loaded regardless of what the main group is doing.
   embed:
@@ -110,25 +110,28 @@ models:
       -c 262144
       --port 9999
 
-  # GPU promptfoo judge (Atla Selene-1-Mini, trained for 1-5 rubric scoring).
-  # In the main group so it swaps with the model under test — only ever
-  # resident during the compare phase, which runs off cached model outputs so
-  # the full GPU is free. For per-model rubric evals use the CPU llm-judge
-  # container instead (it can coexist with any model under test).
+  # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric
+  # scoring). As a >30GB model it needs --no-mmap + tensor split (KV quant is
+  # incompatible with tensor split, so KV stays fp16). Grading runs after
+  # generation with the model under test swapped out, so the judge has both GPUs.
+  # --parallel 1: grading runs at concurrency 1 (one call at a time), so the
+  # single slot gets the whole -c budget. -c 32768 is sized for the compare
+  # phase, whose select-best prompt holds all four models' (long) responses at
+  # once; per-suite grading needs far less.
   "selene":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
-    # -c is the TOTAL KV budget, split across --parallel slots. 32768 / 4 =
-    # 8192 per slot — enough for a select-best prompt (all 4 models'
-    # responses + rubric) while running 4 judge calls in parallel.
     cmd: >
       /app/llama-server
-      -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
+      -hf mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF:Q4_K_M
       --alias selene
       --jinja
+      --no-mmap
+      --split-mode tensor
+      -fit off
       -ngl 999
       -c 32768
-      --parallel 4
+      --parallel 1
       --port 9999
 
   # CPU-only (-ngl 0): 0.6B model is fast on CPU anyway, frees ~0.7 GB VRAM

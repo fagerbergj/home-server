@@ -1,5 +1,5 @@
-# Backend systems knowledge — 32 tests
-# Run: ./eval.sh --suite knowledge [model]
+# Software architecture & systems design — g-eval graded (0-1, threshold 0.7).
+# Run: ./scripts/eval.sh --suite architecture [model]
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
@@ -10,7 +10,7 @@ prompts:
   - "{{task}}"
 tests: ../test-suites/architecture.yaml
 defaultTest:
-  threshold: 4
+  threshold: 0.7
   options:
     provider:
       id: openai:chat:selene
@@ -18,18 +18,3 @@ defaultTest:
         apiBaseUrl: http://jason-server:11436/v1
         apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
-    rubricPrompt: |
-      You are grading a technical response. Use the rubric to assess quality,
-      then output ONLY a JSON object on the last line — nothing after it.
-
-      Rubric:
-      {{rubric}}
-
-      Prompt given to the model:
-      {{prompt}}
-
-      Response to grade:
-      {{output}}
-
-      Then output ONLY this JSON (no trailing text):
-      {"pass": true/false, "score": <integer 1-5 from rubric>, "reason": "<one sentence explaining why you gave that score>"}

@@ -3,7 +3,9 @@
 # Entries HumanEval/0-7
 #
 # The model must complete the function body given the signature + docstring.
-# Assertions check for correct logic and edge case handling.
+# Graded with g-eval: each correctness/quality point is a discrete criterion,
+# scored 0-1 with chain-of-thought. Pass threshold is in
+# configs/promptfooconfig.coding.yaml.
 
 - description: "HumanEval/1: separate_paren_groups"
   vars:
@@ -21,10 +23,12 @@
           ['()', '(())', '(()())']
           """
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] depth tracking for balanced groups"
-      value: |
-        Score 3: Uses a depth counter to track nesting level and split groups correctly Score 4: Also strips spaces from the input before processing Score 5: Also resets state correctly between groups so nested groups don't bleed into each other
+      value:
+        - "Uses a depth counter to track nesting level and split groups correctly"
+        - "Strips spaces from the input before processing"
+        - "Resets state correctly between groups so nested groups don't bleed into each other"
 
 - description: "HumanEval/4: mean_absolute_deviation"
   vars:
@@ -43,10 +47,12 @@
           1.0
           """
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] correct MAD formula"
-      value: |
-        Score 3: Computes the mean and then the average absolute deviation from it Score 4: Also uses sum() and len() or equivalent — doesn't reinvent them with explicit loops unnecessarily Score 5: Also correct for edge cases like single-element lists (MAD = 0.0)
+      value:
+        - "Computes the mean and then the average absolute deviation from it"
+        - "Uses sum() and len() or equivalent rather than reinventing them with unnecessary explicit loops"
+        - "Correct for edge cases like single-element lists (MAD = 0.0)"
 
 - description: "HumanEval/5: intersperse"
   vars:
@@ -63,10 +69,12 @@
           [1, 4, 2, 4, 3]
           """
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] correct intersperse without trailing delimiter"
-      value: |
-        Score 3: Inserts the delimiter between elements and does not add a trailing delimiter Score 4: Also handles the empty list case correctly Score 5: Also handles a single-element list (should return [element] with no delimiter)
+      value:
+        - "Inserts the delimiter between elements without adding a trailing delimiter"
+        - "Handles the empty list case correctly"
+        - "Handles a single-element list (returns the element with no delimiter)"
 
 - description: "HumanEval/6: parse_nested_parens depth"
   vars:
@@ -83,10 +91,12 @@
           [2, 3, 1, 3]
           """
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] max depth per group"
-      value: |
-        Score 3: Splits on spaces, tracks depth per group, and returns the max depth for each Score 4: Also correctly resets depth counter between groups Score 5: Also handles non-uniform spacing (e.g., groups separated by multiple spaces) or empty groups
+      value:
+        - "Splits on spaces, tracks depth per group, and returns the max depth for each"
+        - "Resets the depth counter between groups"
+        - "Handles non-uniform spacing or empty groups"
 
 - description: "SQL: debug unexpected query results"
   vars:
@@ -106,22 +116,30 @@
       ORDER BY order_count DESC
       ```
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] NULL comparison bug"
-      value: |
-        Score 3: Identifies that `u.deleted_at = NULL` is always false Score 4: Also explains NULL comparisons require `IS NULL`, not `= NULL`, because NULL is not equal to anything including itself Score 5: Also explains the logical implication — the WHERE clause excludes all rows where deleted_at is NULL, which may be most or all rows
-    - type: llm-rubric
+      value:
+        - "Identifies that `u.deleted_at = NULL` is always false"
+        - "Explains NULL comparisons require `IS NULL`, not `= NULL`, because NULL is not equal to anything including itself"
+        - "Explains that the WHERE clause therefore excludes all rows where deleted_at is NULL, which may be most or all rows"
+    - type: g-eval
       metric: "[baseline] LEFT JOIN converted to INNER JOIN"
-      value: |
-        Score 3: Identifies that the WHERE clause filtering on `o.created_at` (a column from the right-side table) is the problem Score 4: Also explains this silently converts the LEFT JOIN to an INNER JOIN, excluding all users who have no orders in the date range Score 5: Also explains the fix — moving the filter to the JOIN condition instead of the WHERE clause
-    - type: llm-rubric
+      value:
+        - "Identifies that filtering on `o.created_at` (a right-side table column) in the WHERE clause is the problem"
+        - "Explains this silently converts the LEFT JOIN to an INNER JOIN, excluding all users with no orders in the date range"
+        - "Explains the fix — moving the filter into the JOIN condition instead of the WHERE clause"
+    - type: g-eval
       metric: "[proficient] GROUP BY non-aggregate column"
-      value: |
-        Score 3: Identifies that `u.name` is selected but not included in the GROUP BY clause and not wrapped in an aggregate Score 4: Also explains it's non-deterministic in permissive SQL modes Score 5: Also explains it's an error in strict SQL mode
-    - type: llm-rubric
+      value:
+        - "Identifies that `u.name` is selected but not included in the GROUP BY clause and not wrapped in an aggregate"
+        - "Explains it's non-deterministic in permissive SQL modes"
+        - "Explains it's an error in strict SQL mode"
+    - type: g-eval
       metric: "[expert] missing index"
-      value: |
-        Score 3: Identifies that `o.user_id` (the join column) needs an index Score 4: Also identifies that `o.created_at` (the filter column) likely needs an index for this query to perform acceptably at scale Score 5: Also explains the performance impact of missing indexes on this specific query pattern
+      value:
+        - "Identifies that `o.user_id` (the join column) needs an index"
+        - "Identifies that `o.created_at` (the filter column) likely needs an index for this query to perform acceptably at scale"
+        - "Explains the performance impact of the missing indexes on this specific query pattern"
 
 - description: "Docker: debug slow builds and security concerns"
   vars:
@@ -142,22 +160,30 @@
       CMD python3 app.py
       ```
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] secret in ENV"
-      value: |
-        Score 3: Identifies that hardcoding credentials in ENV bakes the secret into the image layer Score 4: Also explains it's visible via `docker history` and any registry the image is pushed to Score 5: Also explains the correct approach (runtime secret injection)
-    - type: llm-rubric
+      value:
+        - "Identifies that hardcoding credentials in ENV bakes the secret into the image layer"
+        - "Explains it's visible via `docker history` and any registry the image is pushed to"
+        - "Explains the correct approach (runtime secret injection)"
+    - type: g-eval
       metric: "[baseline] COPY ordering breaks layer cache"
-      value: |
-        Score 3: Identifies that `COPY . /app` before `pip3 install` is the problem Score 4: Also explains this invalidates the pip layer on every code change, causing a full dependency reinstall Score 5: Also explains the fix: copy requirements.txt first, run pip, then copy the rest
-    - type: llm-rubric
+      value:
+        - "Identifies that `COPY . /app` before `pip3 install` is the problem"
+        - "Explains this invalidates the pip layer on every code change, causing a full dependency reinstall"
+        - "Explains the fix: copy requirements.txt first, run pip, then copy the rest"
+    - type: g-eval
       metric: "[proficient] running as root"
-      value: |
-        Score 3: Identifies that there is no USER instruction Score 4: Also explains the container process runs as root Score 5: Also explains this is a security risk if the process or a dependency is compromised
-    - type: llm-rubric
+      value:
+        - "Identifies that there is no USER instruction"
+        - "Explains the container process runs as root"
+        - "Explains this is a security risk if the process or a dependency is compromised"
+    - type: g-eval
       metric: "[expert] CMD shell vs exec form"
-      value: |
-        Score 3: Identifies that `CMD python3 app.py` uses shell form Score 4: Also explains the process runs as a child of `/bin/sh`, so signals like SIGTERM are not forwarded, preventing graceful shutdown Score 5: Also explains the fix is exec form: `CMD ["python3", "app.py"]`
+      value:
+        - "Identifies that `CMD python3 app.py` uses shell form"
+        - "Explains the process runs as a child of `/bin/sh`, so signals like SIGTERM are not forwarded, preventing graceful shutdown"
+        - "Explains the fix is exec form: CMD [\"python3\", \"app.py\"]"
 
 - description: "Go: debug wrong results in concurrent fetch"
   vars:
@@ -190,22 +216,30 @@
       }
       ```
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] loop variable capture"
-      value: |
-        Score 3: Identifies the loop variable capture bug — in Go 1.21, i and url are shared across goroutines Score 4: Also explains all goroutines may read the last loop values, causing incorrect results Score 5: Also explains the fix — capturing loop variables as function parameters in the goroutine closure
-    - type: llm-rubric
+      value:
+        - "Identifies the loop variable capture bug — in Go 1.21, i and url are shared across goroutines"
+        - "Explains all goroutines may read the last loop values, causing incorrect results"
+        - "Explains the fix — capturing loop variables as function parameters in the goroutine closure"
+    - type: g-eval
       metric: "[baseline] resp.Body never closed"
-      value: |
-        Score 3: Identifies that resp.Body is never closed Score 4: Also explains this is a resource leak (file descriptor and memory) on every successful request Score 5: Also explains why this matters not just naming the issue
-    - type: llm-rubric
+      value:
+        - "Identifies that resp.Body is never closed"
+        - "Explains this is a resource leak (file descriptor and memory) on every successful request"
+        - "Explains why this matters rather than just naming the issue"
+    - type: g-eval
       metric: "[proficient] io.ReadAll error ignored"
-      value: |
-        Score 3: Identifies that the io.ReadAll error is silently discarded with _ Score 4: Also explains the function may return partial or empty results without any indication of failure Score 5: Also explains the impact on debugging and reliability
-    - type: llm-rubric
+      value:
+        - "Identifies that the io.ReadAll error is silently discarded with _"
+        - "Explains the function may return partial or empty results without any indication of failure"
+        - "Explains the impact on debugging and reliability"
+    - type: g-eval
       metric: "[expert] no timeout or context"
-      value: |
-        Score 3: Identifies that http.Get has no timeout or context Score 4: Also explains goroutines can hang indefinitely on slow or unresponsive servers Score 5: Also explains there is no way for the caller to cancel in-flight requests
+      value:
+        - "Identifies that http.Get has no timeout or context"
+        - "Explains goroutines can hang indefinitely on slow or unresponsive servers"
+        - "Explains there is no way for the caller to cancel in-flight requests"
 
 - description: "Kotlin: debug NullPointerException in coroutine service"
   vars:
@@ -235,26 +269,36 @@
       }
       ```
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] race condition and NPE"
-      value: |
-        Score 3: Identifies the race between Thread.sleep and the coroutine Score 4: Also explains the coroutine may not complete within 1000ms, and result!! will throw NullPointerException Score 5: Also explains the mechanism, not just says "it might be null"
-    - type: llm-rubric
+      value:
+        - "Identifies the race between Thread.sleep and the coroutine"
+        - "Explains the coroutine may not complete within 1000ms, so result!! will throw NullPointerException"
+        - "Explains the mechanism rather than just saying it might be null"
+    - type: g-eval
       metric: "[baseline] blocking function should be suspend"
-      value: |
-        Score 3: Identifies that getUser is a blocking function pretending to be async Score 4: Also explains it should be a suspend function or return a Deferred, not use Thread.sleep to wait Score 5: Also explains why this is fundamentally wrong in the Kotlin coroutine model
-    - type: llm-rubric
+      value:
+        - "Identifies that getUser is a blocking function pretending to be async"
+        - "Explains it should be a suspend function or return a Deferred rather than using Thread.sleep to wait"
+        - "Explains why this is fundamentally wrong in the Kotlin coroutine model"
+    - type: g-eval
       metric: "[proficient] shared mutable variable visibility"
-      value: |
-        Score 3: Identifies that result is a shared mutable variable between the coroutine (Dispatchers.IO thread pool) and the calling thread Score 4: Also explains there is no visibility guarantee under the JVM memory model Score 5: Also explains the practical consequences of the visibility gap
-    - type: llm-rubric
+      value:
+        - "Identifies that result is a shared mutable variable between the Dispatchers.IO coroutine and the calling thread"
+        - "Explains there is no visibility guarantee under the JVM memory model"
+        - "Explains the practical consequences of the visibility gap"
+    - type: g-eval
       metric: "[proficient] unscoped lifecycle"
-      value: |
-        Score 3: Identifies that scope has no lifecycle management Score 4: Also explains it leaks if shutdown() is never called Score 5: Also explains the caller has no way to know shutdown() is required
-    - type: llm-rubric
+      value:
+        - "Identifies that scope has no lifecycle management"
+        - "Explains it leaks if shutdown() is never called"
+        - "Explains the caller has no way to know shutdown() is required"
+    - type: g-eval
       metric: "[expert] silent coroutine failure"
-      value: |
-        Score 3: Identifies that if repo.findById throws an exception, the coroutine fails silently Score 4: Also explains result stays null Score 5: Also explains the caller gets an NPE with no indication of the actual error
+      value:
+        - "Identifies that if repo.findById throws an exception, the coroutine fails silently"
+        - "Explains result stays null"
+        - "Explains the caller gets an NPE with no indication of the actual error"
 
 - description: "TypeScript: debug silent failures in event processor"
   vars:
@@ -279,23 +323,33 @@
       }
       ```
   assert:
-    - type: llm-rubric
+    - type: g-eval
       metric: "[baseline] unsafe cast"
-      value: |
-        Score 3: Identifies that `as { type: string; userId: string }` is an unsafe cast Score 4: Also explains there is no runtime validation, so any value (null, number, wrong-shaped object) passes through the type system unchecked Score 5: Also explains the practical consequences of the unsafe cast
-    - type: llm-rubric
+      value:
+        - "Identifies that the `as { type: string; userId: string }` cast is unsafe"
+        - "Explains there is no runtime validation, so any value (null, number, wrong-shaped object) passes through the type system unchecked"
+        - "Explains the practical consequences of the unsafe cast"
+    - type: g-eval
       metric: "[baseline] Promise.all fails fast"
-      value: |
-        Score 3: Identifies that Promise.all fails fast Score 4: Also explains if one deleteUser call rejects, the remaining promises are abandoned and the error propagates with no cleanup Score 5: Also explains the cascading failure impact on the entire batch
-    - type: llm-rubric
+      value:
+        - "Identifies that Promise.all fails fast"
+        - "Explains that if one deleteUser call rejects, the remaining promises are abandoned and the error propagates with no cleanup"
+        - "Explains the cascading failure impact on the entire batch"
+    - type: g-eval
       metric: "[proficient] no error handling on deleteUser"
-      value: |
-        Score 3: Identifies that there is no error handling on deleteUser Score 4: Also explains if it throws, the entire function rejects Score 5: Also explains any remaining delete operations are abandoned mid-batch
-    - type: llm-rubric
+      value:
+        - "Identifies that there is no error handling on deleteUser"
+        - "Explains that if it throws, the entire function rejects"
+        - "Explains that any remaining delete operations are abandoned mid-batch"
+    - type: g-eval
       metric: "[proficient] no input validation"
-      value: |
-        Score 3: Identifies that there is no validation of individual events Score 4: Also explains nulls, primitives, or objects with unexpected shapes all silently pass the type assertion Score 5: Also explains they may cause runtime errors downstream
-    - type: llm-rubric
+      value:
+        - "Identifies that there is no validation of individual events"
+        - "Explains nulls, primitives, or objects with unexpected shapes silently pass the type assertion"
+        - "Explains they may cause runtime errors downstream"
+    - type: g-eval
       metric: "[expert] results contain untrusted data"
-      value: |
-        Score 3: Identifies that the results array accumulates e.userId for all events including non-delete ones Score 4: Also explains these may be undefined at runtime despite the type claiming string Score 5: Also explains downstream consumers of this array would trust invalid data
+      value:
+        - "Identifies that the results array accumulates e.userId for all events including non-delete ones"
+        - "Explains these may be undefined at runtime despite the type claiming string"
+        - "Explains downstream consumers of this array would trust invalid data"

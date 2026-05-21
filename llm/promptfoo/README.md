@@ -1,9 +1,10 @@
 # Model evaluation (promptfoo)
 
 Runs the llm-swap model lineup across ten test suites and an A/B compare phase.
-Per-model rubric suites use the CPU judge (`llm-judge` profile, port 11437) so
-it coexists with the model under test; the compare phase uses the GPU judge
-(`selene` in llm-swap) since it runs off cached outputs with no model resident.
+All rubric grading uses the GPU judge (`selene` in llm-swap, port 11436). At
+concurrency 1 promptfoo defers grading, so every model generation runs first and
+the judge swaps in once for the batched grading phase — no model is resident when
+it judges, so the judge gets the full GPU.
 
 ## Directory layout
 
@@ -39,13 +40,7 @@ Only rubric-graded suites get the A/B compare phase — for deterministic suites
 
 Requires Node.js 18+ (`node --version`). promptfoo runs via `npx`, no install needed.
 
-Per-model rubric suites need the CPU judge up:
-
-```bash
-docker compose --profile judge up -d llm-judge
-```
-
-The compare phase instead uses the GPU judge (`selene`), which is already a model in `llm-swap.yaml` — nothing extra to start.
+The judge (`selene`) is a model in `llm-swap.yaml` and loads on demand during the grading phase — nothing extra to start.
 
 For the `large-code` suite, set up a Python venv with pytest + the deps the test files import:
 
@@ -124,11 +119,10 @@ Opens the web UI: pass/fail per test, rubric reasons, side-by-side completions a
 3. Add `<name>` to `SUITES` in `scripts/eval.sh` (and to `COMPARE_SUITES` there + in `scripts/compare.sh` if it's rubric-graded).
 4. Add `<name>` to each relevant model's `suites:` list in `eval-config.yaml`.
 
-## Notes on the judges
+## Notes on the judge
 
-Both judges run Selene-1-Mini-Llama-3.1-8B (`bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M`), trained for 1-5 rubric scoring:
+The judge is Atla Selene-1 70B (`mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF:Q4_K_M`), purpose-trained for 1-5 rubric scoring. It's the `selene` model in llm-swap (port 11436), used for both per-model rubric grading and the compare phase.
 
-- **CPU judge** (`llm-judge` container, port 11437) — per-model rubric suites. CPU keeps VRAM free for the model under test (gpt-oss-120b leaves zero headroom for a co-resident judge).
-- **GPU judge** (`selene` model in llm-swap, port 11436) — the compare phase only. Compare runs off cached model outputs, so no model is resident and Selene gets the full GPU.
+Both run at concurrency 1 so promptfoo batches all judge calls after generation: the model under test generates everything, then swaps out and Selene swaps in once to grade — so the 70B judge gets the full GPU and never competes with a model under test.
 
-Selene pattern-matches keyword overlap in rubric criteria, so rubrics are phrased semantically (`"any concrete command, tool, or query counts"`) rather than naming specific keywords. See `test-suites/calibration.yaml` for the canonical examples.
+Rubrics are phrased semantically (`"any concrete command, tool, or query counts"`) rather than naming specific keywords. See `test-suites/calibration.yaml` for the canonical examples.
