@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pre-download all llm-swap model GGUFs to the HF cache.
 # Run before starting llm-swap so the first model load is instant.
-# Usage: ./download-models.sh [--judge]
+# Usage: ./download-models.sh
 
 set -euo pipefail
 
@@ -18,16 +18,13 @@ dl() {
   echo ""
 }
 
-dl "unsloth/Llama-3.3-70B-Instruct-GGUF"   "Llama-3.3-70B-Instruct-Q4_K_M.gguf"  "llama-3.3-70b"
+dl "unsloth/gpt-oss-120b-GGUF"             "gpt-oss-120b-F16.gguf"               "gpt-oss-120b"
 dl "unsloth/Qwen3.6-35B-A3B-GGUF"          "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"      "qwen3.6-35b"
 dl "unsloth/Qwen3.5-9B-GGUF"               "Qwen3.5-9B-Q4_K_M.gguf"              "qwen3.5-9b"
 dl "unsloth/Qwen3-VL-8B-Instruct-GGUF"     "Qwen3-VL-8B-Instruct-Q4_K_M.gguf"   "qwen3-vl-8b"
 dl "unsloth/Qwen3-VL-8B-Instruct-GGUF"     "mmproj-F16.gguf"                     "qwen3-vl-8b mmproj"
 dl "unsloth/Qwen3-Coder-Next-GGUF"         "Qwen3-Coder-Next-Q4_K_M.gguf"        "qwen3-coder-next"
 dl "Qwen/Qwen3-Embedding-0.6B-GGUF"        "Qwen3-Embedding-0.6B-Q8_0.gguf"      "qwen3-embed"
-
-if [[ "${1:-}" == "--judge" ]]; then
-  dl "mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF" "Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf" "selene 70b (judge)"
-fi
+dl "mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF" "Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf" "selene 70b (judge)"
 
 echo "All done. Run 'make swap-up' to start."
