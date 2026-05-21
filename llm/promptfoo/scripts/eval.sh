@@ -11,9 +11,10 @@
 #   ./scripts/eval.sh --tools [model ...]               # document-pipeline routing (opt-in)
 #   ./scripts/eval.sh --no-compare                      # skip the A/B compare phase
 #
-# Multiple positional args = a model allowlist. Compare still runs (it reads
-# all providers from the compare config + cache), unless you pass exactly one
-# model (a single-model compare is meaningless) or --no-compare.
+# Multiple positional args = a model allowlist for Phase 1 (which models to
+# (re)generate). The compare phase always runs (unless --no-compare/--tools)
+# and judges every provider in the compare config from cache — so re-running
+# even one model still yields a full N-way comparison.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
@@ -95,10 +96,12 @@ for model, cfg in config['models'].items():
         )
         suites_run.add(suite)
 
-# Phase 2: blind A/B comparison. Skip for a single-model run (a select-best
-# of one is meaningless). For all-models or a multi-model allowlist it runs —
-# the compare config reads every provider from its own list + promptfoo cache.
-if do_compare and len(model_filters) != 1:
+# Phase 2: blind A/B comparison. Always runs (unless --no-compare / --tools) —
+# the compare config has its own fixed provider list and select-best judges all
+# of them from promptfoo's cache, independent of which models Phase 1 ran. So a
+# single- or multi-model Phase 1 still produces a full N-way comparison: the
+# models you just re-ran are fresh in cache, the rest are reused.
+if do_compare:
     compare_targets = suites_run & COMPARE_SUITES if suites_run else COMPARE_SUITES
     if suite_filter and suite_filter in COMPARE_SUITES:
         compare_targets = {suite_filter}
