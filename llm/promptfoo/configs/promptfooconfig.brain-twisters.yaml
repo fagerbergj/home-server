@@ -7,6 +7,7 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
 prompts:
   - "{{task}}"
 tests: ../test-suites/brain-twisters.yaml

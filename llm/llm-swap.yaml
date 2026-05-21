@@ -47,6 +47,9 @@ models:
       -c 32768
       --port 9999
 
+  # Thinking left ON (backs the clarify stage). --reasoning-format auto keeps
+  # reasoning out of `content`; needs a generous max_tokens (~4096+) or its
+  # reasoning truncates before the answer.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -56,7 +59,7 @@ models:
       --jinja
       --reasoning-format auto
       -ngl 999
-      -c 32768
+      -c 40960
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9999

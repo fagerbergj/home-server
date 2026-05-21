@@ -19,6 +19,7 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
       # temperature: promptfoo defaults to 0 which makes Llama 3.3 emit raw
       # JSON instead of <|python_tag|>-prefixed tool calls — llama.cpp's
       # parser then returns 500. A small non-zero temp restores the native
