@@ -32,10 +32,14 @@ models:
   "gpt-oss-120b":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
+    # --reasoning-format auto: extract the harmony `analysis` channel into
+    # reasoning_content instead of leaving it inline in `content`. Without it
+    # the model's planning text leaks into the answer.
     cmd: >
       /app/llama-server
       -hf unsloth/gpt-oss-120b-GGUF:F16
       --jinja
+      --reasoning-format auto
       --no-mmap
       --split-mode tensor
       -fit off
