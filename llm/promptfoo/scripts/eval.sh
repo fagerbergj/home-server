@@ -99,7 +99,7 @@ if do_compare and not model_filter:
         subprocess.run(
             ['npx', 'promptfoo@latest', 'eval',
              '-c', 'configs/promptfooconfig.compare.yaml',
-             '--max-concurrency', '2',
+             '--max-concurrency', '4',
              '--output', f'evals/compare-{suite}.json'],
             env=env, check=False
         )
