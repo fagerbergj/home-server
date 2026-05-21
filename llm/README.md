@@ -12,9 +12,6 @@ OpenAI-compatible API (tailnet-only — see [networking/setup.md](../networking/
 - LAN: `http://192.168.50.186:11436/v1`
 - Tailnet: `http://jason-server:11436/v1`
 
-Judge endpoint (opt-in via the `judge` profile, used by promptfoo):
-- `http://jason-server:11437/v1`
-
 ## How llm-swap works
 
 `llm-swap.yaml` declares a set of named models. Each model entry has a `cmd` that runs `llama-server` with the model-specific flags (GGUF, context size, KV quant, tensor split, etc.) on the same internal port. When a request hits `/v1/chat/completions` with `model: foo`, llm-swap starts `foo`'s `llama-server` if it isn't already running, waits for the health check, and forwards the request. Models in the same `group` swap each other out so only one chat model is resident at a time. Models in a `persistent` group stay loaded forever (used for the embedding model).
@@ -73,23 +70,7 @@ From outside the home network — connect via Tailscale, then any OpenAI-compati
 
 See [promptfoo/README.md](promptfoo/README.md) for the eval harness. Suites cover architecture/coding/math/tool-calls/large-code.
 
-Two judges, both Selene-1-Mini:
-- **`llm-judge`** — a standalone CPU-only container (port 11437), profile-gated. Used for per-model rubric grading, where it runs alongside the model under test (CPU keeps VRAM free for it).
-- **`selene`** — a GPU model inside llm-swap (port 11436). Used only for the A/B compare phase, which runs off cached outputs so the GPU is free.
-
-### Spinning the judge up / down
-
-`llm-judge` is opt-in via the `judge` compose profile, so a normal `docker compose up -d` never starts it.
-
-```bash
-# Up — before running rubric evals
-docker compose --profile judge up -d llm-judge
-
-# Down — when evals are done (frees the CPU/RAM, model stays in the HF cache)
-docker compose stop llm-judge && docker compose rm -f llm-judge
-```
-
-The GPU `selene` judge needs nothing extra — it's a model in `llm-swap.yaml` and loads on demand during the compare phase.
+The judge is `selene` — Atla Selene-1 70B, a GPU model inside llm-swap (port 11436), used for both per-model rubric grading and the A/B compare phase. It's in the main swap group, so it loads on demand and swaps in only for the grading phase (after generation), never competing for VRAM with a model under test. Nothing extra to start.
 
 ## Updating
 

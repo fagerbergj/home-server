@@ -1,27 +1,4 @@
 services:
-  # Always-on judge for promptfoo — CPU-only (-ngl 0) to keep VRAM free for the
-  # model under test. Evals are batch jobs so slower CPU inference is acceptable.
-  # Port 11437. Point promptfoo's judge provider at http://jason-server:11437/v1.
-  llm-judge:
-    image: ghcr.io/ggml-org/llama.cpp:server
-    container_name: llm-judge
-    profiles: ["judge"]
-    ports:
-      - "11437:11437"
-    environment:
-      - HF_TOKEN=${HF_TOKEN:-}
-    command: >
-      -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
-      --alias selene
-      -ngl 0
-      --threads 32
-      -c 8192
-      --host 0.0.0.0
-      --port 11437
-    volumes:
-      - /mnt/cache/huggingface:/root/.cache/huggingface
-    restart: unless-stopped
-
   # Primary LLM runtime — OpenAI-compatible API on port 11436 backed by
   # llama-swap + llama.cpp. Model routing is in llm-swap.yaml.
   llm-swap:

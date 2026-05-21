@@ -27,7 +27,7 @@ dl "unsloth/Qwen3-Coder-Next-GGUF"         "Qwen3-Coder-Next-Q4_K_M.gguf"       
 dl "Qwen/Qwen3-Embedding-0.6B-GGUF"        "Qwen3-Embedding-0.6B-Q8_0.gguf"      "qwen3-embed"
 
 if [[ "${1:-}" == "--judge" ]]; then
-  dl "prometheus-eval/prometheus-7b-v2.0-GGUF" "prometheus-7b-v2.0.Q4_K_M.gguf" "prometheus-7b (judge)"
+  dl "mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF" "Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf" "selene 70b (judge)"
 fi
 
 echo "All done. Run 'make swap-up' to start."
