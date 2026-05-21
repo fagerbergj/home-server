@@ -109,9 +109,9 @@ models:
   "selene":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
-    # --parallel 4 to match the eval harness's compare concurrency. -c 32768
-    # so each of the 4 slots gets 8192 — enough for a select-best prompt,
-    # which concatenates all 4 models' responses plus the rubric.
+    # -c is the TOTAL KV budget, split across --parallel slots. 32768 / 4 =
+    # 8192 per slot — enough for a select-best prompt (all 4 models'
+    # responses + rubric) while running 4 judge calls in parallel.
     cmd: >
       /app/llama-server
       -hf bartowski/Selene-1-Mini-Llama-3.1-8B-GGUF:Q4_K_M
