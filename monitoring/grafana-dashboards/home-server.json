@@ -2,7 +2,7 @@
   "title": "Home Server",
   "uid": "home-server",
   "schemaVersion": 39,
-  "version": 22,
+  "version": 23,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -467,6 +467,77 @@
       ]
     },
     {
+      "id": 18,
+      "type": "timeseries",
+      "title": "CPU Temperature",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:18_3\",sensor=\"temp2\"}",
+          "legendFormat": "Die 0 (Tdie)",
+          "refId": "A"
+        },
+        {
+          "expr": "node_hwmon_temp_celsius{chip=\"pci0000:00_0000:00:19_3\",sensor=\"temp2\"}",
+          "legendFormat": "Die 1 (Tdie)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
       "id": 6,
       "type": "row",
       "title": "Containers",
@@ -475,7 +546,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 33
       }
     },
     {
@@ -490,7 +561,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -536,7 +607,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -579,7 +650,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 42
       }
     },
     {
@@ -594,7 +665,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 43
       },
       "options": {
         "sortBy": [
@@ -693,21 +764,21 @@
       },
       "targets": [
         {
-          "expr": "node_filesystem_size_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!=\"/boot\"}",
+          "expr": "node_filesystem_size_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"}",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!=\"/boot\"}",
+          "expr": "node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"}",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!=\"/boot\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!=\"/boot\"} * 100",
+          "expr": "node_filesystem_avail_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"} * 100",
           "refId": "C",
           "instant": true,
           "format": "table",
@@ -752,7 +823,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "options": {
         "tooltip": {
@@ -803,7 +874,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 41
+        "y": 49
       },
       "options": {
         "tooltip": {
@@ -854,7 +925,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 41
+        "y": 49
       },
       "options": {
         "tooltip": {
@@ -900,7 +971,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 57
       },
       "options": {
         "sortBy": [
@@ -994,7 +1065,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Temp (°C)"
+              "options": "Temp (\u00b0C)"
             },
             "properties": [
               {
@@ -1116,7 +1187,7 @@
           "options": {
             "renameByName": {
               "device": "Drive",
-              "Value #A": "Temp (°C)",
+              "Value #A": "Temp (\u00b0C)",
               "Value #B": "Reallocated Sectors",
               "Value #C": "Pending Sectors"
             }
@@ -1136,7 +1207,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 57
       },
       "options": {
         "sortBy": [
@@ -1162,7 +1233,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Temp (°C)"
+              "options": "Temp (\u00b0C)"
             },
             "properties": [
               {
@@ -1383,7 +1454,7 @@
           "options": {
             "renameByName": {
               "device": "Drive",
-              "Value #A": "Temp (°C)",
+              "Value #A": "Temp (\u00b0C)",
               "Value #B": "Media Errors",
               "Value #C": "Available Spare %",
               "Value #D": "Life Used %"
