@@ -1,7 +1,5 @@
 # CRUXEval (predict output) + custom code gotchas
 # Run: ./eval.sh --suite cruxeval [model]
-evaluateOptions:
-  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
@@ -17,8 +15,8 @@ defaultTest:
     provider:
       id: openai:chat:selene
       config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
       You are grading a code-reasoning response. Use the rubric to assess quality,

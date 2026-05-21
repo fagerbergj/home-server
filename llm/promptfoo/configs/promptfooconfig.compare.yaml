@@ -34,8 +34,9 @@ tests: "{{ env.COMPARE_TESTS_FILE }}"
 defaultTest:
   # GPU judge via llm-swap (model key "selene"). The compare phase runs off
   # cached model outputs, so the GPU has no model-under-test resident and
-  # Selene judges at full speed. Per-suite configs still use the CPU judge
-  # on :11437 (those run alongside the model under test).
+  # Selene judges at full speed. Per-suite configs also use this GPU judge:
+  # at concurrency 1, promptfoo defers grading and batches all judge calls
+  # after generation, so the model-under-test is swapped out when Selene runs.
   options:
     provider:
       id: openai:chat:selene

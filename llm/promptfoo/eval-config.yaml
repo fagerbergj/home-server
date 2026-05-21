@@ -28,7 +28,7 @@ models:
       - tools
 
   qwen3.6-35b:
-    concurrency: 2
+    concurrency: 1
     suites:
       - architecture
       - coding
@@ -56,7 +56,7 @@ models:
       - tools
 
   qwen3.5-9b:
-    concurrency: 4
+    concurrency: 1
     suites:
       - architecture
       - coding

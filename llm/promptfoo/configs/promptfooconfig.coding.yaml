@@ -1,8 +1,6 @@
 # HumanEval Python coding problems
 # Run: ./eval.sh --coding [model]
 # Best model: qwen3-coder-next
-evaluateOptions:
-  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
@@ -18,8 +16,8 @@ defaultTest:
     provider:
       id: openai:chat:selene
       config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
       You are grading a Python code response. Use the rubric to assess quality,

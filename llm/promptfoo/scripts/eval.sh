@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Run promptfoo per-model evals against the llm-swap stack.
-# Per-model rubric suites need the CPU judge: docker compose --profile judge up -d llm-judge
+# Rubric suites use the GPU "selene" judge in the swap group: at concurrency 1
+# promptfoo defers grading and batches all judge calls after generation, so
+# Selene swaps in once per suite (no per-row reload, no CPU judge needed).
 # The blind A/B comparison is a separate step — see ./scripts/compare.sh.
 #
 # Usage (run from anywhere — the script cd's to the promptfoo root):
@@ -15,6 +17,10 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
+
+# The CPU judge prefills long responses serially; give each grading call 10 min
+# (promptfoo's default REQUEST_TIMEOUT_MS is 300000 = 5 min, which was firing).
+export REQUEST_TIMEOUT_MS="${REQUEST_TIMEOUT_MS:-600000}"
 
 python3 - "$@" << 'EOF'
 import sys, os, subprocess, yaml

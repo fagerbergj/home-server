@@ -1,8 +1,6 @@
 # BFCL function calling tests
 # Run: ./eval.sh --function-call [model]
 # Best models: llama-3.3-70b, qwen3.6-35b
-evaluateOptions:
-  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
@@ -18,8 +16,8 @@ defaultTest:
     provider:
       id: openai:chat:selene
       config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
       You are grading a function call response. Use the rubric to assess quality,

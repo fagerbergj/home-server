@@ -1,7 +1,5 @@
 # Hard reasoning — GPQA-style science MCQ + ZebraLogic-style puzzles
 # Run: ./eval.sh --suite hard-reasoning [model]
-evaluateOptions:
-  timeoutMs: 600000
 providers:
   - id: "openai:chat:{{ env.MODEL }}"
     config:
@@ -17,8 +15,8 @@ defaultTest:
     provider:
       id: openai:chat:selene
       config:
-        apiBaseUrl: http://jason-server:11437/v1
-        apiKey: llm-judge
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
     transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
     rubricPrompt: |
       You are grading a reasoning response. Use the rubric strictly.
