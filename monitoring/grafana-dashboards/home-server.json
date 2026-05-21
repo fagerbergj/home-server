@@ -2,7 +2,7 @@
   "title": "Home Server",
   "uid": "home-server",
   "schemaVersion": 39,
-  "version": 23,
+  "version": 24,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -105,8 +105,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 1
+        "x": 0,
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -184,7 +184,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -255,7 +255,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -315,6 +315,57 @@
       ]
     },
     {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Network Throughput",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{device=\"enp5s0\"}[5m])",
+          "legendFormat": "LAN RX",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device=\"enp5s0\"}[5m])",
+          "legendFormat": "LAN TX",
+          "refId": "B"
+        }
+      ]
+    },
+    {
       "id": 16,
       "type": "timeseries",
       "title": "GPU Temperature",
@@ -326,7 +377,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -407,7 +458,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 17
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -477,8 +528,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 25
+        "x": 12,
+        "y": 1
       },
       "options": {
         "tooltip": {
