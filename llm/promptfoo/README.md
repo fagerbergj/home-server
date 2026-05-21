@@ -63,11 +63,14 @@ Scripts cd to the promptfoo root themselves, so they work from anywhere:
 ```bash
 cd llm/promptfoo
 
-# Everything: all models × their suites, then the A/B compare phase
+# Per-model evals: all models × their suites
 ./scripts/eval.sh
 
 # One model, all its suites
 ./scripts/eval.sh qwen3.6-35b
+
+# Several models (re-run just the ones that changed)
+./scripts/eval.sh gpt-oss-120b qwen3.6-35b qwen3-coder-next
 
 # One suite, all models
 ./scripts/eval.sh --suite coding
@@ -75,14 +78,11 @@ cd llm/promptfoo
 # One suite, one model (fast inner loop)
 ./scripts/eval.sh --suite math qwen3.6-35b
 
-# Skip the cross-model compare phase
-./scripts/eval.sh --no-compare
-
 # Tool-call routing only (opt-in)
-./scripts/eval.sh --tools [model]
+./scripts/eval.sh --tools [model ...]
 
-# Re-run ONLY the A/B compare phase against the GPU judge (reuses cached
-# per-model outputs — fast). One suite or all four rubric suites:
+# Blind A/B comparison — separate step, runs off the cached per-model
+# outputs against the GPU judge. All four rubric suites or just one:
 ./scripts/compare.sh
 ./scripts/compare.sh architecture
 ```
