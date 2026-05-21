@@ -1,6 +1,6 @@
 # Eval Results
 
-*Last updated: 2026-05-20*
+*Last updated: 2026-05-21*
 
 | Model | architecture | coding | math | function-call | brain-twisters | cruxeval | calibration | hard-reasoning | large-code | tools |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
