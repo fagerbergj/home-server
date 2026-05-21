@@ -3,12 +3,17 @@
 # Per-model rubric suites need the CPU judge: docker compose --profile judge up -d llm-judge
 #
 # Usage (run from anywhere — the script cd's to the promptfoo root):
-#   ./scripts/eval.sh                          # all models, default suites, + A/B compare
-#   ./scripts/eval.sh qwen3.6-35b              # one model, all its suites
-#   ./scripts/eval.sh --suite coding           # one suite, all models
-#   ./scripts/eval.sh --suite math qwen3.6-35b # one suite, one model
-#   ./scripts/eval.sh --tools [model]          # document-pipeline routing (opt-in)
-#   ./scripts/eval.sh --no-compare             # skip the A/B compare phase
+#   ./scripts/eval.sh                                   # all models, default suites, + A/B compare
+#   ./scripts/eval.sh qwen3.6-35b                       # one model, all its suites
+#   ./scripts/eval.sh gpt-oss-120b qwen3.6-35b ...      # several models (space-separated)
+#   ./scripts/eval.sh --suite coding                    # one suite, all models
+#   ./scripts/eval.sh --suite math qwen3.6-35b          # one suite, one model
+#   ./scripts/eval.sh --tools [model ...]               # document-pipeline routing (opt-in)
+#   ./scripts/eval.sh --no-compare                      # skip the A/B compare phase
+#
+# Multiple positional args = a model allowlist. Compare still runs (it reads
+# all providers from the compare config + cache), unless you pass exactly one
+# model (a single-model compare is meaningless) or --no-compare.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
@@ -36,7 +41,6 @@ COMPARE_SUITES = {'architecture', 'coding', 'calibration', 'brain-twisters'}
 
 args = sys.argv[1:]
 suite_filter = None
-model_filter = None
 do_compare = True
 
 new_args = []
@@ -55,15 +59,21 @@ while i < len(args):
         new_args.append(a)
     i += 1
 
-if new_args:
-    model_filter = new_args[0]
+# Positional args form a model allowlist (empty = all models).
+model_filters = set(new_args)
 
 config = yaml.safe_load(open(CONFIG_FILE))
+
+unknown = model_filters - set(config['models'])
+if unknown:
+    print(f'Unknown model(s): {", ".join(sorted(unknown))}', file=sys.stderr)
+    print(f'Available: {", ".join(config["models"])}', file=sys.stderr)
+    sys.exit(1)
 
 # Phase 1: per-model per-suite evals
 suites_run = set()
 for model, cfg in config['models'].items():
-    if model_filter and model != model_filter:
+    if model_filters and model not in model_filters:
         continue
     concurrency = cfg['concurrency']
     suites = [suite_filter] if suite_filter else cfg['suites']
@@ -85,8 +95,10 @@ for model, cfg in config['models'].items():
         )
         suites_run.add(suite)
 
-# Phase 2: blind A/B comparison across all models
-if do_compare and not model_filter:
+# Phase 2: blind A/B comparison. Skip for a single-model run (a select-best
+# of one is meaningless). For all-models or a multi-model allowlist it runs —
+# the compare config reads every provider from its own list + promptfoo cache.
+if do_compare and len(model_filters) != 1:
     compare_targets = suites_run & COMPARE_SUITES if suites_run else COMPARE_SUITES
     if suite_filter and suite_filter in COMPARE_SUITES:
         compare_targets = {suite_filter}
