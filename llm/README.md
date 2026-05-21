@@ -71,7 +71,25 @@ From outside the home network — connect via Tailscale, then any OpenAI-compati
 
 ## Evaluating models
 
-See [promptfoo/README.md](promptfoo/README.md) for the eval harness. Suites cover architecture/coding/math/tool-calls/large-code; the judge model (Selene-1-Mini, CPU-only) grades rubric-based suites.
+See [promptfoo/README.md](promptfoo/README.md) for the eval harness. Suites cover architecture/coding/math/tool-calls/large-code.
+
+Two judges, both Selene-1-Mini:
+- **`llm-judge`** — a standalone CPU-only container (port 11437), profile-gated. Used for per-model rubric grading, where it runs alongside the model under test (CPU keeps VRAM free for it).
+- **`selene`** — a GPU model inside llm-swap (port 11436). Used only for the A/B compare phase, which runs off cached outputs so the GPU is free.
+
+### Spinning the judge up / down
+
+`llm-judge` is opt-in via the `judge` compose profile, so a normal `docker compose up -d` never starts it.
+
+```bash
+# Up — before running rubric evals
+docker compose --profile judge up -d llm-judge
+
+# Down — when evals are done (frees the CPU/RAM, model stays in the HF cache)
+docker compose stop llm-judge && docker compose rm -f llm-judge
+```
+
+The GPU `selene` judge needs nothing extra — it's a model in `llm-swap.yaml` and loads on demand during the compare phase.
 
 ## Updating
 
