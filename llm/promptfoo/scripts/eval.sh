@@ -12,6 +12,7 @@
 #   ./scripts/eval.sh --suite coding               # one suite, all models
 #   ./scripts/eval.sh --suite math qwen3.6-35b     # one suite, one model
 #   ./scripts/eval.sh --tools [model ...]          # document-pipeline routing (opt-in)
+#   ./scripts/eval.sh --no-cache [...]             # disable promptfoo's response cache
 #
 # Positional args form a model allowlist (empty = all models).
 
@@ -22,6 +23,16 @@ cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to i
 # call absorbs that model load, so raise the per-request timeout from promptfoo's
 # 300000ms (5 min) default to 10 min.
 export REQUEST_TIMEOUT_MS="${REQUEST_TIMEOUT_MS:-600000}"
+
+# --no-cache disables promptfoo's response cache (agent + repo tasks are
+# nondeterministic — pass it for a guaranteed-fresh run). Strip it here so the
+# python arg parser below only sees suite/model args.
+args=()
+for a in "$@"; do
+  if [ "$a" = "--no-cache" ]; then export PROMPTFOO_CACHE_ENABLED=false
+  else args+=("$a"); fi
+done
+if [ "${#args[@]}" -gt 0 ]; then set -- "${args[@]}"; else set --; fi
 
 python3 - "$@" << 'EOF'
 import sys, os, subprocess, yaml

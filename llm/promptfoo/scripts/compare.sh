@@ -13,11 +13,21 @@
 # brain-twisters. Deterministic suites are excluded — A/B adds no signal when
 # an answer is simply right or wrong.
 #
-# NOTE: relies on promptfoo cache for the model generations. Do NOT set
-# PROMPTFOO_CACHE_ENABLED=false or every model will reload per test (thrash).
+# NOTE: relies on promptfoo cache for the model generations — it re-judges
+# existing responses. The --no-cache flag is available but forces a full
+# regenerate-and-judge (every model reloads per test = thrash); use sparingly.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root
+
+# --no-cache: opt out of the cached generations (forces fresh, slow). Strip it
+# before the positional suite arg is read.
+args=()
+for a in "$@"; do
+  if [ "$a" = "--no-cache" ]; then export PROMPTFOO_CACHE_ENABLED=false
+  else args+=("$a"); fi
+done
+if [ "${#args[@]}" -gt 0 ]; then set -- "${args[@]}"; else set --; fi
 
 ALL_COMPARE_SUITES=(architecture coding calibration brain-twisters)
 COMPARE_SUITES=("${ALL_COMPARE_SUITES[@]}")
