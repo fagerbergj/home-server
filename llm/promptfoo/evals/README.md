@@ -2,15 +2,25 @@
 
 *Last updated: 2026-05-22*
 
-| Model | architecture | coding | math | function-call | brain-twisters | cruxeval | calibration | hard-reasoning | large-code | tools |
+| Model | architecture | coding | math | chat | brain-twisters | cruxeval | calibration | hard-reasoning | agentic | tools |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| gpt-oss-120b | ✅ 8/10 (80%) 67t/s | ⚠️ 6/9 (67%) 67t/s | ✅ 10/10 (100%) 67t/s | ❌ 5/11 (45%) 51t/s | ⚠️ 7/9 (78%) 67t/s | ✅ 12/15 (80%) 66t/s | ✅ 10/10 (100%) 66t/s | ✅ 12/15 (80%) 62t/s | ✅ 4/5 (80%) | ⚠️ 10/14 (71%) |
-| qwen3-coder-next | ⚠️ 6/10 (60%) 45t/s | ❌ 3/9 (33%) 46t/s | ✅ 10/10 (100%) 45t/s | ⚠️ 7/11 (64%) 23t/s | ⚠️ 7/9 (78%) 46t/s | ✅ 12/15 (80%) 43t/s | ✅ 10/10 (100%) 45t/s | ⚠️ 11/15 (73%) 8t/s | ❌ 2/5 (40%) | ✅ 12/14 (86%) |
-| qwen3.5-9b | ⚠️ 6/10 (60%) 73t/s | ❌ 3/9 (33%) 69t/s | ✅ 10/10 (100%) 73t/s | ⚠️ 7/11 (64%) 51t/s | ⚠️ 6/9 (67%) 66t/s | ⚠️ 10/15 (67%) 67t/s | ✅ 10/10 (100%) 72t/s | ✅ 12/15 (80%) | — | — |
-| qwen3.6-35b | ✅ 9/10 (90%) 70t/s | ❌ 5/9 (56%) 70t/s | ✅ 10/10 (100%) 70t/s | ❌ 5/11 (45%) 64t/s | ⚠️ 7/9 (78%) 70t/s | ✅ 12/15 (80%) 69t/s | ✅ 10/10 (100%) 69t/s | ❌ 5/15 (33%) 69t/s | ❌ 1/5 (20%) | ✅ 13/14 (93%) |
+| gpt-oss-120b | ✅ 8/10 (80%) 67t/s | ⚠️ 6/9 (67%) 67t/s | ✅ 10/10 (100%) 67t/s | ❌ 0/4 (0%) 57t/s | ⚠️ 7/9 (78%) 67t/s | ✅ 12/15 (80%) 66t/s | ✅ 10/10 (100%) 66t/s | ✅ 12/15 (80%) 62t/s | ✅ 5/5 (100%) 44t/s | ⚠️ 10/14 (71%) |
+| qwen3-coder-next | ⚠️ 6/10 (60%) 45t/s | ❌ 3/9 (33%) 46t/s | ✅ 10/10 (100%) 45t/s | ❌ 0/4 (0%) 28t/s | ⚠️ 7/9 (78%) 46t/s | ✅ 12/15 (80%) 43t/s | ✅ 10/10 (100%) 45t/s | ⚠️ 11/15 (73%) 8t/s | ✅ 4/5 (80%) 10t/s | ✅ 12/14 (86%) |
+| qwen3.5-9b | ⚠️ 6/10 (60%) 73t/s | ❌ 3/9 (33%) 69t/s | ✅ 10/10 (100%) 73t/s | ❌ 0/4 (0%) 43t/s | ⚠️ 6/9 (67%) 66t/s | ⚠️ 10/15 (67%) 67t/s | ✅ 10/10 (100%) 72t/s | ✅ 12/15 (80%) | — | — |
+| qwen3.6-35b | ✅ 9/10 (90%) 70t/s | ❌ 5/9 (56%) 70t/s | ✅ 10/10 (100%) 70t/s | ❌ 0/4 (0%) 69t/s | ⚠️ 7/9 (78%) 70t/s | ✅ 12/15 (80%) 69t/s | ✅ 10/10 (100%) 69t/s | ❌ 5/15 (33%) 69t/s | ✅ 5/5 (100%) 39t/s | ✅ 13/14 (93%) |
 
 **Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors
 **tok/s:** median decode speed across all tests in that suite
+
+## Agentic efficiency
+
+Median over *solved* tasks — lower is more efficient (tokens include the cached prompt).
+
+| Model | solved | median tokens | median turns |
+| --- | --- | --- | --- |
+| gpt-oss-120b | 5/5 | 8,147 | 1 |
+| qwen3-coder-next | 4/5 | 8,361 | 1 |
+| qwen3.6-35b | 5/5 | 57,844 | 6 |
 
 ## Failures
 
@@ -153,129 +163,99 @@ Let&#x27;s craft answer.
 
 </details>
 
-### gpt-oss-120b — function-call (6 failures)
+### gpt-oss-120b — chat (4 failures)
 
 <details>
-<summary>BFCL simple_2: math.hypot</summary>
+<summary>summarize: meeting note → digest</summary>
 
 **Output:**
 
-<pre>{
-  &quot;name&quot;: &quot;math.hypot&quot;,
-  &quot;arguments&quot;: {
-    &quot;x&quot;: 4,
-    &quot;y&quot;: 5
-  }
-}</pre>
+<pre>Thinking: We need to produce a clear, thorough digest, preserving all meaningful entities, facts, claims, decisions, events. Drop filler. Off-topic mention of espresso machine is filler, can drop. Structure with headings: Overview, People, Events/Decisions, Open Questions maybe none.
+
+We must keep named entities, numbers, dates exactly. No paraphrasing proper nouns. So keep &quot;auth-rewrite&quot;, &quot;SOC2&quot;, &quot;Stripe&quot;, etc. Keep &quot;hotfix&quot;, &quot;refunds by EOW&quot;. Keep &quot;on-call rotation gap over the March 14-16 weekend&quot;. Decision: Marcus covers Saturday, Priya covers Sunday.
+
+We need to keep &quot;Priya shipped the auth-rewrite to staging Tuesday&quot;. The date of Tuesday relative to meeting date? Meeting is 2026-03-04 (Thursday). So Tuesday would be 2026-03-02. But we should keep as &quot;Tuesday&quot;. Keep as is.
+
+We must no …</pre>
 
 **Judge reasoning:**
-- *[baseline] calls hypot function* (score: 5.00) Assertion passed
-- *[proficient] correct arguments for sides 4 and 5* (score: 1.00) Grading passed
+- *[contract] Markdown, not longer than input* (score: 0.00) Custom function returned false !output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length
+- *[quality] preserves signal, drops filler* (score: 0.93) The reply preserves all named entities, numbers, and dates exactly as required, including Priya, Marcus, Dana, SOC2, Stripe, ~12 customers, 2026-02-28, and March 14-16. The reply effectively maintains focus on key decisions and events, clearly describes staging and billing processes, and conveys issue resolution, while omitting unnecessary details like the espresso machine mention. The reply effectively stays focused on the main topic and presents information supported by the original document …
 
 </details>
 
 <details>
-<summary>JSON: extract structured data from prose</summary>
+<summary>clarify: digest → clarified_text + confidence + questions</summary>
 
 **Output:**
 
-<pre>{&quot;name&quot;:&quot;Sarah Chen&quot;,&quot;age&quot;:28,&quot;role&quot;:&quot;DevOps engineer&quot;,&quot;city&quot;:&quot;Austin&quot;}</pre>
+<pre>Thinking: We need to produce a clarified, tightened version. Input digest:
+
+## Overview
+The team discussed the migration. They agreed to move it forward but someone raised concerns about the timeline.
+
+## Details
+The project is behind. The lead said it would slip if the dependency isn&#x27;t resolved. Later that day they decided to escalate. The number was higher than expected.
+
+We need to resolve ambiguous references: &quot;the migration&quot;, &quot;they&quot;, &quot;someone&quot;, &quot;the lead&quot;, &quot;the dependency&quot;, &quot;they decided to escalate&quot;, &quot;the number&quot;. We need to ask clarifying questions for ambiguous parts.
+
+We need to keep named entities, numbers, dates exactly. There are no dates or numbers given except &quot;the number was higher than expected&quot;. That&#x27;s ambiguous. So we ask about that.
+
+We need to produce a shorter, high-si …</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 1.00) Assertion passed
-- *[baseline] correct field values and types* (score: 5.00) all checks passed
+- *[contract] tagged format, shorter than input, questions for ambiguity* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] resolves references or asks, no invention* (score: 0.87) The reply effectively removes repetition and preserves meaningful content, but could improve by providing more specific names and details where possible. The reply effectively resolves vague references by raising clarifying questions and avoids inventing specifics, but could improve by providing more context for the questions. The reply effectively preserves entities and facts from the input digest without introducing new information, maintaining clarity and structure throughout the polished t …
 
 </details>
 
 <details>
-<summary>JSON: generate object satisfying a TypeScript interface</summary>
+<summary>classify: structured doc → tags JSON</summary>
 
 **Output:**
 
-<pre>Let&#x27;s produce something like:
+<pre>Thinking: We need to produce JSON with tags, summary, clarification_requests (empty if none), confidence.
 
-{
-  &quot;name&quot;: &quot;UserService&quot;,
-  &quot;port&quot;: 8080,
-  &quot;replicas&quot;: 3,
-  &quot;environment&quot;: &quot;production&quot;,
-  &quot;tags&quot;: [&quot;api&quot;, &quot;user&quot;]
-}
+First, reason about the document.
 
-Make sure JSON is valid. Return only JSON.
+1. Fundamentally about: a sourdough bread recipe and notes from a weekend bake.
 
-{
-  &quot;name&quot;: &quot;UserService&quot;,
-  &quot;port&quot;: 8080,
-  &quot;replicas&quot;: 3,
-  &quot;environment&quot;: &quot;production&quot;,
-  &quot;tags&quot;: [&quot;api&quot;, &quot;user&quot;]
-}</pre>
+2. Form: recipe (with ingredients, method, notes). Could be considered a cooking recipe.
+
+3. Topics/entities/themes: sourdough, bread baking, fermentation, temperature, hydration, Dutch oven, weekend bake.
+
+4. Draft tags: sourdough-bread, recipe, baking-technique, hydration-adjustment, weekend-bake (maybe). Need 2-6 tags.
+
+Make them specific: sourdough-loaf, bread-recipe, fermentation, Dutch-oven, hydration-adjustment.
+
+But tags should be lowercase hyphenated. Choose 4-5 tags.
+
+5. Abstract: 1-3 sentences summarizing.
+
+Now confidence: high.
+
+No clarification needed.
+
+Retu …</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 0.00) Expected output to be valid JSON
-- *[baseline] satisfies interface constraints* (score: 0.00) Custom function threw error: Unexpected token 'L', "Let's prod"... is not valid JSON Stack Trace: SyntaxError: Unexpected token 'L', "Let's prod"... is not valid JSON at JSON.parse (<anonymous>) at eval (eval at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:2038:34), <anonymous>:3:16) at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPc …
+- *[contract] valid JSON, 2-6 tags, confidence enum, abstract* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] tags specific and grounded* (score: 0.95) The reply accurately identifies specific tags and provides a detailed abstract, adhering to the evaluation criteria with relevant information from the document. The reply does not introduce new tags or summary content absent from the document, maintaining a high level of accuracy and relevance to the original text.
 
 </details>
 
 <details>
-<summary>Tool use: select the right tool and format the call as JSON</summary>
+<summary>contextual: situate a chunk for retrieval</summary>
 
 **Output:**
 
-<pre>{&quot;tool&quot;:&quot;search_web&quot;,&quot;params&quot;:{&quot;query&quot;:&quot;current weather in Tokyo&quot;}}</pre>
+<pre>Thinking: We need to produce a short context 1-2 sentences that situates the chunk within the overall document. The chunk is about reliability incidents. So context: It&#x27;s under the Reliability section of Q1 Infrastructure Review, describing two SEV-2 DNS incidents and mitigation. Provide that.
+
+In the Q1 Infrastructure Review’s “Reliability” section, this note records two SEV‑2 DNS‑related incidents and the mitigation step of adding a secondary resolver.</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] correct tool selected with required params* (score: 5.00) all checks passed
-
-</details>
-
-<details>
-<summary>Tool use: pick between two plausible tools</summary>
-
-**Output:**
-
-<pre>{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) AS signup_count FROM users WHERE signup_date &gt;= CURRENT_DATE - INTERVAL &#x27;7 days&#x27;;&quot;}}</pre>
-
-**Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] query_db selected with SQL param* (score: 5.00) all checks passed
-
-</details>
-
-<details>
-<summary>YAML: generate a valid Docker Compose service definition</summary>
-
-**Output:**
-
-<pre>Let&#x27;s craft:
-
-services:
-  db:
-    image: postgres:15
-    ports:
-      - &quot;5432:5432&quot;
-    environment:
-      POSTGRES_DB: myapp
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-That&#x27;s it.
-
-services:
-  db:
-    image: postgres:15
-    ports:
-      - &quot;5432:5432&quot;
-    environment:
-      POSTGRES_DB: myapp
-    volumes:
-      - pgdata:/var/lib/postgresql/data</pre>
-
-**Judge reasoning:**
-- *[baseline] required components present* (score: 0.00) output must start with "services:" (got: Let's craft: services: db: image:)
-- *[proficient] parseable YAML with correct structure* (score: 5.00) all checks passed
+- *[contract] 1-2 sentences, no preamble/quotes/labels* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] situates the chunk within the document* (score: 0.95) The reply clearly mentions SEV-2 DNS incidents and the Q1 Infrastructure Review's Reliability section, meeting all evaluation criteria. The reply effectively situates the chunk within the document's Reliability section and clearly distinguishes it from other sections like Costs and Roadmap without introducing invented details.
 
 </details>
 
@@ -482,20 +462,6 @@ C</pre>
 
 **Judge reasoning:**
 - *[baseline] correct answer C (van't Hoff i=2, 0.1m × 1.86 × 2)* (score: 0.00) Custom function returned false (/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0
-
-</details>
-
-### gpt-oss-120b — large-code (1 failures)
-
-<details>
-<summary>Large code: Flappy Bird in Python</summary>
-
-**Output:**
-
-<pre>[{&#x27;type&#x27;: &#x27;function&#x27;, &#x27;function&#x27;: {&#x27;name&#x27;: &#x27;write_file&#x27;, &#x27;arguments&#x27;: &#x27;{\n  &quot;path&quot;: &quot;solution.py&quot;,\n  &quot;content&quot;: &quot;import pygame\\nimport random\\n\\n# Constants for the game\\nSCREEN_WIDTH = 288\\nSCREEN_HEIGHT = 512\\nGRAVITY = 0.5\\nJUMP_STRENGTH = 10\\nPIPE_SPEED = 2\\nPIPE_WIDTH = 52\\nGAP_HEIGHT = 100\\nBIRD_WIDTH = 34\\nBIRD_HEIGHT = 24\\n\\nclass Bird:\\n    \\&quot;\\&quot;\\&quot;Simple bird representation.\\n\\n    Attributes\\n    ----------\\n    x: int\\n        Horizontal position (constant for this simple implementation).\\n    y: float\\n        Vertical position.\\n    velocity: float\\n        Current vertical velocity.\\n    \\&quot;\\&quot;\\&quot;\\n\\n    def __init__(self, x: int = SCREEN_WIDTH // 4, y: int = SCREEN_HEIGHT // 2):\\n        self.x = x\\n        self.y = float(y)\\n        self.vel …</pre>
-
-**Judge reasoning:**
-- *[code] flappy_bird compiles + passes pytest* (score: 0.00) runner error: Unexpected token 'p', "pygame 2.6"... is not valid JSON
 
 </details>
 
@@ -851,63 +817,83 @@ Specifically:
 
 </details>
 
-### qwen3-coder-next — function-call (4 failures)
+### qwen3-coder-next — chat (4 failures)
 
 <details>
-<summary>JSON: extract structured data from prose</summary>
+<summary>summarize: meeting note → digest</summary>
 
 **Output:**
 
-<pre>{&quot;name&quot;:&quot;Sarah Chen&quot;,&quot;age&quot;:28,&quot;role&quot;:&quot;DevOps engineer&quot;,&quot;city&quot;:&quot;Austin&quot;}</pre>
+<pre># Standup 2026-03-04
+
+## Attendees
+- Priya  
+- Marcus  
+- Dana  
+
+## Key Updates &amp; Decisions
+- **Auth-rewrite**: Priya shipped to staging Tuesday; rollout to production blocked on SOC2 review (owner: Dana, due Friday).  
+- **Billing webhook regression**: Marcus identified issue where Stripe retries caused double-charging for ~12 customers since the 2026-02-28 deploy; hotfix shipping today, refunds to be processed by end of week.  
+- **On-call rotation gap**: Dana raised coverage gap for March 14–16 weekend; decision: Marcus covers Saturday, Priya covers Sunday.  
+
+## Off-topic
+- New espresso machine arrives next week.</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 1.00) Assertion passed
-- *[baseline] correct field values and types* (score: 5.00) all checks passed
+- *[contract] Markdown, not longer than input* (score: 0.00) Custom function returned false !output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length
+- *[quality] preserves signal, drops filler* (score: 0.90) All named entities, numbers, and dates are preserved exactly as required. The reply effectively maintains focus on key decisions and events, clearly describes staging and billing processes, and conveys issue resolution, while omitting unnecessary details. The reply effectively stays focused on the main topic but includes an off-topic section about the espresso machine, which could be omitted to improve relevance.
 
 </details>
 
 <details>
-<summary>JSON: generate object satisfying a TypeScript interface</summary>
+<summary>clarify: digest → clarified_text + confidence + questions</summary>
+
+**Output:**
+
+<pre>&lt;clarified_text&gt;
+- The team discussed the migration and agreed to proceed, but concerns about the timeline were raised.
+- The project is behind schedule.
+- The lead stated the timeline would slip if the dependency is not resolved.
+- Later that day, the team decided to escalate the issue.
+- The dependency issue was higher than expected.
+&lt;/clarified_text&gt;
+&lt;confidence&gt;medium&lt;/confidence&gt;
+&lt;questions&gt;[{&quot;segment&quot;: &quot;the dependency&quot;, &quot;question&quot;: &quot;What is the specific dependency (e.g., name, component, or team)?&quot;}, {&quot;segment&quot;: &quot;the number was higher than expected&quot;, &quot;question&quot;: &quot;What does &#x27;the number&#x27; refer to (e.g., effort estimate, defect count, cost, or timeline delta)?&quot;}]&lt;/questions&gt;</pre>
+
+**Judge reasoning:**
+- *[contract] tagged format, shorter than input, questions for ambiguity* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] resolves references or asks, no invention* (score: 0.73) The reply effectively removes repetition and preserves key claims and events, but could improve by resolving cross-references more clearly and providing more specific details. The reply resolves some vague references but leaves others, such as 'later that day' and 'the project', without specific details, and raises clarifying questions for 'the dependency' and 'the number'. The reply does not introduce new entities, but lacks specificity in some areas, such as the dependency and 'the number'.
+
+</details>
+
+<details>
+<summary>classify: structured doc → tags JSON</summary>
 
 **Output:**
 
 <pre>{
-  &quot;name&quot;: &quot;api-gateway&quot;,
-  &quot;port&quot;: 8080,
-  &quot;replicas&quot;: 3,
-  &quot;environment&quot;: &quot;production&quot;,
-  &quot;tags&quot;: [&quot;backend&quot;, &quot;api&quot;, &quot;critical&quot;]
+  &quot;tags&quot;: [&quot;sourdough-bread&quot;, &quot;weekend-bake&quot;, &quot;dutch-oven-baking&quot;, &quot;cold-proofing&quot;, &quot;recipe-adjustment&quot;],
+  &quot;summary&quot;: &quot;A detailed sourdough bread recipe with ingredient weights, step-by-step fermentation and baking instructions (including autolyse, folds, bulk fermentation, cold proofing, and Dutch oven baking), along with a post-bake note recommending reduced water content for easier shaping.&quot;,
+  &quot;clarification_requests&quot;: [],
+  &quot;confidence&quot;: &quot;high&quot;
 }</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 1.00) Assertion passed
-- *[baseline] satisfies interface constraints* (score: 5.00) all checks passed
+- *[contract] valid JSON, 2-6 tags, confidence enum, abstract* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] tags specific and grounded* (score: 0.95) The reply accurately describes the document as a sourdough bread recipe with specific tags and a detailed abstract, but could be improved with more concise language. The reply accurately represents the document without introducing extraneous information or unsupported summary content.
 
 </details>
 
 <details>
-<summary>Tool use: select the right tool and format the call as JSON</summary>
+<summary>contextual: situate a chunk for retrieval</summary>
 
 **Output:**
 
-<pre>{&quot;tool&quot;: &quot;search_web&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;current weather in Tokyo&quot;}}</pre>
+<pre>This chunk belongs to the Reliability section, describing two SEV-2 DNS incidents and their mitigation, distinct from the cost and roadmap topics covered in other sections.</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] correct tool selected with required params* (score: 5.00) all checks passed
-
-</details>
-
-<details>
-<summary>Tool use: pick between two plausible tools</summary>
-
-**Output:**
-
-<pre>{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) FROM users WHERE created_at &gt;= NOW() - INTERVAL &#x27;7 days&#x27;&quot;}}</pre>
-
-**Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] query_db selected with SQL param* (score: 5.00) all checks passed
+- *[contract] 1-2 sentences, no preamble/quotes/labels* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] situates the chunk within the document* (score: 0.95) The reply clearly identifies the chunk as part of the Reliability section, specifically mentioning SEV-2 DNS incidents and their mitigation. Clearly situates the chunk within the Reliability section and distinguishes it from other sections without introducing invented details.
 
 </details>
 
@@ -1066,41 +1052,17 @@ But here&#x27;s the real issue:
 
 </details>
 
-### qwen3-coder-next — large-code (3 failures)
+### qwen3-coder-next — agentic (1 failures)
 
 <details>
-<summary>Large code: SQLite job queue</summary>
+<summary>agentic: SQLite job queue</summary>
 
 **Output:**
 
-<pre>[{&#x27;type&#x27;: &#x27;function&#x27;, &#x27;function&#x27;: {&#x27;name&#x27;: &#x27;write_file&#x27;, &#x27;arguments&#x27;: &#x27;{&quot;path&quot;:&quot;solution.py&quot;,&quot;content&quot;:&quot;import sqlite3\\nfrom typing import Optional\\n\\n\\nclass JobQueue:\\n    MAX_RETRIES = 3\\n\\n    def __init__(self, db_path: str):\\n        self.db_path = db_path\\n        self._conn = sqlite3.connect(db_path)\\n        self._create_tables()\\n\\n    def _create_tables(self):\\n        cursor = self._conn.cursor()\\n        cursor.execute(\\&quot;\\&quot;\\&quot;\\n            CREATE TABLE IF NOT EXISTS jobs (\\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\\n                payload TEXT NOT NULL,\\n                retries INTEGER DEFAULT 0\\n            )\\n        \\&quot;\\&quot;\\&quot;)\\n        cursor.execute(\\&quot;\\&quot;\\&quot;\\n            CREATE TABLE IF NOT EXISTS dlq (\\n                id INTEGER PRI …</pre>
+<pre>{&quot;task&quot;:&quot;job_queue&quot;,&quot;passed&quot;:4,&quot;total&quot;:6,&quot;turns&quot;:1,&quot;tokens&quot;:8457}</pre>
 
 **Judge reasoning:**
-- *[code] job_queue compiles + passes pytest* (score: 3.33) 4/6 pytest — 4/6 pytest passed
-
-</details>
-
-<details>
-<summary>Large code: Rate-limited async HTTP client</summary>
-
-**Output:**
-
-<pre>[{&#x27;type&#x27;: &#x27;function&#x27;, &#x27;function&#x27;: {&#x27;name&#x27;: &#x27;write_file&#x27;, &#x27;arguments&#x27;: &#x27;{&quot;path&quot;:&quot;solution.py&quot;,&quot;content&quot;:&quot;import asyncio\\nimport aiohttp\\nimport time\\nfrom collections import deque\\n\\n\\nclass RateLimiter:\\n    \\&quot;\\&quot;\\&quot;Token bucket rate limiter for controlling request rate.\\&quot;\\&quot;\\&quot;\\n    \\n    def __init__(self, rate: int):\\n        self.rate = rate  # requests per second\\n        self.tokens = rate\\n        self.last_update = time.monotonic()\\n        self.lock = asyncio.Lock()\\n    \\n    async def acquire(self):\\n        \\&quot;\\&quot;\\&quot;Acquire a token, waiting if necessary.\\&quot;\\&quot;\\&quot;\\n        async with self.lock:\\n            now = time.monotonic()\\n            # Add tokens based on time elapsed\\n            elapsed = now - self.last_update\\n            self.tokens = min(sel …</pre>
-
-**Judge reasoning:**
-- *[code] rate_limiter compiles + passes pytest* (score: 0.00) runner error: spawnSync /bin/sh ETIMEDOUT
-
-</details>
-
-<details>
-<summary>Large code: Flappy Bird in Python</summary>
-
-**Output:**
-
-<pre>[{&#x27;type&#x27;: &#x27;function&#x27;, &#x27;function&#x27;: {&#x27;name&#x27;: &#x27;write_file&#x27;, &#x27;arguments&#x27;: &#x27;{&quot;path&quot;:&quot;solution.py&quot;,&quot;content&quot;:&quot;import pygame\\n\\n\\nclass Bird:\\n    def __init__(self, x: int, y: int):\\n        self.x = x\\n        self.y = y\\n        self.velocity = 0\\n        self.radius = 15\\n        self.gravity = 0.5\\n        self.jump_strength = -8\\n\\n    def update(self):\\n        self.velocity += self.gravity\\n        self.y += self.velocity\\n\\n    def jump(self):\\n        self.velocity = self.jump_strength\\n\\n    def draw(self, surface):\\n        pygame.draw.circle(surface, (255, 255, 0), (int(self.x), int(self.y)), self.radius)\\n\\n\\nclass Pipe:\\n    def __init__(self, x: int, gap_y: int):\\n        self.x = x\\n        self.gap_y = gap_y\\n        self.width = 50\\n        self.gap_ …</pre>
-
-**Judge reasoning:**
-- *[code] flappy_bird compiles + passes pytest* (score: 0.00) runner error: Unexpected token 'p', "pygame 2.6"... is not valid JSON
+- *[agentic] job_queue hidden pytest* (score: 0.00) Custom function returned false (() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()
 
 </details>
 
@@ -1374,62 +1336,90 @@ When you define `events` as `unknown[]`, TypeScript treats every element as pote
 
 </details>
 
-### qwen3.5-9b — function-call (4 failures)
+### qwen3.5-9b — chat (4 failures)
 
 <details>
-<summary>JSON: extract structured data from prose</summary>
+<summary>summarize: meeting note → digest</summary>
+
+**Output:**
+
+<pre># Overview
+- **Standup Date**: 2026-03-04
+- **Attendees**: Priya, Marcus, Dana
+
+# People &amp; Roles
+- **Priya**: Shipped `auth-rewrite` to staging; covering Sunday for on-call.
+- **Marcus**: Identified billing webhook regression; covering Saturday for on-call.
+- **Dana**: Owner of SOC2 review; raised on-call rotation gap.
+
+# Events &amp; Decisions
+- **Deployment Status**:
+  - `auth-rewrite`: Shipped to staging on Tuesday.
+  - Rollout to prod is blocked pending SOC2 review.
+- **Incident**:
+  - Regression found in billing webhook following the 2026-02-28 deploy.
+  - Impact: Stripe retries caused double-charging for ~12 customers.
+  - Action: Hotfix deploying today; refunds to be processed by End of Week (EOW).
+- **On-Call Gap Resolution**:
+  - Gap identified for the March 14-16 weekend.
+  - Decisio …</pre>
+
+**Judge reasoning:**
+- *[contract] Markdown, not longer than input* (score: 0.00) Custom function returned false !output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length
+- *[quality] preserves signal, drops filler* (score: 0.97) All named entities, numbers, and dates are preserved exactly as required. The reply effectively maintains focus on key decisions and events, clearly describes staging and billing processes, and conveys issue resolution, while omitting unnecessary details like the espresso machine mention. The reply effectively stays focused on the main topic and only presents information supported by the original document without introducing external facts or inventing new information.
+
+</details>
+
+<details>
+<summary>clarify: digest → clarified_text + confidence + questions</summary>
+
+**Output:**
+
+<pre>&lt;clarified_text&gt;
+# Migration Project Status
+
+**Current State:** The project is behind schedule.
+**Risk:** The lead indicated the timeline will slip unless the dependency is resolved.
+**Action:** The team agreed to move forward with the migration but decided to escalate the issue later that day due to the number of issues being higher than expected.
+**Concerns:** Specific concerns regarding the timeline were raised by team members.
+&lt;/clarified_text&gt;
+&lt;confidence&gt;low&lt;/confidence&gt;
+&lt;questions&gt;[{&quot;segment&quot;: &quot;The number was higher than expected&quot;, &quot;question&quot;: &quot;What specific metric or number is higher than expected?&quot;}, {&quot;segment&quot;: &quot;Later that day&quot;, &quot;question&quot;: &quot;What is the specific date or time reference for &#x27;later that day&#x27;?&quot;}]&lt;/questions&gt;</pre>
+
+**Judge reasoning:**
+- *[contract] tagged format, shorter than input, questions for ambiguity* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] resolves references or asks, no invention* (score: 0.73) The reply effectively removes repetition and preserves key claims and events, but could improve by resolving cross-references and providing more specific information. The reply resolves some vague references but leaves others, such as 'the number' and 'later that day', which are raised as clarifying questions, but could be more specific in resolving 'they' and 'the project' to specific names or entities. The reply maintains most entities and facts but introduces minor ambiguity with 'the numbe …
+
+</details>
+
+<details>
+<summary>classify: structured doc → tags JSON</summary>
 
 **Output:**
 
 <pre>{
-  &quot;name&quot;: &quot;Sarah Chen&quot;,
-  &quot;age&quot;: 28,
-  &quot;role&quot;: &quot;DevOps engineer&quot;,
-  &quot;city&quot;: &quot;Austin&quot;
+  &quot;tags&quot;: [&quot;sourdough-baking&quot;, &quot;bread-recipe&quot;, &quot;dutch-oven&quot;, &quot;cold-proofing&quot;, &quot;baking-notes&quot;],
+  &quot;summary&quot;: &quot;This document provides a structured recipe for a weekend sourdough loaf, detailing specific ingredient ratios, a step-by-step fermentation and baking method using a Dutch oven, and a note on adjusting hydration for better shaping.&quot;,
+  &quot;clarification_requests&quot;: [],
+  &quot;confidence&quot;: &quot;high&quot;
 }</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 1.00) Assertion passed
-- *[baseline] correct field values and types* (score: 5.00) all checks passed
+- *[contract] valid JSON, 2-6 tags, confidence enum, abstract* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] tags specific and grounded* (score: 0.95) The reply accurately describes the document as a sourdough bread recipe with specific tags and a clear abstract, but could be improved with more detailed tags. The reply accurately reflects the content without introducing extraneous information or unsupported summary content.
 
 </details>
 
 <details>
-<summary>JSON: generate object satisfying a TypeScript interface</summary>
+<summary>contextual: situate a chunk for retrieval</summary>
 
 **Output:**
 
-<pre>{&quot;name&quot;:&quot;my-service&quot;,&quot;port&quot;:8080,&quot;replicas&quot;:2,&quot;environment&quot;:&quot;production&quot;,&quot;tags&quot;:[&quot;web&quot;,&quot;api&quot;]}</pre>
+<pre>This chunk details the specific reliability incidents and their mitigation strategy, serving as the core content under the &quot;Reliability&quot; section of the infrastructure review. It is distinct from other sections by focusing exclusively on operational stability issues rather than financial costs or future migration plans.</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 1.00) Assertion passed
-- *[baseline] satisfies interface constraints* (score: 5.00) all checks passed
-
-</details>
-
-<details>
-<summary>Tool use: select the right tool and format the call as JSON</summary>
-
-**Output:**
-
-<pre>{&quot;tool&quot;: &quot;search_web&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;current weather in Tokyo&quot;}}</pre>
-
-**Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] correct tool selected with required params* (score: 5.00) all checks passed
-
-</details>
-
-<details>
-<summary>Tool use: pick between two plausible tools</summary>
-
-**Output:**
-
-<pre>{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) FROM users WHERE signup_date &gt;= CURRENT_DATE - INTERVAL &#x27;7 days&#x27;&quot;}}</pre>
-
-**Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 1.00) Assertion passed
-- *[baseline] query_db selected with SQL param* (score: 5.00) all checks passed
+- *[contract] 1-2 sentences, no preamble/quotes/labels* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] situates the chunk within the document* (score: 0.95) The reply explicitly mentions reliability incidents and their mitigation, clearly situating the chunk within the Reliability section of the Q1 Infrastructure Review. The reply effectively situates the chunk within the document and clearly distinguishes it from other sections like costs and roadmap without introducing invented details.
 
 </details>
 
@@ -1823,182 +1813,92 @@ This implies R cannot be in 1st place, because there is no po …</pre>
 
 </details>
 
-### qwen3.6-35b — function-call (6 failures)
+### qwen3.6-35b — chat (4 failures)
 
 <details>
-<summary>BFCL simple_2: math.hypot</summary>
+<summary>summarize: meeting note → digest</summary>
 
 **Output:**
 
-<pre>{&quot;name&quot;: &quot;math.hypot&quot;, &quot;arguments&quot;: {&quot;x&quot;: 4, &quot;y&quot;: 5}}</pre>
+<pre>Thinking: Here&#x27;s a thinking process:
+
+1.  **Analyze User Input:**
+   - **Input Document:** A short standup meeting note from 2026-03-04.
+   - **Goal:** Reduce noise without losing signal. Keep every meaningful entity, fact, claim, decision, event. Drop filler. When in doubt, keep it.
+   - **Structure:** Markdown headings, flexible sections (Overview, People, Events/Decisions, Open questions, etc.). Omit non-applicable sections.
+   - **Rules:** Preserve named entities, numbers, dates exactly. Don&#x27;t paraphrase proper nouns. Don&#x27;t invent facts. Keep if unsure. Output must not be longer than input. Plain Markdown only.
+
+2.  **Deconstruct Input Document:**
+   - *Date/Context:* Standup 2026-03-04
+   - *Attendees:* Priya, Marcus, Dana
+   - *Priya&#x27;s update:* Shipped auth-rewrite to staging Tuesday …</pre>
 
 **Judge reasoning:**
-- *[baseline] calls hypot function* (score: 5.00) Assertion passed
-- *[proficient] correct arguments for sides 4 and 5* (score: 1.00) Grading passed
+- *[contract] Markdown, not longer than input* (score: 0.00) Custom function returned false !output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length
+- *[quality] preserves signal, drops filler* (score: 0.97) The reply preserves all named entities, numbers, and dates exactly as required, including Priya, Marcus, Dana, SOC2, Stripe, ~12 customers, 2026-02-28, and March 14-16. The reply effectively maintains focus on key decisions and events, clearly describes staging and billing processes, and conveys issue resolution while adhering to the specified structure and rules. The reply effectively drops off-topic content and invents no facts, maintaining focus on the main topic and adhering to the origina …
 
 </details>
 
 <details>
-<summary>JSON: extract structured data from prose</summary>
+<summary>clarify: digest → clarified_text + confidence + questions</summary>
 
 **Output:**
 
-<pre>2.  **Extract Information:**
-   - `name`: &quot;Sarah Chen&quot;
-   - `age`: 28 (must be integer)
-   - `role`: &quot;DevOps engineer&quot;
-   - `city`: &quot;Austin&quot; (or &quot;Austin, Texas&quot;? The prompt says `city`, so just &quot;Austin&quot; is safer, but I&#x27;ll stick to &quot;Austin&quot;.)
+<pre>Thinking: Here&#x27;s a thinking process:
 
-3.  **Construct JSON:**
-   ```json
-   {
-     &quot;name&quot;: &quot;Sarah Chen&quot;,
-     &quot;age&quot;: 28,
-     &quot;role&quot;: &quot;DevOps engineer&quot;,
-     &quot;city&quot;: &quot;Austin&quot;
-   }
-   ```
-
-4.  **Check Constraints:**
-   - Exactly these fields? Yes.
-   - `name` string? Yes.
-   - `age` integer? Yes.
-   - `role` string? Yes.
-   - `city` string? Yes.
-   - ONLY JSON object, no markdown fences, no explanation? Yes. I will output raw JSON text.
-
-   Wait, should I include &quot;Texas&quot; in city? Usually, city extraction just takes the city name. I&#x27;ll use &quot;Austin&quot;.
-   Let&#x27;s verify format: `{&quot;name&quot;:&quot;Sarah C …</pre>
+1.  **Analyze User Input:**
+   - **Input Text:** A short digest about a migration project.
+     - Overview: Team discussed migration, agreed to move forward, someone raised timeline concerns.
+     - Details: Project is behind. Lead said it would slip if dependency isn&#x27;t resolved. Later that day they decided to escalate. The number was higher than expected.
+   - **Goal:** Tighten into a smaller, high-signal version. Clear, unambiguous, structured as a complete record. Monotonic noise reduction. Keep meaningful entities, claims, events, decisions. Resolve cross-references. Remove repetition. Ask clarifying questions for ambiguities/contradictions/unpinable references. Don&#x27;t invent facts. Output must be shorter.
+   - **Format Requirements:** Exactly:
+     …</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 0.00) Expected output to be valid JSON
-- *[baseline] correct field values and types* (score: 0.00) Custom function threw error: Unterminated fractional number in JSON at position 2 (line 1 column 3) Stack Trace: SyntaxError: Unterminated fractional number in JSON at position 2 (line 1 column 3) at JSON.parse (<anonymous>) at eval (eval at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:2038:34), <anonymous>:3:16) at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/prompt …
+- *[contract] tagged format, shorter than input, questions for ambiguity* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] resolves references or asks, no invention* (score: 0.83) The reply effectively tightens the digest, removes repetition, and preserves meaningful content while maintaining clarity and concision, but minor improvements could enhance specificity and reduce ambiguity. The reply effectively resolves vague references by structuring the text clearly and raising specific questions for ambiguities, but could improve by directly addressing all instances of vague language in the original prompt. The reply effectively preserves entities, numbers, and dates from …
 
 </details>
 
 <details>
-<summary>JSON: generate object satisfying a TypeScript interface</summary>
+<summary>classify: structured doc → tags JSON</summary>
 
 **Output:**
 
-<pre>2.  **Determine JSON Structure:**
-   Need to create a JSON object with keys matching the interface:
-   ```json
-   {
-     &quot;name&quot;: &quot;my-service&quot;,
-     &quot;port&quot;: 8080,
-     &quot;replicas&quot;: 3,
-     &quot;environment&quot;: &quot;production&quot;,
-     &quot;tags&quot;: [&quot;web&quot;, &quot;api&quot;]
-   }
-   ```
-
-3.  **Validate Constraints:**
-   - `name`: &quot;my-service&quot; -&gt; non-empty string. Valid.
-   - `port`: 8080 -&gt; between 1 and 65535. Valid.
-   - `replicas`: 3 -&gt; &gt;= 1. Valid.
-   - `environment`: &quot;production&quot; -&gt; matches allowed values. Valid.
-   - `tags`: [&quot;web&quot;, &quot;api&quot;] -&gt; array of strings, length &gt;= 1. Valid.
-
-4.  **Format Output:**
-   - Must be strictly JSON.
-   - No markdown code blocks (```).
-   - No extra text.
-   - Just the raw JSON string.
-
-   Draft:
-   {&quot;name&quot;:&quot;api-gateway&quot;,&quot;port&quot;:443,&quot;replicas&quot;:2,&quot;environment&quot;:&quot;staging&quot;,&quot;tags&quot;:[&quot;backend …</pre>
+<pre>{
+  &quot;tags&quot;: [&quot;sourdough-recipe&quot;, &quot;bread-baking&quot;, &quot;dutch-oven-method&quot;, &quot;fermentation-guide&quot;, &quot;baking-log&quot;],
+  &quot;summary&quot;: &quot;A structured recipe and baking log for a weekend sourdough loaf, detailing precise ingredients, a step-by-step fermentation and baking process, and post-bake notes for future water adjustments.&quot;,
+  &quot;clarification_requests&quot;: [],
+  &quot;confidence&quot;: &quot;high&quot;
+}</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON* (score: 0.00) Expected output to be valid JSON
-- *[baseline] satisfies interface constraints* (score: 0.00) Custom function threw error: Unterminated fractional number in JSON at position 2 (line 1 column 3) Stack Trace: SyntaxError: Unterminated fractional number in JSON at position 2 (line 1 column 3) at JSON.parse (<anonymous>) at eval (eval at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:2038:34), <anonymous>:3:16) at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/prompt …
+- *[contract] valid JSON, 2-6 tags, confidence enum, abstract* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] tags specific and grounded* (score: 0.90) The reply accurately describes the document as a sourdough bread recipe with specific tags and a clear abstract, but could be improved with more concise language. The reply accurately represents the document without introducing extraneous information, but could improve by strictly adhering to the lowercase and hyphenated tag format.
 
 </details>
 
 <details>
-<summary>Tool use: select the right tool and format the call as JSON</summary>
+<summary>contextual: situate a chunk for retrieval</summary>
 
 **Output:**
 
-<pre>The request is about current weather, which is real-time information not typically stored in a local database (unless it&#x27;s a specific weather DB, but `search_web` is the general tool for &quot;current information&quot;).
-Therefore, `search_web` is the appropriate tool.
-The query should be &quot;current weather in Tokyo&quot;.
+<pre>Thinking: Here&#x27;s a thinking process:
 
-Constructing the JSON:
-Tool: &quot;search_web&quot;
-Params: {&quot;query&quot;: &quot;current weather in Tokyo&quot;}
+1.  **Analyze User Input:**
+   - **Document:** A short infrastructure review with three sections: Costs, Reliability, Roadmap.
+   - **Chunk:** &quot;Two SEV-2 incidents, both DNS-related. Mitigation: secondary resolver.&quot;
+   - **Task:** Provide a short, succinct context (1-2 sentences) that situates this chunk within the overall document for search retrieval purposes.
+   - **Requirements:** Identify what the chunk is about, where it fits in the document&#x27;s structure, and what makes it distinct. Answer with *only* the context. No preamble, no quotes, no labels.
 
-Final JSON:
-{&quot;tool&quot;: &quot;search_web&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;current weather in Tokyo&quot;}}
-
-
-{&quot;tool&quot;: &quot;search_web&quot;, &quot;params&quot;: {&quot;query&quot;: &quot;current weather in Tokyo&quot;}}</pre>
-
-**Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 0.00) Expected output to be valid JSON
-- *[baseline] correct tool selected with required params* (score: 0.00) Custom function threw error: Unexpected token 'T', "The reques"... is not valid JSON Stack Trace: SyntaxError: Unexpected token 'T', "The reques"... is not valid JSON at JSON.parse (<anonymous>) at eval (eval at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:2038:34), <anonymous>:3:19) at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPc …
-
-</details>
-
-<details>
-<summary>Tool use: pick between two plausible tools</summary>
-
-**Output:**
-
-<pre>JSON structure:
-`{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) FROM users WHERE signup_date &gt;= CURRENT_DATE - INTERVAL &#x27;7 days&#x27;&quot;}}`
-
-Wait, the prompt asks for a single JSON tool call.
-I should provide the JSON.
-
-Let&#x27;s refine the SQL to be safe.
-`SELECT COUNT(*) FROM users WHERE signup_date &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY)`
-Or just `SELECT COUNT(*) FROM users WHERE signup_date &gt; CURRENT_DATE - 7`
-I&#x27;ll use a standard SQL query.
-
-Final JSON:
-{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) FROM users WHERE signup_date &gt;= CURRENT_DATE - INTERVAL &#x27;7 days&#x27;&quot;}}
-
-
-{&quot;tool&quot;: &quot;query_db&quot;, &quot;params&quot;: {&quot;sql&quot;: &quot;SELECT COUNT(*) FROM users WHERE signup_date &gt;= CURRENT_DATE - INTERVAL &#x27;7 days&#x27;&quot;}}</pre>
+2.  **Deconstruct the Chunk:**
+   - Content: Reports two SEV-2 incidents related to DNS and the mitigation strategy (secondary resolver).
+   - Location in Document: Under the &quot;Reliability&quot; section.
+    …</pre>
 
 **Judge reasoning:**
-- *[baseline] syntactically valid JSON tool call* (score: 0.00) Expected output to be valid JSON
-- *[baseline] query_db selected with SQL param* (score: 0.00) Custom function threw error: Unexpected token 'J', "JSON struc"... is not valid JSON Stack Trace: SyntaxError: Unexpected token 'J', "JSON struc"... is not valid JSON at JSON.parse (<anonymous>) at eval (eval at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:2038:34), <anonymous>:3:19) at handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPc …
-
-</details>
-
-<details>
-<summary>YAML: generate a valid Docker Compose service definition</summary>
-
-**Output:**
-
-<pre>Let&#x27;s construct the YAML:
-```yaml
-services:
-  db:
-    image: postgres:15
-    ports:
-      - &quot;5432:5432&quot;
-    environment:
-      POSTGRES_DB: myapp
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-```
-
-Check requirements:
-- service name: db -&gt; yes
-- image: postgres:15 -&gt; yes
-- host port 5432 mapped to container port 5432 -&gt; yes
-- environment variable POSTGRES_DB set to myapp -&gt; yes
-- named volume pgdata mounted at /var/lib/postgresql/data -&gt; yes
-- Return ONLY the YAML starting with &quot;services:&quot; — no markdown fences. -&gt; yes
-
-Wait, Docker Compose v3 usually requires volumes to be defined at the top level if named volumes are used, but the prompt specifically asks for a &quot;services block&quot;. I will just provide the services block as requested. Sometimes it&#x27;s better to include the volumes section …</pre>
-
-**Judge reasoning:**
-- *[baseline] required components present* (score: 0.00) output must start with "services:" (got: Let's construct the YAML: services: db)
-- *[proficient] parseable YAML with correct structure* (score: 5.00) all checks passed
+- *[contract] 1-2 sentences, no preamble/quotes/labels* (score: 0.00) Custom function threw error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined Stack Trace: Error: Custom function must return a boolean, number, or GradingResult object. Got type undefined: undefined at validateResult (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/evaluator-JaJwSPcl.js:1971:13) at async handleJavascript (file:///home/jason-server/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/d …
+- *[quality] situates the chunk within the document* (score: 0.95) The reply explicitly mentions SEV-2 DNS incidents, is related to the Q1 Infrastructure Review, and discusses reliability, fully meeting the evaluation criteria. The reply effectively situates the chunk within the broader document, clearly identifying its purpose and distinctiveness from other sections like costs and roadmap, without introducing invented details.
 
 </details>
 
@@ -2424,132 +2324,6 @@ $$E_{ion} = \frac{2.303 RT}{zF} \log_{10}\left(\frac{[Ion]_{out}}{[I …</pre>
 
 **Judge reasoning:**
 - *[baseline] correct answer C (T² = a³, T = 8)* (score: 0.00) Custom function returned false (/\bC\b/.test(output.trim().slice(0, 30))) ? 5 : 0
-
-</details>
-
-### qwen3.6-35b — large-code (4 failures)
-
-<details>
-<summary>Large code: Markdown to HTML converter</summary>
-
-**Output:**
-
-<pre>Thinking: The user wants a markdown-to-HTML converter in Python.
-I need to implement a function `to_html(markdown_text: str) -&gt; str` that handles:
-1. Headings: `# H1`, `## H2`, `### H3`
-2. Bold: `**text**`
-3. Italic: `*text*`
-4. Links: `[text](url)`
-5. Unordered lists: `- item`
-6. Fenced code blocks: triple backticks
-7. Plain paragraphs
-
-Constraints:
-- Single Python file
-- Standard library only
-- Write to `solution.py`
-
-Let&#x27;s think about the implementation approach.
-Since it&#x27;s a simple markdown subset, I can use regular expressions or a line-by-line parser.
-A line-by-line parser is usually more robust for block-level elements like headings, lists, and code blocks. Inline elements can be handled with regex.
-
-Let&#x27;s outline the algorithm:
-1. Split the input into lines.
-2. Iterate through line …</pre>
-
-**Judge reasoning:**
-- *[code] markdown compiles + passes pytest* (score: 0.00) expected write_file tool call; got no tool call
-
-</details>
-
-<details>
-<summary>Large code: SQLite job queue</summary>
-
-**Output:**
-
-<pre>Thinking: The user wants a SQLite-backed job queue implementation in Python.
-Let&#x27;s break down the requirements:
-1. Class `JobQueue(db_path)`
-2. `enqueue(payload: dict) -&gt; int` - adds a job, returns job id
-3. `dequeue() -&gt; tuple[int, dict] | None` - gets the next job in FIFO order, removes it from the queue
-4. `complete(job_id: int) -&gt; None` - removes the job from the queue
-5. `fail(job_id: int) -&gt; None` - increments retry counter; if exceeds MAX_RETRIES, move to DLQ (Dead Letter Queue)
-6. `dlq() -&gt; list[dict]` - returns failed payloads
-7. `MAX_RETRIES` attribute (default 3)
-8. Use sqlite3 from standard library
-9. Single Python file
-
-Let&#x27;s design the database schema:
-We need at least two tables:
-- `jobs`: stores active/retrying jobs
-  - `id` INTEGER PRIMARY KEY AUTOINCREMENT
-  - `payload` T …</pre>
-
-**Judge reasoning:**
-- *[code] job_queue compiles + passes pytest* (score: 0.00) expected write_file tool call; got no tool call
-
-</details>
-
-<details>
-<summary>Large code: Rate-limited async HTTP client</summary>
-
-**Output:**
-
-<pre>Thinking: The user wants me to implement an async, rate-limited HTTP client in Python. Let me break down the requirements:
-
-1. Function signature: `async def fetch(urls: list[str], rate: int) -&gt; list[dict]`
-2. Rate limiting: at most `rate` requests per second across all URLs
-3. Return format:
-   - Success: `{&quot;url&quot;: str, &quot;status&quot;: int, &quot;body&quot;: str}`
-   - Error (after retries): `{&quot;url&quot;: str, &quot;error&quot;: str}`
-4. Retry transient failures (network errors, 5xx) with exponential backoff
-5. Use aiohttp or httpx
-
-Let me think about the implementation:
-
-1. **Rate limiting**: I can use a token bucket or a simple semaphore-based approach. A token bucket is more natural for rate limiting. I&#x27;ll implement a simple rate limiter that allows `rate` requests per second.
-
-2. **Async HTTP client**: I&#x27;ll use aioh …</pre>
-
-**Judge reasoning:**
-- *[code] rate_limiter compiles + passes pytest* (score: 0.00) expected write_file tool call; got no tool call
-
-</details>
-
-<details>
-<summary>Large code: Flappy Bird in Python</summary>
-
-**Output:**
-
-<pre>Thinking: The user wants a Flappy Bird clone implemented in Python using pygame.
-I need to create a single file `solution.py` that exposes three classes: `Bird`, `Pipe`, and `Game`.
-
-Let&#x27;s break down the requirements:
-
-1. `Bird` class:
-   - Attributes: `x`, `y`, `velocity`
-   - Methods:
-     - `update()`: applies gravity
-     - `jump()`: gives upward impulse
-     - `draw(surface)`: draws the bird
-
-2. `Pipe` class:
-   - Attributes: `x`, `gap_y`, `width`
-   - Methods:
-     - `update()`: moves left
-     - `draw(surface)`: draws the pipe
-     - `collides_with(bird) -&gt; bool`: checks collision with bird
-
-3. `Game` class:
-   - Attributes: `bird`, `pipes` (list), `score`, `game_over`
-   - Methods:
-     - `update()`: advances one frame
-     - `draw(surface)`: draws the game state
-
-I need to be care …</pre>
-
-**Judge reasoning:**
-- *[code] flappy_bird compiles + passes pytest* (score: 0.00) expected write_file tool call; got no tool call
 
 </details>
 
