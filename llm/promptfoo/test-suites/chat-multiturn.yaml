@@ -52,18 +52,15 @@
     - type: javascript
       metric: "[contract] turn 2 has <= questions and >= confidence vs turn 1"
       value: |
-        (() => {
-          const counts = [...output.matchAll(/<questions>([\s\S]*?)<\/questions>/gi)]
-            .map(m => { try { return JSON.parse(m[1].trim()).length; } catch { return null; } })
-            .filter(x => x !== null);
-          const confs = [...output.matchAll(/<confidence>\s*(high|medium|low)\s*<\/confidence>/gi)]
-            .map(m => m[1].toLowerCase());
-          if (counts.length < 2 || confs.length < 2) return false;
-          const rank = { low: 0, medium: 1, high: 2 };
-          const fewerQ = counts[counts.length - 1] <= counts[0];
-          const moreConf = rank[confs[confs.length - 1]] >= rank[confs[0]];
-          return fewerQ && moreConf;
-        })()
+        const counts = [...output.matchAll(/<questions>([\s\S]*?)<\/questions>/gi)]
+          .map(m => { try { return JSON.parse(m[1].trim()).length; } catch (e) { return null; } })
+          .filter(x => x !== null);
+        const confs = [...output.matchAll(/<confidence>\s*(high|medium|low)\s*<\/confidence>/gi)]
+          .map(m => m[1].toLowerCase());
+        if (counts.length < 2 || confs.length < 2) return false;
+        const rank = { low: 0, medium: 1, high: 2 };
+        return counts[counts.length - 1] <= counts[0]
+          && rank[confs[confs.length - 1]] >= rank[confs[0]];
     - type: g-eval
       metric: "[quality] final version uses the author's answers, no invention"
       threshold: 0.7
