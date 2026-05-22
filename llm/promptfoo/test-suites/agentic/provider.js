@@ -72,7 +72,10 @@ class AgenticProvider {
     const mode = v.mode || 'solo';
     const graded = mode === 'solo' || mode === 'seeded';
     const model = this.modelName();
-    const label = v.seed || v.test_name || mode;
+    // Distinct per test: solo uses test_name; seeded uses the seed; review/
+    // summarize append the mode (they can share a seed, e.g. dp-summary).
+    const label = mode === 'solo' ? (v.test_name || 'task')
+      : mode === 'seeded' ? v.seed : `${v.seed}-${mode}`;
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), `agentic-${label}-`));
 
     try {
@@ -120,12 +123,13 @@ class AgenticProvider {
       // 4a. Judge-graded modes: output is the model's produced artifact.
       if (!graded) {
         let output = '';
-        if (v.capture === 'final_text' || !v.capture) {
-          output = captureFinalText(events);
-        } else if (v.capture.startsWith('file:')) {
+        if (v.capture && v.capture.startsWith('file:')) {
           const f = path.join(sandbox, v.capture.slice(5));
           output = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
         }
+        // Fall back to the model's final message if no file was captured (e.g.
+        // it wrote nowhere findable, or timed out before the entrypoint salvage).
+        if (!output.trim()) output = captureFinalText(events);
         return { output, tokenUsage, metadata: { turns, tokens: totalTok, mode, test_name: label } };
       }
 
