@@ -94,7 +94,7 @@ class AgenticProvider {
         events = execFileSync('docker', [
           'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`,
           '-e', `LLM_SWAP_URL=${URL}`, '-e', `MODEL=${model}`, '-e', `MODE=${mode}`,
-          '-e', `TASK=${prompt}`, 'oc-agent',
+          '-e', `CAPTURE=${v.capture || ''}`, '-e', `TASK=${prompt}`, 'oc-agent',
         ], { timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 }).toString();
       } catch (e) { events = (e.stdout || '').toString(); } // timeout/non-zero: grade what exists
       if (process.env.AGENTIC_DEBUG) {

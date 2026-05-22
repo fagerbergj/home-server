@@ -33,11 +33,19 @@ opencode run "${TASK}" \
   --pure --format json --dangerously-skip-permissions \
   --dir /work
 
-# Salvage (solo only): the model sometimes writes solution.py with an absolute
-# path (e.g. /solution.py) instead of into /work. Copy it into /work so grading
-# finds it. Seeded/review/summarize modes edit the repo already in /work.
-if [ "${MODE:-solo}" = "solo" ] && [ ! -f /work/solution.py ]; then
-  f=$(find / -maxdepth 3 -name solution.py 2>/dev/null | grep -v '^/work/' | head -1)
-  [ -n "$f" ] && cp "$f" /work/solution.py
-fi
+# Salvage: the model sometimes writes its output to an absolute path (e.g.
+# /solution.py, /ARCHITECTURE.md) instead of into /work. Copy it into /work so
+# grading/capture can find it. (Seeded bugfix edits the repo already in /work.)
+salvage() {  # $1 = relpath under /work
+  local rel="$1" base f
+  [ -f "/work/$rel" ] && return 0
+  base=$(basename "$rel")
+  f=$(find / -maxdepth 3 -name "$base" 2>/dev/null | grep -v '^/work/' | head -1)
+  [ -n "$f" ] && mkdir -p "/work/$(dirname "$rel")" && cp "$f" "/work/$rel"
+  return 0
+}
+case "${MODE:-solo}" in
+  solo) salvage solution.py ;;
+  summarize|review) case "${CAPTURE:-}" in file:*) salvage "${CAPTURE#file:}" ;; esac ;;
+esac
 true
