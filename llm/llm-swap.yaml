@@ -73,7 +73,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_M
       --jinja
       -ngl 999
       -c 40960

@@ -20,6 +20,7 @@ dl() {
 
 dl "unsloth/gpt-oss-120b-GGUF"             "gpt-oss-120b-F16.gguf"               "gpt-oss-120b"
 dl "unsloth/Qwen3.6-35B-A3B-GGUF"          "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"      "qwen3.6-35b"
+dl "unsloth/gemma-4-26B-A4B-it-GGUF"       "gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"   "gemma4-26b"
 dl "unsloth/Qwen3.5-9B-GGUF"               "Qwen3.5-9B-Q4_K_M.gguf"              "qwen3.5-9b"
 dl "unsloth/Qwen3-VL-8B-Instruct-GGUF"     "Qwen3-VL-8B-Instruct-Q4_K_M.gguf"   "qwen3-vl-8b"
 dl "unsloth/Qwen3-VL-8B-Instruct-GGUF"     "mmproj-F16.gguf"                     "qwen3-vl-8b mmproj"
