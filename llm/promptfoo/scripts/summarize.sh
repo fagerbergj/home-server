@@ -22,7 +22,7 @@ if not files:
     exit(0)
 
 VALID_SUITES = ['architecture','coding','math','chat','brain-twisters',
-                'cruxeval','calibration','hard-reasoning','agentic','tools']
+                'cruxeval','calibration','hard-reasoning','agentic','chat-multiturn','tools']
 
 def parse_name(name):
     """parse 'qwen3.6-35b-architecture' -> ('qwen3.6-35b', 'architecture').

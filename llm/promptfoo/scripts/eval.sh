@@ -32,7 +32,7 @@ CONFIG_FILE = 'eval-config.yaml'
 # test-suites/<s>.yaml). config_for derives the path.
 SUITES = {
     'architecture', 'coding', 'math', 'chat', 'brain-twisters',
-    'cruxeval', 'calibration', 'hard-reasoning', 'agentic', 'tools',
+    'cruxeval', 'calibration', 'hard-reasoning', 'agentic', 'chat-multiturn', 'tools',
 }
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'
 
