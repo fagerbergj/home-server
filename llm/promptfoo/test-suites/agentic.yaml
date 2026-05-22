@@ -182,3 +182,30 @@
         - "Accurately describes the ports-and-adapters structure: a domain core (server/core) that depends on port interfaces, with swappable store adapters under server/store/* (e.g. sqlite/postgres, qdrant, openai)"
         - "Describes the document-processing pipeline stages and the HTTP API layer, and names real top-level directories (server, cmd, config, db)"
         - "Does not invent components or technologies absent from the repo; unclear things are omitted or hedged rather than fabricated"
+
+# ── PR review: read a diff with planted defects, report the real ones ──
+# Judge-graded on whether the review catches the planted issues without
+# hallucinating. The diff is dropped at /work/PR.diff; output = the model's
+# final review text.
+- description: "review: flag bugs in a new search-handler PR"
+  vars:
+    mode: review
+    seed: dp-summary
+    diff: reviews/search-handler.diff
+    capture: final_text
+    task: |
+      This is the document-pipeline repository. A teammate opened a pull request;
+      the diff is at /work/PR.diff. Review it as you would a real PR: read the
+      diff (and the surrounding code for context if helpful) and report the
+      concrete problems — correctness, security, and resource-handling — with a
+      short explanation of each and how you'd fix it. Be specific, and only flag
+      genuine issues that are actually present.
+  assert:
+    - type: g-eval
+      metric: "[review] catches planted issues without hallucinating"
+      threshold: 0.7
+      value:
+        - "Identifies the SQL injection: the user-supplied query value is interpolated directly into the SQL string (fmt.Sprintf / string concatenation) instead of using a parameterized query with placeholders"
+        - "Identifies the resource leak: the *sql.Rows returned by db.Query is never closed (missing defer rows.Close())"
+        - "Identifies at least one of: the ignored error from rows.Scan, or the unchecked rows.Err() after the iteration loop"
+        - "The review is grounded in the actual diff and does not fabricate issues that are not present in the code"

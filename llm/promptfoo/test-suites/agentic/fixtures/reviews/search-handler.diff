@@ -1,0 +1,43 @@
+diff --git a/server/api/rest/search.go b/server/api/rest/search.go
+new file mode 100644
+index 0000000..a1b2c3d
+--- /dev/null
++++ b/server/api/rest/search.go
+@@ -0,0 +1,34 @@
++package rest
++
++import (
++	"database/sql"
++	"encoding/json"
++	"fmt"
++	"net/http"
++)
++
++// SearchHandler returns the titles of documents whose title matches the
++// caller's query string (?q=...).
++func SearchHandler(db *sql.DB) http.HandlerFunc {
++	return func(w http.ResponseWriter, r *http.Request) {
++		q := r.URL.Query().Get("q")
++
++		query := fmt.Sprintf(
++			"SELECT id, title FROM documents WHERE title LIKE '%%%s%%' ORDER BY created_at DESC",
++			q,
++		)
++		rows, err := db.Query(query)
++		if err != nil {
++			http.Error(w, "query failed", http.StatusInternalServerError)
++			return
++		}
++
++		var titles []string
++		for rows.Next() {
++			var id int
++			var title string
++			rows.Scan(&id, &title)
++			titles = append(titles, title)
++		}
++
++		w.Header().Set("Content-Type", "application/json")
++		json.NewEncoder(w).Encode(titles)
++	}
++}
