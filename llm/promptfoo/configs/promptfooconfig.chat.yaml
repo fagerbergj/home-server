@@ -1,0 +1,22 @@
+# Chat suite — runs the real reMarkable OCR-pipeline stage prompts (summarize,
+# clarify, classify, contextual) from ~/workspace/document-pipeline/prompts
+# against llm-swap. Mixed grading: deterministic output-contract checks
+# (javascript) + g-eval (selene) for quality. Thresholds are per-assertion
+# (g-eval 0.7); javascript is boolean.
+# Run: ./scripts/eval.sh --suite chat [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 8192
+prompts:
+  - "{{task}}"
+tests: ../test-suites/chat.yaml
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap

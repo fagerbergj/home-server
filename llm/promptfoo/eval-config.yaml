@@ -3,13 +3,13 @@
 # Suites (run with: ./eval.sh [model]):
 #   architecture   (10 tests) — only expert-level/known-discriminating tests kept
 #   coding         (9 tests)  — HumanEval + debugging (trivial ones culled)
-#   function-call  (11 tests) — BFCL + structured output + tool routing
+#   chat            (4)   — real OCR-pipeline prompts: summarize/clarify/classify/contextual
 #   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
 #   cruxeval       (15 tests) — predict-the-output + code gotchas
 #   calibration    (10 tests) — does the model admit "I don't know"?
 #   hard-reasoning (15 tests) — GPQA-style science MCQ + ZebraLogic puzzles
 #   large-code     (5 tests)  — compile + pytest graded (Trie, Markdown, JobQueue, RateLimiter, FlappyBird)
-#   math           (9 tests)  — competition algebra/NT (MATH500-style)
+#   math           (disabled — saturated, all models passed; kept on disk)
 #   tools         (14 tests)  — document-pipeline specific tool routing
 
 models:
@@ -18,13 +18,12 @@ models:
     suites:
       - architecture
       - coding
-      - function-call
+      - chat
       - brain-twisters
       - cruxeval
       - calibration
       - hard-reasoning
       - large-code
-      - math
       - tools
 
   qwen3.6-35b:
@@ -32,13 +31,12 @@ models:
     suites:
       - architecture
       - coding
-      - function-call
+      - chat
       - brain-twisters
       - cruxeval
       - calibration
       - hard-reasoning
       - large-code
-      - math
       - tools
 
   qwen3-coder-next:
@@ -46,13 +44,12 @@ models:
     suites:
       - architecture
       - coding
-      - function-call
+      - chat
       - brain-twisters
       - cruxeval
       - calibration
       - hard-reasoning
       - large-code
-      - math
       - tools
 
   qwen3.5-9b:
@@ -60,7 +57,6 @@ models:
     suites:
       - architecture
       - coding
-      - function-call
+      - chat
       - brain-twisters
       - cruxeval
-      - math

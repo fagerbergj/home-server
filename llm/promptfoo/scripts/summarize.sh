@@ -21,7 +21,7 @@ if not files:
     print("No eval results found in evals/")
     exit(0)
 
-VALID_SUITES = ['architecture','coding','math','function-call','brain-twisters',
+VALID_SUITES = ['architecture','coding','math','chat','brain-twisters',
                 'cruxeval','calibration','hard-reasoning','large-code','tools']
 
 def parse_name(name):

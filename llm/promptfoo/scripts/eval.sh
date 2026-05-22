@@ -31,7 +31,7 @@ CONFIG_FILE = 'eval-config.yaml'
 # Suite name == config stem == test-file stem (configs/promptfooconfig.<s>.yaml,
 # test-suites/<s>.yaml). config_for derives the path.
 SUITES = {
-    'architecture', 'coding', 'math', 'function-call', 'brain-twisters',
+    'architecture', 'coding', 'math', 'chat', 'brain-twisters',
     'cruxeval', 'calibration', 'hard-reasoning', 'large-code', 'tools',
 }
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'

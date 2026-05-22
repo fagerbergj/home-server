@@ -1,0 +1,237 @@
+# Chat suite — exercises the real reMarkable OCR-pipeline stage prompts
+# (summarize, clarify, classify, contextual) from
+# ~/workspace/document-pipeline/prompts/*.txt against the llm-swap models.
+# Each test's `task` is the production prompt with a sample input inlined; `doc`
+# carries the source text for the length-contract checks. Grading mixes
+# deterministic output-contract checks (javascript) with g-eval quality rubrics.
+# OCR is vision (qwen3-vl-8b) — needs image fixtures, tested separately.
+
+# ── summarize: produce a Markdown digest, ≤ input length, preserve entities ──
+- description: "summarize: meeting note → digest"
+  vars:
+    doc: |
+      Standup 2026-03-04. Present: Priya, Marcus, Dana. Priya shipped the
+      auth-rewrite to staging Tuesday; rollout to prod blocked on the SOC2
+      review (owner: Dana, due Friday). Marcus found a regression in the
+      billing webhook — Stripe retries were double-charging ~12 customers
+      since the 2026-02-28 deploy; hotfix going out today, refunds by EOW.
+      Dana raised that the on-call rotation has a gap over the March 14-16
+      weekend. Decision: Marcus covers Saturday, Priya covers Sunday.
+      Off-topic: someone mentioned the new espresso machine arrives next week.
+    task: |
+      You produce a clear, thorough digest of the document below.
+
+      Goal: reduce noise without losing signal. Keep every meaningful entity,
+      fact, claim, decision, and event. Drop filler — restating the same point,
+      off-topic asides, throwaway remarks, false starts. When in doubt, keep it.
+
+      Structure the output with Markdown headings. Use whatever sections fit the
+      content (Overview, People, Events / Decisions, Open questions, ...). Omit
+      sections that don't apply.
+
+      Rules:
+      - Preserve named entities, numbers, and dates exactly. Don't paraphrase proper nouns.
+      - Don't invent facts.
+      - If unsure whether something is meaningful or filler, keep it.
+      - Output must not be longer than the input.
+
+      Reply in plain Markdown — no JSON wrapper, no XML tags.
+
+      <document>
+      Standup 2026-03-04. Present: Priya, Marcus, Dana. Priya shipped the
+      auth-rewrite to staging Tuesday; rollout to prod blocked on the SOC2
+      review (owner: Dana, due Friday). Marcus found a regression in the
+      billing webhook — Stripe retries were double-charging ~12 customers
+      since the 2026-02-28 deploy; hotfix going out today, refunds by EOW.
+      Dana raised that the on-call rotation has a gap over the March 14-16
+      weekend. Decision: Marcus covers Saturday, Priya covers Sunday.
+      Off-topic: someone mentioned the new espresso machine arrives next week.
+      </document>
+  assert:
+    - type: javascript
+      metric: "[contract] Markdown, not longer than input"
+      value: "!output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length"
+    - type: g-eval
+      metric: "[quality] preserves signal, drops filler"
+      threshold: 0.7
+      value:
+        - "Preserves the named entities, numbers, and dates exactly (Priya, Marcus, Dana, SOC2, Stripe, ~12 customers, the 2026-02-28 and March 14-16 dates)"
+        - "Keeps the meaningful decisions and events (auth-rewrite to staging, billing double-charge + hotfix/refunds, on-call weekend coverage split)"
+        - "Drops the off-topic espresso-machine aside and invents no facts not in the document"
+
+# ── clarify: tighten a digest, resolve refs, emit the strict tagged format ──
+- description: "clarify: digest → clarified_text + confidence + questions"
+  vars:
+    doc: |
+      ## Overview
+      The team discussed the migration. They agreed to move it forward but
+      someone raised concerns about the timeline.
+
+      ## Details
+      The project is behind. The lead said it would slip if the dependency
+      isn't resolved. Later that day they decided to escalate. The number
+      was higher than expected.
+    task: |
+      You receive a thorough digest of a document. Tighten it into a smaller,
+      high-signal version: clear, unambiguous, structured to read as a complete
+      record on its own.
+
+      Goal: monotonic noise reduction. Keep every meaningful entity, claim,
+      event, and decision. Resolve cross-references ("they said", "the project",
+      "later that day") to specific names/things/times where you can. Remove
+      repetition. Where the digest is ambiguous, contradicts itself, or leaves a
+      reference you can't pin down, ask a clarifying question instead of guessing.
+
+      Rules:
+      - Preserve named entities, numbers, and dates exactly. Don't invent facts.
+      - Output must be shorter than the input.
+
+      Respond using exactly this format — no extra text before or after:
+
+      <clarified_text>
+      polished, structured text in Markdown
+      </clarified_text>
+      <confidence>high|medium|low</confidence>
+      <questions>[{"segment": "exact text from input", "question": "specific question"}]</questions>
+
+      ## Overview
+      The team discussed the migration. They agreed to move it forward but
+      someone raised concerns about the timeline.
+
+      ## Details
+      The project is behind. The lead said it would slip if the dependency
+      isn't resolved. Later that day they decided to escalate. The number
+      was higher than expected.
+  assert:
+    - type: javascript
+      metric: "[contract] tagged format, shorter than input, questions for ambiguity"
+      value: |
+        (() => {
+          const ct = (output.match(/<clarified_text>([\s\S]*?)<\/clarified_text>/i) || [])[1];
+          const conf = /<confidence>\s*(high|medium|low)\s*<\/confidence>/i.test(output);
+          const qm = output.match(/<questions>([\s\S]*?)<\/questions>/i);
+          if (ct === undefined || !conf || !qm) return false;
+          let questionsOk = false;
+          try { questionsOk = Array.isArray(JSON.parse(qm[1].trim())); } catch (e) { return false; }
+          const shorter = ct.trim().length < context.vars.doc.length;
+          return questionsOk && shorter;
+        })()
+    - type: g-eval
+      metric: "[quality] resolves references or asks, no invention"
+      threshold: 0.7
+      value:
+        - "Tightens the digest and removes repetition while preserving the meaningful claims, events, and the decision to escalate"
+        - "Either resolves vague references (they / the project / later that day / the number) to specifics OR raises them as clarifying questions rather than inventing specifics"
+        - "Invents no entities, numbers, or facts not present in the input digest"
+
+# ── classify: assign tags + abstract, emit valid JSON after <thinking> ──
+- description: "classify: structured doc → tags JSON"
+  vars:
+    task: |
+      You receive a polished, structured version of a document. Assign
+      descriptive tags and write a short abstract.
+
+      Reasoning — work through these steps before producing the final JSON. Put
+      your reasoning inside <thinking></thinking> tags. Only the final JSON is
+      consumed downstream.
+
+      1. What is this document fundamentally about?
+      2. What form is it (meeting note, recipe, journal, plan, ...)?
+      3. What topics/entities/themes would a future reader filter on?
+      4. Draft 2-6 specific tags.
+      5. Write a 1-3 sentence abstract.
+
+      Then emit only the final JSON, no preamble.
+
+      Tag rules: lowercase, hyphenated where multi-word; 2-6 tags; specific over
+      generic; don't invent content not in the document.
+
+      Set confidence: "high" (clear/unambiguous), "medium" (some uncertainty),
+      "low" (significant ambiguity).
+
+      Respond with valid JSON only, in this exact shape:
+      {
+        "tags": ["tag-one", "tag-two"],
+        "summary": "A brief abstract of what this document is about.",
+        "clarification_requests": [{"segment": "<exact text>", "question": "<specific question>"}],
+        "confidence": "high|medium|low"
+      }
+
+      Document:
+      # Sourdough Loaf — Weekend Bake
+      ## Ingredients
+      - 500g bread flour, 350g water, 100g active starter, 10g salt
+      ## Method
+      1. Autolyse flour + water 1h. 2. Add starter + salt, fold every 30m x4.
+      3. Bulk ferment 4-5h at 24C. 4. Shape, cold proof overnight.
+      5. Bake 250C in Dutch oven 20m lid on, 20m lid off.
+      ## Notes
+      Crumb was open; next time reduce water to 330g for easier shaping.
+  options:
+    # classify emits <thinking>…</thinking> then the JSON; strip the thinking so
+    # the JSON contract checks see only the final object.
+    transform: "output.replace(/[\\s\\S]*<\\/thinking>/i, '').trim()"
+  assert:
+    - type: javascript
+      metric: "[contract] valid JSON, 2-6 tags, confidence enum, abstract"
+      value: |
+        (() => {
+          try {
+            const o = JSON.parse(output);
+            const tagsOk = Array.isArray(o.tags) && o.tags.length >= 2 && o.tags.length <= 6
+              && o.tags.every(t => typeof t === 'string' && t === t.toLowerCase());
+            const confOk = ['high','medium','low'].includes(o.confidence);
+            const sumOk = typeof o.summary === 'string' && o.summary.trim().length > 0;
+            return tagsOk && confOk && sumOk;
+          } catch (e) { return false; }
+        })()
+    - type: g-eval
+      metric: "[quality] tags specific and grounded"
+      threshold: 0.7
+      value:
+        - "Tags are specific and grounded in the document (e.g. recipe / sourdough / baking) rather than generic, and the abstract accurately states it is a sourdough bread recipe"
+        - "Does not invent tags or summary content absent from the document"
+
+# ── contextual: situate a chunk in 1-2 sentences for retrieval ──
+- description: "contextual: situate a chunk for retrieval"
+  vars:
+    task: |
+      <document>
+      # Q1 Infrastructure Review
+      ## Costs
+      Compute spend rose 22% QoQ, driven by the new GPU inference fleet.
+      ## Reliability
+      Two SEV-2 incidents, both DNS-related. Mitigation: secondary resolver.
+      ## Roadmap
+      Migrate the metrics pipeline off the legacy collector by end of Q2.
+      </document>
+
+      Here is the chunk we want to situate within the whole document:
+      <chunk>
+      Two SEV-2 incidents, both DNS-related. Mitigation: secondary resolver.
+      </chunk>
+
+      Provide a short, succinct context (1-2 sentences) that situates this chunk
+      within the overall document, for the purpose of improving search retrieval.
+      Identify what this chunk is about, where it fits in the document's
+      structure, and what makes it distinct.
+
+      Answer with only the context. No preamble, no quotes, no labels.
+  assert:
+    - type: javascript
+      metric: "[contract] 1-2 sentences, no preamble/quotes/labels"
+      value: |
+        (() => {
+          const t = output.trim();
+          if (!t) return false;
+          if (t.startsWith('"') || t.startsWith('`')) return false;
+          if (/^(context|here'?s|this chunk|the chunk|sure|certainly)\b/i.test(t)) return false;
+          const sentences = (t.match(/[.!?](\s|$)/g) || []).length;
+          return t.length <= 500 && sentences >= 1 && sentences <= 3;
+        })()
+    - type: g-eval
+      metric: "[quality] situates the chunk within the document"
+      threshold: 0.7
+      value:
+        - "Identifies that the chunk is about the reliability / SEV-2 DNS incidents section of the Q1 Infrastructure Review"
+        - "Situates it within the broader document and notes what makes it distinct from the costs and roadmap sections, without inventing details"
