@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Generate evals/README.md (per-model pass/fail) and evals/COMPARE.md (blind A/B
-# pairwise win matrix) from eval JSON files in evals/.
-# Called automatically by eval.sh after each run.
-# Usage: ./scripts/summarize.sh   (run from anywhere — cd's to promptfoo root)
+# Generate evals/README.md (per-model pass/fail) from eval JSON files in evals/.
+# With --compare, also regenerate evals/COMPARE.md (blind A/B win matrix) from
+# the compare-*.json files. eval.sh calls it without --compare (README only);
+# compare.sh calls it with --compare.
+# Usage: ./scripts/summarize.sh [--compare]   (run from anywhere — cd's to root)
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root
 
-python3 - << 'EOF'
-import json, glob, os, datetime, statistics, html
+python3 - "$@" << 'EOF'
+import sys, json, glob, os, datetime, statistics, html
 from collections import defaultdict
+
+# COMPARE.md (Phase 2) is only regenerated when called with --compare (by
+# compare.sh). A plain summarize / eval.sh run only touches README.md.
+do_compare = '--compare' in sys.argv[1:]
 
 files = sorted(glob.glob('evals/*.json'))
 if not files:
@@ -157,7 +162,9 @@ if data:
         f.write('\n'.join(lines))
     print(f"Wrote evals/README.md")
 
-# ── Phase 2: A/B comparison (COMPARE.md) ────────────────────────────────────
+# ── Phase 2: A/B comparison (COMPARE.md) — only with --compare (compare.sh) ──
+if not do_compare:
+    exit(0)
 compare_files = sorted(glob.glob('evals/compare-*.json'))
 if not compare_files:
     print("No compare-*.json files; skipping COMPARE.md")

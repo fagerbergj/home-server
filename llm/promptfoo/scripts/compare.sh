@@ -42,4 +42,4 @@ for suite in "${COMPARE_SUITES[@]}"; do
       --output "evals/compare-${suite}.json" || true
 done
 
-bash scripts/summarize.sh
+bash scripts/summarize.sh --compare
