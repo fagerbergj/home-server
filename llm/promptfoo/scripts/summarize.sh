@@ -111,7 +111,7 @@ for f in files:
                 md = resp.get('metadata', {}) or {}
                 tu = resp.get('tokenUsage', {}) or {}
                 rows.append({'tokens': tu.get('total'), 'turns': md.get('turns'),
-                             'passed': bool(r.get('success'))})
+                             'passed': bool(r.get('success')), 'mode': md.get('mode') or 'solo'})
             agentic[model] = rows
     except Exception:
         pass
@@ -144,24 +144,35 @@ if data:
     lines.append("**tok/s:** median decode speed across all tests in that suite")
     lines.append("")
 
-    # ── Agentic efficiency: median tokens/turns over solved tasks ──
+    # ── Agentic efficiency: median tokens/turns over solved tasks, split by task
+    # kind. Solo (write-from-scratch) and repo-scale tasks (bugfix/review/summary)
+    # differ ~20x in tokens, so a single median would be meaningless. ──
     if agentic:
-        lines.append("## Agentic efficiency\n")
-        lines.append("Median over *solved* tasks — lower is more efficient (tokens include the cached prompt).\n")
-        lines.append("| Model | solved | median tokens | median turns |")
-        lines.append("| --- | --- | --- | --- |")
-        for model in sorted(agentic):
-            rows = agentic[model]
-            solved = [r for r in rows if r['passed']]
-            if solved:
-                toks = [s['tokens'] for s in solved if s['tokens'] is not None]
-                turns = [s['turns'] for s in solved if s['turns'] is not None]
-                mt = f"{int(statistics.median(toks)):,}" if toks else "—"
-                mu = f"{statistics.median(turns):g}" if turns else "—"
-                lines.append(f"| {model} | {len(solved)}/{len(rows)} | {mt} | {mu} |")
-            else:
-                lines.append(f"| {model} | 0/{len(rows)} | — | — |")
-        lines.append("")
+        def eff_table(title, kinds, blurb):
+            if not any(r['mode'] in kinds for rows in agentic.values() for r in rows):
+                return
+            lines.append(f"## {title}\n")
+            lines.append(blurb + "\n")
+            lines.append("| Model | solved | median tokens | median turns |")
+            lines.append("| --- | --- | --- | --- |")
+            for model in sorted(agentic):
+                rows = [r for r in agentic[model] if r['mode'] in kinds]
+                if not rows:
+                    continue
+                solved = [r for r in rows if r['passed']]
+                if solved:
+                    toks = [s['tokens'] for s in solved if s['tokens'] is not None]
+                    turns = [s['turns'] for s in solved if s['turns'] is not None]
+                    mt = f"{int(statistics.median(toks)):,}" if toks else "—"
+                    mu = f"{statistics.median(turns):g}" if turns else "—"
+                    lines.append(f"| {model} | {len(solved)}/{len(rows)} | {mt} | {mu} |")
+                else:
+                    lines.append(f"| {model} | 0/{len(rows)} | — | — |")
+            lines.append("")
+        eff_table("Agentic efficiency — solo tasks", {'solo'},
+                  "Write-from-scratch tasks; median over *solved* tasks — lower is more efficient.")
+        eff_table("Agentic efficiency — repo tasks", {'seeded', 'review', 'summarize'},
+                  "Real-repo bugfix / review / summary; median over *solved* tasks (tokens include the cached prompt).")
 
     lines.append("## Failures\n")
     any_failures = False
