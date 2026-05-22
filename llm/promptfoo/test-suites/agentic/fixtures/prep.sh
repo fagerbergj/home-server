@@ -30,10 +30,12 @@ for inst in m['instances']:
     subprocess.run(['tar', '-x', '-C', dest], input=archive, check=True)
     for p in prune + inst.get('prune', []):
         target = os.path.join(dest, p)
-        if os.path.isdir(target):
+        if not os.path.lexists(target):       # lexists: True even for dangling symlinks
+            continue
+        if os.path.isdir(target) and not os.path.islink(target):
             shutil.rmtree(target, ignore_errors=True)
-        elif os.path.exists(target):
-            os.remove(target)
+        else:
+            os.remove(target)                 # plain file or (possibly dangling) symlink
     print(f'  {name}: {commit}^ -> {dest}')
 print('done')
 PY
