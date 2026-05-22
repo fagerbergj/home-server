@@ -16,15 +16,25 @@
 // config: model (from {{env.MODEL}}), judge (default 'selene').
 const URL = process.env.LLM_SWAP_URL || 'http://localhost:11436/v1';
 
-async function chat(model, messages) {
-  const res = await fetch(`${URL}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer llm-swap' },
-    body: JSON.stringify({ model, messages, max_tokens: 8192 }),
-  });
-  if (!res.ok) throw new Error(`llm-swap ${model} HTTP ${res.status}: ${await res.text()}`);
-  const j = await res.json();
-  return { content: j.choices?.[0]?.message?.content || '', usage: j.usage || {} };
+async function chat(model, messages, attempt = 0) {
+  try {
+    const res = await fetch(`${URL}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer llm-swap' },
+      body: JSON.stringify({ model, messages, max_tokens: 8192 }),
+    });
+    if (!res.ok) throw new Error(`llm-swap ${model} HTTP ${res.status}: ${await res.text()}`);
+    const j = await res.json();
+    return { content: j.choices?.[0]?.message?.content || '', usage: j.usage || {} };
+  } catch (e) {
+    // Transient blips happen during a model swap (the connection can drop). Retry
+    // a couple times with backoff before giving up.
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+      return chat(model, messages, attempt + 1);
+    }
+    throw e;
+  }
 }
 
 class ClarifyMultiturnProvider {
