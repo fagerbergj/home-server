@@ -1,10 +1,11 @@
 # Model evaluation (promptfoo)
 
 Runs the llm-swap model lineup across ten test suites and an A/B compare phase.
-All rubric grading uses the GPU judge (`selene` in llm-swap, port 11436). At
-concurrency 1 promptfoo defers grading, so every model generation runs first and
-the judge swaps in once for the batched grading phase — no model is resident when
-it judges, so the judge gets the full GPU.
+All model-graded assertions (g-eval, factuality, closedqa, llm-rubric) use the
+GPU judge (`selene` in llm-swap, port 11436). At concurrency 1 promptfoo defers
+grading, so every model generation runs first and the judge swaps in once for the
+batched grading phase — no model is resident when it judges, so the judge gets the
+full GPU.
 
 ## Directory layout
 
@@ -23,18 +24,18 @@ Suite name == config stem == test-file stem (e.g. `coding` → `configs/promptfo
 
 | Suite | Grading | A/B compare? |
 |---|---|---|
-| architecture | rubric | ✅ |
-| coding | rubric | ✅ |
-| calibration | rubric | ✅ |
-| brain-twisters | rubric | ✅ |
-| function-call | rubric + javascript | — |
+| architecture | g-eval (0-1 criteria) | ✅ |
+| coding | g-eval (0-1 criteria) | ✅ |
+| calibration | model-graded-closedqa (binary) | ✅ |
+| brain-twisters | factuality + g-eval + javascript | ✅ |
+| function-call | llm-rubric + javascript + is-json | — |
 | math | deterministic (final-answer match) | — |
-| cruxeval | deterministic (output match) | — |
+| cruxeval | deterministic + llm-rubric (output match + gotchas) | — |
 | hard-reasoning | deterministic (letter / grid match) | — |
 | large-code | compile + pytest (large-code-grader.js → large-code-runner.sh) | — |
 | tools | deterministic JSON (tools-grader.js) | — |
 
-Only rubric-graded suites get the A/B compare phase — for deterministic suites the per-model pass rate already is the comparison, and a "pick the best" judge would just add noise (it might prefer a confident-but-wrong answer).
+Only the four model-graded suites get the A/B compare phase — for deterministic suites the per-model pass rate already is the comparison, and a "pick the best" judge would just add noise (it might prefer a confident-but-wrong answer).
 
 ## Quickstart
 
@@ -101,9 +102,9 @@ Opens the web UI: pass/fail per test, rubric reasons, side-by-side completions a
 ## Test conventions
 
 - Each `test-suites/<suite>.yaml` is a list of `{description, vars: {task: ...}, assert: [...]}` entries.
-- Rubric assertions use Selene's native 1-5 format with `threshold: 4` — Score 4 or 5 passes.
+- Model-graded assertions use the type that fits the suite: `g-eval` (criteria list, 0-1, `threshold: 0.7`) for open-ended quality, `factuality` (vs a reference answer, `differButFactual: 0` so only true agreement passes) for one-right-answer questions, `model-graded-closedqa` (binary Y/N) for pass/fail behavior, and `llm-rubric` (1-5, `threshold: 4`) where a tiered rubric still fits.
 - Deterministic assertions (`type: javascript`) return `{pass, score, reason}`. Score 5 = pass, 0 = fail; intermediate scores (e.g. 2 for "right routing but PROD-BROKEN format" in tools) describe the failure mode.
-- `file://` grader paths in test files are relative to the test file, so they point at `scripts/<grader>.js` (i.e. `test-suites/scripts/`).
+- `file://` grader paths are written `file://../test-suites/scripts/<grader>.js`. promptfoo resolves them relative to the config dir (`configs/`), so the `../test-suites/` hop is needed to reach the grader scripts.
 - After editing a test file, run `python3 scripts/lint-tests.py` to canonicalise the YAML (round-trip safety check included).
 
 ## Adding a model
@@ -115,8 +116,8 @@ Opens the web UI: pass/fail per test, rubric reasons, side-by-side completions a
 ## Adding a suite
 
 1. Write `test-suites/<name>.yaml` (mirror an existing one).
-2. Copy a `configs/promptfooconfig.<x>.yaml` to `configs/promptfooconfig.<name>.yaml`; set `tests: ../test-suites/<name>.yaml` and adjust the rubric.
-3. Add `<name>` to `SUITES` in `scripts/eval.sh` (and to `COMPARE_SUITES` there + in `scripts/compare.sh` if it's rubric-graded).
+2. Copy a `configs/promptfooconfig.<x>.yaml` to `configs/promptfooconfig.<name>.yaml`; set `tests: ../test-suites/<name>.yaml` and set `threshold` to match the assertion type (0.7 for g-eval; none for closedqa/factuality).
+3. Add `<name>` to `SUITES` in `scripts/eval.sh` (and to `COMPARE_SUITES` there + in `scripts/compare.sh` if it's model-graded).
 4. Add `<name>` to each relevant model's `suites:` list in `eval-config.yaml`.
 
 ## Notes on the judge
