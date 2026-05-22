@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Generate a dated results file evals/results-<date>.md (per-model pass/fail) from
-# eval JSON files in evals/. With --compare, also write evals/compare-<date>.md
-# (blind A/B win matrix) from the compare-*.json files. Dated filenames mean each
-# run produces a fresh file instead of overwriting a tracked one. eval.sh calls
-# it without --compare (results only); compare.sh calls it with --compare.
+# Generate a timestamped results file evals/results-<YYYY-MM-DD-HHMM>.md (per-model
+# pass/fail) from eval JSON files in evals/. With --compare, also write
+# evals/compare-<YYYY-MM-DD-HHMM>.md (blind A/B win matrix) from the compare-*.json
+# files. Timestamped filenames mean each run produces a fresh file instead of
+# overwriting a tracked one. eval.sh calls it without --compare (results only);
+# compare.sh calls it with --compare.
 # Usage: ./scripts/summarize.sh [--compare]   (run from anywhere — cd's to root)
 
 set -euo pipefail
@@ -199,7 +200,7 @@ if data:
     if not any_failures:
         lines.append("*No failures — all tests passed.*")
 
-    out_path = f"evals/results-{datetime.date.today()}.md"
+    out_path = f"evals/results-{datetime.datetime.now():%Y-%m-%d-%H%M}.md"
     with open(out_path, 'w') as f:
         f.write('\n'.join(lines))
     print(f"Wrote {out_path}")
@@ -282,7 +283,7 @@ for suite in sorted(per_test.keys()):
         clines.append(f"| {desc} | {entry['winner']} |")
     clines.append("\n</details>\n")
 
-cmp_path = f"evals/compare-{datetime.date.today()}.md"
+cmp_path = f"evals/compare-{datetime.datetime.now():%Y-%m-%d-%H%M}.md"
 with open(cmp_path, 'w') as f:
     f.write('\n'.join(clines))
 print(f"Wrote {cmp_path}")
