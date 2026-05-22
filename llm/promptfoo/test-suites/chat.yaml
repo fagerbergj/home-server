@@ -106,16 +106,14 @@
     - type: javascript
       metric: "[contract] tagged format, shorter than input, questions for ambiguity"
       value: |
-        (() => {
-          const ct = (output.match(/<clarified_text>([\s\S]*?)<\/clarified_text>/i) || [])[1];
-          const conf = /<confidence>\s*(high|medium|low)\s*<\/confidence>/i.test(output);
-          const qm = output.match(/<questions>([\s\S]*?)<\/questions>/i);
-          if (ct === undefined || !conf || !qm) return false;
-          let questionsOk = false;
-          try { questionsOk = Array.isArray(JSON.parse(qm[1].trim())); } catch (e) { return false; }
-          const shorter = ct.trim().length < context.vars.doc.length;
-          return questionsOk && shorter;
-        })()
+        const ct = (output.match(/<clarified_text>([\s\S]*?)<\/clarified_text>/i) || [])[1];
+        const conf = /<confidence>\s*(high|medium|low)\s*<\/confidence>/i.test(output);
+        const qm = output.match(/<questions>([\s\S]*?)<\/questions>/i);
+        if (ct === undefined || !conf || !qm) return false;
+        let questionsOk = false;
+        try { questionsOk = Array.isArray(JSON.parse(qm[1].trim())); } catch (e) { return false; }
+        const shorter = ct.trim().length < context.vars.doc.length;
+        return questionsOk && shorter;
     - type: g-eval
       metric: "[quality] resolves references or asks, no invention"
       threshold: 0.7
@@ -175,16 +173,14 @@
     - type: javascript
       metric: "[contract] valid JSON, 2-6 tags, confidence enum, abstract"
       value: |
-        (() => {
-          try {
-            const o = JSON.parse(output);
-            const tagsOk = Array.isArray(o.tags) && o.tags.length >= 2 && o.tags.length <= 6
-              && o.tags.every(t => typeof t === 'string' && t === t.toLowerCase());
-            const confOk = ['high','medium','low'].includes(o.confidence);
-            const sumOk = typeof o.summary === 'string' && o.summary.trim().length > 0;
-            return tagsOk && confOk && sumOk;
-          } catch (e) { return false; }
-        })()
+        try {
+          const o = JSON.parse(output);
+          const tagsOk = Array.isArray(o.tags) && o.tags.length >= 2 && o.tags.length <= 6
+            && o.tags.every(t => typeof t === 'string' && t === t.toLowerCase());
+          const confOk = ['high','medium','low'].includes(o.confidence);
+          const sumOk = typeof o.summary === 'string' && o.summary.trim().length > 0;
+          return tagsOk && confOk && sumOk;
+        } catch (e) { return false; }
     - type: g-eval
       metric: "[quality] tags specific and grounded"
       threshold: 0.7
@@ -221,14 +217,12 @@
     - type: javascript
       metric: "[contract] 1-2 sentences, no preamble/quotes/labels"
       value: |
-        (() => {
-          const t = output.trim();
-          if (!t) return false;
-          if (t.startsWith('"') || t.startsWith('`')) return false;
-          if (/^(context|here'?s|this chunk|the chunk|sure|certainly)\b/i.test(t)) return false;
-          const sentences = (t.match(/[.!?](\s|$)/g) || []).length;
-          return t.length <= 500 && sentences >= 1 && sentences <= 3;
-        })()
+        const t = output.trim();
+        if (!t) return false;
+        if (t.startsWith('"') || t.startsWith('`')) return false;
+        if (/^(context|here'?s|this chunk|the chunk|sure|certainly)\b/i.test(t)) return false;
+        const sentences = (t.match(/[.!?](\s|$)/g) || []).length;
+        return t.length <= 500 && sentences >= 1 && sentences <= 3;
     - type: g-eval
       metric: "[quality] situates the chunk within the document"
       threshold: 0.7
