@@ -229,15 +229,16 @@ for suite in sorted(wins.keys()):
     clines.append(row)
 clines.append("")
 
-# Per-test winners
+# Per-test winners — compact: a collapsible table per suite
 clines.append("## Per-test winners\n")
 for suite in sorted(per_test.keys()):
-    clines.append(f"### {suite}\n")
+    clines.append(f"<details><summary>{suite}</summary>\n")
+    clines.append("| Test | Winner |")
+    clines.append("| --- | --- |")
     for entry in per_test[suite]:
-        clines.append(f"- **{entry['winner']}** — {entry['desc']}")
-        if entry['reason']:
-            clines.append(f"  - _{entry['reason']}_")
-    clines.append("")
+        desc = str(entry['desc']).replace('|', '\\|')
+        clines.append(f"| {desc} | {entry['winner']} |")
+    clines.append("\n</details>\n")
 
 with open('evals/COMPARE.md', 'w') as f:
     f.write('\n'.join(clines))

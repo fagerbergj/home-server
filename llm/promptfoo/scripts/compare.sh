@@ -19,14 +19,27 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root
 
-COMPARE_SUITES=(architecture coding calibration brain-twisters)
+ALL_COMPARE_SUITES=(architecture coding calibration brain-twisters)
+COMPARE_SUITES=("${ALL_COMPARE_SUITES[@]}")
 
 if [[ $# -gt 0 ]]; then
-  case " ${COMPARE_SUITES[*]} " in
+  case " ${ALL_COMPARE_SUITES[*]} " in
     *" $1 "*) COMPARE_SUITES=("$1") ;;
-    *) echo "error: '$1' is not a compare suite. Choose: ${COMPARE_SUITES[*]}" >&2; exit 1 ;;
+    *) echo "error: '$1' is not a compare suite. Choose: ${ALL_COMPARE_SUITES[*]}" >&2; exit 1 ;;
   esac
 fi
+
+# Drop stale compare outputs for suites no longer in the compare set — a de-listed
+# suite or a removed model lingering in old JSON would otherwise still show up in
+# COMPARE.md (e.g. hard-reasoning + the retired llama-3.3-70b).
+for f in evals/compare-*.json; do
+  [ -e "$f" ] || continue
+  s=$(basename "$f" .json); s=${s#compare-}
+  case " ${ALL_COMPARE_SUITES[*]} " in
+    *" $s "*) ;;
+    *) echo "removing stale $f"; rm -f "$f" ;;
+  esac
+done
 
 for suite in "${COMPARE_SUITES[@]}"; do
   echo "──────────────────────────────────────────────────"
