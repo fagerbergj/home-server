@@ -16,9 +16,9 @@ DEFAULTS=(
   "https://huggingface.co/unsloth/gpt-oss-120b-GGUF/blob/main/gpt-oss-120b-F16.gguf"
   "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/blob/main/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
   "https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/blob/main/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
-  "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/blob/main/Qwen3.5-9B-Q4_K_M.gguf"
-  "https://huggingface.co/unsloth/Qwen3-VL-8B-Instruct-GGUF/blob/main/Qwen3-VL-8B-Instruct-Q4_K_M.gguf"
-  "https://huggingface.co/unsloth/Qwen3-VL-8B-Instruct-GGUF/blob/main/mmproj-F16.gguf"
+  "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/blob/main/Qwen3.5-9B-UD-Q4_K_XL.gguf"
+  "https://huggingface.co/unsloth/Qwen3-VL-8B-Instruct-GGUF/blob/main/Qwen3-VL-8B-Instruct-UD-Q4_K_XL.gguf"
+  "https://huggingface.co/unsloth/Qwen3-VL-8B-Instruct-GGUF/blob/main/mmproj-F32.gguf"
   "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/blob/main/Qwen3-Coder-Next-UD-Q4_K_M.gguf"
   "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/blob/main/Qwen3-Embedding-0.6B-Q8_0.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF/blob/main/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf"
@@ -37,7 +37,20 @@ dl() {
     echo "   expected .../<org>/<repo>/blob/<branch>/<file.gguf>" >&2
     return 1
   fi
-  echo "── $repo : $file"
+
+  # Disk guard: skip if free space < file size + 10GB buffer. (Already-cached
+  # files re-download to nothing, but we check before pulling anyway.)
+  local resolve size free buffer=$((10 * 1024 * 1024 * 1024))
+  resolve="https://huggingface.co/$repo/resolve/main/$file"
+  size="$(curl -sIL "$resolve" 2>/dev/null | awk 'tolower($1)=="content-length:"{n=$2} END{gsub(/[^0-9]/,"",n); print n}')" || true
+  case "$size" in ''|*[!0-9]*) size= ;; esac
+  free="$(df -P -B1 "$HF_CACHE" | awk 'NR==2{print $4}')"
+  if [ -n "$size" ] && [ "$((size + buffer))" -gt "$free" ]; then
+    echo "!! SKIP $file — need $((size / 1024 / 1024 / 1024))GB + 10GB buffer, only $((free / 1024 / 1024 / 1024))GB free" >&2
+    return 1
+  fi
+
+  echo "── $repo : $file ($(( ${size:-0} / 1024 / 1024 / 1024 ))GB)"
   docker run --rm \
     -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN:-}" \
     -v "$HF_CACHE:/root/.cache/huggingface" \
@@ -48,5 +61,5 @@ dl() {
 
 urls=("$@")
 [ "${#urls[@]}" -eq 0 ] && urls=("${DEFAULTS[@]}")
-for u in "${urls[@]}"; do dl "$u"; done
+for u in "${urls[@]}"; do dl "$u" || echo "  (skipped: $u)"; done
 echo "All done."
