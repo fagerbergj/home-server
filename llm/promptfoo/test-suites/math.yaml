@@ -1,7 +1,6 @@
-# Competition-style math (MATH500 difficulty, levels 4-5).
-# GSM8K was 9/9 saturated on llama-3.3-70b, so swapped to problems with
-# headroom: function composition, complex powers, Vieta's, modular arithmetic,
-# divisor sums, recurrence-style algebra, etc.
+# Competition-style math (MATH500 difficulty, levels 4-5) with headroom:
+# function composition, complex powers, Vieta's, modular arithmetic, divisor
+# sums, recurrence-style algebra, etc.
 #
 # Grading: deterministic — final numeric answer must appear in output. Rubric
 # only checks that the model actually shows derivation (no signal otherwise).

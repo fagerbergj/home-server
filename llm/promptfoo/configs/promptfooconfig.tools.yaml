@@ -20,10 +20,8 @@ providers:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
       max_tokens: 8192
-      # temperature: promptfoo defaults to 0 which makes Llama 3.3 emit raw
-      # JSON instead of <|python_tag|>-prefixed tool calls — llama.cpp's
-      # parser then returns 500. A small non-zero temp restores the native
-      # token preference.
+      # A small non-zero temperature: at 0, some models emit raw JSON instead
+      # of native tool calls. 0.2 keeps native tool-call emission reliable.
       temperature: 0.2
       # tool_choice: auto — the "no_empty_search" / "no_retry_after_reject" /
       # "no_empty_get" tests EXPECT the model to NOT call a tool. With
@@ -117,7 +115,7 @@ providers:
               required: [id, field, content]
 
 prompts:
-  # Send the scenario as the bare user message. Llama 3.3's chat template
+  # Send the scenario as the bare user message. The model's chat template
   # (activated by --jinja) injects tool-call instructions automatically;
   # adding our own 'decide whether to call a tool' wording confuses the
   # model into emitting JSON instead of native tool calls.

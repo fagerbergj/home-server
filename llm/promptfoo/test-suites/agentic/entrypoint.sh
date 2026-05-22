@@ -27,7 +27,15 @@ cat > /root/.config/opencode/opencode.json <<JSON
 }
 JSON
 
-exec opencode run "${TASK}" \
+opencode run "${TASK}" \
   -m "llm-swap/${MODEL}" \
   --pure --format json --dangerously-skip-permissions \
   --dir /work
+
+# Salvage: the model sometimes writes solution.py with an absolute path (e.g.
+# /solution.py) instead of into /work. Copy it into /work so grading finds it.
+if [ ! -f /work/solution.py ]; then
+  f=$(find / -maxdepth 3 -name solution.py 2>/dev/null | grep -v '^/work/' | head -1)
+  [ -n "$f" ] && cp "$f" /work/solution.py
+fi
+true

@@ -1,0 +1,12 @@
+# Agentic-coding suite — model self-directs in the oc-agent sandbox container to
+# write + fix code, graded against hidden pytest. The custom provider runs
+# opencode against env.MODEL on llm-swap and reports tokens/turns. Must run ON
+# jason-server (docker + llm-swap). Agent runs are nondeterministic, so run with
+# cache off:  PROMPTFOO_CACHE_ENABLED=false ./scripts/eval.sh --suite agentic [model]
+providers:
+  - id: file://../test-suites/agentic/provider.js
+    config:
+      model: "{{ env.MODEL }}"
+prompts:
+  - "{{task}}"
+tests: ../test-suites/agentic.yaml

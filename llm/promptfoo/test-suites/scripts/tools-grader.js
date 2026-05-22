@@ -7,11 +7,8 @@
 // Source for the output-assignment logic: promptfoo
 // src/providers/openai/chat.ts ~L631-650.
 //
-// Special case for llama-3.3-70b: llm-swap runs it with --skip-chat-parsing
-// (workaround for llama.cpp PRs #20800 / #20806 — Llama 3.x tool-call parser
-// 500s when the model emits raw {type, name, parameters} JSON without the
-// <|python_tag|> prefix). With that flag, llama-server returns the model's
-// raw output as `content` (a JSON string) and we parse it client-side here.
+// Fallback: if a model emits a raw {name, arguments} JSON object as `content`
+// instead of a native tool_call, parse it client-side here.
 
 function tryParseInlineToolCall(s) {
   if (typeof s !== 'string') return null;

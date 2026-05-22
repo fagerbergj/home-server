@@ -31,7 +31,7 @@ fi
 
 # Drop stale compare outputs for suites no longer in the compare set — a de-listed
 # suite or a removed model lingering in old JSON would otherwise still show up in
-# COMPARE.md (e.g. hard-reasoning + the retired llama-3.3-70b).
+# COMPARE.md (e.g. a de-listed suite, or a model no longer in the lineup).
 for f in evals/compare-*.json; do
   [ -e "$f" ] || continue
   s=$(basename "$f" .json); s=${s#compare-}

@@ -7,9 +7,8 @@
 //   - content + tool_calls both present   → output = full message object
 //   - otherwise                            → output = string
 //
-// Llama-3.3-70b runs with --skip-chat-parsing (workaround for llama.cpp PRs
-// #20800 / #20806) and returns raw JSON in `content`. Parse that as a
-// fallback tool call.
+// Fallback: a model may return a raw {name, arguments} JSON object in `content`
+// instead of a native tool_call — parse that too.
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');

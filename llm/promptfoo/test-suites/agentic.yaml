@@ -1,0 +1,109 @@
+# Agentic-coding suite — the model self-directs inside the oc-agent sandbox
+# container (opencode loop: write code, run its own tests, fix) and the result
+# is graded against the HIDDEN pytest in test-suites/large-code/<test_name>/.
+# The custom provider (agentic/provider.js) runs opencode against env.MODEL on
+# llm-swap and returns {passed,total,turns,tokens}; the inline assert thresholds
+# passed/total*5 against pass_threshold (same bar as the old one-shot large-code).
+# Tasks pin the public API; they do NOT mention testing — self-direction is the
+# point. Run ON jason-server with cache off.
+
+- description: "agentic: Trie data structure"
+  vars:
+    test_name: trie
+    pass_threshold: 4
+    task: |
+      Implement a Trie (prefix tree) data structure in Python. Write your solution to a single file named solution.py.
+
+      Expose a class `Trie` with:
+        - insert(word: str) -> None
+        - search(word: str) -> bool  (True only if the exact word was inserted)
+        - starts_with(prefix: str) -> bool  (True if any inserted word has this prefix)
+        - delete(word: str) -> bool  (True if the word was present and removed, else False)
+
+      Use only the Python standard library.
+  assert:
+    - type: javascript
+      metric: "[agentic] trie hidden pytest"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
+
+- description: "agentic: Markdown to HTML converter"
+  vars:
+    test_name: markdown
+    pass_threshold: 3.75
+    task: |
+      Implement a markdown-to-HTML converter in Python. Write your solution to a single file named solution.py.
+
+      Expose a function `to_html(markdown_text: str) -> str` that handles:
+        - Headings: `# H1`, `## H2`, `### H3` -> `<h1>`, `<h2>`, `<h3>`
+        - Bold: `**text**` -> `<strong>` (or `<b>`)
+        - Italic: `*text*` -> `<em>` (or `<i>`)
+        - Links: `[text](url)` -> `<a href="url">text</a>`
+        - Unordered lists: `- item` -> `<ul><li>...</li></ul>`
+        - Fenced code blocks: triple backticks -> `<pre><code>` (or `<code>`)
+        - Plain paragraphs wrapped in `<p>`
+
+      Use only the Python standard library.
+  assert:
+    - type: javascript
+      metric: "[agentic] markdown hidden pytest"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
+
+- description: "agentic: SQLite job queue"
+  vars:
+    test_name: job_queue
+    pass_threshold: 3.5
+    task: |
+      Implement a SQLite-backed job queue in Python. Write your solution to a single file named solution.py.
+
+      Expose a class `JobQueue(db_path)` with:
+        - enqueue(payload: dict) -> int  (returns job id)
+        - dequeue() -> tuple[int, dict] | None  (FIFO order; None if empty)
+        - complete(job_id: int) -> None  (removes the job from the queue)
+        - fail(job_id: int) -> None  (increments retry counter; if it exceeds MAX_RETRIES, move to the DLQ)
+        - dlq() -> list[dict]  (returns failed payloads)
+        - MAX_RETRIES attribute (default 3)
+
+      Use sqlite3 from the Python standard library.
+  assert:
+    - type: javascript
+      metric: "[agentic] job_queue hidden pytest"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
+
+- description: "agentic: Rate-limited async HTTP client"
+  vars:
+    test_name: rate_limiter
+    pass_threshold: 2.5
+    task: |
+      Implement an async, rate-limited HTTP client in Python. Write your solution to a single file named solution.py.
+
+      Expose:
+        async def fetch(urls: list[str], rate: int) -> list[dict]
+
+      It must:
+        - Issue at most `rate` requests per second across all URLs
+        - Return one dict per URL: {"url": str, "status": int, "body": str} on success,
+          or {"url": str, "error": str} after retries are exhausted
+        - Retry transient failures (network errors, 5xx) with exponential backoff
+        - Use aiohttp (already installed)
+  assert:
+    - type: javascript
+      metric: "[agentic] rate_limiter hidden pytest"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
+
+- description: "agentic: Flappy Bird in pygame"
+  vars:
+    test_name: flappy_bird
+    pass_threshold: 3
+    task: |
+      Implement a Flappy Bird clone in Python using pygame (already installed). Write your solution to a single file named solution.py.
+
+      Expose these classes (importable from the module):
+        - Bird — attributes: x, y, velocity; methods: update() (applies gravity), jump() (upward impulse), draw(surface)
+        - Pipe(x: int, gap_y: int) — attributes: x, gap_y, width; methods: update() (moves left), draw(surface), collides_with(bird) -> bool
+        - Game — attributes: bird, pipes (list), score, game_over; methods: update() (advances one frame), draw(surface)
+
+      Do not call pygame.display.set_mode or run a main loop at import time — the classes will be instantiated directly.
+  assert:
+    - type: javascript
+      metric: "[agentic] flappy_bird hidden pytest"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
