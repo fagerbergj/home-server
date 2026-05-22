@@ -1,0 +1,21 @@
+# Multi-turn clarify conversation. The custom provider (clarify-multiturn.js)
+# runs the whole loop on llm-swap — model under test, then selene as the document
+# author answering from a ground-truth key, then the model revising. The suite
+# just supplies vars + cross-turn asserts; g-eval judge = selene.
+# Must run ON jason-server (llm-swap). Run with cache off:
+#   PROMPTFOO_CACHE_ENABLED=false ./scripts/eval.sh --suite chat-multiturn [model]
+providers:
+  - id: file://../test-suites/clarify-multiturn.js
+    config:
+      model: "{{ env.MODEL }}"
+      judge: selene
+prompts:
+  - "{{digest}}"
+tests: ../test-suites/chat-multiturn.yaml
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://localhost:11436/v1
+        apiKey: llm-swap
