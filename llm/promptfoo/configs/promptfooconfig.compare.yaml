@@ -13,18 +13,22 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
   - id: openai:chat:qwen3.6-35b
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
   - id: openai:chat:qwen3.5-9b
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
   - id: openai:chat:qwen3-coder-next
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
+      max_tokens: 8192
 
 prompts:
   - "{{task}}"

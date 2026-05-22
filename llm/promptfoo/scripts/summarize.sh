@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root
 
 python3 - << 'EOF'
-import json, glob, os, datetime, statistics
+import json, glob, os, datetime, statistics, html
 from collections import defaultdict
 
 files = sorted(glob.glob('evals/*.json'))
@@ -35,6 +35,9 @@ def truncate(s, n=500):
 
 # ── Phase 1: per-model results (RESULTS.md) ────────────────────────────────
 data = {}  # model -> suite -> {pass, total, errors, tps, failures}
+# tok/s persists across runs: a cached response reports no completion tokens, so a
+# fully-cached re-run reuses the last fresh value instead of blanking it.
+tps_cache = json.load(open('evals/.tps.json')) if os.path.exists('evals/.tps.json') else {}
 for f in files:
     name = os.path.basename(f).replace('.json', '')
     model, suite = parse_name(name)
@@ -86,13 +89,19 @@ for f in files:
                 failures.append({'desc': desc, 'output': truncate(output, 800),
                                  'reasons': reasons})
 
+        key = f"{model}-{suite}"
+        fresh_tps = statistics.median(tps_values) if tps_values else None
+        if fresh_tps is not None:
+            tps_cache[key] = fresh_tps
         data.setdefault(model, {})[suite] = {
             'pass': passed, 'total': total, 'errors': errors,
-            'tps': statistics.median(tps_values) if tps_values else None,
+            'tps': tps_cache.get(key),
             'failures': failures,
         }
     except Exception:
         pass
+
+json.dump(tps_cache, open('evals/.tps.json', 'w'), indent=2)
 
 if data:
     suites = [s for s in VALID_SUITES if any(s in m for m in data.values())]
@@ -131,14 +140,15 @@ if data:
             lines.append(f"### {model} — {suite} ({len(r['failures'])} failures)\n")
             for fail in r['failures']:
                 lines.append(f"<details>")
-                lines.append(f"<summary>{fail['desc']}</summary>\n")
+                lines.append(f"<summary>{html.escape(fail['desc'])}</summary>\n")
                 lines.append(f"**Output:**\n")
-                lines.append(f"```\n{fail['output']}\n```\n")
+                lines.append(f"<pre>{html.escape(fail['output'])}</pre>\n")
                 lines.append(f"**Judge reasoning:**")
                 for rsn in fail['reasons']:
                     score_str = f" (score: {rsn['score']:.2f})" if rsn['score'] is not None else ""
                     metric_str = f" *{rsn['metric']}*" if rsn['metric'] else ""
-                    lines.append(f"-{metric_str}{score_str} {rsn['reason']}")
+                    reason_text = ' '.join(str(rsn['reason']).split())
+                    lines.append(f"-{metric_str}{score_str} {reason_text}")
                 lines.append(f"\n</details>\n")
     if not any_failures:
         lines.append("*No failures — all tests passed.*")

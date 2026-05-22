@@ -43,4 +43,3 @@ for suite in "${COMPARE_SUITES[@]}"; do
 done
 
 bash scripts/summarize.sh
-echo "Wrote evals/COMPARE.md"
