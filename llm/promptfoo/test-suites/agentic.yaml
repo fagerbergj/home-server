@@ -2,8 +2,8 @@
 # container (opencode loop: write code, run its own tests, fix) and the result
 # is graded against the HIDDEN pytest in test-suites/large-code/<test_name>/.
 # The custom provider (agentic/provider.js) runs opencode against env.MODEL on
-# llm-swap and returns {passed,total,turns,tokens}; the inline assert thresholds
-# passed/total*5 against pass_threshold (same bar as the old one-shot large-code).
+# llm-swap and returns {passed,total,turns,tokens}; the inline assert scores
+# passed/total*5 and requires it to clear each test's pass_threshold.
 # Tasks pin the public API; they do NOT mention testing — self-direction is the
 # point. Run ON jason-server with cache off.
 

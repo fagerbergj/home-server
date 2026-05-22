@@ -22,7 +22,7 @@ if not files:
     exit(0)
 
 VALID_SUITES = ['architecture','coding','math','chat','brain-twisters',
-                'cruxeval','calibration','hard-reasoning','large-code','tools']
+                'cruxeval','calibration','hard-reasoning','agentic','tools']
 
 def parse_name(name):
     """parse 'qwen3.6-35b-architecture' -> ('qwen3.6-35b', 'architecture').
@@ -40,6 +40,7 @@ def truncate(s, n=500):
 
 # ── Phase 1: per-model results (RESULTS.md) ────────────────────────────────
 data = {}  # model -> suite -> {pass, total, errors, tps, failures}
+agentic = {}  # model -> [{tokens, turns, passed}] — for the agentic efficiency table
 # tok/s persists across runs: a cached response reports no completion tokens, so a
 # fully-cached re-run reuses the last fresh value instead of blanking it.
 tps_cache = json.load(open('evals/.tps.json')) if os.path.exists('evals/.tps.json') else {}
@@ -103,6 +104,15 @@ for f in files:
             'tps': tps_cache.get(key),
             'failures': failures,
         }
+        if suite == 'agentic':
+            rows = []
+            for r in results:
+                resp = r.get('response', {}) or {}
+                md = resp.get('metadata', {}) or {}
+                tu = resp.get('tokenUsage', {}) or {}
+                rows.append({'tokens': tu.get('total'), 'turns': md.get('turns'),
+                             'passed': bool(r.get('success'))})
+            agentic[model] = rows
     except Exception:
         pass
 
@@ -133,6 +143,25 @@ if data:
     lines.append("**Thresholds:** ✅ ≥80%  ⚠️ 60–79%  ❌ <60% or errors")
     lines.append("**tok/s:** median decode speed across all tests in that suite")
     lines.append("")
+
+    # ── Agentic efficiency: median tokens/turns over solved tasks ──
+    if agentic:
+        lines.append("## Agentic efficiency\n")
+        lines.append("Median over *solved* tasks — lower is more efficient (tokens include the cached prompt).\n")
+        lines.append("| Model | solved | median tokens | median turns |")
+        lines.append("| --- | --- | --- | --- |")
+        for model in sorted(agentic):
+            rows = agentic[model]
+            solved = [r for r in rows if r['passed']]
+            if solved:
+                toks = [s['tokens'] for s in solved if s['tokens'] is not None]
+                turns = [s['turns'] for s in solved if s['turns'] is not None]
+                mt = f"{int(statistics.median(toks)):,}" if toks else "—"
+                mu = f"{statistics.median(turns):g}" if turns else "—"
+                lines.append(f"| {model} | {len(solved)}/{len(rows)} | {mt} | {mu} |")
+            else:
+                lines.append(f"| {model} | 0/{len(rows)} | — | — |")
+        lines.append("")
 
     lines.append("## Failures\n")
     any_failures = False

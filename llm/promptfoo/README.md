@@ -13,8 +13,9 @@ full GPU.
 promptfoo/
 ├── configs/         promptfooconfig.<suite>.yaml + promptfooconfig.compare.yaml
 ├── test-suites/     <suite>.yaml (one per suite)
-│   ├── large-code/  per-test pytest fixtures (trie/, markdown/, …)
-│   └── scripts/     tools-grader.js, large-code-grader.js, large-code-runner.sh
+│   ├── agentic/     provider.js, Dockerfile, entrypoint.sh (agentic sandbox)
+│   ├── large-code/  hidden pytest specs the agentic suite grades against
+│   └── scripts/     tools-grader.js
 ├── scripts/         eval.sh, compare.sh, summarize.sh, lint-tests.py
 ├── evals/           <model>-<suite>.json + README.md (results) + COMPARE.md
 └── eval-config.yaml model → suite assignments + concurrency
@@ -28,11 +29,11 @@ Suite name == config stem == test-file stem (e.g. `coding` → `configs/promptfo
 | coding | g-eval (0-1 criteria) | ✅ |
 | calibration | model-graded-closedqa (binary) | ✅ |
 | brain-twisters | factuality + g-eval + javascript | ✅ |
-| function-call | llm-rubric + javascript + is-json | — |
+| chat | g-eval + javascript (prompt contract) | — |
 | math | deterministic (final-answer match) | — |
 | cruxeval | deterministic + llm-rubric (output match + gotchas) | — |
 | hard-reasoning | deterministic (letter / grid match) | — |
-| large-code | compile + pytest (large-code-grader.js → large-code-runner.sh) | — |
+| agentic | opencode self-directs in a sandbox container; hidden pytest grades (reports tokens/turns) | — |
 | tools | deterministic JSON (tools-grader.js) | — |
 
 Only the four model-graded suites get the A/B compare phase — for deterministic suites the per-model pass rate already is the comparison, and a "pick the best" judge would just add noise (it might prefer a confident-but-wrong answer).
@@ -43,14 +44,17 @@ Requires Node.js 18+ (`node --version`). promptfoo runs via `npx`, no install ne
 
 The judge (`selene`) is a model in `llm-swap.yaml` and loads on demand during the grading phase — nothing extra to start.
 
-For the `large-code` suite, set up a Python venv with pytest + the deps the test files import:
+The `agentic` suite runs on **jason-server** (needs Docker + the local llm-swap). Build the sandbox image once — it bundles pytest + the task deps (aiohttp, pygame), so no host Python env is needed:
 
 ```bash
-uv venv ~/.venvs/eval
-~/.venvs/eval/bin/uv pip install pytest aiohttp pygame
+docker build -t oc-agent test-suites/agentic
 ```
 
-(Plain `python3 -m venv` + `pip install` works too.)
+Agent runs are nondeterministic, so run the suite with caching off:
+
+```bash
+PROMPTFOO_CACHE_ENABLED=false ./scripts/eval.sh --suite agentic
+```
 
 ## Running
 
