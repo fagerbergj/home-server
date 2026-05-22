@@ -110,14 +110,19 @@ models:
   # with this architecture — causes segfault on init. The model's actual
   # KV cache is small enough (2 KV heads × 12 attention layers) that fp16
   # at 256K still fits comfortably.
+  # Non-thinking model (no <think> blocks) — so no --reasoning-format. unsloth
+  # recommends the UD-Q4_K_M (Dynamic 2.0) quant + sampling temp=1.0/top_p=0.95/
+  # top_k=40; those are set here as server defaults (requests can override).
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M
+      -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_M
       --jinja
-      --reasoning-format auto
+      --temp 1.0
+      --top-p 0.95
+      --top-k 40
       --no-mmap
       --split-mode tensor
       -fit off
