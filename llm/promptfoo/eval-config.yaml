@@ -2,13 +2,14 @@
 #
 # Suites (run with: ./eval.sh [model]):
 #   architecture   (10 tests) — only expert-level/known-discriminating tests kept
-#   coding         (9 tests)  — HumanEval + debugging (trivial ones culled)
+#   coding         (5 tests)  — multi-language debug / code-review (SQL, Docker, Go, Kotlin, TS)
 #   chat            (4)   — real OCR-pipeline prompts: summarize/clarify/classify/contextual
+#   chat-multiturn  (1)   — multi-turn clarify loop (model → author → model), custom provider
 #   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
 #   cruxeval       (15 tests) — predict-the-output + code gotchas
 #   calibration    (10 tests) — does the model admit "I don't know"?
 #   hard-reasoning (15 tests) — GPQA-style science MCQ + ZebraLogic puzzles
-#   agentic        (5 tests)  — opencode self-directs in a sandbox; hidden pytest grades + reports tokens/turns
+#   agentic        (8 tests)  — opencode self-directs in a sandbox: solo + seeded bugfix + PR review + repo summary
 #   math           (disabled — saturated, all models passed; kept on disk)
 #   tools         (14 tests)  — document-pipeline specific tool routing
 
@@ -19,6 +20,7 @@ models:
       - architecture
       - coding
       - chat
+      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -32,6 +34,7 @@ models:
       - architecture
       - coding
       - chat
+      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -45,6 +48,7 @@ models:
       - architecture
       - coding
       - chat
+      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -58,5 +62,6 @@ models:
       - architecture
       - coding
       - chat
+      - chat-multiturn
       - brain-twisters
       - cruxeval

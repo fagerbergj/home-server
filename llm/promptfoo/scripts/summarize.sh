@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Generate evals/README.md (per-model pass/fail) from eval JSON files in evals/.
-# With --compare, also regenerate evals/COMPARE.md (blind A/B win matrix) from
-# the compare-*.json files. eval.sh calls it without --compare (README only);
-# compare.sh calls it with --compare.
+# Generate a dated results file evals/results-<date>.md (per-model pass/fail) from
+# eval JSON files in evals/. With --compare, also write evals/compare-<date>.md
+# (blind A/B win matrix) from the compare-*.json files. Dated filenames mean each
+# run produces a fresh file instead of overwriting a tracked one. eval.sh calls
+# it without --compare (results only); compare.sh calls it with --compare.
 # Usage: ./scripts/summarize.sh [--compare]   (run from anywhere — cd's to root)
 
 set -euo pipefail
@@ -12,8 +13,8 @@ python3 - "$@" << 'EOF'
 import sys, json, glob, os, datetime, statistics, html
 from collections import defaultdict
 
-# COMPARE.md (Phase 2) is only regenerated when called with --compare (by
-# compare.sh). A plain summarize / eval.sh run only touches README.md.
+# The compare file (Phase 2) is only written when called with --compare (by
+# compare.sh). A plain summarize / eval.sh run only writes the dated results file.
 do_compare = '--compare' in sys.argv[1:]
 
 files = sorted(glob.glob('evals/*.json'))
@@ -198,9 +199,10 @@ if data:
     if not any_failures:
         lines.append("*No failures — all tests passed.*")
 
-    with open('evals/README.md', 'w') as f:
+    out_path = f"evals/results-{datetime.date.today()}.md"
+    with open(out_path, 'w') as f:
         f.write('\n'.join(lines))
-    print(f"Wrote evals/README.md")
+    print(f"Wrote {out_path}")
 
 # ── Phase 2: A/B comparison (COMPARE.md) — only with --compare (compare.sh) ──
 if not do_compare:
@@ -280,7 +282,8 @@ for suite in sorted(per_test.keys()):
         clines.append(f"| {desc} | {entry['winner']} |")
     clines.append("\n</details>\n")
 
-with open('evals/COMPARE.md', 'w') as f:
+cmp_path = f"evals/compare-{datetime.date.today()}.md"
+with open(cmp_path, 'w') as f:
     f.write('\n'.join(clines))
-print(f"Wrote evals/COMPARE.md")
+print(f"Wrote {cmp_path}")
 EOF

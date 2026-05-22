@@ -18,7 +18,7 @@ promptfoo/
 │   ├── clarify-multiturn.js   custom provider for the chat-multiturn suite
 │   └── scripts/     tools-grader.js
 ├── scripts/         eval.sh, compare.sh, summarize.sh, lint-tests.py
-├── evals/           <model>-<suite>.json + README.md (results) + COMPARE.md
+├── evals/           <model>-<suite>.json + dated results-<date>.md / compare-<date>.md
 └── eval-config.yaml model → suite assignments + concurrency
 ```
 
