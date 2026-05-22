@@ -4,7 +4,7 @@
 # Each test's `task` is the production prompt with a sample input inlined; `doc`
 # carries the source text for the length-contract checks. Grading mixes
 # deterministic output-contract checks (javascript) with g-eval quality rubrics.
-# OCR is vision (qwen3-vl-8b) — needs image fixtures, tested separately.
+# OCR is vision (qwen3-vl-32b) — needs image fixtures, tested separately.
 
 # ── summarize: produce a Markdown digest, ≤ input length, preserve entities ──
 - description: "summarize: meeting note → digest"

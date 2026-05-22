@@ -24,9 +24,10 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 |---|---|---|
 | `gpt-oss-120b` | `unsloth/gpt-oss-120b-GGUF:F16` (MXFP4 native) | Primary chat model. Modern tool-call template, ~5 B active of 120 B total. Tensor-split across both GPUs. |
 | `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M` | Proven middle-tier chat model + A/B compare partner for evals. |
-| `qwen3-coder-next` | `unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M` | Code specialist (80 B MoE, 3 B active). Hybrid DeltaNet/Attention — do not set KV quant. 256 K context. |
-| `qwen3.5-9b` | `unsloth/Qwen3.5-9B-GGUF:Q4_K_M` | Small/fast model for cheap requests and eval baselines. |
-| `qwen3-vl-8b` | `unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M` | Vision model used by document-pipeline OCR. |
+| `gemma4-26b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_M` | Same-class challenger to qwen3.6-35b (26 B MoE, ~4 B active). |
+| `qwen3-coder-next` | `unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_M` | Code specialist (80 B MoE, 3 B active). Hybrid DeltaNet/Attention — do not set KV quant. 256 K context. |
+| `qwen3.5-9b` | `unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL` | Small/fast model for cheap requests and eval baselines. |
+| `qwen3-vl-32b` | `unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL` | Vision model used by document-pipeline OCR (mmproj-F32 via --mmproj-url). |
 | `qwen3-embed` | `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0` | Persistent embedding model on CPU. Stays loaded. |
 
 ## Pre-pulling models

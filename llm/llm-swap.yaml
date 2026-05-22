@@ -11,7 +11,7 @@ groups:
       - qwen3.6-35b
       - gemma4-26b
       - qwen3.5-9b
-      - qwen3-vl-8b
+      - qwen3-vl-32b
       - qwen3-coder-next
       - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
                  # grading phase after generation, so it never competes for VRAM
@@ -111,19 +111,26 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9999
 
-  "qwen3-vl-8b":
+  # Qwen3-VL 32B — OCR/vision for the document-pipeline. Handwriting needs the
+  # bigger model; OCR is offline/batch so the slower speed is fine. Vision-mode
+  # sampling per Qwen's VL recommendation (temp 0.7, top_p 0.8, top_k 20,
+  # presence 1.5, repeat 1.0 — NOT the text-mode 1.0/1.0/40/presence 2.0). mmproj
+  # via --mmproj-url (this build has no --mmproj-hf); F32 projector is materially
+  # better for OCR. OCR requests should set max_tokens up to 16384.
+  "qwen3-vl-32b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-VL-8B-Instruct-GGUF:UD-Q4_K_XL
-      --mmproj-hf unsloth/Qwen3-VL-8B-Instruct-GGUF:mmproj-F32
+      -hf unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL
+      --mmproj-url https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-F32.gguf
       --jinja
       --temp 0.7
       --top-p 0.8
       --top-k 20
       --min-p 0
       --presence-penalty 1.5
+      --repeat-penalty 1.0
       -ngl 999
       -c 32768
       --image-min-tokens 2048
