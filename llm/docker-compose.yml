@@ -20,6 +20,14 @@ services:
     group_add:
       - video
       - "993"
+    # The base image's healthcheck targets llama-swap's default :8080, but we
+    # run it with --listen :11436 — override so health reflects the real port.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11436/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   qdrant:
