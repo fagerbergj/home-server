@@ -1,11 +1,16 @@
 # Agentic-coding suite — the model self-directs inside the oc-agent sandbox
-# container (opencode loop: write code, run its own tests, fix) and the result
-# is graded against the HIDDEN pytest in test-suites/large-code/<test_name>/.
-# The custom provider (agentic/provider.js) runs opencode against env.MODEL on
-# llm-swap and returns {passed,total,turns,tokens}; the inline assert scores
-# passed/total*5 and requires it to clear each test's pass_threshold.
-# Tasks pin the public API; they do NOT mention testing — self-direction is the
-# point. Run ON jason-server with cache off.
+# container (opencode loop: read/write code, run its own tests, fix). The custom
+# provider (agentic/provider.js) runs opencode against env.MODEL on llm-swap and
+# returns {passed,total,turns,tokens}. Two graded shapes here:
+#   solo   — empty sandbox; the model writes solution.py from scratch; graded by
+#            the HIDDEN pytest in test-suites/large-code/<test_name>/.
+#   seeded — a real buggy repo (fixtures/repos/<seed>, a document-pipeline tree
+#            at a fix commit's parent) is copied in; the model must FIND and fix
+#            a latent bug with no failing test to point at it; graded by copying
+#            the HIDDEN test (fixtures/hidden/<hidden>) to <dest> and running
+#            <grade_cmd>. Run fixtures/prep.sh once first.
+# Tasks pin the symptom/API; they do NOT mention the hidden tests — self-direction
+# is the point. Run ON jason-server with cache off.
 
 - description: "agentic: Trie data structure"
   vars:
@@ -107,3 +112,47 @@
     - type: javascript
       metric: "[agentic] flappy_bird hidden pytest"
       value: "(() => { const r = JSON.parse(output); return r.total > 0 && (r.passed / r.total * 5) >= context.vars.pass_threshold; })()"
+
+# ── seeded bugfix: real latent bugs from document-pipeline's own history ──
+# The buggy tree's existing tests all pass, so nothing points at the defect —
+# the model must find it from the symptom alone. Graded by the test the real fix
+# shipped (hidden until grade time). Full pass required.
+
+- description: "bugfix: empty embedding input rejected (dp dbba582)"
+  vars:
+    mode: seeded
+    seed: dp-empty-embed
+    hidden: dp-empty-embed/zz_bugcheck_test.go
+    dest: server/store/openai/zz_bugcheck_test.go
+    grade_cmd: "go test ./server/store/openai -run TestGenerateEmbed_SubstitutesEmptyInput -v -count=1"
+    grade_parse: gotest
+    task: |
+      This is the document-pipeline repository, a Go service. Bug report from
+      production: generating embeddings fails whenever a document chunk has no
+      text — the embedding server rejects the request because the input is
+      empty. Locate the bug in the OpenAI-compatible embeddings client and fix
+      it so empty input is handled gracefully. Build and test your change.
+  assert:
+    - type: javascript
+      metric: "[bugfix] hidden regression test passes"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
+
+- description: "bugfix: stage-data input lookup returns empty (dp 63647ca)"
+  vars:
+    mode: seeded
+    seed: dp-stage-input
+    hidden: dp-stage-input/zz_bugcheck_test.go
+    dest: server/core/zz_bugcheck_test.go
+    grade_cmd: "go test ./server/core -run TestFindInput_PrefersNonEmpty -v -count=1"
+    grade_parse: gotest
+    task: |
+      This is the document-pipeline repository, a Go service. Bug report:
+      audio uploads intermittently fail the "clarify" stage — the model replies
+      "I have not received any raw transcription text to process." even though
+      transcription succeeded and produced text. The stage-data input lookup is
+      selecting the wrong value across pipeline stages. Find and fix the bug.
+      Build and test your change.
+  assert:
+    - type: javascript
+      metric: "[bugfix] hidden regression test passes"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"

@@ -1,0 +1,8 @@
+{
+  "_comment": "Seeded bugfix instances mined from document-pipeline's own history. prep.sh archives each fix commit's PARENT (the buggy state, before the fix and before its test existed); the matching hidden test in hidden/<name>/ is copied into the sandbox only at grade time by provider.js. Run prep.sh once before the agentic suite (needs a local document-pipeline checkout).",
+  "prune": ["frontend", ".github", ".idea"],
+  "instances": [
+    { "name": "dp-empty-embed", "commit": "dbba582" },
+    { "name": "dp-stage-input", "commit": "63647ca" }
+  ]
+}

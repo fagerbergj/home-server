@@ -1,13 +1,26 @@
 // Custom promptfoo provider for the agentic-coding suite.
 //
-// For each test it runs opencode headless inside the oc-agent container
-// (the model self-directs: write code, run its own tests, fix), then grades the
-// produced solution.py against the HIDDEN pytest the model never saw. Returns
-// the result as JSON plus tokenUsage + metadata{turns} so promptfoo's reporting
-// and summarize.sh's efficiency table can use them.
+// For each test it runs opencode headless inside the oc-agent container (the
+// model self-directs: read code, write code, run its own tests, fix), then
+// either grades the result with a HIDDEN test the model never saw, or hands the
+// model's produced artifact to a judge (g-eval in the suite). Returns the result
+// plus tokenUsage + metadata{turns} so promptfoo reporting and summarize.sh's
+// efficiency table can use them.
 //
-// Runs ON jason-server (docker + llm-swap local). Model comes from env.MODEL
-// (set per-run by eval.sh); LLM_SWAP_URL defaults to the local llm-swap.
+// Per-test vars drive behavior:
+//   mode: solo | seeded | review | summarize        (default solo)
+//   solo     — empty sandbox; model writes solution.py; graded by the hidden
+//              pytest at large-code/<test_name>/test_solution.py.
+//   seeded   — fixtures/repos/<seed> copied in (a real buggy repo); model fixes
+//              it; graded by copying fixtures/hidden/<hidden> to <dest> and
+//              running <grade_cmd> (parse: gotest|pytest).
+//   review   — repo seeded + fixtures/<diff> dropped at /work/PR.diff; model
+//              writes a review; output = its final assistant text (judge-graded).
+//   summarize— repo seeded; model writes <capture> (e.g. AGENTS.md); output =
+//              that file's contents (judge-graded).
+//
+// Runs ON jason-server (docker + llm-swap local). Model comes from provider
+// config.model (rendered from {{env.MODEL}}); LLM_SWAP_URL defaults to local.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -15,6 +28,7 @@ const path = require('path');
 
 const URL = process.env.LLM_SWAP_URL || 'http://localhost:11436/v1';
 const AGENT_TIMEOUT_MS = (Number(process.env.AGENT_TIMEOUT_S) || 600) * 1000;
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 function parsePytest(s) {
   const n = (re) => { const m = s.match(re); return m ? parseInt(m[1], 10) : 0; };
@@ -22,89 +36,142 @@ function parsePytest(s) {
   return { passed, total: passed + failed + errors };
 }
 
+// `go test -v` prints one "--- PASS:"/"--- FAIL:" line per test function.
+function parseGoTest(s) {
+  const passed = (s.match(/^--- PASS:/gm) || []).length;
+  const failed = (s.match(/^--- FAIL:/gm) || []).length;
+  return { passed, total: passed + failed };
+}
+
+// The final assistant message in opencode's --format json stream is the last
+// {"type":"text","part":{"text":"..."}} event.
+function captureFinalText(events) {
+  let last = '';
+  for (const line of events.split('\n')) {
+    if (!line.trim()) continue;
+    let ev; try { ev = JSON.parse(line); } catch { continue; }
+    if (ev.type === 'text' && ev.part && typeof ev.part.text === 'string' && ev.part.text.trim()) {
+      last = ev.part.text;
+    }
+  }
+  return last.trim();
+}
+
 class AgenticProvider {
   constructor(options) {
     this.config = (options && options.config) || {};
-    this.providerId = (options && options.id) || 'agentic';
   }
-  // Model comes from promptfoo: provider config.model, which promptfoo renders
-  // from {{ env.MODEL }} at load time. Falls back to the MODEL env var. Put in
-  // the id so promptfoo's cache key differs per model under test.
+  // Model comes from promptfoo (provider config.model, rendered from
+  // {{ env.MODEL }}); falls back to MODEL env. In the id so the cache key
+  // differs per model under test.
   modelName() { return this.config.model || process.env.MODEL || 'unknown'; }
   id() { return `agentic:${this.modelName()}`; }
 
   async callApi(prompt, context) {
+    const v = (context && context.vars) || {};
+    const mode = v.mode || 'solo';
+    const graded = mode === 'solo' || mode === 'seeded';
     const model = this.modelName();
-    const testName = (context && context.vars && context.vars.test_name) || '';
-    const testFile = path.join(__dirname, '..', 'large-code', testName, 'test_solution.py');
-    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), `agentic-${testName}-`));
+    const label = v.seed || v.test_name || mode;
+    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), `agentic-${label}-`));
 
-    // 1. Agentic run — model writes solution.py in the sandbox; events on stdout.
-    let events = '';
     try {
-      events = execFileSync('docker', [
-        'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`,
-        '-e', `LLM_SWAP_URL=${URL}`, '-e', `MODEL=${model}`, '-e', `TASK=${prompt}`,
-        'oc-agent',
-      ], { timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 }).toString();
-    } catch (e) { events = (e.stdout || '').toString(); } // timeout/non-zero: grade what exists
-    if (process.env.AGENTIC_DEBUG) {
-      try { fs.writeFileSync(path.join(os.tmpdir(), `agentic-events-${testName}.jsonl`), events || '(empty)'); } catch (e) {}
-    }
-
-    // 2. Turns + tokens from the event stream. `total` includes cached prompt
-    // reads (input+cache.read+output); input alone undercounts once caching kicks in.
-    let turns = 0, promptTok = 0, completionTok = 0, totalTok = 0;
-    for (const line of events.split('\n')) {
-      if (!line.trim()) continue;
-      let ev; try { ev = JSON.parse(line); } catch { continue; }
-      if (ev.type === 'step_finish' && ev.part && ev.part.tokens) {
-        const t = ev.part.tokens;
-        turns++;
-        promptTok += (t.input || 0) + ((t.cache && t.cache.read) || 0);
-        completionTok += t.output || 0;
-        totalTok += t.total || 0;
+      // 1. Seed the sandbox (solo: empty; others: copy the fixture repo in).
+      if (mode !== 'solo') {
+        const repo = path.join(FIXTURES, 'repos', v.seed || '');
+        if (!fs.existsSync(repo)) {
+          throw new Error(`seed repo missing: ${repo} — run test-suites/agentic/fixtures/prep.sh`);
+        }
+        execFileSync('cp', ['-a', `${repo}/.`, sandbox]);
+        if (mode === 'review' && v.diff) {
+          execFileSync('cp', [path.join(FIXTURES, v.diff), path.join(sandbox, 'PR.diff')]);
+        }
       }
-    }
 
-    // 3. Grade with the hidden pytest (copied in AFTER the run).
-    let passed = 0, total = 0, reason = '';
-    try {
-      fs.copyFileSync(testFile, path.join(sandbox, 'test_solution.py'));
-      let py = '';
+      // 2. Agentic run — model self-directs in /work; events stream on stdout.
+      let events = '';
       try {
-        py = execFileSync('docker', [
-          'run', '--rm', '-v', `${sandbox}:/work`, '-w', '/work',
-          '--entrypoint', 'python3', 'oc-agent', '-m', 'pytest', 'test_solution.py', '--tb=no', '-q',
-        ], { maxBuffer: 16 * 1024 * 1024 }).toString();
-      } catch (e) { py = (e.stdout || '').toString() + (e.stderr || '').toString(); }
-      ({ passed, total } = parsePytest(py));
-      reason = py.trim().split('\n').pop() || '';
-    } catch (e) {
-      reason = `grading error: ${e.message}`;
+        events = execFileSync('docker', [
+          'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`,
+          '-e', `LLM_SWAP_URL=${URL}`, '-e', `MODEL=${model}`, '-e', `MODE=${mode}`,
+          '-e', `TASK=${prompt}`, 'oc-agent',
+        ], { timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 }).toString();
+      } catch (e) { events = (e.stdout || '').toString(); } // timeout/non-zero: grade what exists
+      if (process.env.AGENTIC_DEBUG) {
+        try { fs.writeFileSync(path.join(os.tmpdir(), `agentic-events-${label}.jsonl`), events || '(empty)'); } catch (e) {}
+      }
+
+      // 3. Turns + tokens. `total` includes cached prompt reads
+      // (input+cache.read+output); input alone undercounts once caching kicks in.
+      let turns = 0, promptTok = 0, completionTok = 0, totalTok = 0;
+      for (const line of events.split('\n')) {
+        if (!line.trim()) continue;
+        let ev; try { ev = JSON.parse(line); } catch { continue; }
+        if (ev.type === 'step_finish' && ev.part && ev.part.tokens) {
+          const t = ev.part.tokens;
+          turns++;
+          promptTok += (t.input || 0) + ((t.cache && t.cache.read) || 0);
+          completionTok += t.output || 0;
+          totalTok += t.total || 0;
+        }
+      }
+      const tokenUsage = { prompt: promptTok, completion: completionTok, total: totalTok };
+
+      // 4a. Judge-graded modes: output is the model's produced artifact.
+      if (!graded) {
+        let output = '';
+        if (v.capture === 'final_text' || !v.capture) {
+          output = captureFinalText(events);
+        } else if (v.capture.startsWith('file:')) {
+          const f = path.join(sandbox, v.capture.slice(5));
+          output = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+        }
+        return { output, tokenUsage, metadata: { turns, tokens: totalTok, mode, test_name: label } };
+      }
+
+      // 4b. Test-graded modes: copy the hidden test in AFTER the run, then run it.
+      let hiddenSrc, dest, gradeCmd, parseFn;
+      if (mode === 'solo') {
+        hiddenSrc = path.join(__dirname, '..', 'large-code', v.test_name, 'test_solution.py');
+        dest = 'test_solution.py';
+        gradeCmd = 'python3 -m pytest test_solution.py --tb=no -q';
+        parseFn = parsePytest;
+      } else {
+        hiddenSrc = path.join(FIXTURES, 'hidden', v.hidden);
+        dest = v.dest;
+        gradeCmd = v.grade_cmd;
+        parseFn = v.grade_parse === 'gotest' ? parseGoTest : parsePytest;
+      }
+
+      let passed = 0, total = 0, reason = '';
+      try {
+        const destPath = path.join(sandbox, dest);
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.copyFileSync(hiddenSrc, destPath);
+        const [bin, ...args] = gradeCmd.trim().split(/\s+/);
+        let out = '';
+        try {
+          out = execFileSync('docker', [
+            'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`, '-w', '/work',
+            '--entrypoint', bin, 'oc-agent', ...args,
+          ], { maxBuffer: 16 * 1024 * 1024 }).toString();
+        } catch (e) { out = (e.stdout || '').toString() + (e.stderr || '').toString(); }
+        ({ passed, total } = parseFn(out));
+        reason = out.trim().split('\n').pop() || '';
+      } catch (e) {
+        reason = `grading error: ${e.message}`;
+      }
+
+      const result = { task: label, passed, total, turns, tokens: totalTok };
+      return {
+        output: JSON.stringify(result),
+        tokenUsage,
+        metadata: { turns, passed, total, test_name: label, mode, reason },
+      };
     } finally {
-      // The containers create files as root, including nested __pycache__/ and
-      // .pytest_cache/ dirs. The host user can unlink root-owned files sitting
-      // directly in the host-owned sandbox dir, but NOT files inside those
-      // root-owned subdirs (that needs write perm on the subdir itself). Chown
-      // the whole tree back to the host user from inside a container (runs as
-      // root), then the host rm -rf can remove everything.
-      try {
-        const { uid, gid } = os.userInfo();
-        execFileSync('docker', [
-          'run', '--rm', '-v', `${sandbox}:/work`, '--entrypoint', 'chown', 'oc-agent',
-          '-R', `${uid}:${gid}`, '/work',
-        ], { stdio: 'ignore' });
-      } catch (e) { /* fall through to rm; leak beats failing the eval */ }
+      // The container writes files as root; rm -rf works on the host-owned dir.
       try { execFileSync('rm', ['-rf', sandbox]); } catch (e) { /* leak beats failing the eval */ }
     }
-
-    const result = { task: testName, passed, total, turns, tokens: totalTok };
-    return {
-      output: JSON.stringify(result),
-      tokenUsage: { prompt: promptTok, completion: completionTok, total: totalTok },
-      metadata: { turns, passed, total, test_name: testName, reason },
-    };
   }
 }
 

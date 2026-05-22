@@ -6,6 +6,7 @@
 #                 http://jason-server:11436/v1 (over tailscale)
 #   MODEL         e.g. qwen3.5-9b
 #   TASK          the prompt (pinned public API; do NOT mention the hidden tests)
+#   MODE          solo|seeded|review|summarize (default solo) — only solo salvages solution.py
 set -euo pipefail
 : "${LLM_SWAP_URL:?need LLM_SWAP_URL}"
 : "${MODEL:?need MODEL}"
@@ -32,9 +33,10 @@ opencode run "${TASK}" \
   --pure --format json --dangerously-skip-permissions \
   --dir /work
 
-# Salvage: the model sometimes writes solution.py with an absolute path (e.g.
-# /solution.py) instead of into /work. Copy it into /work so grading finds it.
-if [ ! -f /work/solution.py ]; then
+# Salvage (solo only): the model sometimes writes solution.py with an absolute
+# path (e.g. /solution.py) instead of into /work. Copy it into /work so grading
+# finds it. Seeded/review/summarize modes edit the repo already in /work.
+if [ "${MODE:-solo}" = "solo" ] && [ ! -f /work/solution.py ]; then
   f=$(find / -maxdepth 3 -name solution.py 2>/dev/null | grep -v '^/work/' | head -1)
   [ -n "$f" ] && cp "$f" /work/solution.py
 fi
