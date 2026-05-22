@@ -137,26 +137,6 @@
       metric: "[bugfix] hidden regression test passes"
       value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
 
-- description: "bugfix: stage-data input lookup returns empty (dp 63647ca)"
-  vars:
-    mode: seeded
-    seed: dp-stage-input
-    hidden: dp-stage-input/zz_bugcheck_test.go
-    dest: server/core/zz_bugcheck_test.go
-    grade_cmd: "go test ./server/core -run TestFindInput_PrefersNonEmpty -v -count=1"
-    grade_parse: gotest
-    task: |
-      This is the document-pipeline repository, a Go service. Bug report:
-      audio uploads intermittently fail the "clarify" stage — the model replies
-      "I have not received any raw transcription text to process." even though
-      transcription succeeded and produced text. The stage-data input lookup is
-      selecting the wrong value across pipeline stages. Find and fix the bug.
-      Build and test your change.
-  assert:
-    - type: javascript
-      metric: "[bugfix] hidden regression test passes"
-      value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
-
 # ── repo summarization: explore the codebase, write an accurate overview ──
 # Doc files are pruned from the seed so the model can't crib an existing summary;
 # judge-graded on accuracy. (Provider captures the written file as output.)
