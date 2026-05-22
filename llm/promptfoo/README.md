@@ -13,8 +13,9 @@ full GPU.
 promptfoo/
 ├── configs/         promptfooconfig.<suite>.yaml + promptfooconfig.compare.yaml
 ├── test-suites/     <suite>.yaml (one per suite)
-│   ├── agentic/     provider.js, Dockerfile, entrypoint.sh (agentic sandbox)
-│   ├── large-code/  hidden pytest specs the agentic suite grades against
+│   ├── agentic/     provider.js, Dockerfile, entrypoint.sh, fixtures/ (sandbox + seeded repos)
+│   ├── large-code/  hidden pytest specs the agentic solo tasks grade against
+│   ├── clarify-multiturn.js   custom provider for the chat-multiturn suite
 │   └── scripts/     tools-grader.js
 ├── scripts/         eval.sh, compare.sh, summarize.sh, lint-tests.py
 ├── evals/           <model>-<suite>.json + README.md (results) + COMPARE.md
@@ -33,7 +34,8 @@ Suite name == config stem == test-file stem (e.g. `coding` → `configs/promptfo
 | math | deterministic (final-answer match) | — |
 | cruxeval | deterministic + llm-rubric (output match + gotchas) | — |
 | hard-reasoning | deterministic (letter / grid match) | — |
-| agentic | opencode self-directs in a sandbox container; hidden pytest grades (reports tokens/turns) | — |
+| agentic | opencode self-directs in a sandbox: solo (write from scratch, hidden pytest) + seeded bugfix (real buggy repo, hidden test) + PR-review & repo-summary (g-eval); reports tokens/turns | — |
+| chat-multiturn | multi-turn clarify loop (custom provider: model → author → model) + javascript/g-eval | — |
 | tools | deterministic JSON (tools-grader.js) | — |
 
 Only the four model-graded suites get the A/B compare phase — for deterministic suites the per-model pass rate already is the comparison, and a "pick the best" judge would just add noise (it might prefer a confident-but-wrong answer).
@@ -44,13 +46,14 @@ Requires Node.js 18+ (`node --version`). promptfoo runs via `npx`, no install ne
 
 The judge (`selene`) is a model in `llm-swap.yaml` and loads on demand during the grading phase — nothing extra to start.
 
-The `agentic` suite runs on **jason-server** (needs Docker + the local llm-swap). Build the sandbox image once — it bundles pytest + the task deps (aiohttp, pygame), so no host Python env is needed:
+The `agentic` and `chat-multiturn` suites run on **jason-server** (need Docker + the local llm-swap). Build the combined sandbox image once (Go + Python + Node + opencode) and generate the seeded-repo snapshots the bugfix/review/summary tasks use (needs a local document-pipeline checkout):
 
 ```bash
 docker build -t oc-agent test-suites/agentic
+DP_REPO=~/workspace/document-pipeline test-suites/agentic/fixtures/prep.sh
 ```
 
-Agent runs are nondeterministic, so run the suite with caching off:
+Rebuild the image when `Dockerfile`/`entrypoint.sh` change; re-run `prep.sh` when the seeded instances change. Agent runs are nondeterministic, so run with caching off:
 
 ```bash
 PROMPTFOO_CACHE_ENABLED=false ./scripts/eval.sh --suite agentic
