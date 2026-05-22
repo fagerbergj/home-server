@@ -137,6 +137,25 @@
       metric: "[bugfix] hidden regression test passes"
       value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
 
+- description: "bugfix: PATCH context doesn't wake waiting jobs (dp 76fea91)"
+  vars:
+    mode: seeded
+    seed: dp-context-nudge
+    hidden: dp-context-nudge/zz_bugcheck_test.go
+    dest: server/api/rest/zz_bugcheck_test.go
+    grade_cmd: "go test ./server/api/rest -run TestPatchDocument_AdditionalContextNudges|TestPatchDocument_TitleOnly -v -count=1"
+    grade_parse: gotest
+    task: |
+      This is the document-pipeline repository, a Go service. Bug report: when a
+      user adds context to a document via the API (PATCH /api/v1/documents/{id}),
+      a pipeline stage that was parked "waiting" for that context never starts —
+      the document stays stuck even after the context is provided. Find and fix
+      the bug in the documents API handler. Build and test your change.
+  assert:
+    - type: javascript
+      metric: "[bugfix] hidden regression test passes"
+      value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
+
 # ── repo summarization: explore the codebase, write an accurate overview ──
 # Doc files are pruned from the seed so the model can't crib an existing summary;
 # judge-graded on accuracy. (Provider captures the written file as output.)

@@ -3,6 +3,7 @@
   "prune": ["frontend", ".github", ".idea"],
   "instances": [
     { "name": "dp-empty-embed", "commit": "dbba582" },
+    { "name": "dp-context-nudge", "commit": "76fea91" },
     { "name": "dp-summary", "commit": "dbba582", "prune": ["AGENTS.md", "README.md", "CLAUDE.md", ".redocly.yaml"] }
   ]
 }
