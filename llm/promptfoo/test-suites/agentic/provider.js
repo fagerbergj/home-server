@@ -145,6 +145,21 @@ class AgenticProvider {
 
       let passed = 0, total = 0, reason = '';
       try {
+        // Grade the source fix, not the agent's test scaffolding: in seeded mode
+        // reset every *_test.go in the target package to the pristine snapshot
+        // (so a test the agent wrote/broke can't change the verdict or break
+        // compilation), then drop in the hidden test.
+        if (mode === 'seeded') {
+          const pkgDir = path.dirname(dest);
+          const sbPkg = path.join(sandbox, pkgDir);
+          const seedPkg = path.join(FIXTURES, 'repos', v.seed, pkgDir);
+          for (const f of fs.readdirSync(sbPkg)) {
+            if (f.endsWith('_test.go')) fs.rmSync(path.join(sbPkg, f));
+          }
+          for (const f of fs.readdirSync(seedPkg)) {
+            if (f.endsWith('_test.go')) fs.copyFileSync(path.join(seedPkg, f), path.join(sbPkg, f));
+          }
+        }
         const destPath = path.join(sandbox, dest);
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(hiddenSrc, destPath);

@@ -156,3 +156,29 @@
     - type: javascript
       metric: "[bugfix] hidden regression test passes"
       value: "(() => { const r = JSON.parse(output); return r.total > 0 && r.passed === r.total; })()"
+
+# ── repo summarization: explore the codebase, write an accurate overview ──
+# Doc files are pruned from the seed so the model can't crib an existing summary;
+# judge-graded on accuracy. (Provider captures the written file as output.)
+- description: "summarize: write ARCHITECTURE.md for document-pipeline"
+  vars:
+    mode: summarize
+    seed: dp-summary
+    capture: file:ARCHITECTURE.md
+    task: |
+      This is the document-pipeline repository, a Go service (its existing
+      top-level docs have been removed). Explore the codebase and write a concise
+      ARCHITECTURE.md to the repository root that an engineer joining the project
+      could read in five minutes: what the service does, its main components and
+      how they fit together (the domain core, its port interfaces, the storage
+      adapters, the HTTP API, and the document-processing pipeline), and the key
+      top-level directories. Be accurate and specific to THIS codebase; do not
+      invent components that aren't present.
+  assert:
+    - type: g-eval
+      metric: "[summary] accurate architecture overview"
+      threshold: 0.7
+      value:
+        - "Accurately describes the ports-and-adapters structure: a domain core (server/core) that depends on port interfaces, with swappable store adapters under server/store/* (e.g. sqlite/postgres, qdrant, openai)"
+        - "Describes the document-processing pipeline stages and the HTTP API layer, and names real top-level directories (server, cmd, config, db)"
+        - "Does not invent components or technologies absent from the repo; unclear things are omitted or hedged rather than fabricated"

@@ -28,8 +28,12 @@ for inst in m['instances']:
     archive = subprocess.run(['git', '-C', dp, 'archive', f'{commit}^'],
                              check=True, stdout=subprocess.PIPE).stdout
     subprocess.run(['tar', '-x', '-C', dest], input=archive, check=True)
-    for p in prune:
-        shutil.rmtree(os.path.join(dest, p), ignore_errors=True)
+    for p in prune + inst.get('prune', []):
+        target = os.path.join(dest, p)
+        if os.path.isdir(target):
+            shutil.rmtree(target, ignore_errors=True)
+        elif os.path.exists(target):
+            os.remove(target)
     print(f'  {name}: {commit}^ -> {dest}')
 print('done')
 PY

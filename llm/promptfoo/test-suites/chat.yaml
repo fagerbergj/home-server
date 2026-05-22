@@ -235,3 +235,80 @@
       value:
         - "Identifies that the chunk is about the reliability / SEV-2 DNS incidents section of the Q1 Infrastructure Review"
         - "Situates it within the broader document and notes what makes it distinct from the costs and roadmap sections, without inventing details"
+
+# ── clarify (multi-turn): model asks → the author answers → model revises ──
+# A custom provider drives the loop on llm-swap (model → selene-as-author →
+# model); output is the full transcript. We assert the second turn improves:
+# fewer/equal questions, equal-or-higher confidence, and the final text actually
+# uses the answers. (promptfoo's simulated-user only runs the author on its own
+# cloud, so we can't use it against llm-swap — hence the custom provider.)
+- description: "clarify multi-turn: incorporate author answers, fewer questions"
+  provider:
+    id: file://../test-suites/clarify-multiturn.js
+    config:
+      model: "{{ env.MODEL }}"
+      judge: selene
+  vars:
+    system: |
+      You receive a thorough digest of a document. Tighten it into a smaller,
+      high-signal version: clear, unambiguous, structured to read as a complete
+      record on its own.
+
+      Goal: monotonic noise reduction. Keep every meaningful entity, claim,
+      event, and decision. Resolve cross-references ("they said", "the project",
+      "later that day") to specific names/things/times where you can. Where the
+      digest is ambiguous or leaves a reference you can't pin down, ask a
+      clarifying question instead of guessing. If conversation history already
+      contains answers to your earlier questions, incorporate them and do not ask
+      again.
+
+      Rules:
+      - Preserve named entities, numbers, and dates exactly. Don't invent facts.
+
+      Respond using exactly this format — no extra text before or after:
+
+      <clarified_text>
+      polished, structured text in Markdown
+      </clarified_text>
+      <confidence>high|medium|low</confidence>
+      <questions>[{"segment": "exact text from input", "question": "specific question"}]</questions>
+    digest: |
+      ## Overview
+      The team discussed the migration. They agreed to move it forward but
+      someone raised concerns about the timeline.
+
+      ## Details
+      The project is behind. The lead said it would slip if the dependency
+      isn't resolved. Later that day they decided to escalate. The number
+      was higher than expected.
+    answer_key: |
+      - "the migration" = migrating the search index from OpenSearch to Qdrant
+      - the person who raised the timeline concern = Dana
+      - "the project" = the search-rewrite project
+      - "the lead" = Marcus
+      - "the dependency" = the qwen3-embed embedding-model upgrade
+      - if the dependency isn't resolved the project slips to = 2026-04-10
+      - "escalate" = escalated to the platform team lead, Priya
+      - "the number was higher than expected" = 12 affected customers
+  assert:
+    - type: javascript
+      metric: "[contract] turn 2 has <= questions and >= confidence vs turn 1"
+      value: |
+        (() => {
+          const counts = [...output.matchAll(/<questions>([\s\S]*?)<\/questions>/gi)]
+            .map(m => { try { return JSON.parse(m[1].trim()).length; } catch { return null; } })
+            .filter(x => x !== null);
+          const confs = [...output.matchAll(/<confidence>\s*(high|medium|low)\s*<\/confidence>/gi)]
+            .map(m => m[1].toLowerCase());
+          if (counts.length < 2 || confs.length < 2) return false;
+          const rank = { low: 0, medium: 1, high: 2 };
+          const fewerQ = counts[counts.length - 1] <= counts[0];
+          const moreConf = rank[confs[confs.length - 1]] >= rank[confs[0]];
+          return fewerQ && moreConf;
+        })()
+    - type: g-eval
+      metric: "[quality] final version uses the author's answers, no invention"
+      threshold: 0.7
+      value:
+        - "The TURN 2 final clarified_text resolves the previously-ambiguous references (the migration, the project, the lead, the dependency, the escalation, the number) using the author's answers"
+        - "Turn 2 asks fewer or no clarifying questions than turn 1 and invents no facts beyond the author's answers and the original digest"

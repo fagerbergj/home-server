@@ -10,3 +10,12 @@ providers:
 prompts:
   - "{{task}}"
 tests: ../test-suites/agentic.yaml
+# Judge for the g-eval (review/summarize) tasks; the bugfix/solo tests use
+# deterministic javascript asserts and ignore it.
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://localhost:11436/v1
+        apiKey: llm-swap
