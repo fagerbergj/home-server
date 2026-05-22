@@ -42,6 +42,22 @@ models:
       - agentic
       - tools
 
+  # Same-class challenger to qwen3.6-35b (both low-active MoE). Full suite set
+  # for a head-to-head, especially on hard-reasoning + agentic efficiency.
+  gemma4-26b:
+    concurrency: 1
+    suites:
+      - architecture
+      - coding
+      - chat
+      - chat-multiturn
+      - brain-twisters
+      - cruxeval
+      - calibration
+      - hard-reasoning
+      - agentic
+      - tools
+
   qwen3-coder-next:
     concurrency: 1
     suites:
