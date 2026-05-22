@@ -92,14 +92,20 @@ class AgenticProvider {
       }
 
       // 2. Agentic run — model self-directs in /work; events stream on stdout.
+      const cname = `oc-agent-${path.basename(sandbox)}`;
       let events = '';
       try {
         events = execFileSync('docker', [
-          'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`,
+          'run', '--rm', '--name', cname, '--network', 'host', '-v', `${sandbox}:/work`,
           '-e', `LLM_SWAP_URL=${URL}`, '-e', `MODEL=${model}`, '-e', `MODE=${mode}`,
           '-e', `CAPTURE=${v.capture || ''}`, '-e', `TASK=${prompt}`, 'oc-agent',
         ], { timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 }).toString();
-      } catch (e) { events = (e.stdout || '').toString(); } // timeout/non-zero: grade what exists
+      } catch (e) {
+        events = (e.stdout || '').toString(); // timeout/non-zero: grade what exists
+        // On timeout the docker CLI is killed but the container keeps running
+        // detached (and its opencode keeps hammering llm-swap) — force-remove it.
+        try { execFileSync('docker', ['rm', '-f', cname], { stdio: 'ignore' }); } catch (e2) {}
+      }
       if (process.env.AGENTIC_DEBUG) {
         try { fs.writeFileSync(path.join(os.tmpdir(), `agentic-events-${label}.jsonl`), events || '(empty)'); } catch (e) {}
       }
@@ -168,13 +174,17 @@ class AgenticProvider {
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(hiddenSrc, destPath);
         const [bin, ...args] = gradeCmd.trim().split(/\s+/);
+        const gname = `oc-grade-${path.basename(sandbox)}`;
         let out = '';
         try {
           out = execFileSync('docker', [
-            'run', '--rm', '--network', 'host', '-v', `${sandbox}:/work`, '-w', '/work',
+            'run', '--rm', '--name', gname, '--network', 'host', '-v', `${sandbox}:/work`, '-w', '/work',
             '--entrypoint', bin, 'oc-agent', ...args,
-          ], { maxBuffer: 16 * 1024 * 1024 }).toString();
-        } catch (e) { out = (e.stdout || '').toString() + (e.stderr || '').toString(); }
+          ], { timeout: 300000, maxBuffer: 16 * 1024 * 1024 }).toString();
+        } catch (e) {
+          out = (e.stdout || '').toString() + (e.stderr || '').toString();
+          try { execFileSync('docker', ['rm', '-f', gname], { stdio: 'ignore' }); } catch (e2) {}
+        }
         ({ passed, total } = parseFn(out));
         reason = out.trim().split('\n').pop() || '';
       } catch (e) {
