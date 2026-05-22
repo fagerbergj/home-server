@@ -21,7 +21,7 @@ async function chat(model, messages, attempt = 0) {
     const res = await fetch(`${URL}/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer llm-swap' },
-      body: JSON.stringify({ model, messages, max_tokens: 8192 }),
+      body: JSON.stringify({ model, messages, max_tokens: 16384 }),
     });
     if (!res.ok) throw new Error(`llm-swap ${model} HTTP ${res.status}: ${await res.text()}`);
     const j = await res.json();

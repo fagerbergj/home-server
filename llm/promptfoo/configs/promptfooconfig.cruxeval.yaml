@@ -5,7 +5,9 @@ providers:
     config:
       apiBaseUrl: http://jason-server:11436/v1
       apiKey: llm-swap
-      max_tokens: 8192
+      max_tokens: 16384
+      omitDefaults: true     # defer sampling to llm-swap per-model --temp (no forced temp 0)
+      showThinking: false    # grade the answer, not the model's prepended reasoning
 prompts:
   - "{{task}}"
 tests: ../test-suites/cruxeval.yaml
