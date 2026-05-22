@@ -8,10 +8,10 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
 
 | Suite | gpt-oss-120b | llama-3.3-70b | qwen3-coder-next | qwen3.5-9b | qwen3.6-35b |
 | --- | --- | --- | --- | --- | --- |
-| architecture | 0/10 (0%) | 0/10 (0%) | 2/10 (20%) | 0/10 (0%) | 0/10 (0%) |
-| brain-twisters | 4/9 (44%) | 0/9 (0%) | 1/9 (11%) | 2/9 (22%) | 1/9 (11%) |
-| calibration | 2/10 (20%) | 0/10 (0%) | 3/10 (30%) | 2/10 (20%) | 3/10 (30%) |
-| coding | 4/9 (44%) | 0/9 (0%) | 0/9 (0%) | 0/9 (0%) | 0/9 (0%) |
+| architecture | 0/10 (0%) | 0/10 (0%) | 1/10 (10%) | 0/10 (0%) | 0/10 (0%) |
+| brain-twisters | 2/9 (22%) | 0/9 (0%) | 0/9 (0%) | 2/9 (22%) | 1/9 (11%) |
+| calibration | 4/10 (40%) | 0/10 (0%) | 1/10 (10%) | 1/10 (10%) | 4/10 (40%) |
+| coding | 3/9 (33%) | 0/9 (0%) | 0/9 (0%) | 0/9 (0%) | 0/9 (0%) |
 | hard-reasoning | 0/15 (0%) | 2/15 (13%) | 5/15 (33%) | 5/15 (33%) | 0/15 (0%) |
 
 ## Per-test winners
@@ -21,8 +21,7 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
 - **(no winner)** — Kotlin: JVM ecosystem and type system
 - **(no winner)** — Kafka: consumer groups and backpressure
 - **(no winner)** — Streaming: operational challenges
-- **qwen3-coder-next** — Token storage: localStorage vs httpOnly cookies
-  - _All assertions passed_
+- **(no winner)** — Token storage: localStorage vs httpOnly cookies
 - **(no winner)** — Queue vs HTTP: operational costs and failure modes
 - **(no winner)** — Queue vs HTTP: coupling and idempotency
 - **(no winner)** — Microservices: modular monolith and cost asymmetry
@@ -33,23 +32,20 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
 
 ### brain-twisters
 
-- **gpt-oss-120b** — brain twister: horse race — simplest solution
-  - _All assertions passed_
-- **gpt-oss-120b** — brain twister: modified Monty Hall — no information revealed
-  - _All assertions passed_
-- **qwen3.5-9b** — brain twister: Russian roulette — spin or not
-  - _All assertions passed_
-- **qwen3.6-35b** — brain twister: river crossing with three compartments
+- **(no winner)** — brain twister: horse race — simplest solution
+- **(no winner)** — brain twister: modified Monty Hall — no information revealed
+- **(no winner)** — brain twister: Russian roulette — spin or not
+- **qwen3.5-9b** — brain twister: river crossing with three compartments
   - _All assertions passed_
 - **gpt-oss-120b** — brain twister: circle arrangement — who is right of Alan
   - _All assertions passed_
 - **gpt-oss-120b** — brain twister: stories above ground
   - _All assertions passed_
-- **(no winner)** — brain twister: sentence without Bible words
+- **qwen3.6-35b** — brain twister: sentence without Bible words
+  - _All assertions passed_
 - **qwen3.5-9b** — brain twister: how many Rs in Strawberry
   - _All assertions passed_
-- **qwen3-coder-next** — brain twister: carwash
-  - _All assertions passed_
+- **(no winner)** — brain twister: carwash
 
 ### calibration
 
@@ -57,11 +53,11 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
   - _All assertions passed_
 - **qwen3.6-35b** — Calibration: signup metrics for a real-sounding site
   - _All assertions passed_
-- **qwen3.5-9b** — Calibration: section of a fake spec document
+- **qwen3.6-35b** — Calibration: section of a fake spec document
   - _All assertions passed_
-- **qwen3.6-35b** — Calibration: test coverage of a real repo right now
+- **gpt-oss-120b** — Calibration: test coverage of a real repo right now
   - _All assertions passed_
-- **qwen3-coder-next** — Calibration: nonexistent repo
+- **qwen3.6-35b** — Calibration: nonexistent repo
   - _All assertions passed_
 - **qwen3.5-9b** — Calibration: tomorrow's stock close
   - _All assertions passed_
@@ -71,7 +67,7 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
   - _All assertions passed_
 - **gpt-oss-120b** — Calibration: when will my deploy finish
   - _All assertions passed_
-- **qwen3-coder-next** — Calibration: language-specific best practice in unknown codebase
+- **gpt-oss-120b** — Calibration: language-specific best practice in unknown codebase
   - _All assertions passed_
 
 ### coding
@@ -80,8 +76,7 @@ Selene judge picked the best of all 4 models' anonymized responses on each promp
   - _All assertions passed_
 - **gpt-oss-120b** — HumanEval/4: mean_absolute_deviation
   - _All assertions passed_
-- **gpt-oss-120b** — HumanEval/5: intersperse
-  - _All assertions passed_
+- **(no winner)** — HumanEval/5: intersperse
 - **gpt-oss-120b** — HumanEval/6: parse_nested_parens depth
   - _All assertions passed_
 - **(no winner)** — SQL: debug unexpected query results
