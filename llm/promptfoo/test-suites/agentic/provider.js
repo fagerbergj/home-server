@@ -83,9 +83,19 @@ class AgenticProvider {
     } catch (e) {
       reason = `grading error: ${e.message}`;
     } finally {
-      // The container writes files as root; fs.rmSync chmod-retries and hits
-      // EACCES on them. rm -rf works — the sandbox dir is host-owned, so the
-      // root-owned files inside just need unlink (dir write perm).
+      // The containers create files as root, including nested __pycache__/ and
+      // .pytest_cache/ dirs. The host user can unlink root-owned files sitting
+      // directly in the host-owned sandbox dir, but NOT files inside those
+      // root-owned subdirs (that needs write perm on the subdir itself). Chown
+      // the whole tree back to the host user from inside a container (runs as
+      // root), then the host rm -rf can remove everything.
+      try {
+        const { uid, gid } = os.userInfo();
+        execFileSync('docker', [
+          'run', '--rm', '-v', `${sandbox}:/work`, '--entrypoint', 'chown', 'oc-agent',
+          '-R', `${uid}:${gid}`, '/work',
+        ], { stdio: 'ignore' });
+      } catch (e) { /* fall through to rm; leak beats failing the eval */ }
       try { execFileSync('rm', ['-rf', sandbox]); } catch (e) { /* leak beats failing the eval */ }
     }
 
