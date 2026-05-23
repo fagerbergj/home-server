@@ -11,6 +11,14 @@ set -euo pipefail
 
 HF_CACHE=/mnt/cache/huggingface
 
+# Force-remove our download container on exit/interrupt. `docker run` without a
+# TTY doesn't forward Ctrl+C — a killed CLI otherwise leaves the container
+# running detached (the orphan pileup). --name (below) makes it findable.
+_dlname="hfdl-$$"
+_cleanup_dl() { docker rm -f "$_dlname" >/dev/null 2>&1 || true; }
+trap _cleanup_dl EXIT
+trap '_cleanup_dl; exit 130' INT TERM
+
 # Default set = the GGUFs llm-swap.yaml loads, as file URLs (paste-from-HF).
 DEFAULTS=(
   "https://huggingface.co/unsloth/gpt-oss-120b-GGUF/blob/main/gpt-oss-120b-F16.gguf"
@@ -51,7 +59,7 @@ dl() {
   fi
 
   echo "── $repo : $file ($(( ${size:-0} / 1024 / 1024 / 1024 ))GB)"
-  docker run --rm \
+  docker run --rm --name "$_dlname" \
     -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN:-}" \
     -v "$HF_CACHE:/root/.cache/huggingface" \
     python:3.12-slim \

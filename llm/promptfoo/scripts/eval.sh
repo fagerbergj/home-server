@@ -19,6 +19,15 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
 
+# Clean up agentic sandbox containers on exit/interrupt. The provider removes
+# them on per-test timeout/error, but Ctrl+C mid-run kills node before that
+# cleanup fires, leaving named oc-agent/oc-grade containers detached (their
+# opencode keeps hammering llm-swap). NB: removes ALL oc-* containers, so don't
+# run two evals concurrently.
+_cleanup_oc() { docker ps -aq --filter name=oc-agent --filter name=oc-grade 2>/dev/null | xargs -r docker rm -f >/dev/null 2>&1 || true; }
+trap _cleanup_oc EXIT
+trap '_cleanup_oc; exit 130' INT TERM
+
 # The judge swaps onto the GPU for the batched grading phase; the first grading
 # call absorbs that model load, so raise the per-request timeout from promptfoo's
 # 300000ms (5 min) default to 10 min.
