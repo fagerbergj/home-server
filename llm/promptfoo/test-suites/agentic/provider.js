@@ -96,7 +96,11 @@ class AgenticProvider {
       let events = '';
       try {
         events = execFileSync('docker', [
-          'run', '--rm', '--name', cname, '--network', 'host', '-v', `${sandbox}:/work`,
+          // watchtower.enable=false: oc-agent is a locally-built image with no
+          // registry; without this label a watchtower scan overlapping an eval
+          // tries to pull oc-agent:latest from Docker Hub and 401s.
+          'run', '--rm', '--label', 'com.centurylinklabs.watchtower.enable=false',
+          '--name', cname, '--network', 'host', '-v', `${sandbox}:/work`,
           '-e', `LLM_SWAP_URL=${URL}`, '-e', `MODEL=${model}`, '-e', `MODE=${mode}`,
           '-e', `CAPTURE=${v.capture || ''}`, '-e', `TASK=${prompt}`, 'oc-agent',
         ], { timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 }).toString();
@@ -178,7 +182,8 @@ class AgenticProvider {
         let out = '';
         try {
           out = execFileSync('docker', [
-            'run', '--rm', '--name', gname, '--network', 'host', '-v', `${sandbox}:/work`, '-w', '/work',
+            'run', '--rm', '--label', 'com.centurylinklabs.watchtower.enable=false',
+            '--name', gname, '--network', 'host', '-v', `${sandbox}:/work`, '-w', '/work',
             '--entrypoint', bin, 'oc-agent', ...args,
           ], { timeout: 300000, maxBuffer: 16 * 1024 * 1024 }).toString();
         } catch (e) {
