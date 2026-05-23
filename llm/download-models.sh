@@ -18,7 +18,6 @@ DEFAULTS=(
   "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/blob/main/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
   "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/blob/main/Qwen3.5-9B-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/blob/main/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf"
-  "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/blob/main/Qwen3-Coder-Next-UD-Q4_K_M.gguf"
   "https://huggingface.co/bartowski/moonshotai_Kimi-Dev-72B-GGUF/blob/main/moonshotai_Kimi-Dev-72B-IQ4_XS.gguf"
   "https://huggingface.co/bartowski/cerebras_MiniMax-M2-REAP-139B-A10B-GGUF/blob/main/cerebras_MiniMax-M2-REAP-139B-A10B-IQ2_M.gguf"
   "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/blob/main/Qwen3-Embedding-0.6B-Q8_0.gguf"
