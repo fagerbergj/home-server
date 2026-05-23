@@ -187,18 +187,20 @@ models:
       -fa on
       --port 9999
 
-  # MiniMax-M2.1-REAP-50 — coding/agentic MoE, 116B/A10B, 50% expert-pruned.
-  # All-attention (heavy KV ~248 KiB/tok → ~40K ctx at IQ3). Fast (A10B).
-  # Double-lossy (prune + IQ3) — benchmark before trusting.
-  # INTERLEAVED THINKING: M2 requires the <think> blocks be retained in history
-  # across turns — so do NOT strip them (no --reasoning-format); stripping
-  # degrades multi-turn/agentic performance. Official sampling: 1.0/0.95/40.
+  # MiniMax-M2-REAP-139B — OFFICIAL Cerebras REAP (40% expert prune of M2 230B →
+  # 139B, A10B). Pruning calibrated on Cerebras's coding/agentic mix (24.5K:
+  # coding + reasoning + tool-calling), unlike the sketchy community 50% variant
+  # (0xSero "repair-in-progress", unknown calibration). All-attention (heavy KV
+  # ~248 KiB/tok → ~64-80K ctx at IQ2_M ~44GB). Fast (A10B). IQ2 is aggressive
+  # but 40%-prune + coding-calibrated beats 50%-prune + unknown calibration.
+  # INTERLEAVED THINKING: M2 requires <think> blocks be retained in history
+  # across turns — do NOT strip them (no --reasoning-format). Sampling 1.0/0.95/40.
   "minimax-m2-reap":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf mradermacher/MiniMax-M2.1-REAP-50-i1-GGUF:IQ3_M
+      -hf bartowski/cerebras_MiniMax-M2-REAP-139B-A10B-GGUF:IQ2_M
       --jinja
       --temp 1.0
       --top-p 0.95
