@@ -9,7 +9,6 @@ groups:
     members:
       - gpt-oss-120b
       - qwen3.6-35b
-      - gemma4-26b
       - qwen3.5-9b
       - qwen3-vl-32b
       - qwen3-coder-next
@@ -73,24 +72,6 @@ models:
       -c 40960
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --port 9999
-
-  # Gemma 4 26B-A4B MoE (~3.8B active) — reasoning/agentic challenger to
-  # qwen3.6-35b. ~18GB at Q4, fits a single GPU, so no --no-mmap/tensor-split.
-  # KV left fp16 (the model is small; avoids any SWA + KV-quant init issues).
-  "gemma4-26b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_M
-      --jinja
-      --temp 1.0
-      --top-p 0.95
-      --top-k 64
-      --swa-full
-      -ngl 999
-      -c 40960
       --port 9999
 
   "qwen3.5-9b":

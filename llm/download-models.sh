@@ -15,7 +15,6 @@ HF_CACHE=/mnt/cache/huggingface
 DEFAULTS=(
   "https://huggingface.co/unsloth/gpt-oss-120b-GGUF/blob/main/gpt-oss-120b-F16.gguf"
   "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/blob/main/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
-  "https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/blob/main/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf"
   "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/blob/main/Qwen3.5-9B-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/blob/main/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/blob/main/Qwen3-Coder-Next-UD-Q4_K_M.gguf"
