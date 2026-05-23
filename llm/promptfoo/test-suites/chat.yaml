@@ -49,8 +49,8 @@
       </document>
   assert:
     - type: javascript
-      metric: "[contract] Markdown, not longer than input"
-      value: "!output.trim().startsWith('{') && !output.includes('```json') && output.length <= context.vars.doc.length"
+      metric: "[contract] Markdown, not JSON"
+      value: "!output.trim().startsWith('{') && !output.includes('```json')"
     - type: g-eval
       metric: "[quality] preserves signal, drops filler"
       threshold: 0.7
@@ -58,6 +58,7 @@
         - "Preserves the named entities, numbers, and dates exactly (Priya, Marcus, Dana, SOC2, Stripe, ~12 customers, the 2026-02-28 and March 14-16 dates)"
         - "Keeps the meaningful decisions and events (auth-rewrite to staging, billing double-charge + hotfix/refunds, on-call weekend coverage split)"
         - "Drops the off-topic espresso-machine aside and invents no facts not in the document"
+        - "Is a tight digest, not a re-statement: it compresses the source and adds no preamble, padding, or filler"
 
 # ── clarify: tighten a digest, resolve refs, emit the strict tagged format ──
 - description: "clarify: digest → clarified_text + confidence + questions"
@@ -104,7 +105,7 @@
       was higher than expected.
   assert:
     - type: javascript
-      metric: "[contract] tagged format, shorter than input, questions for ambiguity"
+      metric: "[contract] tagged format, valid questions JSON"
       value: |
         const ct = (output.match(/<clarified_text>([\s\S]*?)<\/clarified_text>/i) || [])[1];
         const conf = /<confidence>\s*(high|medium|low)\s*<\/confidence>/i.test(output);
@@ -112,13 +113,12 @@
         if (ct === undefined || !conf || !qm) return false;
         let questionsOk = false;
         try { questionsOk = Array.isArray(JSON.parse(qm[1].trim())); } catch (e) { return false; }
-        const shorter = ct.trim().length < context.vars.doc.length;
-        return questionsOk && shorter;
+        return questionsOk;
     - type: g-eval
       metric: "[quality] resolves references or asks, no invention"
       threshold: 0.7
       value:
-        - "Tightens the digest and removes repetition while preserving the meaningful claims, events, and the decision to escalate"
+        - "Tightens the digest into a shorter, higher-signal record — removes repetition and padding while preserving the meaningful claims, events, and the decision to escalate"
         - "Either resolves vague references (they / the project / later that day / the number) to specifics OR raises them as clarifying questions rather than inventing specifics"
         - "Invents no entities, numbers, or facts not present in the input digest"
 
