@@ -49,6 +49,7 @@ models:
       -fit off
       -ngl 999
       -c 32768
+      -fa on
       --port 9999
 
   # Thinking left ON (backs the clarify stage). --reasoning-format auto keeps
@@ -193,6 +194,12 @@ models:
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     ttl: -1
+    # CPU-only (-ngl 0) but the ROCm build still init'd a HIP context holding
+    # ~1.8 GB on GPU0 — enough to push gpt-oss-120b's KV alloc over the VRAM
+    # cliff. Hide the GPUs from this process so it's truly RAM-only.
+    env:
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
       -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
