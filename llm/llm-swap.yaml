@@ -13,6 +13,8 @@ groups:
       - qwen3.5-9b
       - qwen3-vl-32b
       - qwen3-coder-next
+      - kimi-dev-72b
+      - minimax-m2-reap
       - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
                  # grading phase after generation, so it never competes for VRAM
                  # with a model under test
@@ -162,6 +164,50 @@ models:
       -fit off
       -ngl 999
       -c 262144
+      --port 9999
+
+  # Kimi-Dev-72B — Moonshot SWE-specialist, dense 72B (Qwen2.5 base), pure
+  # attention so no recurrent-cache issue. Dense → ~19 t/s tensor-split (quality
+  # play). Q4_K_M was pulled upstream for NaN, so IQ4_XS (~40GB). Heavy KV
+  # (~320 KiB/tok) caps ctx ~48-64K on this VRAM.
+  "kimi-dev-72b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf bartowski/moonshotai_Kimi-Dev-72B-GGUF:IQ4_XS
+      --jinja
+      --temp 0.6
+      --top-p 0.95
+      --no-mmap
+      --split-mode tensor
+      -fit off
+      -ngl 999
+      -c 32768
+      -fa on
+      --port 9999
+
+  # MiniMax-M2.1-REAP-50 — coding/agentic MoE, 116B/A10B, 50% expert-pruned.
+  # All-attention (heavy KV ~248 KiB/tok → ~40K ctx at IQ3). Fast (A10B).
+  # Double-lossy (prune + IQ3) — benchmark before trusting. --reasoning-format
+  # auto: emits <think> blocks, keep them out of graded content.
+  "minimax-m2-reap":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf mradermacher/MiniMax-M2.1-REAP-50-i1-GGUF:IQ3_M
+      --jinja
+      --reasoning-format auto
+      --temp 1.0
+      --top-p 0.95
+      --top-k 40
+      --no-mmap
+      --split-mode tensor
+      -fit off
+      -ngl 999
+      -c 32768
+      -fa on
       --port 9999
 
   # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric

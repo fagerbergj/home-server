@@ -70,6 +70,27 @@ models:
       - agentic
       - tools
 
+  # Implementer-slot candidates — focused on code/reasoning/agentic suites.
+  kimi-dev-72b:
+    concurrency: 1
+    suites:
+      - architecture
+      - coding
+      - cruxeval
+      - hard-reasoning
+      - agentic
+      - tools
+
+  minimax-m2-reap:
+    concurrency: 1
+    suites:
+      - architecture
+      - coding
+      - cruxeval
+      - hard-reasoning
+      - agentic
+      - tools
+
   qwen3.5-9b:
     concurrency: 1
     suites:
