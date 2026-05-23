@@ -189,8 +189,10 @@ models:
 
   # MiniMax-M2.1-REAP-50 — coding/agentic MoE, 116B/A10B, 50% expert-pruned.
   # All-attention (heavy KV ~248 KiB/tok → ~40K ctx at IQ3). Fast (A10B).
-  # Double-lossy (prune + IQ3) — benchmark before trusting. --reasoning-format
-  # auto: emits <think> blocks, keep them out of graded content.
+  # Double-lossy (prune + IQ3) — benchmark before trusting.
+  # INTERLEAVED THINKING: M2 requires the <think> blocks be retained in history
+  # across turns — so do NOT strip them (no --reasoning-format); stripping
+  # degrades multi-turn/agentic performance. Official sampling: 1.0/0.95/40.
   "minimax-m2-reap":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -198,7 +200,6 @@ models:
       /app/llama-server
       -hf mradermacher/MiniMax-M2.1-REAP-50-i1-GGUF:IQ3_M
       --jinja
-      --reasoning-format auto
       --temp 1.0
       --top-p 0.95
       --top-k 40
