@@ -47,7 +47,7 @@ models:
       --split-mode tensor
       -fit off
       -ngl 999
-      -c 32768
+      -c 49152
       -fa on
       --port 9999
 
