@@ -149,6 +149,9 @@ models:
   # Non-thinking model (no <think> blocks) — so no --reasoning-format. unsloth
   # recommends the UD-Q4_K_M (Dynamic 2.0) quant + sampling temp=1.0/top_p=0.95/
   # top_k=40; those are set here as server defaults (requests can override).
+  # -fa on + --ctx-checkpoints 64: mitigate llama.cpp #19394 — hybrid/recurrent
+  # models force full prompt re-processing per turn in agentic use (kills OpenCode
+  # throughput). More restore points → cache survives OpenCode's context edits.
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
@@ -164,6 +167,8 @@ models:
       -fit off
       -ngl 999
       -c 262144
+      -fa on
+      --ctx-checkpoints 64
       --port 9999
 
   # Kimi-Dev-72B — Moonshot SWE-specialist, dense 72B (Qwen2.5 base), pure
