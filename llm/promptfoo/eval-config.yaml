@@ -28,7 +28,7 @@ models:
       - agentic
       - tools
 
-  qwen3.6-35b:
+  gpt-oss-20b:
     concurrency: 1
     suites:
       - architecture
@@ -42,9 +42,7 @@ models:
       - agentic
       - tools
 
-  # Same-class challenger to qwen3.6-35b (both low-active MoE). Full suite set
-  # for a head-to-head, especially on hard-reasoning + agentic efficiency.
-  gemma4-26b:
+  qwen3.6-35b:
     concurrency: 1
     suites:
       - architecture
