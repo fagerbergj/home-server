@@ -12,7 +12,6 @@ groups:
       - qwen3.6-35b
       - qwen3.5-9b
       - qwen3-vl-32b
-      - kimi-dev-72b
       - minimax-m2-reap
       - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
                  # grading phase after generation, so it never competes for VRAM
@@ -143,27 +142,6 @@ models:
       -c 32768
       --image-min-tokens 2048
       --image-max-tokens 8192
-      --port 9999
-
-  # Kimi-Dev-72B — Moonshot SWE-specialist, dense 72B (Qwen2.5 base), pure
-  # attention so no recurrent-cache issue. Dense → ~19 t/s tensor-split (quality
-  # play). Q4_K_M was pulled upstream for NaN, so IQ4_XS (~40GB). Heavy KV
-  # (~320 KiB/tok) caps ctx ~48-64K on this VRAM.
-  "kimi-dev-72b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf bartowski/moonshotai_Kimi-Dev-72B-GGUF:IQ4_XS
-      --jinja
-      --temp 0.6
-      --top-p 0.95
-      --no-mmap
-      --split-mode tensor
-      -fit off
-      -ngl 999
-      -c 32768
-      -fa on
       --port 9999
 
   # MiniMax-M2-REAP-139B — OFFICIAL Cerebras REAP (40% expert prune of M2 230B →
