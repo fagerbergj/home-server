@@ -53,8 +53,9 @@ models:
       -fit off
       -ngl 999
       -ncmoe 4
-      -c 49152
+      -c 131072
       -fa on
+      --parallel 1
       --port 9999
 
   # gpt-oss-20b — small sibling (21B / 3.6B active, ~14GB at F16). Fits one GPU,
