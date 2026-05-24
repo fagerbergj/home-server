@@ -215,6 +215,7 @@ models:
       -fit off
       -ngl 999
       -c 32768
+      -fa on
       --parallel 1
       --port 9999
 
