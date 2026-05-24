@@ -4,7 +4,7 @@
 #   architecture   (10 tests) — only expert-level/known-discriminating tests kept
 #   coding         (5 tests)  — multi-language debug / code-review (SQL, Docker, Go, Kotlin, TS)
 #   chat            (4)   — real OCR-pipeline prompts: summarize/clarify/classify/contextual
-#   chat-multiturn  (1)   — multi-turn clarify loop (model → author → model), custom provider
+#   chat-multiturn  (disabled — saturated, all models 1/1; kept on disk)
 #   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
 #   cruxeval       (15 tests) — predict-the-output + code gotchas
 #   calibration    (10 tests) — does the model admit "I don't know"?
@@ -20,7 +20,6 @@ models:
       - architecture
       - coding
       - chat
-      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -34,7 +33,6 @@ models:
       - architecture
       - coding
       - chat
-      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -48,7 +46,6 @@ models:
       - architecture
       - coding
       - chat
-      - chat-multiturn
       - brain-twisters
       - cruxeval
       - calibration
@@ -83,6 +80,5 @@ models:
       - architecture
       - coding
       - chat
-      - chat-multiturn
       - brain-twisters
       - cruxeval
