@@ -1,74 +1,95 @@
 # Maps each model to its test suites and concurrency.
+#   ./eval.sh [model ...]          # a model's default suites
+#   ./eval.sh --suite <s> [model]  # one suite
 #
-# Suites (run with: ./eval.sh [model]):
-#   architecture   (10 tests) — only expert-level/known-discriminating tests kept
-#   coding         (5 tests)  — multi-language debug / code-review (SQL, Docker, Go, Kotlin, TS)
-#   chat            (4)   — real OCR-pipeline prompts: summarize/clarify/classify/contextual
-#   chat-multiturn  (disabled — saturated, all models 1/1; kept on disk)
-#   brain-twisters (9 tests)  — logical/spatial reasoning traps (saturated culled)
-#   cruxeval       (15 tests) — predict-the-output + code gotchas
-#   calibration    (10 tests) — does the model admit "I don't know"?
-#   hard-reasoning (15 tests) — GPQA-style science MCQ + ZebraLogic puzzles
-#   agentic        (8 tests)  — opencode self-directs in a sandbox: solo + seeded bugfix + PR review + repo summary
-#   math           (disabled — saturated, all models passed; kept on disk)
-#   tools         (14 tests)  — document-pipeline specific tool routing
+# ACTIVE suites (task-driven — see llm/MODEL_SELECTION.md):
+#   livecodebench — A-2 bug-finding: generate + sandbox-execute (contamination-safe)
+#   code-review   — A-3 ★: review PR diffs with planted regressions (Selene)
+#   clarify       — B-3 ★: clean garbled OCR/transcripts; honesty tier (Selene)
+#   structured    — B-6: JSON/format adherence; DETERMINISTIC (no judge, fast)
+#   honesty       — A5/A6/B1: nonexistent-API/false-premise traps + controls (Selene)
+#   coding        — A-4: multi-language static debug (Selene)
+#   cruxeval      — code reasoning: predict-the-output + gotchas
+#   architecture  — planner design-reasoning (Selene)
+#   chat          — pipeline stages: summarize/classify/contextual (Selene)
+#   tools         — document-pipeline tool routing
+#   agentic       — opencode self-directs: solo + seeded bugfix + PR review + repo summary
+#
+# DISABLED (kept on disk; pruned 2026-05-25 per the discrimination×relevance audit):
+#   brain-twisters — only 3/9 discriminate, low relevance
+#   calibration    — saturated (9/10 all-pass); superseded by `honesty`
+#   hard-reasoning — discriminates well but irrelevant (GPQA science) to the flows
+#   math, chat-multiturn — saturated
 
 models:
   gpt-oss-120b:
     concurrency: 1
     suites:
-      - architecture
+      - livecodebench
+      - code-review
+      - clarify
+      - structured
+      - honesty
       - coding
-      - chat
-      - brain-twisters
       - cruxeval
-      - calibration
-      - hard-reasoning
-      - agentic
+      - architecture
+      - chat
       - tools
+      - agentic
 
   gpt-oss-20b:
     concurrency: 1
     suites:
-      - architecture
+      - livecodebench
+      - code-review
+      - clarify
+      - structured
+      - honesty
       - coding
-      - chat
-      - brain-twisters
       - cruxeval
-      - calibration
-      - hard-reasoning
-      - agentic
+      - architecture
+      - chat
       - tools
+      - agentic
 
   qwen3.6-35b:
     concurrency: 1
     suites:
-      - architecture
+      - livecodebench
+      - code-review
+      - clarify
+      - structured
+      - honesty
       - coding
-      - chat
-      - brain-twisters
       - cruxeval
-      - calibration
-      - hard-reasoning
-      - agentic
+      - architecture
+      - chat
       - tools
+      - agentic
 
-  # Implementer-slot candidate — focused on code/reasoning/agentic suites.
+  # Implementer-slot candidate — code/reasoning/agentic focus (skip chat/clarify).
   minimax-m2-reap:
     concurrency: 1
     suites:
-      - architecture
+      - livecodebench
+      - code-review
+      - structured
+      - honesty
       - coding
       - cruxeval
-      - hard-reasoning
-      - agentic
+      - architecture
       - tools
+      - agentic
 
+  # Small chat candidate — chat/pipeline focus.
   qwen3.5-9b:
     concurrency: 1
     suites:
-      - architecture
-      - coding
+      - clarify
+      - structured
+      - honesty
       - chat
-      - brain-twisters
+      - coding
       - cruxeval
+      - architecture
+      - tools
