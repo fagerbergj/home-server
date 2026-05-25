@@ -110,10 +110,13 @@ models:
       --cache-type-v q8_0
       --port 9999
 
-  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4). Served at NATIVE 256k
-  # (-c 262144) with q8 KV for the implementer-role context test; that KV needs
-  # both GPUs, so --split-mode layer (tensor-split forbids KV-quant). Same
-  # Qwen3.6 sampling as the 35B. MTP heads unused until the image gets PR #22673.
+  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4). Native 256k (-c 262144) + q8
+  # KV, --split-mode layer (256k KV needs both GPUs; tensor-split forbids KV-quant).
+  # Runs as PLAIN DENSE (~25 t/s @256k, too slow for the implementer) — MTP is in
+  # the image but OFF: it needs explicit --spec-type draft-mtp --spec-draft-n-max N
+  # flags, not passed here. This is the MTP TEST BED. MTP multi-GPU on ROCm is
+  # unstable (PR #22673: ggml-backend-meta tensor-split assert), so the production
+  # 35B implementer deliberately stays non-MTP.
   "qwen3.6-27b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -187,14 +190,16 @@ models:
   # 139B, A10B). Pruning calibrated on Cerebras's coding/agentic mix (24.5K:
   # coding + reasoning + tool-calling), unlike the sketchy community 50% variant
   # (0xSero "repair-in-progress", unknown calibration). All-attention (heavy KV
-  # ~248 KiB/tok → ~64-80K ctx at IQ2_M ~44GB). Fast (A10B). IQ2 is aggressive
+  # ~248 KiB/tok fp16, ~124 q8). With q8 KV the 41 GB IQ2 weights fit ~128K
+  # (-c 131072); -c 163840 OOM-segfaults on load. Fast (A10B). IQ2 is aggressive
   # but 40%-prune + coding-calibrated beats 50%-prune + unknown calibration.
   # INTERLEAVED THINKING: M2 requires <think> blocks be retained in history
   # across turns — do NOT strip them (no --reasoning-format). Sampling 1.0/0.95/40.
   # --split-mode layer (NOT tensor): M2's graph makes llama.cpp's tensor-parallel
   # meta-backend abort during warmup (GGML_ASSERT split-axis-0 in alloc_graph).
-  # Layer-split (pipeline) avoids the cross-GPU AllReduce path entirely. Loads
-  # and serves clean at ~47 t/s decode / ~114 t/s prefill.
+  # Layer-split (pipeline) avoids the cross-GPU AllReduce path entirely. Planner-
+  # tier candidate only: IQ2 coding is weak and it can't reach the implementer's
+  # 198K context (OOMs above ~128K).
   "minimax-m2-reap":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -209,7 +214,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 163840
+      -c 131072
       -ub 2048
       -b 2048
       --cache-type-k q8_0
