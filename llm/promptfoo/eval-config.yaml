@@ -1,95 +1,45 @@
 # Maps each model to its test suites and concurrency.
-#   ./eval.sh [model ...]          # a model's default suites
-#   ./eval.sh --suite <s> [model]  # one suite
+#   ./eval.sh [model ...]          # a model's default suites (in the order below)
+#   ./eval.sh --suite <s> [model]  # one suite/bundle
+#
+# Suites are ORDERED to minimize model↔Selene swaps (each swap is multi-minute):
+# run the model-only suites first (model loads once, stays hot), then the grouped
+# rubric bundles, then agentic. Rubric suites that share provider+judge+scale are
+# BUNDLED into one config so the model loads once and Selene grades once for all
+# of them — see configs/promptfooconfig.{coding-flow,chat-flow}.yaml.
 #
 # ACTIVE suites (task-driven — see llm/MODEL_SELECTION.md):
-#   livecodebench — A-2 bug-finding: generate + sandbox-execute (contamination-safe)
-#   code-review   — A-3 ★: review PR diffs with planted regressions (Selene)
-#   clarify       — B-3 ★: clean garbled OCR/transcripts; honesty tier (Selene)
-#   structured    — B-6: JSON/format adherence; DETERMINISTIC (no judge, fast)
-#   honesty       — A5/A6/B1: nonexistent-API/false-premise traps + controls (Selene)
-#   coding        — A-4: multi-language static debug (Selene)
-#   cruxeval      — code reasoning: predict-the-output + gotchas
-#   architecture  — planner design-reasoning (Selene)
-#   chat          — pipeline stages: summarize/classify/contextual (Selene)
-#   tools         — document-pipeline tool routing
-#   agentic       — opencode self-directs: solo + seeded bugfix + PR review + repo summary
+#   livecodebench — A-2: generate + sandbox-execute (custom provider, no judge)
+#   structured    — B-6: JSON/format, DETERMINISTIC js (no judge)
+#   tools         — document-pipeline tool routing, DETERMINISTIC js (no judge)
+#   coding-flow   — BUNDLE: architecture + coding + code-review (openai:chat + Selene)
+#   cruxeval      — code reasoning; 1-5 llm-rubric (separate scale → own config)
+#   chat-flow     — BUNDLE: chat + clarify + honesty (openai:chat + Selene)
+#   agentic       — opencode self-directs (custom provider; Selene for review/summary)
 #
-# DISABLED (kept on disk; pruned 2026-05-25 per the discrimination×relevance audit):
-#   brain-twisters — only 3/9 discriminate, low relevance
-#   calibration    — saturated (9/10 all-pass); superseded by `honesty`
-#   hard-reasoning — discriminates well but irrelevant (GPQA science) to the flows
-#   math, chat-multiturn — saturated
+# Single-suite configs still exist for targeted runs (--suite code-review etc.).
+# DISABLED (kept on disk): brain-twisters, calibration, hard-reasoning, math,
+# chat-multiturn (see the 2026-05-25 discrimination×relevance audit).
 
 models:
   gpt-oss-120b:
     concurrency: 1
-    suites:
-      - livecodebench
-      - code-review
-      - clarify
-      - structured
-      - honesty
-      - coding
-      - cruxeval
-      - architecture
-      - chat
-      - tools
-      - agentic
+    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
 
   gpt-oss-20b:
     concurrency: 1
-    suites:
-      - livecodebench
-      - code-review
-      - clarify
-      - structured
-      - honesty
-      - coding
-      - cruxeval
-      - architecture
-      - chat
-      - tools
-      - agentic
+    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
 
   qwen3.6-35b:
     concurrency: 1
-    suites:
-      - livecodebench
-      - code-review
-      - clarify
-      - structured
-      - honesty
-      - coding
-      - cruxeval
-      - architecture
-      - chat
-      - tools
-      - agentic
+    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
 
-  # Implementer-slot candidate — code/reasoning/agentic focus (skip chat/clarify).
+  # Implementer-slot candidate — coding/agentic focus (skip chat-flow).
   minimax-m2-reap:
     concurrency: 1
-    suites:
-      - livecodebench
-      - code-review
-      - structured
-      - honesty
-      - coding
-      - cruxeval
-      - architecture
-      - tools
-      - agentic
+    suites: [livecodebench, structured, tools, coding-flow, cruxeval, agentic]
 
-  # Small chat candidate — chat/pipeline focus.
+  # Small chat candidate — chat/pipeline focus (skip heavy coding agentic).
   qwen3.5-9b:
     concurrency: 1
-    suites:
-      - clarify
-      - structured
-      - honesty
-      - chat
-      - coding
-      - cruxeval
-      - architecture
-      - tools
+    suites: [structured, tools, chat-flow, coding-flow, cruxeval]

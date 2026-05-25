@@ -1,0 +1,30 @@
+# CHAT-flow rubric bundle — merges chat + clarify + honesty into ONE promptfoo
+# run (model loads once, Selene grades once). All share provider (openai:chat) +
+# judge (Selene) + 0-1 g-eval @ 0.7 + the thinking-strip transform.
+#
+# structured + tools are deterministic (no judge) → separate, model-only, no
+# Selene swap. Run them in the same model-loaded window for free.
+#   ./scripts/eval.sh --suite chat-flow [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 16384
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - "{{task}}"
+tests:
+  - ../test-suites/chat.yaml
+  - ../test-suites/clarify.yaml
+  - ../test-suites/honesty.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"

@@ -1,0 +1,32 @@
+# CODING-flow rubric bundle — merges architecture + coding + code-review into ONE
+# promptfoo run so the model loads once and Selene grades once for all of them
+# (instead of model→Selene→model per suite). All three share provider
+# (openai:chat) + judge (Selene) + 0-1 g-eval @ 0.7 + the thinking-strip
+# transform, so they merge cleanly.
+#
+# cruxeval is NOT here — it uses a 1-5 llm-rubric (threshold 4); run it separately.
+# livecodebench (custom provider) + agentic (opencode) are also separate by provider.
+#   ./scripts/eval.sh --suite coding-flow [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 16384
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - "{{task}}"
+tests:
+  - ../test-suites/architecture.yaml
+  - ../test-suites/coding.yaml
+  - ../test-suites/code-review.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
