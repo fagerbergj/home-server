@@ -43,11 +43,15 @@ models:
     # --reasoning-format auto: extract the harmony `analysis` channel into
     # reasoning_content instead of leaving it inline in `content`. Without it
     # the model's planning text leaks into the answer.
-    # -ncmoe 4: offload the expert FFN weights of 4 layers to CPU RAM (attention
-    # + KV stay on GPU for ALL layers). Bumped 2->4 (2026-05-25): at -ncmoe 2 the
-    # first forward pass SIGABRT'd (OOM) — only ~2 GB headroom/GPU at 128K, and a
-    # concurrent immich vaapi transcode on GPU1 tipped it over. Tune down if GPU1
-    # is freed and you want the speed back; up if it still OOMs on load.
+    # --split-mode layer (NOT tensor): tensor-split's AllReduce init fails when
+    # GPU1 is contended (e.g. the immich vaapi transcode holds a HIP context) ->
+    # "AllReduce init failed (n_devices != 2?)" -> meta-backend butterfly fallback
+    # -> GGML_ASSERT(buffer)/cudaMalloc OOM in graph_reserve at load (2026-05-25;
+    # same bug family as minimax). Layer-split (pipeline) avoids the AllReduce path.
+    # Dropping tensor-split also UNLOCKS KV quant (q8_0 below) — tensor-split forbids
+    # it — which halves the KV and buys back headroom.
+    # -ncmoe 4: offload the expert FFN of 4 layers to CPU for margin; with q8 KV
+    # freeing VRAM this can likely drop back toward 2 for speed once it's stable.
     cmd: >
       /app/llama-server
       -hf ggml-org/gpt-oss-120b-GGUF
@@ -57,12 +61,14 @@ models:
       --top-p 1.0
       --top-k 0
       --no-mmap
-      --split-mode tensor
+      --split-mode layer
       -fit off
       -ngl 999
       -ncmoe 4
       -c 131072
       -fa on
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --parallel 1
       --port 9999
 
