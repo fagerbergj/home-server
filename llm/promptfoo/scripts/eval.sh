@@ -13,13 +13,14 @@
 #   ./scripts/eval.sh --suite math qwen3.6-35b     # one suite, one model
 #   ./scripts/eval.sh --tools [model ...]          # document-pipeline routing (opt-in)
 #   ./scripts/eval.sh --no-cache [...]             # disable promptfoo's response cache
-#   ./scripts/eval.sh --probe-context [model ...]  # gate check: does each model load
-#                                                  #   + run at 32k/132k/198k, and the t/s there
+#   ./scripts/eval.sh --probe-context [model ...]  # speed gate: load each model and
+#                                                  #   measure decode t/s vs the role floors
 #
 # Positional args form a model allowlist (empty = all models).
 #
 # Every run ends with a ROLE SPEED GATES table (median decode t/s vs the chat=50/
-# implementer=30/planner=15 floors). `--probe-context` adds the context-window gate.
+# implementer=30/planner=15 floors). `--probe-context` actively loads each model
+# and measures decode t/s directly (context fit is handled by the llm-swap config).
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
@@ -104,32 +105,38 @@ def speed_gate_report(models):
             f"{role}:{'PASS' if mt >= g['tps'] * (1 - TOL) else 'FAIL'}(>={g['tps']})"
             for role, g in ROLE_GATES.items())
         print(f"  {m:<16} {mt:6.1f} t/s (n={n:>3})   {cells}")
-    print("  NOTE: measured at small eval prompts — overstates t/s at the role")
-    print("  context. Run `--probe-context` for t/s + fit at 32k/132k/198k.")
+    print("  NOTE: measured at small eval prompts. Run `--probe-context` for an")
+    print("  actively-measured decode t/s (loads each model fresh).")
 
 def context_probe(models):
-    """Actively load each model at each role's context and report fit + t/s there."""
+    """Load each model and measure raw decode t/s vs the role floors. Context fit
+    is set by the llm-swap config now — the model is served at its role window, so
+    loading allocates the full KV and an OOM shows up here as a load failure; this
+    only measures speed. A warmup call absorbs the model swap/load, so the timed
+    call hits a warm model and short-prompt prefill ≈ pure decode."""
     import urllib.request, json, time
     URL = os.environ.get('LLM_SWAP_URL', 'http://127.0.0.1:11436/v1') + '/chat/completions'
-    print(f'\n{"═"*60}\n  CONTEXT PROBE — does the model load + run at the role window?\n{"═"*60}')
+    def call(m, max_tokens):
+        body = json.dumps({'model': m, 'temperature': 0, 'max_tokens': max_tokens,
+                           'messages': [{'role': 'user',
+                               'content': 'Write a detailed 400-word explanation of how a CPU cache works.'}]}).encode()
+        t0 = time.time()
+        req = urllib.request.Request(URL, data=body, headers={'Content-Type': 'application/json'})
+        d = json.load(urllib.request.urlopen(req, timeout=1800))
+        ct = (d.get('usage') or {}).get('completion_tokens', 0) or 1
+        return ct, time.time() - t0
+    print(f'\n{"═"*60}\n  SPEED PROBE — decode t/s vs role floors\n{"═"*60}')
     for m in models:
-        print(f"  {m}:")
-        for role, g in ROLE_GATES.items():
-            n = int(g['ctx'] * (1 - TOL))   # within 10% of the window is acceptable
-            prompt = ('word ' * n) + '\nReply with exactly: OK'
-            body = json.dumps({'model': m, 'messages': [{'role': 'user', 'content': prompt}],
-                               'max_tokens': 16, 'temperature': 0}).encode()
-            t0 = time.time()
-            try:
-                req = urllib.request.Request(URL, data=body, headers={'Content-Type': 'application/json'})
-                d = json.load(urllib.request.urlopen(req, timeout=1800))
-                dt = time.time() - t0
-                ct = (d.get('usage') or {}).get('completion_tokens', 0) or 1
-                tps = ct / dt if dt else 0
-                ok = 'PASS' if tps >= g['tps'] * (1 - TOL) else 'slow'
-                print(f"    {role:<12} ctx~{n:>7}  LOADS ✅  {tps:5.1f} t/s  [{ok} >= {g['tps']}]")
-            except Exception as e:
-                print(f"    {role:<12} ctx~{n:>7}  FAILED ❌  {str(e)[:70]}")
+        try:
+            call(m, 1)              # warmup: absorb the model load/swap
+            ct, dt = call(m, 512)   # measured: short prompt → dt ≈ decode time
+            tps = ct / dt if dt else 0
+            cells = '  '.join(
+                f"{role}:{'PASS' if tps >= g['tps'] * (1 - TOL) else 'FAIL'}(>={g['tps']})"
+                for role, g in ROLE_GATES.items())
+            print(f"  {m:<16} {tps:6.1f} t/s ({ct} tok)   {cells}")
+        except Exception as e:
+            print(f"  {m:<16} FAILED ❌  {str(e)[:70]}")
 
 args = sys.argv[1:]
 suite_filter = None
