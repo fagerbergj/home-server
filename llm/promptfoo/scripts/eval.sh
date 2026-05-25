@@ -13,8 +13,13 @@
 #   ./scripts/eval.sh --suite math qwen3.6-35b     # one suite, one model
 #   ./scripts/eval.sh --tools [model ...]          # document-pipeline routing (opt-in)
 #   ./scripts/eval.sh --no-cache [...]             # disable promptfoo's response cache
+#   ./scripts/eval.sh --probe-context [model ...]  # gate check: does each model load
+#                                                  #   + run at 32k/132k/198k, and the t/s there
 #
 # Positional args form a model allowlist (empty = all models).
+#
+# Every run ends with a ROLE SPEED GATES table (median decode t/s vs the chat=50/
+# implementer=30/planner=15 floors). `--probe-context` adds the context-window gate.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."   # promptfoo root — all paths below are relative to it
@@ -39,6 +44,7 @@ export REQUEST_TIMEOUT_MS="${REQUEST_TIMEOUT_MS:-600000}"
 args=()
 for a in "$@"; do
   if [ "$a" = "--no-cache" ]; then export PROMPTFOO_CACHE_ENABLED=false
+  elif [ "$a" = "--probe-context" ]; then export PROBE_CONTEXT=1
   else args+=("$a"); fi
 done
 if [ "${#args[@]}" -gt 0 ]; then set -- "${args[@]}"; else set --; fi
@@ -57,6 +63,70 @@ SUITES = {
     'coding-flow', 'chat-flow', 'summarize',
 }
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'
+
+# Role gates (from llm/MODEL_SELECTION.md). A model below a role's t/s floor OR
+# whose context can't reach the role's window is disqualified FOR THAT ROLE.
+#   tps = min decode tok/s ; ctx = required context window (tokens)
+ROLE_GATES = {
+    'chat':        {'tps': 50, 'ctx': 32768},
+    'implementer': {'tps': 30, 'ctx': 198000},
+    'planner':     {'tps': 15, 'ctx': 132000},
+}
+
+def _median(xs):
+    xs = sorted(xs); return xs[len(xs)//2] if xs else 0.0
+
+def model_decode_tps(model):
+    """Median decode t/s across a model's eval JSONs (eval-prompt context)."""
+    import glob, json
+    tps = []
+    for f in glob.glob(f'evals/{model}-*.json'):
+        try:
+            d = json.load(open(f))
+            res = d['results']['results'] if isinstance(d, dict) else d[0]['results']['results']
+        except Exception:
+            continue
+        for r in res:
+            tok = (r.get('response', {}).get('tokenUsage', {}) or {}).get('completion')
+            lat = r.get('latencyMs')
+            if tok and lat:
+                tps.append(tok / (lat / 1000))
+    return _median(tps), len(tps)
+
+def speed_gate_report(models):
+    print(f'\n{"═"*60}\n  ROLE SPEED GATES — median decode t/s vs floor\n{"═"*60}')
+    for m in models:
+        mt, n = model_decode_tps(m)
+        cells = '  '.join(
+            f"{role}:{'PASS' if mt >= g['tps'] else 'FAIL'}(>={g['tps']})"
+            for role, g in ROLE_GATES.items())
+        print(f"  {m:<16} {mt:6.1f} t/s (n={n:>3})   {cells}")
+    print("  NOTE: measured at small eval prompts — overstates t/s at the role")
+    print("  context. Run `--probe-context` for t/s + fit at 32k/132k/198k.")
+
+def context_probe(models):
+    """Actively load each model at each role's context and report fit + t/s there."""
+    import urllib.request, json, time
+    URL = os.environ.get('LLM_SWAP_URL', 'http://127.0.0.1:11436/v1') + '/chat/completions'
+    print(f'\n{"═"*60}\n  CONTEXT PROBE — does the model load + run at the role window?\n{"═"*60}')
+    for m in models:
+        print(f"  {m}:")
+        for role, g in ROLE_GATES.items():
+            n = g['ctx']
+            prompt = ('word ' * n) + '\nReply with exactly: OK'
+            body = json.dumps({'model': m, 'messages': [{'role': 'user', 'content': prompt}],
+                               'max_tokens': 16, 'temperature': 0}).encode()
+            t0 = time.time()
+            try:
+                req = urllib.request.Request(URL, data=body, headers={'Content-Type': 'application/json'})
+                d = json.load(urllib.request.urlopen(req, timeout=1800))
+                dt = time.time() - t0
+                ct = (d.get('usage') or {}).get('completion_tokens', 0) or 1
+                tps = ct / dt if dt else 0
+                ok = 'PASS' if tps >= g['tps'] else 'slow'
+                print(f"    {role:<12} ctx~{n:>7}  LOADS ✅  {tps:5.1f} t/s  [{ok} >= {g['tps']}]")
+            except Exception as e:
+                print(f"    {role:<12} ctx~{n:>7}  FAILED ❌  {str(e)[:70]}")
 
 args = sys.argv[1:]
 suite_filter = None
@@ -85,9 +155,15 @@ if unknown:
     print(f'Available: {", ".join(config["models"])}', file=sys.stderr)
     sys.exit(1)
 
-for model, cfg in config['models'].items():
-    if model_filters and model not in model_filters:
-        continue
+selected = [m for m in config['models'] if not model_filters or m in model_filters]
+
+# --probe-context: skip the suites, just check context-fit + t/s at each role window.
+if os.environ.get('PROBE_CONTEXT'):
+    context_probe(selected)
+    sys.exit(0)
+
+for model in selected:
+    cfg = config['models'][model]
     concurrency = cfg['concurrency']
     suites = [suite_filter] if suite_filter else cfg['suites']
 
@@ -108,6 +184,7 @@ for model, cfg in config['models'].items():
         )
 
 print('\nPer-model evals done. Run ./scripts/compare.sh for the A/B matrix.')
+speed_gate_report(selected)
 EOF
 
 bash scripts/summarize.sh
