@@ -60,7 +60,7 @@ SUITES = {
     'architecture', 'coding', 'math', 'chat', 'brain-twisters',
     'cruxeval', 'calibration', 'hard-reasoning', 'agentic', 'chat-multiturn', 'tools',
     'livecodebench', 'code-review', 'clarify', 'structured', 'honesty',
-    'coding-flow', 'chat-flow', 'summarize', 'bfcl',
+    'coding-flow', 'chat-flow', 'summarize', 'bfcl', 'tests-for-diff',
 }
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'
 

@@ -1,0 +1,12 @@
+# tests-for-diff (A-7) — the model writes a pytest suite for a diff; graded by
+# MUTATION TESTING (run generated tests vs correct code [must pass] + planted
+# mutants [must fail = caught]). Custom provider, deterministic (no judge).
+# Build the runner image first (once): test-suites/tests-for-diff/setup.sh
+#   ./scripts/eval.sh --suite tests-for-diff [model]
+providers:
+  - id: file://../test-suites/tests-for-diff/provider.js
+    config:
+      model: "{{ env.MODEL }}"
+prompts:
+  - "{{ case }}"
+tests: file://../test-suites/tests-for-diff/tests.js
