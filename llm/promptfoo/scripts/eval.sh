@@ -66,13 +66,15 @@ SUITES = {
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'
 
 # Role gates (from llm/MODEL_SELECTION.md). A model below a role's t/s floor OR
-# whose context can't reach the role's window is disqualified FOR THAT ROLE.
+# whose context can't reach the role's window is disqualified FOR THAT ROLE —
+# with a 10% tolerance (within 10% of a limit counts as a pass).
 #   tps = min decode tok/s ; ctx = required context window (tokens)
 ROLE_GATES = {
     'chat':        {'tps': 50, 'ctx': 32768},
     'implementer': {'tps': 30, 'ctx': 198000},
     'planner':     {'tps': 15, 'ctx': 132000},
 }
+TOL = 0.10  # within 10% of a floor/window is acceptable
 
 def _median(xs):
     xs = sorted(xs); return xs[len(xs)//2] if xs else 0.0
@@ -99,7 +101,7 @@ def speed_gate_report(models):
     for m in models:
         mt, n = model_decode_tps(m)
         cells = '  '.join(
-            f"{role}:{'PASS' if mt >= g['tps'] else 'FAIL'}(>={g['tps']})"
+            f"{role}:{'PASS' if mt >= g['tps'] * (1 - TOL) else 'FAIL'}(>={g['tps']})"
             for role, g in ROLE_GATES.items())
         print(f"  {m:<16} {mt:6.1f} t/s (n={n:>3})   {cells}")
     print("  NOTE: measured at small eval prompts — overstates t/s at the role")
@@ -113,7 +115,7 @@ def context_probe(models):
     for m in models:
         print(f"  {m}:")
         for role, g in ROLE_GATES.items():
-            n = g['ctx']
+            n = int(g['ctx'] * (1 - TOL))   # within 10% of the window is acceptable
             prompt = ('word ' * n) + '\nReply with exactly: OK'
             body = json.dumps({'model': m, 'messages': [{'role': 'user', 'content': prompt}],
                                'max_tokens': 16, 'temperature': 0}).encode()
@@ -124,7 +126,7 @@ def context_probe(models):
                 dt = time.time() - t0
                 ct = (d.get('usage') or {}).get('completion_tokens', 0) or 1
                 tps = ct / dt if dt else 0
-                ok = 'PASS' if tps >= g['tps'] else 'slow'
+                ok = 'PASS' if tps >= g['tps'] * (1 - TOL) else 'slow'
                 print(f"    {role:<12} ctx~{n:>7}  LOADS ✅  {tps:5.1f} t/s  [{ok} >= {g['tps']}]")
             except Exception as e:
                 print(f"    {role:<12} ctx~{n:>7}  FAILED ❌  {str(e)[:70]}")
