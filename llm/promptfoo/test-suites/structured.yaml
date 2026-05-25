@@ -1,0 +1,95 @@
+# Structured output (B-6): can the model emit valid, schema-correct JSON and
+# obey strict output formats? Graded DETERMINISTICALLY with javascript asserts
+# (parse + schema/format checks) — no judge, so this suite is fast and needs no
+# Selene swap. Pipeline-relevant (the document-pipeline extracts structured
+# fields). The config strips thinking + unwraps a ```code fence``` before asserts
+# run, so fenced JSON still validates.
+
+- description: "Extract note metadata to a typed JSON object"
+  vars:
+    task: |
+      Extract metadata from this note as a JSON object with keys:
+        title (string), date (ISO 8601 "YYYY-MM-DD" or null),
+        tags (array of strings), action_items (array of strings).
+      Output only the JSON object.
+
+      Note: Met with the plumber Tue about the upstairs leak — quote was $450.
+      Need to: call insurance, get a second quote, and seal the basement window
+      before next rain. Filed under: home-maintenance, urgent.
+  assert:
+    - type: javascript
+      value: |
+        try {
+          const o = JSON.parse(output);
+          return typeof o.title === 'string' && o.title.length > 0
+            && (o.date === null || /^\d{4}-\d{2}-\d{2}$/.test(o.date))
+            && Array.isArray(o.tags) && o.tags.length > 0
+            && Array.isArray(o.action_items) && o.action_items.length >= 3;
+        } catch (e) { return false; }
+
+- description: "Classify into an enum with confidence"
+  vars:
+    task: |
+      Classify this document into exactly one category and give a confidence.
+      Output JSON {"category": <one of: invoice, receipt, meeting_notes,
+      personal_note, recipe>, "confidence": <number 0..1>}. Output only the JSON.
+
+      Document: WHOLE FOODS MARKET 0123 — Bananas $1.84, Oat milk $4.29,
+      Total $6.13, VISA ****1234, 05/14/2026 10:42 AM. Thank you!
+  assert:
+    - type: javascript
+      value: |
+        try {
+          const o = JSON.parse(output);
+          const cats = ['invoice','receipt','meeting_notes','personal_note','recipe'];
+          return cats.includes(o.category)
+            && typeof o.confidence === 'number'
+            && o.confidence >= 0 && o.confidence <= 1;
+        } catch (e) { return false; }
+
+- description: "Extract a JSON array, nothing else"
+  vars:
+    task: |
+      List every email address in the text below as a JSON array of strings.
+      If there are none, output []. Output only the JSON array.
+
+      Text: Ping jordan@example.com or the team alias dev-team@corp.io. The
+      sender field showed "noreply@" but that's not a full address.
+  assert:
+    - type: javascript
+      value: |
+        try {
+          const a = JSON.parse(output);
+          return Array.isArray(a)
+            && a.includes('jordan@example.com')
+            && a.includes('dev-team@corp.io')
+            && a.every(x => typeof x === 'string');
+        } catch (e) { return false; }
+
+- description: "Obey a strict bullet format (exactly 3)"
+  vars:
+    task: |
+      Give exactly 3 next steps for renewing a passport, each on its own line
+      starting with "- " (hyphen then a space). No preamble and no other text.
+  assert:
+    - type: javascript
+      value: |
+        const lines = output.trim().split('\n').map(l => l.trim()).filter(Boolean);
+        const bullets = lines.filter(l => /^- \S/.test(l));
+        return bullets.length === 3 && bullets.length === lines.length;
+
+- description: "Constrained one-sentence summary (<=25 words)"
+  vars:
+    task: |
+      Summarize the note in exactly ONE sentence of at most 25 words, ending
+      with a period. Output only the sentence.
+
+      Note: The Q2 launch slipped two weeks because the vendor's API changed
+      without notice; we patched it, added a contract test, and notified support.
+  assert:
+    - type: javascript
+      value: |
+        const s = output.trim();
+        const words = s.split(/\s+/).filter(Boolean);
+        const sentenceEnders = (s.match(/[.!?](\s|$)/g) || []).length;
+        return s.endsWith('.') && words.length <= 25 && sentenceEnders === 1;

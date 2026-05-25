@@ -1,0 +1,19 @@
+# Structured-output (B-6) suite — DETERMINISTIC: javascript asserts validate
+# JSON schema / output format. No judge (no Selene swap → fast). The transform
+# unwraps a ```code fence``` and strips any thinking preamble so fenced JSON
+# still parses. Run ON jason-server.
+#   ./scripts/eval.sh --suite structured [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 4096
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - "{{task}}"
+tests: ../test-suites/structured.yaml
+defaultTest:
+  options:
+    transform: "(output.match(/```(?:json)?\\s*([\\s\\S]*?)```/) ? output.match(/```(?:json)?\\s*([\\s\\S]*?)```/)[1] : output).replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
