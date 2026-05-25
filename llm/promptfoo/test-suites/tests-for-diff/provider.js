@@ -39,8 +39,10 @@ function buildPrompt(diff, correct) {
 }
 
 function extractCode(txt) {
-  const m = [...txt.matchAll(/```(?:python)?\s*\n([\s\S]*?)```/g)];
-  return m.length ? m[m.length - 1][1].trim() : txt.trim();
+  // Require a real fenced block — never return raw prose (gpt-oss dumps long
+  // reasoning narrative that would parse as a broken "test file").
+  const m = [...String(txt || '').matchAll(/```(?:python)?\s*\n([\s\S]*?)```/g)];
+  return m.length ? m[m.length - 1][1].trim() : '';
 }
 
 class TestsForDiffProvider {
@@ -66,6 +68,10 @@ class TestsForDiffProvider {
           model,
           messages: [{ role: 'user', content: buildPrompt(diff, correct) }],
           max_tokens: MAX_TOKENS, temperature: 0.2,
+          // gpt-oss otherwise runs away enumerating test ideas in the reasoning
+          // channel and never emits the final answer. Cap reasoning so it writes
+          // the tests. (Non-gpt-oss models ignore this kwarg.)
+          chat_template_kwargs: { reasoning_effort: 'low' },
         }),
         signal: AbortSignal.timeout(GEN_TIMEOUT_MS),
       });
