@@ -100,16 +100,20 @@ models:
       --min-p 0
       --presence-penalty 1.5
       -fa on
+      --split-mode layer
+      -fit off
       -ngl 999
-      -c 40960
+      -c 262144
+      -ub 2048
+      -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9999
 
-  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4), fits one GPU (no tensor-split
-  # / --no-mmap needed). Same Qwen3.6 sampling as the 35B. MTP (multi-token
-  # prediction) heads are NOT used yet — the server-rocm image predates the MTP
-  # PR (#22673) — so it runs as a plain dense 27B for now (faster once supported).
+  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4). Served at NATIVE 256k
+  # (-c 262144) with q8 KV for the implementer-role context test; that KV needs
+  # both GPUs, so --split-mode layer (tensor-split forbids KV-quant). Same
+  # Qwen3.6 sampling as the 35B. MTP heads unused until the image gets PR #22673.
   "qwen3.6-27b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -124,8 +128,12 @@ models:
       --min-p 0
       --presence-penalty 1.5
       -fa on
+      --split-mode layer
+      -fit off
       -ngl 999
-      -c 40960
+      -c 262144
+      -ub 2048
+      -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9999
@@ -201,7 +209,11 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 32768
+      -c 163840
+      -ub 2048
+      -b 2048
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       -fa on
       --port 9999
 
