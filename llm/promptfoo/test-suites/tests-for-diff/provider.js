@@ -17,7 +17,7 @@ const path = require('path');
 const URL = process.env.LLM_SWAP_URL || 'http://localhost:11436/v1';
 const FIXTURES = path.join(__dirname, 'fixtures');
 const GEN_TIMEOUT_MS = (Number(process.env.TFD_GEN_TIMEOUT_S) || 600) * 1000;
-const MAX_TOKENS = Number(process.env.TFD_MAX_TOKENS) || 4096;
+const MAX_TOKENS = Number(process.env.TFD_MAX_TOKENS) || 8192;
 
 function buildPrompt(diff, correct) {
   return [
@@ -71,13 +71,24 @@ class TestsForDiffProvider {
       });
       if (!r.ok) return { error: `llm-swap ${r.status}: ${(await r.text()).slice(0, 200)}` };
       const j = await r.json();
-      content = j.choices?.[0]?.message?.content || '';
+      const msg = j.choices?.[0]?.message || {};
+      content = msg.content || '';
+      // gpt-oss with --reasoning-format auto sometimes leaves `content` empty and
+      // puts the code in reasoning_content — fall back to it if content has no block.
+      this._reasoning = msg.reasoning_content || '';
       const u = j.usage || {};
       tokenUsage = { prompt: u.prompt_tokens || 0, completion: u.completion_tokens || 0, total: u.total_tokens || 0 };
     } catch (e) {
       return { error: `generation failed: ${e.message}` };
     }
-    const testCode = extractCode(content);
+    let testCode = extractCode(content);
+    if (!testCode || testCode.length < 20) {
+      const fromReasoning = extractCode(this._reasoning || '');
+      if (fromReasoning && fromReasoning.length >= 20) testCode = fromReasoning;
+    }
+    if (!testCode || testCode.length < 20) {
+      return { error: 'model returned no usable test code (empty content + reasoning)' };
+    }
 
     // 2. Mutation-test in the container (network off — untrusted test code).
     const io = fs.mkdtempSync(path.join(os.tmpdir(), 'tfd-'));

@@ -1,0 +1,19 @@
+# LongBench-style long-context suite. Generated long docs with planted facts +
+# an aggregation question; DETERMINISTIC js assert (the answer number must
+# appear) — no judge. Tests at ~4k/32k/96k/180k tokens probe where comprehension
+# degrades; the ~180k test exceeds a 128k-native model's window (errors = correct
+# "doesn't fit" signal) and is meant for the implementer's 198k requirement.
+# Needs a generous per-request timeout (long prefill) — eval.sh sets 10 min.
+#   ./scripts/eval.sh --suite longbench [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 256
+      omitDefaults: true
+      showThinking: false
+      temperature: 0
+prompts:
+  - "{{doc}}\n\n{{question}}"
+tests: file://../test-suites/longbench/gen.js

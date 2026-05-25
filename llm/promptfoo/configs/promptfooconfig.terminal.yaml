@@ -1,0 +1,16 @@
+# Terminal-Bench-style agentic suite. The model self-directs (opencode in the
+# oc-agent container) on a terminal/sysadmin task in a /work sandbox; a hidden
+# grade.sh checks the result by exit code. Deterministic, no judge. Reuses the
+# oc-agent image from the agentic suite (build it via test-suites/agentic/...).
+# Agent runs are nondeterministic → run with cache off. Run ON jason-server.
+#   PROMPTFOO_CACHE_ENABLED=false ./scripts/eval.sh --suite terminal [model]
+evaluateOptions:
+  timeoutMs: 900000
+
+providers:
+  - id: file://../test-suites/terminal/provider.js
+    config:
+      model: "{{ env.MODEL }}"
+prompts:
+  - "{{ task }}"
+tests: file://../test-suites/terminal/tests.js

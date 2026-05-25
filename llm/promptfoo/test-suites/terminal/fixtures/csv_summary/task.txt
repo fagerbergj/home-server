@@ -1,0 +1,3 @@
+Read data.csv (a CSV with header `id,name,amount`). Count how many rows have
+amount greater than 100, and write ONLY that number to a file named summary.txt
+in this directory.
