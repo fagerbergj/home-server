@@ -114,9 +114,11 @@ models:
   # KV, --split-mode layer (256k KV needs both GPUs; tensor-split forbids KV-quant).
   # Runs as PLAIN DENSE (~25 t/s @256k, too slow for the implementer) — MTP is in
   # the image but OFF: it needs explicit --spec-type draft-mtp --spec-draft-n-max N
-  # flags, not passed here. This is the MTP TEST BED. MTP multi-GPU on ROCm is
-  # unstable (PR #22673: ggml-backend-meta tensor-split assert), so the production
-  # 35B implementer deliberately stays non-MTP.
+  # flags, not passed here. This is the MTP TEST BED — MTP runs FINE on our
+  # layer-split stack (PR #22673's ggml-backend-meta assert is tensor-split-only).
+  # On the 35B it gave NO speedup (63 vs 60-70 t/s, 59% draft-accept — A3B is
+  # already fast), so the implementer stays non-MTP. MTP is worth chasing HERE
+  # instead: the dense 27B's slow 25 t/s base has real headroom for spec gains.
   "qwen3.6-27b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
