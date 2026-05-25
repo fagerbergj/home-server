@@ -24,27 +24,27 @@
 models:
   gpt-oss-120b:
     concurrency: 1
-    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
+    suites: [livecodebench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic]
 
   gpt-oss-20b:
     concurrency: 1
-    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
+    suites: [livecodebench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic]
 
   qwen3.6-35b:
     concurrency: 1
-    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
+    suites: [livecodebench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic]
 
   # Dense 27B candidate (MTP build) — flex role (chat or implementer).
   qwen3.6-27b:
     concurrency: 1
-    suites: [livecodebench, structured, tools, coding-flow, cruxeval, chat-flow, agentic]
+    suites: [livecodebench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic]
 
   # Implementer-slot candidate — coding/agentic focus (skip chat-flow).
   minimax-m2-reap:
     concurrency: 1
-    suites: [livecodebench, structured, tools, coding-flow, cruxeval, agentic]
+    suites: [livecodebench, structured, tools, bfcl, coding-flow, cruxeval, agentic]
 
   # Small chat candidate — chat/pipeline focus (skip heavy coding agentic).
   qwen3.5-9b:
     concurrency: 1
-    suites: [structured, tools, chat-flow, coding-flow, cruxeval]
+    suites: [structured, tools, bfcl, chat-flow, coding-flow, cruxeval]

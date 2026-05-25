@@ -1,0 +1,60 @@
+# BFCL-style function-calling (A2/B2). Uses real OpenAI tool calling (config.tools)
+# so the model exercises the production tool-call path; graded DETERMINISTICALLY
+# by bfcl-grader.js (AST-style: function name + args), no judge. Covers the core
+# BFCL categories: simple, multiple (pick the right fn), parallel, irrelevance
+# (no fn fits → no call), and missing-param (don't fabricate). Original cases
+# (contamination-proof); a real-BFCL-dataset subset could be added later.
+
+- description: "simple: one function, correct args"
+  vars:
+    check: simple_weather
+    scenario: "What's the weather in Paris right now? Give it in Celsius."
+  assert:
+    - type: javascript
+      metric: "[simple] get_weather(Paris, celsius)"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
+
+- description: "multiple: pick the right function among several"
+  vars:
+    check: select_currency
+    scenario: "How much is 250 US dollars in euros?"
+  assert:
+    - type: javascript
+      metric: "[multiple] convert_currency(250, USD, EUR)"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
+
+- description: "parallel: two simultaneous calls"
+  vars:
+    check: parallel_weather
+    scenario: "Compare the current weather in Tokyo and London."
+  assert:
+    - type: javascript
+      metric: "[parallel] two get_weather calls"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
+
+- description: "irrelevance: no function fits → no call"
+  vars:
+    check: irrelevance
+    scenario: "Write me a haiku about autumn leaves."
+  assert:
+    - type: javascript
+      metric: "[irrelevance] makes no tool call"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
+
+- description: "missing param: don't fabricate"
+  vars:
+    check: miss_param_flight
+    scenario: "Find me a flight to Berlin."
+  assert:
+    - type: javascript
+      metric: "[miss-param] no fabricated origin/date"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
+
+- description: "select + args: email routing"
+  vars:
+    check: select_email
+    scenario: "Email alice@corp.com to let her know the meeting moved to 3pm."
+  assert:
+    - type: javascript
+      metric: "[select] send_email to alice, 3pm"
+      value: "file://../test-suites/scripts/bfcl-grader.js"
