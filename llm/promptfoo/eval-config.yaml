@@ -20,6 +20,9 @@
 # Single-suite configs still exist for targeted runs (--suite code-review etc.).
 # DISABLED (kept on disk): brain-twisters, calibration, hard-reasoning, math,
 # chat-multiturn (see the 2026-05-25 discrimination×relevance audit).
+# DEFERRED: longbench — slow (180k prefills) and the implementer is locked to 35b,
+# so it's sanity not comparison. Run standalone when long-context QUALITY is the
+# question: ./scripts/eval.sh --suite longbench qwen3.6-35b
 
 models:
   # Planner candidate (128k clears the 132k window via tolerance; strong reasoner).
@@ -38,13 +41,13 @@ models:
   # candidate — gets the FULL battery, incl. the heavy execution/agentic suites.
   qwen3.6-35b:
     concurrency: 1
-    suites: [livecodebench, tests-for-diff, longbench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
   # Dense 27B (MTP build). Operationally planner-tier (25 t/s < chat/impl floors),
   # but run on the FULL battery for a head-to-head with the 35B (per request).
   qwen3.6-27b:
     concurrency: 1
-    suites: [livecodebench, tests-for-diff, longbench, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
   # Planner candidate (128k, ~31 t/s; IQ2 coding weak — not implementer). Planner
   # suites only: reasoning + honesty + tool-use; skip execution/agentic/long-context.
