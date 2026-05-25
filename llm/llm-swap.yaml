@@ -152,6 +152,10 @@ models:
   # but 40%-prune + coding-calibrated beats 50%-prune + unknown calibration.
   # INTERLEAVED THINKING: M2 requires <think> blocks be retained in history
   # across turns — do NOT strip them (no --reasoning-format). Sampling 1.0/0.95/40.
+  # --split-mode layer (NOT tensor): M2's graph makes llama.cpp's tensor-parallel
+  # meta-backend abort during warmup (GGML_ASSERT split-axis-0 in alloc_graph).
+  # Layer-split (pipeline) avoids the cross-GPU AllReduce path entirely. Loads
+  # and serves clean at ~47 t/s decode / ~114 t/s prefill.
   "minimax-m2-reap":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -163,7 +167,7 @@ models:
       --top-p 0.95
       --top-k 40
       --no-mmap
-      --split-mode tensor
+      --split-mode layer
       -fit off
       -ngl 999
       -c 32768
