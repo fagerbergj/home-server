@@ -33,15 +33,19 @@ models:
   "gpt-oss-120b":
     proxy: "http://127.0.0.1:9999"
     ttl: 3600
+    # Native MXFP4 GGUF (ggml-org), ~59 GiB — gpt-oss is TRAINED in MXFP4, so the
+    # f16 upcast (unsloth :F16, 65.4 GB) added ~6 GB for zero quality gain. The
+    # MXFP4 file is the canonical full-quality weights. The ~6 GB it frees lets
+    # us run native 128K context (-c 131072) at -ncmoe 2 instead of 4.
     # --reasoning-format auto: extract the harmony `analysis` channel into
     # reasoning_content instead of leaving it inline in `content`. Without it
     # the model's planning text leaks into the answer.
-    # -ncmoe 4: offload the expert FFN weights of 4 layers to CPU RAM (attention
-    # + KV stay on GPU for ALL layers) — frees ~7GB VRAM with a modest decode
-    # hit. Better than lowering -ngl for an MoE. Tune N up for more headroom.
+    # -ncmoe 2: offload the expert FFN weights of 2 layers to CPU RAM (attention
+    # + KV stay on GPU for ALL layers). Tune toward 0 if VRAM headroom allows at
+    # 128K, up if it OOMs on load.
     cmd: >
       /app/llama-server
-      -hf unsloth/gpt-oss-120b-GGUF:F16
+      -hf ggml-org/gpt-oss-120b-GGUF
       --jinja
       --reasoning-format auto
       --temp 1.0
@@ -51,28 +55,30 @@ models:
       --split-mode tensor
       -fit off
       -ngl 999
-      -ncmoe 4
+      -ncmoe 2
       -c 131072
       -fa on
       --parallel 1
       --port 9999
 
-  # gpt-oss-20b — small sibling (21B / 3.6B active, ~14GB at F16). Fits one GPU,
-  # so no --no-mmap/tensor-split. Huge VRAM headroom → good fit for concurrent
+  # gpt-oss-20b — small sibling (21B / 3.6B active). Native MXFP4 GGUF (ggml-org,
+  # ~11.3 GiB) for the same full-quality-at-smaller-size reason as the 120b.
+  # Fits one GPU, so no --no-mmap/tensor-split. At MXFP4 it runs native 128K
+  # context (-c 131072, ~18 GB total) with room to spare — good for concurrent
   # doc-pipeline use where gpt-oss-120b has none.
   "gpt-oss-20b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/gpt-oss-20b-GGUF:F16
+      -hf ggml-org/gpt-oss-20b-GGUF
       --jinja
       --reasoning-format auto
       --temp 1.0
       --top-p 1.0
       --top-k 0
       -ngl 999
-      -c 32768
+      -c 131072
       -fa on
       --port 9999
 
