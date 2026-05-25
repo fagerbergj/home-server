@@ -53,6 +53,7 @@ CONFIG_FILE = 'eval-config.yaml'
 SUITES = {
     'architecture', 'coding', 'math', 'chat', 'brain-twisters',
     'cruxeval', 'calibration', 'hard-reasoning', 'agentic', 'chat-multiturn', 'tools',
+    'livecodebench',
 }
 def config_for(s): return f'configs/promptfooconfig.{s}.yaml'
 

@@ -1,0 +1,18 @@
+# LiveCodeBench code-generation suite. The custom provider generates with
+# env.MODEL via llm-swap, then grades each solution by EXECUTING it against the
+# problem's hidden tests in a throwaway python:3.10-slim container (deterministic
+# — no judge). One promptfoo test per pinned problem; the set comes from
+# $LCB_HOME/problems.json.
+#
+# Build the runtime + problem set first (once):  test-suites/livecodebench/setup.sh
+# Contamination control: pin a release_version + date window past the compared
+# models' cutoffs when building problems.json. Run ON jason-server.
+#
+#   ./scripts/eval.sh --no-cache --suite livecodebench gpt-oss-20b
+providers:
+  - id: file://../test-suites/livecodebench/provider.js
+    config:
+      model: "{{ env.MODEL }}"
+prompts:
+  - "{{ question_id }}"
+tests: file://../test-suites/livecodebench/tests.js
