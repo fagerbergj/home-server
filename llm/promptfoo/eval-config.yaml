@@ -25,11 +25,12 @@
 # question: ./scripts/eval.sh --suite longbench qwen3.6-35b
 
 models:
-  # Planner candidate (128k clears the 132k window via tolerance; strong reasoner).
-  # Planner suites only — skip the implementer-heavy execution/agentic/long-context.
+  # Implementer candidate + planner. 128k is under the 198k target, but it's a
+  # strong coder — given the FULL battery in case its coding/agentic quality is
+  # worth the context tradeoff. (NB: slowest model to load + agentic loops.)
   gpt-oss-120b:
     concurrency: 1
-    suites: [coding-flow, chat-flow, cruxeval, structured, tools, bfcl]
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
   # Chat + planner candidate (128k « 198k → not implementer). Skip the heavy
   # execution/agentic/long-context suites; keep reasoning + chat + tool-use.
@@ -49,11 +50,12 @@ models:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
-  # Planner candidate (128k, ~31 t/s; IQ2 coding weak — not implementer). Planner
-  # suites only: reasoning + honesty + tool-use; skip execution/agentic/long-context.
+  # Implementer longshot + planner candidate. 128k under the 198k target AND its
+  # IQ2 coding was weak (0/5) in the prior eval — but given the FULL battery in
+  # case it surprises on coding/agentic and earns the context tradeoff.
   minimax-m2-reap:
     concurrency: 1
-    suites: [coding-flow, chat-flow, cruxeval, structured, tools, bfcl]
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
   # Chat baseline only — already the chosen pipeline workhorse, so just the chat
   # bundle + cheap tool/format suites (not a coding or planner candidate).
