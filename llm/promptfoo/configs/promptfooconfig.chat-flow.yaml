@@ -19,6 +19,7 @@ tests:
   - ../test-suites/chat.yaml
   - ../test-suites/clarify.yaml
   - ../test-suites/honesty.yaml
+  - ../test-suites/summarize.yaml
 defaultTest:
   threshold: 0.7
   options:

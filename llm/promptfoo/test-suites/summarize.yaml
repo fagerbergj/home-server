@@ -1,0 +1,81 @@
+# Summarize (B-2 ★): produce a faithful, complete, concise digest of a source
+# document. Graded by rubric against the SOURCE (faithfulness/completeness/
+# conciseness) — no gold summary needed. Real document-pipeline fixtures
+# (contamination-proof). g-eval / Selene @ 0.7.
+
+- description: "summarize: character backstory → faithful digest"
+  vars:
+    task: |
+      Summarize the document below into a tight, faithful digest: preserve the
+      key facts, names, and events, invent nothing, and be clearly shorter than
+      the source.
+
+      ---
+      # The Chronicles of Zuk Bugbags
+
+      The Mission: I don't hunt ghosts, I hunt excuses. To most, a lingering
+      spirit means the Raven Queen slipped up; to me that's heresy — her design
+      is flawless. I walk into "haunted" places, silence the noise, and leave a
+      story that keeps the faithful from doubting Fate.
+
+      The Old Crew: I was the loudmouth field lead for The Ethereal Refuters. Bic
+      Mogg handled exploration, Barron Goodwine ran the cameras, I ran the
+      "science." We'd debunk the screaming walls as bad acoustics and the
+      floating lights as phosphor gas — but when the thing in the dark was really
+      supernatural, we neutralized it, patched the floorboards, blamed the wind,
+      and moved on. A higher purpose.
+
+      The Breakup & Betrayal: Bic started asking why the dead wouldn't stay dead
+      if the Queen was so perfect, and walked to chase his own answers. Then
+      Barron's wife hired a killer to put a contract on him and, when the law
+      closed in, tried to pin it on "spirit possession." A murder plot wrapped in
+      ghost stories broke us; the scandal ate our reputation and the team
+      dissolved. I've walked solo ever since, carrying every cover-up, looking for
+      a renewed purpose.
+  assert:
+    - type: g-eval
+      metric: "[contract] shorter prose digest"
+      value:
+        - "Output is a prose digest clearly shorter than the source"
+        - "Compresses rather than near-verbatim copying"
+    - type: g-eval
+      metric: "[faithfulness] invents nothing"
+      value:
+        - "Every claim traces to the source; adds no names, events, or facts not present"
+        - "Does not rename characters or fabricate quests/details"
+    - type: g-eval
+      metric: "[completeness] core beats"
+      value:
+        - "Captures that the narrator is a Raven Queen zealot who debunks/covers up supposed hauntings to protect faith in the Queen's perfection"
+        - "Notes he led The Ethereal Refuters (with Bic Mogg and Barron Goodwine) and the team dissolved — Bic's doubt plus Barron's wife's murder plot disguised as spirit possession"
+        - "Notes he now works solo seeking renewed purpose"
+
+- description: "summarize: messy world-intro transcript → faithful digest"
+  vars:
+    task: |
+      Summarize the rough session transcript below into a short, faithful
+      overview. Preserve the meaning, invent nothing, and be clearly shorter.
+
+      ---
+      The world of wild Mount is experiencing some of the most prosperous and
+      peaceful times in over a century. The continent is split into four major
+      Empires. To the north is the graying wildlands, free of any governing body,
+      whose towns act as independent cities that stay out of conflict. On the
+      East is the Empire of journaz, a mysterious land little is known about,
+      disconnected and private, trading only for what they need. To the South
+      lies the Menagerie Coast, a prosperous trade hub of independent port
+      cities. In the center is the dwindalian Empire, ruled by King dwindle,
+      known for its strength and intelligence.
+  assert:
+    - type: g-eval
+      metric: "[contract] shorter prose"
+      value:
+        - "Output is a prose overview clearly shorter than the source"
+    - type: g-eval
+      metric: "[faithfulness] no invention"
+      value:
+        - "Represents only what the transcript states; adds no empires, rulers, or facts not present"
+    - type: g-eval
+      metric: "[completeness] the four regions"
+      value:
+        - "Covers the prosperous/peaceful era and all four regions with their character: a free unaligned northern wildland, a mysterious disconnected eastern empire, a southern coastal trade hub, and a dominant central empire ruled by a king"

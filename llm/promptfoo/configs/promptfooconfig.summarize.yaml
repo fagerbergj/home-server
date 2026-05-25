@@ -1,0 +1,23 @@
+# Summarize (B-2) standalone config (also bundled into chat-flow). Faithfulness/
+# completeness/conciseness rubric vs the source — no gold needed. Selene @ 0.7.
+#   ./scripts/eval.sh --suite summarize [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 16384
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - "{{task}}"
+tests: ../test-suites/summarize.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"

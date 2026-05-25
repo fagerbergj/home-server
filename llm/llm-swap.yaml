@@ -10,6 +10,7 @@ groups:
       - gpt-oss-120b
       - gpt-oss-20b
       - qwen3.6-35b
+      - qwen3.6-27b
       - qwen3.5-9b
       - qwen3-vl-32b
       - minimax-m2-reap
@@ -91,6 +92,30 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M
+      --jinja
+      --reasoning-format auto
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0
+      --presence-penalty 1.5
+      -fa on
+      -ngl 999
+      -c 40960
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
+  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4), fits one GPU (no tensor-split
+  # / --no-mmap needed). Same Qwen3.6 sampling as the 35B. MTP (multi-token
+  # prediction) heads are NOT used yet — the server-rocm image predates the MTP
+  # PR (#22673) — so it runs as a plain dense 27B for now (faster once supported).
+  "qwen3.6-27b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M
       --jinja
       --reasoning-format auto
       --temp 1.0
