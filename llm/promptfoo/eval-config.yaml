@@ -44,8 +44,9 @@ models:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
-  # Dense 27B (MTP build). Operationally planner-tier (25 t/s < chat/impl floors),
-  # but run on the FULL battery for a head-to-head with the 35B (per request).
+  # Dense 27B (MTP build). 25 t/s is under the chat/impl speed floors, but on the
+  # FULL battery (head-to-head w/ 35B): planner candidate AND a chat candidate if
+  # its chat-flow quality is worth the slower interactive speed (Jason's call).
   qwen3.6-27b:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
@@ -54,6 +55,18 @@ models:
   # IQ2 coding was weak (0/5) in the prior eval — but given the FULL battery in
   # case it surprises on coding/agentic and earns the context tradeoff.
   minimax-m2-reap:
+    concurrency: 1
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
+
+  # Qwen3-Coder 30B-A3B — purpose-built coder, MoE A3B (fast), 256K → can reach the
+  # 198K implementer window. Top implementer prospect. Full battery.
+  qwen3-coder-30b:
+    concurrency: 1
+    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
+
+  # Qwen3-Coder-Next — 80B/3B-active hybrid coder, 256K. Implementer candidate
+  # (NEW arch — confirm it loads before trusting results). Full battery.
+  qwen3-coder-next:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
