@@ -39,13 +39,15 @@ models:
     # Native MXFP4 GGUF (ggml-org), ~59 GiB — gpt-oss is TRAINED in MXFP4, so the
     # f16 upcast (unsloth :F16, 65.4 GB) added ~6 GB for zero quality gain. The
     # MXFP4 file is the canonical full-quality weights. The ~6 GB it frees lets
-    # us run native 128K context (-c 131072) at -ncmoe 2 instead of 4.
+    # us run native 128K context (-c 131072) with only a modest -ncmoe offload.
     # --reasoning-format auto: extract the harmony `analysis` channel into
     # reasoning_content instead of leaving it inline in `content`. Without it
     # the model's planning text leaks into the answer.
-    # -ncmoe 2: offload the expert FFN weights of 2 layers to CPU RAM (attention
-    # + KV stay on GPU for ALL layers). Tune toward 0 if VRAM headroom allows at
-    # 128K, up if it OOMs on load.
+    # -ncmoe 4: offload the expert FFN weights of 4 layers to CPU RAM (attention
+    # + KV stay on GPU for ALL layers). Bumped 2->4 (2026-05-25): at -ncmoe 2 the
+    # first forward pass SIGABRT'd (OOM) — only ~2 GB headroom/GPU at 128K, and a
+    # concurrent immich vaapi transcode on GPU1 tipped it over. Tune down if GPU1
+    # is freed and you want the speed back; up if it still OOMs on load.
     cmd: >
       /app/llama-server
       -hf ggml-org/gpt-oss-120b-GGUF
@@ -58,7 +60,7 @@ models:
       --split-mode tensor
       -fit off
       -ngl 999
-      -ncmoe 2
+      -ncmoe 4
       -c 131072
       -fa on
       --parallel 1
