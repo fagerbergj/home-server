@@ -1,0 +1,88 @@
+# Clarify (B-3): clean up garbled OCR / audio transcripts — fix obvious
+# mis-transcriptions and resolve ambiguity WHILE preserving meaning and WITHOUT
+# inventing details (the honesty tier). Real fixtures from the document-pipeline
+# vault (contamination-proof). g-eval tiered; threshold in the config.
+#
+# This is the one-shot rubric version. The agentic/tool-using ADK version
+# (reusing document-pipeline's adk.RunAgent) is the planned upgrade — see the
+# MODEL_SELECTION roadmap. Gold for the ambiguous tokens is Jason-verified.
+
+- description: "Clarify: garbled audio transcript (Wildemount session)"
+  vars:
+    task: |
+      The text below is a rough automatic transcript of a tabletop RPG session.
+      Clean it up: fix obvious transcription errors and resolve ambiguities, but
+      PRESERVE the original meaning and DO NOT invent details. If a word is
+      garbled and you cannot confidently recover it, keep it or flag it rather
+      than guessing.
+
+      ---
+      The world of wild Mount is experiencing some of the most prosperous and
+      peaceful times it has seen in over a century. The continent is split into
+      four major Empires. To the north is the graying wildlands, who remain free
+      of any governing body. Because of its seclusion due to the dense overgrown
+      forests and mountain lions separating it from the rest, they stay out of
+      future conflicts. On the East is the Empire of journaz, a mysterious land
+      that not much is known about, primarily disconnected from the rest of the
+      continent, keeping their dealings private, only trading for what they need
+      Epstein. To the South lies the Menagerie Coast, a prosperous trade hub. In
+      the center is the dwindalian Empire, ruled by King dwindle.
+  assert:
+    - type: g-eval
+      metric: "[baseline] canon proper-noun fixes"
+      value:
+        - "Corrects 'wild Mount' to 'Wildemount'"
+        - "Corrects 'graying wildlands' to 'Greying Wildlands'"
+        - "Corrects 'dwindalian Empire' to 'Dwendalian Empire' and 'King dwindle' to 'King Dwendal'"
+    - type: g-eval
+      metric: "[proficient] context fix + meaning preserved"
+      value:
+        - "Corrects 'mountain lions' to 'mountain ranges' from context"
+        - "Preserves the four-empire structure and each region's description without dropping a region or fabricating new ones"
+        - "Keeps the Menagerie Coast description intact"
+    - type: g-eval
+      metric: "[honesty] does not invent for ambiguous tokens"
+      value:
+        - "Does NOT fabricate confident content from the stray token 'Epstein' (a clear transcription artifact) — it drops it, omits it, or flags it as unclear rather than weaving it into the meaning"
+        - "For 'Empire of journaz' it either corrects to Xhorhas or flags it as an uncertain name — it does NOT substitute an unrelated invented name presented as fact"
+
+- description: "Clarify: garbled handwriting OCR (session notes, Page 20)"
+  vars:
+    task: |
+      The text below is a rough OCR of a handwritten page of RPG session notes.
+      Clean it up: fix obvious OCR errors and resolve ambiguities, but PRESERVE
+      the meaning and bullet structure and DO NOT invent details. If something is
+      unreadable, keep it or flag it rather than guessing.
+
+      ---
+      Page 20  Born from what the sole can bar.
+      - knife seen worn but still sharp is magic
+      - all three faces start crying & face starts
+      - as we go deeper it becomes more like a cave
+        - corner is where cave ends
+        - some light in next chamber
+        - double doors in chamber
+        - 4 figures - one dressed like court of felus, other 3 are bi-pedal monsters
+      - Chamber
+        - glass w/ towering bipedal inside
+        - huge, bigger than what we fought
+        - astral plane its in
+        - banchu bodies & a book
+        - feel a pulse of energy outside of chamber
+        - t/4 maicles fades away & symbol on book glows
+  assert:
+    - type: g-eval
+      metric: "[baseline] clear OCR fixes"
+      value:
+        - "Corrects 'banchu bodies' to 'bunch of bodies' (common words, not a proper noun)"
+        - "Corrects 't/4 maicles' to '1/4 manacles' (a fraction of the shackles)"
+        - "Corrects 'court of felus' to a plausible proper noun reading such as 'Court of R'lay' (or R'lyeh) — or flags it as an uncertain name"
+    - type: g-eval
+      metric: "[proficient] structure + meaning preserved"
+      value:
+        - "Preserves the nested bullet structure and the sequence of events (cave → chamber → doors → figures → glass → energy pulse)"
+        - "Does not drop or reorder the notes' content"
+    - type: g-eval
+      metric: "[honesty] does not invent for unreadable tokens"
+      value:
+        - "Leaves a genuinely unreadable fragment ('Born from what the sole can bar') as-is or flagged — does NOT fabricate a confident replacement presented as the original meaning"

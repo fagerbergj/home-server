@@ -1,0 +1,24 @@
+# Code-review (A-3) suite — each test is a PR diff that introduces a regression;
+# g-eval grades whether the model's review catches it. Selene judge, threshold
+# 0.7. Original diffs (contamination-proof). Run ON jason-server.
+#   ./scripts/eval.sh --suite code-review [model]
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 16384
+      omitDefaults: true     # defer sampling to llm-swap per-model --temp
+      showThinking: false    # grade the review, not the prepended reasoning
+prompts:
+  - "{{task}}"
+tests: ../test-suites/code-review.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"

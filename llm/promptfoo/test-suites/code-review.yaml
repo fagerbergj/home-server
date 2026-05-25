@@ -1,0 +1,128 @@
+# Code review (A-3): each test is a small PULL REQUEST (a unified diff) that
+# introduces a subtle REGRESSION. The model is asked to review the change; we
+# grade whether it catches the bug the diff introduced (and secondary issues),
+# g-eval tiered like coding.yaml. Original diffs (contamination-proof). Pass
+# threshold in configs/promptfooconfig.code-review.yaml.
+
+- description: "Review: Python memoization with an incomplete cache key"
+  vars:
+    task: |
+      Please review this change. Anything wrong with it?
+
+      ```diff
+       import functools
+
+      +_price_cache = {}
+      +
+       def price(item, currency):
+      -    rate = fetch_rate(currency)
+      -    return item.base_price * rate
+      +    if item.id in _price_cache:
+      +        return _price_cache[item.id]
+      +    rate = fetch_rate(currency)
+      +    result = item.base_price * rate
+      +    _price_cache[item.id] = result
+      +    return result
+      ```
+  assert:
+    - type: g-eval
+      metric: "[baseline] cache key ignores currency"
+      value:
+        - "Identifies that the cache is keyed on `item.id` only, ignoring `currency`"
+        - "Explains that the first currency requested for an item is cached and returned for ALL later currencies, producing wrong prices"
+    - type: g-eval
+      metric: "[proficient] unbounded cache / staleness"
+      value:
+        - "Notes a secondary problem: the module-level dict grows without bound (no eviction), or that cached prices go stale when `fetch_rate` changes"
+
+- description: "Review: Go file loop drops errors"
+  vars:
+    task: |
+      Code review for this refactor please.
+
+      ```diff
+       func process(paths []string) error {
+       	for _, p := range paths {
+      -		f, err := os.Open(p)
+      -		if err != nil {
+      -			return err
+      -		}
+      -		defer f.Close()
+      -		if err := handle(f); err != nil {
+      -			return err
+      -		}
+      +		f, _ := os.Open(p)
+      +		defer f.Close()
+      +		handle(f)
+       	}
+       	return nil
+       }
+      ```
+  assert:
+    - type: g-eval
+      metric: "[baseline] open error discarded"
+      value:
+        - "Identifies that `os.Open`'s error is discarded with `_`"
+        - "Explains that on failure `f` is nil, so `f.Close()` / `handle(f)` operate on a nil file (panic or silent misbehavior)"
+    - type: g-eval
+      metric: "[proficient] handle error swallowed"
+      value:
+        - "Identifies that `handle(f)`'s returned error is now ignored, so failures pass silently and `process` wrongly returns nil"
+    - type: g-eval
+      metric: "[expert] defer in loop"
+      value:
+        - "Notes that `defer f.Close()` inside the loop holds every file open until the function returns, leaking descriptors on long path lists"
+
+- description: "Review: TypeScript forEach with async callback"
+  vars:
+    task: |
+      Does this change look correct?
+
+      ```diff
+      -async function saveAll(items: Item[]): Promise<void> {
+      -  for (const item of items) {
+      -    await db.save(item);
+      -  }
+      -}
+      +async function saveAll(items: Item[]): Promise<void> {
+      +  items.forEach(async (item) => {
+      +    await db.save(item);
+      +  });
+      +}
+      ```
+  assert:
+    - type: g-eval
+      metric: "[baseline] forEach does not await"
+      value:
+        - "Identifies that `Array.prototype.forEach` ignores the promises returned by its async callback"
+        - "Explains that `saveAll` therefore resolves immediately, before the `db.save` calls have completed (the await no longer awaits anything from the caller's perspective)"
+    - type: g-eval
+      metric: "[proficient] errors swallowed"
+      value:
+        - "Notes that a rejected `db.save` becomes an unhandled rejection rather than propagating out of `saveAll`"
+        - "Suggests a correct fix (a `for...of` loop, or `await Promise.all(items.map(...))`)"
+
+- description: "Review: Dockerfile change breaks layer caching"
+  vars:
+    task: |
+      Reviewing this Dockerfile change — thoughts?
+
+      ```diff
+       FROM python:3.12-slim
+       WORKDIR /app
+      -COPY requirements.txt .
+      -RUN pip install -r requirements.txt
+      -COPY . .
+      +COPY . .
+      +RUN pip install -r requirements.txt
+      ```
+  assert:
+    - type: g-eval
+      metric: "[baseline] cache invalidation regression"
+      value:
+        - "Identifies that copying the whole source tree (`COPY . .`) BEFORE `pip install` is the problem"
+        - "Explains that any source change now invalidates the layer cache for the dependency install, so dependencies reinstall on every build — the opposite of the original (deps cached unless requirements.txt changes)"
+    - type: g-eval
+      metric: "[proficient] correct ordering"
+      value:
+        - "States the fix: copy `requirements.txt` and install first, then `COPY . .`, so the dependency layer is reused while only source changes"

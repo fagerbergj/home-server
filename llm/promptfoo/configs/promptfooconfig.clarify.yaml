@@ -1,0 +1,26 @@
+# Clarify (B-3) suite — one-shot version. Model cleans up garbled OCR / audio
+# transcripts; g-eval grades correction quality + an HONESTY tier (don't invent
+# for ambiguous tokens). Selene judge, threshold 0.7. Real document-pipeline
+# fixtures (contamination-proof). Run ON jason-server.
+#   ./scripts/eval.sh --suite clarify [model]
+# (Agentic ADK version is the planned upgrade — roadmap task.)
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      max_tokens: 16384
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - "{{task}}"
+tests: ../test-suites/clarify.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    transform: "output.replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
