@@ -25,23 +25,23 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
       },
       "models": {
         "qwen3-coder-next": {
-          "name": "Qwen3-Coder-Next 80B-A3B (256K) — implementer",
+          "name": "Qwen3-Coder-Next 80B-A3B (256K)",
           "limit": { "context": 262144, "output": 16384 }
         },
         "qwen3.6-35b": {
-          "name": "Qwen3.6 35B-A3B (256K) — chat / clarify",
+          "name": "Qwen3.6 35B-A3B (256K)",
           "limit": { "context": 262144, "output": 16384 }
         },
         "gpt-oss-120b": {
-          "name": "gpt-oss-120b (128K) — planner",
+          "name": "gpt-oss-120b (128K)",
           "limit": { "context": 131072, "output": 16384 }
         },
         "qwen3.5-9b": {
-          "name": "Qwen3.5 9B (32K) — fast workhorse",
+          "name": "Qwen3.5 9B (32K)",
           "limit": { "context": 32768, "output": 8192 }
         },
         "qwen3-vl-32b": {
-          "name": "Qwen3-VL 32B (32K) — OCR / vision",
+          "name": "Qwen3-VL 32B (32K)",
           "limit": { "context": 32768, "output": 16384 }
         }
       }
