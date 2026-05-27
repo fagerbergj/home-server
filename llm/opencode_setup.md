@@ -6,7 +6,11 @@ Configures [OpenCode](https://opencode.ai) to use the local llm-swap instance as
 
 Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a project root (per-project):
 
-> Model keys come from `llm-swap.yaml`. Context limits should match the `-c` flag in that model's `cmd`.
+> Model keys come from `llm-swap.yaml`. Context limits match the `-c` flag in
+> each model's `cmd`. Skipped models: `selene` (Selene-1 judge — only used by
+> promptfoo grading) and `qwen3-embed` (embedding model, no chat endpoint).
+> `qwen3-vl-32b` is included for OCR/vision workflows; for pure coding sessions
+> you'll want `qwen3-coder-next` (the default).
 
 ```json
 {
@@ -21,25 +25,24 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
       },
       "models": {
         "qwen3-coder-next": {
-          "name": "Qwen3 Coder Next (256K)",
-          "limit": {
-            "context": 262144,
-            "output": 8192
-          }
-        },
-        "gpt-oss-120b": {
-          "name": "gpt-oss-120b (32K)",
-          "limit": {
-            "context": 32768,
-            "output": 8192
-          }
+          "name": "Qwen3-Coder-Next 80B-A3B (256K) — implementer",
+          "limit": { "context": 262144, "output": 16384 }
         },
         "qwen3.6-35b": {
-          "name": "Qwen3.6 35B (32K)",
-          "limit": {
-            "context": 32768,
-            "output": 8192
-          }
+          "name": "Qwen3.6 35B-A3B (256K) — chat / clarify",
+          "limit": { "context": 262144, "output": 16384 }
+        },
+        "gpt-oss-120b": {
+          "name": "gpt-oss-120b (128K) — planner",
+          "limit": { "context": 131072, "output": 16384 }
+        },
+        "qwen3.5-9b": {
+          "name": "Qwen3.5 9B (32K) — fast workhorse",
+          "limit": { "context": 32768, "output": 8192 }
+        },
+        "qwen3-vl-32b": {
+          "name": "Qwen3-VL 32B (32K) — OCR / vision",
+          "limit": { "context": 32768, "output": 16384 }
         }
       }
     }
@@ -55,7 +58,7 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
 ## Verify
 
 1. Run `opencode` in any project
-2. Run `/models` — you should see the three models listed above
+2. Run `/models` — you should see the five models listed above
 3. Send a test message and confirm a response
 4. Confirm the model loaded on GPU:
    ```bash
