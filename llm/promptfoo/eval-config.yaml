@@ -25,46 +25,28 @@
 # question: ./scripts/eval.sh --suite longbench qwen3.6-35b
 
 models:
-  # Implementer candidate + planner. 128k is under the 198k target, but it's a
-  # strong coder — given the FULL battery in case its coding/agentic quality is
-  # worth the context tradeoff. (NB: slowest model to load + agentic loops.)
+  # PLANNER — gpt-oss-120b. 128k context (clears 132k window via tolerance), 50 t/s.
+  # Ties 35b on most planner signals; matches it on honesty. Full battery for
+  # re-runs against new candidates.
   gpt-oss-120b:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
-  # Chat + planner candidate (128k « 198k → not implementer). Skip the heavy
-  # execution/agentic/long-context suites; keep reasoning + chat + tool-use.
-  gpt-oss-20b:
-    concurrency: 1
-    suites: [coding-flow, chat-flow, cruxeval, structured, tools, bfcl]
-
-  # The implementer (only model with both >=30 t/s AND 198k ctx) + chat + planner
-  # candidate — gets the FULL battery, incl. the heavy execution/agentic suites.
+  # CHAT — qwen3.6-35b. Best chat-flow (0.855), best clarify (0.85), tied-best
+  # honesty (0.82), 60-70 t/s with margin for 2-4 concurrent. Full battery.
   qwen3.6-35b:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
-  # Dense 27B (MTP build). 25 t/s is under the chat/impl speed floors, but on the
-  # FULL battery (head-to-head w/ 35B): planner candidate AND a chat candidate if
-  # its chat-flow quality is worth the slower interactive speed (Jason's call).
-  qwen3.6-27b:
-    concurrency: 1
-    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
-
-  # Qwen3-Coder 30B-A3B — purpose-built coder, MoE A3B (fast), 256K → can reach the
-  # 198K implementer window. Top implementer prospect. Full battery.
-  qwen3-coder-30b:
-    concurrency: 1
-    suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
-
-  # Qwen3-Coder-Next — 80B/3B-active hybrid coder, 256K. Implementer candidate
-  # (NEW arch — confirm it loads before trusting results). Full battery.
+  # IMPLEMENTER — qwen3-coder-next. Wins agentic (6/9) AND is ~10x more token-
+  # efficient than 35b on solo agentic tasks (8k vs 89k tokens, 1 vs 7.5 turns).
+  # 80B/3B-active hybrid, 256K native, 32 t/s. Full battery.
   qwen3-coder-next:
     concurrency: 1
     suites: [livecodebench, tests-for-diff, structured, tools, bfcl, coding-flow, cruxeval, chat-flow, agentic, terminal]
 
-  # Chat baseline only — already the chosen pipeline workhorse, so just the chat
-  # bundle + cheap tool/format suites (not a coding or planner candidate).
+  # DOC-PIPELINE WORKHORSE — qwen3.5-9b. Separate role ([[dp-stage-models]]); chat
+  # baseline only (chat-flow + cheap deterministic suites).
   qwen3.5-9b:
     concurrency: 1
     suites: [chat-flow, structured, tools, bfcl]

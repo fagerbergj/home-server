@@ -7,15 +7,11 @@ groups:
     swap: true
     exclusive: false
     members:
-      - gpt-oss-120b
-      - gpt-oss-20b
-      - qwen3.6-35b
-      - qwen3.6-27b
-      - qwen3-coder-30b
-      - qwen3-coder-next
-      - qwen3.5-9b
-      - qwen3-vl-32b
-      - minimax-m2-reap
+      - gpt-oss-120b          # planner
+      - qwen3.6-35b           # chat
+      - qwen3-coder-next      # implementer
+      - qwen3.5-9b            # doc-pipeline workhorse
+      - qwen3-vl-32b          # doc-pipeline OCR/vision
       - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
                  # grading phase after generation, so it never competes for VRAM
                  # with a model under test
@@ -72,27 +68,6 @@ models:
       --parallel 1
       --port 9999
 
-  # gpt-oss-20b — small sibling (21B / 3.6B active). Native MXFP4 GGUF (ggml-org,
-  # ~11.3 GiB) for the same full-quality-at-smaller-size reason as the 120b.
-  # Fits one GPU, so no --no-mmap/tensor-split. At MXFP4 it runs native 128K
-  # context (-c 131072, ~18 GB total) with room to spare — good for concurrent
-  # doc-pipeline use where gpt-oss-120b has none.
-  "gpt-oss-20b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf ggml-org/gpt-oss-20b-GGUF
-      --jinja
-      --reasoning-format auto
-      --temp 1.0
-      --top-p 1.0
-      --top-k 0
-      -ngl 999
-      -c 131072
-      -fa on
-      --port 9999
-
   # Thinking left ON (backs the clarify stage). --reasoning-format auto keeps
   # reasoning out of `content`; needs a generous max_tokens (~4096+) or its
   # reasoning truncates before the answer.
@@ -109,66 +84,6 @@ models:
       --top-k 20
       --min-p 0
       --presence-penalty 1.5
-      -fa on
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -c 262144
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --port 9999
-
-  # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4). Native 256k (-c 262144) + q8
-  # KV, --split-mode layer (256k KV needs both GPUs; tensor-split forbids KV-quant).
-  # Runs as PLAIN DENSE (~25 t/s @256k, too slow for the implementer) — MTP is in
-  # the image but OFF: it needs explicit --spec-type draft-mtp --spec-draft-n-max N
-  # flags, not passed here. This is the MTP TEST BED — MTP runs FINE on our
-  # layer-split stack (PR #22673's ggml-backend-meta assert is tensor-split-only).
-  # On the 35B it gave NO speedup (63 vs 60-70 t/s, 59% draft-accept — A3B is
-  # already fast), so the implementer stays non-MTP. MTP is worth chasing HERE
-  # instead: the dense 27B's slow 25 t/s base has real headroom for spec gains.
-  "qwen3.6-27b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf unsloth/Qwen3.6-27B-MTP-GGUF:Q4_K_M
-      --jinja
-      --reasoning-format auto
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --presence-penalty 1.5
-      -fa on
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -c 262144
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --port 9999
-
-  # Qwen3-Coder 30B-A3B (Flash) — MoE 30.5B/3.3B-active, purpose-built coder, 256K
-  # native, GQA 4 KV heads (small KV → long context is cheap). NON-thinking instruct
-  # (no --reasoning-format). Coder sampling: temp 0.7/top-p 0.8/top-k 20/repeat 1.05.
-  # Strong implementer candidate: A3B-fast + 256K reaches the 198K window. Layer-split
-  # + q8 KV so the 256K cache spans both GPUs (single GPU is too tight at ~30 GB).
-  "qwen3-coder-30b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF:UD-Q4_K_XL
-      --jinja
-      --temp 0.7
-      --top-p 0.8
-      --top-k 20
-      --repeat-penalty 1.05
       -fa on
       --split-mode layer
       -fit off
@@ -251,42 +166,6 @@ models:
       -c 32768
       --image-min-tokens 2048
       --image-max-tokens 8192
-      --port 9999
-
-  # MiniMax-M2-REAP-139B — OFFICIAL Cerebras REAP (40% expert prune of M2 230B →
-  # 139B, A10B). Pruning calibrated on Cerebras's coding/agentic mix (24.5K:
-  # coding + reasoning + tool-calling), unlike the sketchy community 50% variant
-  # (0xSero "repair-in-progress", unknown calibration). All-attention (heavy KV
-  # ~248 KiB/tok fp16, ~124 q8). With q8 KV the 41 GB IQ2 weights fit ~128K
-  # (-c 131072); -c 163840 OOM-segfaults on load. Fast (A10B). IQ2 is aggressive
-  # but 40%-prune + coding-calibrated beats 50%-prune + unknown calibration.
-  # INTERLEAVED THINKING: M2 requires <think> blocks be retained in history
-  # across turns — do NOT strip them (no --reasoning-format). Sampling 1.0/0.95/40.
-  # --split-mode layer (NOT tensor): M2's graph makes llama.cpp's tensor-parallel
-  # meta-backend abort during warmup (GGML_ASSERT split-axis-0 in alloc_graph).
-  # Layer-split (pipeline) avoids the cross-GPU AllReduce path entirely. Planner-
-  # tier candidate only: IQ2 coding is weak and it can't reach the implementer's
-  # 198K context (OOMs above ~128K).
-  "minimax-m2-reap":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -hf bartowski/cerebras_MiniMax-M2-REAP-139B-A10B-GGUF:IQ2_M
-      --jinja
-      --temp 1.0
-      --top-p 0.95
-      --top-k 40
-      --no-mmap
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -c 131072
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -fa on
       --port 9999
 
   # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric
