@@ -116,8 +116,8 @@ models:
       -c 262144
       -ub 2048
       -b 2048
-      --cache-type-k q4_0
-      --cache-type-v q4_0
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --port 9999
 
   # Qwen3.6-27B (MTP build) — dense 27B (~16 GB Q4). Native 256k (-c 262144) + q8
