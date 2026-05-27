@@ -191,7 +191,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_M
+      -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_XL
       --jinja
       --temp 1.0
       --top-p 0.95
