@@ -25,7 +25,7 @@ DEFAULTS=(
   "https://huggingface.co/ggml-org/gpt-oss-120b-GGUF/blob/main/gpt-oss-120b-mxfp4-00002-of-00003.gguf"
   "https://huggingface.co/ggml-org/gpt-oss-120b-GGUF/blob/main/gpt-oss-120b-mxfp4-00003-of-00003.gguf"
   "https://huggingface.co/ggml-org/gpt-oss-20b-GGUF/blob/main/gpt-oss-20b-mxfp4.gguf"
-  "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/blob/main/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf"
+  "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF/blob/main/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3.6-27B-MTP-GGUF/blob/main/Qwen3.6-27B-Q4_K_M.gguf"
   "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/blob/main/Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/blob/main/Qwen3-Coder-Next-UD-Q4_K_M.gguf"
