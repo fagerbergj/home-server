@@ -7,10 +7,9 @@ Configures [OpenCode](https://opencode.ai) to use the local llm-swap instance as
 Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a project root (per-project):
 
 > Model keys come from `llm-swap.yaml`. Context limits match the `-c` flag in
-> each model's `cmd`. Skipped models: `selene` (Selene-1 judge — only used by
-> promptfoo grading) and `qwen3-embed` (embedding model, no chat endpoint).
-> `qwen3-vl-32b` is included for OCR/vision workflows; for pure coding sessions
-> you'll want `qwen3-coder-next` (the default).
+> each model's `cmd`. Skipped: `selene` (promptfoo judge), `qwen3-embed`
+> (embedder — no chat endpoint), and `qwen3-vl-32b` (OCR/vision — not useful
+> for opencode's text-coding workflow).
 
 ```json
 {
@@ -39,10 +38,6 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
         "qwen3.5-9b": {
           "name": "Qwen3.5 9B (32K)",
           "limit": { "context": 32768, "output": 8192 }
-        },
-        "qwen3-vl-32b": {
-          "name": "Qwen3-VL 32B (32K)",
-          "limit": { "context": 32768, "output": 16384 }
         }
       }
     }
@@ -58,7 +53,7 @@ Place at `~/.config/opencode/opencode.json` (global) or `opencode.json` in a pro
 ## Verify
 
 1. Run `opencode` in any project
-2. Run `/models` — you should see the five models listed above
+2. Run `/models` — you should see the four models listed above
 3. Send a test message and confirm a response
 4. Confirm the model loaded on GPU:
    ```bash
