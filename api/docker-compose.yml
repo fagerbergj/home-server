@@ -232,6 +232,7 @@ services:
       - OPEN_WEBUI_KNOWLEDGE_ID=${OPEN_WEBUI_KNOWLEDGE_ID}
       - OPENSEARCH_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=${OPENSEARCH_INDEX:-documents}
+      - PIPELINE_SYSTEM_USER_ID=4fc55e8a27ebf91f9650c48a59468793350b8d49b4777021966e2eb2d2b0dfb5
     depends_on:
       shared-postgres:
         condition: service_healthy
@@ -254,6 +255,11 @@ services:
       - "traefik.http.routers.document-pipeline.entrypoints=api"
       - "traefik.http.routers.document-pipeline.service=document-pipeline"
       - "traefik.http.routers.document-pipeline.middlewares=authentik@file"
+      # Chat routes: protected by Authentik
+      - "traefik.http.routers.document-pipeline-chats.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/api/v1/chats`)"
+      - "traefik.http.routers.document-pipeline-chats.entrypoints=api"
+      - "traefik.http.routers.document-pipeline-chats.service=document-pipeline"
+      - "traefik.http.routers.document-pipeline-chats.middlewares=authentik@file"
       # Public: OpenAPI spec (Swagger UI fetches this without auth)
       - "traefik.http.routers.document-pipeline-spec.rule=Host(`api.jasonfagerberg.duckdns.org`) && Path(`/api/v1/documents/openapi.json`)"
       - "traefik.http.routers.document-pipeline-spec.entrypoints=api"
