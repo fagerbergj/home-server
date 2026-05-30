@@ -96,14 +96,14 @@ models:
       --port 9999
 
   # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
-  # ~49 GB Q4, 256K native, non-thinking. The hybrid layout has only ~12 attention
-  # layers (2 KV heads) so the KV cache stays small → 256K fits despite the size
-  # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40. --no-mmap (>30 GB).
-  # NEW arch — VERIFY it loads on this image (Qwen3-Next/DeltaNet support is recent);
-  # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
-  "qwen3-coder-next":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
+   # ~49 GB Q4, 256K native, non-thinking. The hybrid layout has only ~12 attention
+   # layers (2 KV heads) so the KV cache stays small → 256K fits despite the size
+   # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40. --no-mmap (>30 GB).
+   # NEW arch — VERIFY it loads on this image (Qwen3-Next/DeltaNet support is recent);
+   # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
+   "qwen3-coder-next":
+     proxy: "http://127.0.0.1:9999"
+     ttl: 3600
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_XL
@@ -201,7 +201,7 @@ models:
   # and avoids any GPU contention with the main group's chat/coder models.
   "qwen3-embed":
      proxy: "http://127.0.0.1:9998"
-     ttl: -1
+     ttl: 600
      # CPU-only (-ngl 0) but the ROCm build still init'd a HIP context holding
      # ~1.8 GB on GPU0 — enough to push gpt-oss-120b's KV alloc over the VRAM
      # cliff. Hide the GPUs from this process so it's truly RAM-only.
