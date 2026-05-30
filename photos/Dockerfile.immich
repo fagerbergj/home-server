@@ -1,0 +1,15 @@
+FROM ghcr.io/immich-app/immich-server:release
+
+USER root
+
+# Add Mesa Rusticl OpenCL ICD so jellyfin-ffmpeg's tonemap_opencl can run on AMD GPUs.
+# The upstream image only ships Intel OpenCL ICDs, which enumerate 0 devices on
+# AMD-only hosts. That breaks HDR tone-mapping and forces software HEVC decode +
+# CPU tonemapx, pinning cores during transcodes of iPhone HDR/Dolby Vision clips.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends mesa-opencl-icd clinfo \
+    && rm -f /etc/OpenCL/vendors/intel.icd /etc/OpenCL/vendors/intel_legacy1.icd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Rusticl is opt-in; name the gallium driver(s) to expose.
+ENV RUSTICL_ENABLE=radeonsi

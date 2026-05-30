@@ -1,6 +1,9 @@
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:release
+    build:
+      context: .
+      dockerfile: Dockerfile.immich
+    image: immich-server-rusticl:local
     container_name: immich-server
     networks:
       - frontend
