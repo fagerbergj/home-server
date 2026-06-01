@@ -212,7 +212,7 @@ models:
       /app/llama-server
       -hf Qwen/Qwen3-Embedding-8B-GGUF:Q8_0
       --embedding
-      --pooling cls
+      --pooling last
       -ngl 0
       -ub 2048
       -b 2048
