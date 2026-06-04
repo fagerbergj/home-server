@@ -30,6 +30,7 @@ DEFAULTS=(
   "https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/blob/main/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf"
   "https://huggingface.co/Qwen/Qwen3-Embedding-8B-GGUF/blob/main/Qwen3-Embedding-8B-Q8_0.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF/blob/main/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf"
+  "https://huggingface.co/mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF/blob/main/Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf"
 )
 
 # Parse "<org>/<repo>/(blob|resolve)/<branch>/<file>" out of a HF URL and download

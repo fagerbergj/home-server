@@ -24,6 +24,16 @@ groups:
     members:
       - qwen3-embed
 
+  # Adversarial judge for Quack. Like embed: CPU-only + persistent, so it stays
+  # resident and gives an INDEPENDENT second opinion without ever swapping the
+  # GPU main group.
+  judge:
+    swap: false
+    exclusive: false
+    persistent: true
+    members:
+      - selene-mini
+
 models:
   # --no-mmap is critical for the 65GB+ models in this group: mmap'd reads
   # serialize on page faults (single-threaded), turning a 1-min load into 30+
@@ -217,3 +227,29 @@ models:
       -ub 2048
       -b 2048
       --port 9998
+
+  # CPU-only adversarial judge for Quack — Atla Selene-1 Mini 8B (same family as
+  # the 70B `selene`, purpose-trained for 1-5 rubric scoring). Resident like the
+  # embed model so it never swaps the GPU main group and always offers an
+  # INDEPENDENT second opinion. GPUs hidden so the ROCm build doesn't hold a HIP
+  # context (same fix as qwen3-embed). Deterministic grading (temp 0, top-k 1).
+  # -c 16384 sized for a single node's output + rubric; bump if judging inputs
+  # grow (CPU prefill cost scales with context).
+  "selene-mini":
+    proxy: "http://127.0.0.1:9997"
+    ttl: 600
+    env:
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
+    cmd: >
+      /app/llama-server
+      -hf mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF:Q8_0
+      --alias selene-mini
+      --jinja
+      --temp 0
+      --top-k 1
+      -ngl 0
+      -c 16384
+      -ub 2048
+      -b 2048
+      --port 9997
