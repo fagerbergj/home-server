@@ -45,6 +45,14 @@ http:
         accessControlMaxAge: 100
         addVaryHeader: true
 
+    # ── MCP API key auth ───────────────────────────────────────────────────────
+    # Validates Authorization header against MCP_API_KEY env var via forwardAuth.
+    # Usage: traefik.http.routers.<name>.middlewares=mcp-auth@file
+    mcp-auth:
+      forwardAuth:
+        address: "http://document-pipeline:8000/api/v1/documents/mcp/validate-key"
+        trustForwardHeader: true
+
     # ── Rate limiter ───────────────────────────────────────────────────────────
     # Attach as needed per route.
     #
