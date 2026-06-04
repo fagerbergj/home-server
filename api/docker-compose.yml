@@ -250,16 +250,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.document-pipeline.loadbalancer.server.port=8000"
-      # MCP endpoint: API key auth for non-human systems
+      # MCP endpoint: auth handled by document-pipeline (checks MCP_API_KEY env var)
       - "traefik.http.routers.document-pipeline-mcp.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/api/v1/documents/mcp`)"
       - "traefik.http.routers.document-pipeline-mcp.entrypoints=api"
       - "traefik.http.routers.document-pipeline-mcp.service=document-pipeline"
-      - "traefik.http.routers.document-pipeline-mcp.middlewares=mcp-auth@file"
-      # Validation endpoint for Traefik forwardAuth (checks MCP_API_KEY)
-      - "traefik.http.routers.document-pipeline-mcp-validate.rule=Host(`api.jasonfagerberg.duckdns.org`) && Path(`/api/v1/documents/mcp/validate-key`)"
-      - "traefik.http.routers.document-pipeline-mcp-validate.entrypoints=api"
-      - "traefik.http.routers.document-pipeline-mcp-validate.service=document-pipeline"
-      - "traefik.http.routers.document-pipeline-mcp-validate.middlewares=none"
       # Protected: all other /api/v1/documents routes require Authentik login
       - "traefik.http.routers.document-pipeline.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/api/v1/documents`) && !PathPrefix(`/api/v1/documents/mcp`)"
       - "traefik.http.routers.document-pipeline.entrypoints=api"
