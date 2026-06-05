@@ -253,6 +253,79 @@ http://searxng:8080/search          # ?q=<query>&format=json
 
 ---
 
+## Browserless (internal headless-Chromium render backend)
+
+Headless Chromium that renders a URL server-side and returns the resulting HTML,
+for pages a plain GET can't read (SPAs / client-rendered content). Keyless and
+internal-only — no Traefik route, no NPM host. No config file or secret: it is
+entirely env-driven (see the `browserless` service in `docker-compose.yml`).
+
+### 1. Start it
+
+```bash
+docker compose -f api/docker-compose.yml up -d browserless
+```
+
+Keyless by default — `TOKEN` is unset, so every request is authorized
+(`src/token.ts`: `token === null` → allowed). **Optional:** set `BROWSERLESS_TOKEN`
+in root `.env` to require a token; callers then pass `?token=<value>` (e.g.
+`POST http://browserless:3000/content?token=...`). An empty value stays keyless.
+A token gates *who can drive a browser* but does **not** limit *which URLs are
+fetched* — SSRF guarding (below) is still required either way.
+
+### 2. Verify
+
+```bash
+# Liveness (also the container healthcheck): returns HTTP 204, empty body.
+docker exec browserless wget -qO- http://localhost:3000/active; echo "exit=$?"
+
+# Render a page to HTML, from any container on api_gateway:
+docker run --rm --network api_gateway curlimages/curl:latest \
+  -sX POST 'http://browserless:3000/content' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com"}' | head -c 200
+```
+
+The second should return the rendered `<html>…</html>` for example.com.
+
+### Consumer wiring
+
+Quack's `fetch` tool, for URLs that need JS rendering — no auth, no key:
+
+```
+POST http://browserless:3000/content
+Content-Type: application/json
+{"url": "<url>"}            # -> rendered HTML
+```
+
+Tier it: try a plain HTTP GET + readability first, and only fall back to
+browserless when that returns an empty/JS shell — rendering is far heavier.
+Other useful endpoints: `/scrape` (structured elements), `/pdf`, `/screenshot`.
+
+### Caveats
+
+- **SSRF — the important one.** Browserless fetches whatever URL it's handed,
+  server-side, and it sits on the `api_gateway`/`default` networks, so a
+  malicious or redirected URL can reach internal services
+  (`http://opensearch:9200`, `http://searxng:8080`, `shared-postgres`, the cloud
+  metadata IP `169.254.169.254`, etc.). **The caller must allowlist/deny before
+  calling**: reject non-`http(s)` schemes, and resolve+block private/link-local
+  ranges (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `::1`,
+  `fc00::/7`). Validate *after* DNS resolution and on each redirect hop. This
+  belongs in Quack's `fetch` tool — browserless has no built-in SSRF filter.
+- **Keyless is only safe because it's internal.** With no `TOKEN`, anyone who can
+  reach `:3000` can drive a browser. Setting `BROWSERLESS_TOKEN` closes that off
+  (defense-in-depth even internally). Never give it a Traefik route / NPM host
+  without a token set.
+- **Resource use.** Each render spawns a Chromium tab. `CONCURRENT` caps parallel
+  sessions, `QUEUED` caps the backlog, `TIMEOUT` (ms) bounds a single render.
+  `shm_size: 2gb` is required — Chromium crashes on Docker's default 64MB
+  `/dev/shm`. Tune `CONCURRENT` to the host's memory.
+- **Image is `:latest`.** Pin to a version tag if you want reproducible updates
+  (matches the deliberate-update note for Authentik above).
+
+---
+
 ## Moving a Route to a Different Service
 
 1. Remove the Traefik labels from the old service's `docker-compose.yml`

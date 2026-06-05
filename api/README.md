@@ -51,11 +51,18 @@ router points at them).
 | `opensearch` | `http://opensearch:9200` | full-text index (document-pipeline) |
 | `shared-postgres` | `shared-postgres:5432` | shared Postgres (per-service schemas) |
 | `searxng` | `http://searxng:8080` | keyless metasearch — JSON web-search backend |
+| `browserless` | `http://browserless:3000` | keyless headless Chromium — JS page render |
 
 **SearXNG** serves `/search?q=...&format=json` to internal consumers (e.g. Quack's
 `web_search` tool). It needs no API key, and callers need no auth. JSON output is
 enabled and the bot-detection limiter is disabled in `searxng/settings.yml` so
 server-to-server queries aren't rate-limited. Setup and caveats: [setup.md](setup.md#searxng-internal-search-backend).
+
+**Browserless** renders pages a plain HTTP GET can't read (SPAs, JS-built content):
+`POST /content` with `{"url": "..."}` returns the rendered HTML. SearXNG finds URLs,
+browserless reads them. Keyless (no `TOKEN` set) and internal-only — but it fetches
+arbitrary URLs server-side, so the caller must guard against SSRF. Setup and caveats:
+[setup.md](setup.md#browserless-internal-headless-chromium-render-backend).
 
 ## Adding a New Service
 

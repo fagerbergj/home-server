@@ -303,6 +303,45 @@ services:
       - default
       - api_gateway
 
+  # ── Browserless (headless Chromium) ───────────────────────────────────────────
+  # Keyless headless-Chromium render backend. Quack's `fetch` tool POSTs a URL to
+  # http://browserless:3000/content and gets back the JS-rendered HTML — for pages
+  # a plain HTTP GET can't read (SPAs, client-rendered content). Pairs with
+  # SearXNG: search returns URLs, browserless renders the ones worth reading.
+  #
+  # Keyless like SearXNG: TOKEN is left unset, so every request is authorized
+  # (src/token.ts: token === null short-circuits auth). No Traefik route —
+  # internal networks only. NB: this renders arbitrary URLs server-side, so the
+  # caller must guard against SSRF (see setup.md).
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: browserless
+    environment:
+      # Optional access control: set BROWSERLESS_TOKEN in root .env to require a
+      # token (callers pass ?token=). Unset/empty → keyless (browserless treats
+      # an empty TOKEN as null). A token gates *who* can drive a browser; it does
+      # NOT limit which URLs are fetched — SSRF guarding stays the caller's job.
+      - TOKEN=${BROWSERLESS_TOKEN:-}
+      # HOST/PORT match the image defaults (explicit here).
+      - HOST=0.0.0.0
+      - PORT=3000
+      - CONCURRENT=10       # max parallel browser sessions
+      - QUEUED=10           # requests queued once CONCURRENT is saturated
+      - TIMEOUT=60000       # per-session cap (ms) so one page can't hold a slot
+    # Chromium crashes with Docker's default 64MB /dev/shm; give it headroom.
+    shm_size: 2gb
+    healthcheck:
+      # /active returns 204 while the service is up (no token required).
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/active"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - default
+      - api_gateway
+
 networks:
   default:
   api_gateway:
