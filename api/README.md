@@ -38,6 +38,25 @@ Public routes (e.g., `/api/v1/<service>/openapi.json`) omit the `authentik@file`
 | `/api/v1/documents` | document-pipeline | `document-pipeline` |
 | `/docs` | Swagger UI | `swagger-ui` |
 
+## Internal Backends
+
+Some services in this stack are **not** routed through the public gateway — they
+have no Traefik labels and are reachable only by other containers on the
+`api_gateway` / `default` networks, by container name. They carry no auth of
+their own; isolation is the network boundary (no NPM proxy host, no Traefik
+router points at them).
+
+| Container | Internal address | Purpose |
+|-----------|------------------|---------|
+| `opensearch` | `http://opensearch:9200` | full-text index (document-pipeline) |
+| `shared-postgres` | `shared-postgres:5432` | shared Postgres (per-service schemas) |
+| `searxng` | `http://searxng:8080` | keyless metasearch — JSON web-search backend |
+
+**SearXNG** serves `/search?q=...&format=json` to internal consumers (e.g. Quack's
+`web_search` tool). It needs no API key, and callers need no auth. JSON output is
+enabled and the bot-detection limiter is disabled in `searxng/settings.yml` so
+server-to-server queries aren't rate-limited. Setup and caveats: [setup.md](setup.md#searxng-internal-search-backend).
+
 ## Adding a New Service
 
 See [setup.md](setup.md#adding-a-new-service).

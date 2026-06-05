@@ -188,6 +188,71 @@ Then: `docker compose -f api/docker-compose.yml up -d swagger-ui`
 
 ---
 
+## SearXNG (internal search backend)
+
+Keyless metasearch backend that other services query over the internal network.
+No Traefik route, no NPM host — it is never exposed publicly. Config lives in
+`api/searxng/settings.yml` (JSON output enabled, limiter disabled).
+
+### 1. Add the secret to root `.env`
+
+```bash
+# SearXNG internal search backend (api/searxng)
+export SEARXNG_SECRET=    # openssl rand -hex 32
+```
+
+SearXNG overrides `server.secret_key` from this env var at load time, so the
+committed `settings.yml` keeps only a placeholder — the real secret never
+enters git.
+
+### 2. Start it
+
+```bash
+docker compose -f api/docker-compose.yml up -d searxng
+```
+
+### 3. Verify
+
+```bash
+# Healthcheck convention (also wired into the container healthcheck):
+docker exec searxng wget -qO- http://localhost:8080/healthz          # -> OK
+
+# JSON API, from any container on the api_gateway network:
+docker run --rm --network api_gateway curlimages/curl:latest \
+  -s 'http://searxng:8080/search?q=dublin&format=json' | head -c 400
+```
+
+Both should return data (the second a JSON object with a `results` array).
+
+### Consumer wiring
+
+Point the consumer (Quack's `web_search`) at the internal URL — no auth, no key:
+
+```
+http://searxng:8080/search          # ?q=<query>&format=json
+```
+
+### Caveats for automated querying
+
+- **JSON is opt-in.** `?format=json` returns HTTP 403 unless `json` is in
+  `search.formats` (it is, in `settings.yml`). Removing it re-blocks the API.
+- **Limiter is off.** Required for server-to-server use — with it on, SearXNG's
+  bot detection rate-limits/403s non-browser clients. It stays off *because*
+  the instance is internal-only; do not add a public route without
+  reconsidering this (turning the limiter back on then needs a valkey/redis
+  sidecar via `valkey.url`).
+- **No SearXNG API key exists.** SearXNG has no native key/token auth on
+  `/search`; access control here is purely the network boundary. If the
+  consumer must present a credential, terminate it at a proxy in front of
+  SearXNG — don't expect SearXNG to check one.
+- **Upstream engines self-throttle.** Individual engines (Google, etc.) may
+  CAPTCHA or 429 under heavy automated load; SearXNG suspends a failing engine
+  briefly (`suspended_times`) and answers from the rest. For steady high volume,
+  prune `settings.yml` to a few resilient engines (e.g. duckduckgo, brave,
+  wikipedia, startpage).
+
+---
+
 ## Moving a Route to a Different Service
 
 1. Remove the Traefik labels from the old service's `docker-compose.yml`

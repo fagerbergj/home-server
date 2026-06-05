@@ -1,0 +1,53 @@
+# SearXNG — internal, keyless web-search backend.
+#
+# Consumed server-to-server by Quack (research agent) via the JSON API:
+#   http://searxng:8080/search?q=...&format=json
+#
+# `use_default_settings: true` merges this file over the image's full upstream
+# defaults, so we only spell out what differs. Reference for every key:
+#   https://docs.searxng.org/admin/settings/
+use_default_settings: true
+
+general:
+  instance_name: "home-server search"
+  # Internal backend, not a public instance — no metrics/stats pages to serve.
+  enable_metrics: false
+
+search:
+  # 0: none, 1: moderate, 2: strict. Agent does its own filtering.
+  safe_search: 0
+  autocomplete: ""
+  # Enable JSON output. SearXNG ships html-only and returns HTTP 403 for
+  # ?format=json unless json is listed here — this line is the whole reason
+  # the instance exists (programmatic access for Quack).
+  formats:
+    - html
+    - json
+
+server:
+  # secret_key is overridden at load time by ${SEARXNG_SECRET}
+  # (searx/settings_defaults.py). Keep this placeholder in git; the real
+  # secret lives in the gitignored root .env, never committed.
+  secret_key: "ultrasecretkey"
+  # Trusted internal client only, so disable the bot-detection limiter:
+  # server-to-server JSON queries would otherwise be rate-limited / 403'd.
+  # The instance has no Traefik route and is reachable only on internal Docker
+  # networks, so the limiter could only ever block our own caller. Off also
+  # means no redis/valkey sidecar is required.
+  limiter: false
+  public_instance: false
+  # Quack queries over GET with query params; the default form method is POST.
+  method: "GET"
+
+# Not needed while the limiter is off. If the limiter is ever turned back on,
+# point this at a valkey/redis instance.
+valkey:
+  url: false
+
+outgoing:
+  # Per-request timeout to upstream engines (and the cap when an engine asks
+  # for more). Kept modest so one slow engine can't stall Quack's web_search.
+  request_timeout: 5.0
+  max_request_timeout: 10.0
+  pool_connections: 100
+  pool_maxsize: 20

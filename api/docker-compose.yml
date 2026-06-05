@@ -275,6 +275,34 @@ services:
       - "traefik.http.routers.document-pipeline-ui.service=document-pipeline-ui"
       - "traefik.http.routers.document-pipeline-ui.middlewares=authentik@file"
 
+  # ── SearXNG ───────────────────────────────────────────────────────────────────
+  # Keyless metasearch backend for internal services — no API key, no auth.
+  # Quack's web_search tool queries the JSON API at http://searxng:8080/search.
+  #
+  # Joined to api_gateway so other stacks reach it by name, but deliberately
+  # given NO Traefik labels: it is an internal backend, never exposed through
+  # the public gateway. The limiter is disabled in settings.yml, so no
+  # redis/valkey sidecar is needed. See searxng/settings.yml for config.
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    environment:
+      # Overrides server.secret_key at load time (settings_defaults.py); real
+      # value comes from the gitignored root .env, not the committed settings.
+      SEARXNG_SECRET: ${SEARXNG_SECRET}
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - default
+      - api_gateway
+
 networks:
   default:
   api_gateway:
