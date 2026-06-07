@@ -41,7 +41,7 @@ models:
   # RSS during load equals the full model size and no warm-restart page cache.
   "gpt-oss-120b":
     proxy: "http://127.0.0.1:9999"
-    ttl: 3600
+    ttl: 1800
     # Native MXFP4 GGUF (ggml-org), ~59 GiB — gpt-oss is TRAINED in MXFP4, so the
     # f16 upcast (unsloth :F16, 65.4 GB) added ~6 GB for zero quality gain. The
     # MXFP4 file is the canonical full-quality weights. The ~6 GB it frees lets
@@ -83,7 +83,7 @@ models:
   # reasoning truncates before the answer.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
-    ttl: 600
+    ttl: 1800
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
@@ -113,7 +113,7 @@ models:
   # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
-    ttl: 3600
+    ttl: 1800
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_XL
@@ -237,7 +237,7 @@ models:
   # grow (CPU prefill cost scales with context).
   "selene-mini":
     proxy: "http://127.0.0.1:9997"
-    ttl: 600
+    ttl: 1800
     env:
       - "HIP_VISIBLE_DEVICES="
       - "ROCR_VISIBLE_DEVICES="
