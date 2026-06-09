@@ -13,14 +13,14 @@ Internet
     ├── :80 / :443 ──► NPM ──► api.jasonfagerberg.duckdns.org          ──► Traefik        (8090)
     │                      ──► auth.jasonfagerberg.duckdns.org        ──► Traefik        (8090) ──► Authentik (9000)
     │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
-    │                      ──► games.jasonfagerberg.duckdns.org       ──► Games           (25565)
+    │                      ──► games.jasonfagerberg.duckdns.org       ──► Games           (3000)
     │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
     │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
     │                      ──► remarkable.jasonfagerberg.duckdns.org  ──► rmfakecloud     (3005)
     │
-    └── :25565 ──────────────────────────────────────────────────► Games          (25565)
+    └── :25565 ──────────────────────────────────────────────────► Minecraft      (25565)
 
 Tailnet (100.64.0.0/10)
     │
@@ -33,6 +33,7 @@ Tailnet (100.64.0.0/10)
                                   ──► :8989  Sonarr
                                   ──► :7878  Radarr
                                   ──► :9000  Authentik (break-glass)
+                                  ──► :3000  Games
                                   ──► :11436 llm-swap API
                                   ──► 192.168.50.0/24 (subnet route — full LAN access)
 ```
@@ -49,7 +50,7 @@ Reachable from anywhere on the internet via NPM.
 | API Docs | `https://api.jasonfagerberg.duckdns.org/docs` |
 | Authentik | `https://auth.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
-| Games | `jasonfagerberg.duckdns.org:25565` |
+| Games | `https://games.jasonfagerberg.duckdns.org` |
 | Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 | Immich | `https://photos.jasonfagerberg.duckdns.org` |
@@ -71,6 +72,7 @@ Reachable only from devices enrolled in the tailnet. MagicDNS resolves `jason-se
 | Sonarr | `http://jason-server:8989` |
 | Radarr | `http://jason-server:7878` |
 | Authentik (break-glass) | `http://jason-server:9000` |
+| Games | `http://jason-server:3000` |
 | llm-swap API | `http://jason-server:11436/v1` |
 
 ## NPM Admin
