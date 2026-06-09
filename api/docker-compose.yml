@@ -206,6 +206,10 @@ services:
   # OCR + classification pipeline for reMarkable documents.
   # Receives webhook from rmfakecloud (notes stack) on new uploads.
   document-pipeline:
+    build:
+      context: git@github.com:fagerbergj/document-pipeline.git
+      dockerfile: Dockerfile
+      target: builder
     image: document-pipeline:latest
     container_name: document-pipeline
     env_file:
