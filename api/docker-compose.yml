@@ -1,7 +1,7 @@
 services:
   document-pipeline:
     build:
-      context: /home/jason/workspace/document-pipeline
+      context: ~/workspace/document-pipeline
       dockerfile: Dockerfile
     container_name: document-pipeline
     env_file:
