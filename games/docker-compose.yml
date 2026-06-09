@@ -1,7 +1,7 @@
 services:
   games:
     build:
-      context: /home/jason/workspace/games
+      context: ~/workspace/games
       dockerfile: Dockerfile
     container_name: games
     ports:

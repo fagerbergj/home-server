@@ -1,7 +1,7 @@
 services:
   document-pipeline:
     build:
-      context: ../document-pipeline
+      context: /home/jason/workspace/document-pipeline
       dockerfile: Dockerfile
     container_name: document-pipeline
     env_file:
@@ -66,6 +66,45 @@ services:
       - "traefik.http.routers.document-pipeline-ui.service=document-pipeline-ui"
       - "traefik.http.routers.document-pipeline-ui.middlewares=authentik@file"
 
+  shared-postgres:
+    image: postgres:17-alpine
+    container_name: shared-postgres
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: ${SHARED_DB_USER}
+      POSTGRES_PASSWORD: ${SHARED_DB_PASSWORD}
+      POSTGRES_DB: shared
+    volumes:
+      - ./data/shared-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SHARED_DB_USER} -d shared"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - default
+
+  opensearch:
+    image: opensearchproject/opensearch:2
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - default
+
 networks:
   default:
   api_gateway:
@@ -77,3 +116,4 @@ networks:
 
 volumes:
   remarkable-bridge-data:
+  opensearch-data:
