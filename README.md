@@ -11,9 +11,9 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | faster-whisper | GPU-accelerated speech-to-text for audio transcription |
 | CouchDB | reMarkable notes backup (local vault) |
 | Diun | Watches excluded images and emails when updates are available |
+| Games | Next.js games launcher (Kings Corner and future browser games) |
 | Grafana + Prometheus | System and container metrics dashboard |
 | Immich | Personal photo backup and browsing with ML-powered search |
-| Minecraft Server | Self-hosted game server |
 | llm-swap + Open WebUI | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
@@ -36,7 +36,7 @@ All services run via **Docker Compose**. Each service lives in its own subdirect
 home-server/
 ├── networking/       # Nginx Proxy Manager + DuckDNS updater
 ├── plex/             # Plex Media Server
-├── minecraft/        # Minecraft NeoForge server
+├── games/            # Next.js games launcher (Kings Corner)
 ├── photos/           # Immich photo storage
 ├── llm/              # llm-swap (llama.cpp) + Open WebUI
 ├── torrent/          # qBittorrent behind Mullvad VPN

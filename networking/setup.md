@@ -41,6 +41,7 @@ DDNS is handled by the `duckdns-updater` container — no router config needed.
 |-------------|---------------|---------------|-------------|----------|
 | NPM-HTTP | 80 | 80 | 192.168.50.186 | TCP |
 | NPM-HTTPS | 443 | 443 | 192.168.50.186 | TCP |
+| Games | 80 | 80 | 192.168.50.186 | TCP |
 | Minecraft | 25565 | 25565 | 192.168.50.186 | TCP |
 
 4. Click **Apply**
@@ -93,6 +94,7 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | API Gateway | `api.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Authentik | `auth.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
+| Games | `games.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `80` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |

@@ -1,6 +1,8 @@
-# Minecraft Server
+# Minecraft Server (Legacy)
 
 Runs [itzg/minecraft-server](https://github.com/itzg/docker-minecraft-server) with **NeoForge 1.21.1** and mods.
+
+> **Note**: This legacy Minecraft service is deprecated. Use the `games` service instead.
 
 ## Connect
 
