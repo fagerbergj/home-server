@@ -1,18 +1,9 @@
 services:
   games:
     build:
-      context: git@github.com:fagerbergj/games.git
+      context: /home/jason/workspace/games
       dockerfile: Dockerfile
     container_name: games
     ports:
       - "80:3000"
-    restart: unless-stopped
-
-  document-pipeline:
-    build:
-      context: git@github.com:fagerbergj/home-server.git
-      dockerfile: document-pipeline/Dockerfile
-    container_name: document-pipeline
-    ports:
-      - "3005:3000"
     restart: unless-stopped
