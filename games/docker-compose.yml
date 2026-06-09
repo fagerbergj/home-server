@@ -1,7 +1,7 @@
 services:
   games:
     build:
-      context: /home/jason/workspace/games
+      context: https://github.com/fagerbergj/games.git
       dockerfile: Dockerfile
     container_name: games
     ports:
