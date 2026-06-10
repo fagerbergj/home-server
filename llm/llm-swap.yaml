@@ -249,7 +249,6 @@ models:
       -hf mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF:Q8_0
       --alias selene-mini
       --jinja
-      --chat-template-kwargs '{"enable_thinking": false}'
       --temp 0
       --top-k 1
       -ngl 0
