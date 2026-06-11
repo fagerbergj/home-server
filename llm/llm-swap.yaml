@@ -42,6 +42,8 @@ models:
   "gpt-oss-120b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
     # Native MXFP4 GGUF (ggml-org), ~59 GiB — gpt-oss is TRAINED in MXFP4, so the
     # f16 upcast (unsloth :F16, 65.4 GB) added ~6 GB for zero quality gain. The
     # MXFP4 file is the canonical full-quality weights. The ~6 GB it frees lets
@@ -84,6 +86,8 @@ models:
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
@@ -114,6 +118,8 @@ models:
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_XL
