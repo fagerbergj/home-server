@@ -239,11 +239,11 @@ models:
   # embed model so it never swaps the GPU main group and always offers an
   # INDEPENDENT second opinion. GPUs hidden so the ROCm build doesn't hold a HIP
   # context (same fix as qwen3-embed). Deterministic grading (temp 0, top-k 1).
-  # --parallel 4: multiple Quack agents can be judged concurrently (each gate
-  # spawns an independent judge call); without this all calls serialize on the
-  # single default slot. -c 32768 gives each slot ~8K tokens — enough for rubric
-  # + answer + judgeMaxTokens(2048) output. Bump to -c 65536 if very long worker
-  # answers start hitting context limits (CPU prefill cost scales with -c).
+  # --parallel 2 × -c 65536 = 32K tokens per slot. The G-Eval prompt
+  # (constitution + rubric + question + full answer + fetched-source samples)
+  # measured 10-16K tokens in practice — the old 4×8K slots rejected every call
+  # with a 400, so all answers surfaced unvetted. Two slots still cover
+  # concurrent gate judging; with -t 24 each call uses most cores anyway.
   "selene-mini":
     proxy: "http://127.0.0.1:9997"
     ttl: 1800
@@ -259,8 +259,8 @@ models:
       --top-k 1
       -ngl 0
       -t 24
-      -c 32768
+      -c 65536
       -ub 2048
       -b 2048
-      --parallel 4
+      --parallel 2
       --port 9997
