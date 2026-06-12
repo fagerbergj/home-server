@@ -83,6 +83,9 @@ models:
   # Thinking left ON (backs the clarify stage). --reasoning-format auto keeps
   # reasoning out of `content`; needs a generous max_tokens (~4096+) or its
   # reasoning truncates before the answer.
+  # --no-mmap for the same reason as the other large GPU models above (~25 GB
+  # Q5): mmap'd weight reads serialize on single-threaded page faults, so a cold
+  # VRAM reload after a swap/TTL-eviction stalls ~15 min instead of ~1 min.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -99,6 +102,7 @@ models:
       --min-p 0
       --presence-penalty 1.5
       -fa on
+      --no-mmap
       --split-mode layer
       -fit off
       -ngl 999
