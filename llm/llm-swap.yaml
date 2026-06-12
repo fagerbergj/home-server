@@ -258,6 +258,7 @@ models:
       --temp 0
       --top-k 1
       -ngl 0
+      -t 8
       -c 32768
       -ub 2048
       -b 2048
