@@ -314,8 +314,13 @@ models:
   # --parallel 4 with -c 81920 = ~20K tokens/slot: production Quack G-Eval prompts
   # run 10-16K (constitution + rubric + full answer + fetched-source samples) plus
   # a ~2K verdict, so each of the 4 concurrent slots needs ~18K+ — smaller slots
-  # 400 like the old selene-mini 4x8K bug. temp 0/top-k 1 is intentional: a judge
-  # must be deterministic, NOT Google's general-use temp 1.0/top_p 0.95/top_k 64.
+  # 400 like the old selene-mini 4x8K bug.
+  # Sampling: gemma-4's model card prescribes top_p 0.95 / top_k 64 as the
+  # "standardized config across all use cases" — forcing greedy (temp 0 / top-k 1)
+  # ran the model off its calibrated distribution, which on the agentic judge
+  # showed up as meandering, slow decodes. We follow the card's top_p/top_k but
+  # hold temperature LOW (0.3) so verdicts stay near-deterministic without pure
+  # greedy. (Raise toward the card's 1.0 only if grading still looks off.)
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
@@ -328,8 +333,9 @@ models:
       --no-mmproj
       --alias gemma4-26b-a4b
       --jinja
-      --temp 0
-      --top-k 1
+      --temp 0.3
+      --top-p 0.95
+      --top-k 64
       -ngl 0
       -t 24
       -c 81920
