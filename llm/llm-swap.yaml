@@ -16,12 +16,12 @@ groups:
                  # grading phase after generation, so it never competes for VRAM
                  # with a model under test
 
-  # CPU judge candidates under eval, including the incumbent selene-mini. All run
-  # on CPU because that's the deployment target — a resident judge runs on CPU so
-  # it never swaps the GPU main group. swap:true so only ONE is RAM-resident at a
-  # time (the 26B-A4B alone is ~16GB RSS), which keeps two big CPU models from
-  # co-residing during the eval. NOTE: this makes selene-mini swappable rather
-  # than always-resident for Quack — re-settle its group once a judge is chosen.
+  # CPU judges. gemma4-26b-a4b is the LIVE agent-researcher (Quack) judge — it
+  # won the judge suite (faster than selene-mini AND more accurate; see promptfoo
+  # evals). gemma4-12b and selene-mini are retained as eval candidates. All run on
+  # CPU so the judge never swaps the GPU main group. swap:true so only ONE is
+  # RAM-resident at a time (the 26B-A4B alone is ~16GB RSS); the live judge's long
+  # TTL (below) keeps it warm, while the eval-only two evict quickly.
   cpujudge:
     swap: true
     exclusive: false
@@ -313,7 +313,7 @@ models:
   # should decode FASTER than the 8B selene-mini while carrying 26B of quality.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
-    ttl: 600
+    ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
     env:
       - "HIP_VISIBLE_DEVICES="
       - "ROCR_VISIBLE_DEVICES="
