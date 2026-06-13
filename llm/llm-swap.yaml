@@ -282,6 +282,9 @@ models:
   # JSON verdict, not a separate thinking channel (matches selene-mini), and it
   # keeps decode short. CPU-only (-ngl 0, GPUs hidden) like selene-mini — the
   # deployment target is a resident CPU judge that never swaps the GPU main group.
+  # --no-mmproj: these are vision GGUFs, so -hf auto-pulls an mmproj projector;
+  # this build can't load gemma-4's 'gemma4uv' projector and aborts at load. We
+  # only need text grading, so skip the projector entirely.
 
   # Dense 12B — the slower-but-simpler control (12B active on CPU).
   "gemma4-12b":
@@ -293,6 +296,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-12b-it-GGUF:UD-Q6_K_XL
+      --no-mmproj
       --alias gemma4-12b
       --jinja
       --temp 0
@@ -316,6 +320,7 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
+      --no-mmproj
       --alias gemma4-26b-a4b
       --jinja
       --temp 0
