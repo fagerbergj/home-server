@@ -31,6 +31,12 @@ DEFAULTS=(
   "https://huggingface.co/Qwen/Qwen3-Embedding-8B-GGUF/blob/main/Qwen3-Embedding-8B-Q8_0.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF/blob/main/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF/blob/main/Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf"
+  # Judge candidates under eval vs selene-mini (see promptfoo `judge` suite). The
+  # 26B-A4B MoE has only 4B active params → faster CPU decode than the 8B selene-
+  # mini at higher quality; the dense 12B is the slower-but-simpler control. Q4_K_XL
+  # on the MoE keeps the CPU-resident RSS (~16GB) inside the server's RAM budget.
+  "https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/blob/main/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf"
+  "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/blob/main/gemma-4-12b-it-UD-Q6_K_XL.gguf"
 )
 
 # Parse "<org>/<repo>/(blob|resolve)/<branch>/<file>" out of a HF URL and download

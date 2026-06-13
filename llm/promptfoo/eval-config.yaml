@@ -50,3 +50,17 @@ models:
   qwen3.5-9b:
     concurrency: 1
     suites: [chat-flow, structured, tools, bfcl]
+
+  # JUDGE CANDIDATES — evaluated only on the `judge` suite (does a different-family
+  # CPU model grade the agent-researcher G-Eval rubric as well as the incumbent
+  # selene-mini, and faster?). All CPU builds; Selene-70B is the meta-grader.
+  # Run: ./scripts/eval.sh --suite judge gemma4-12b gemma4-26b-a4b selene-mini
+  gemma4-12b:
+    concurrency: 1
+    suites: [judge]
+  gemma4-26b-a4b:
+    concurrency: 1
+    suites: [judge]
+  selene-mini:
+    concurrency: 1
+    suites: [judge]

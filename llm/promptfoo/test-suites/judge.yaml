@@ -1,0 +1,196 @@
+# Judge-the-judge fixtures. Each case is a (question, answer[, source verification])
+# triple with a KNOWN-correct verdict (the gold label). A candidate judge model
+# produces a G-Eval verdict for each; two asserts in promptfooconfig.judge.yaml
+# grade that verdict:
+#   - judge-grader.js (deterministic): recompute capped score → did it reach the
+#     right pass/fail and flag the right failing criterion?  [metric: direction]
+#   - llm-rubric (Selene-70B): is the verdict's reasoning sound, not hallucinated?
+#     [metric: verdict-quality]
+#
+# Per-fixture vars:
+#   question, answer        : the case being judged
+#   sourceVerification      : "" or "\n\n<Source verification section>" (verbatim
+#                             buildSourceVerification format)
+#   gold_passed             : should the answer clear the 0.7 gate?
+#   gold_low                : "" or the criterion that MUST be the failing one
+#   gold_summary            : plain-English ground truth, fed to the Selene rubric
+
+- description: "clean grounded answer, all claims cited + fetched → PASS"
+  vars:
+    gold_passed: true
+    gold_low: ""
+    gold_summary: >
+      This answer is correct and should PASS (overall >= 0.7). Every factual
+      claim is attributed to a URL that the Source verification section confirms
+      was fetched, and the content samples support the claims. No criterion
+      should be failed; a good verdict scores all five criteria high.
+    question: |
+      What is the checked-bag fee for a Basic Economy domestic US ticket on
+      Delta, and can Basic Economy passengers bring a full-size carry-on?
+    sourceVerification: |2-
+
+
+      Source verification (system-checked — whether cited URLs were successfully fetched this session):
+      ✓ fetched: https://www.delta.com/us/en/baggage/checked-baggage/overview
+          content sample: "First checked bag $35 USD for domestic itineraries when paid online. Basic Economy tickets are subject to standard checked bag fees."
+      ✓ fetched: https://www.delta.com/us/en/baggage/carry-on-baggage
+          content sample: "All customers, including Basic Economy, may bring one carry-on bag plus one personal item that fits under the seat in front of you."
+    answer: |
+      For a Basic Economy domestic US ticket on Delta, the first checked bag
+      costs **$35 USD** when paid online
+      ([delta.com](https://www.delta.com/us/en/baggage/checked-baggage/overview)) —
+      Basic Economy is subject to the same standard checked-bag fees as Main Cabin.
+
+      Basic Economy passengers **can** bring a full-size carry-on: Delta allows
+      every customer, including Basic Economy, one carry-on bag plus one personal
+      item that fits under the seat
+      ([delta.com](https://www.delta.com/us/en/baggage/carry-on-baggage)). This
+      differs from Basic Economy on some other US carriers, which restrict
+      carry-ons.
+
+- description: "invented price/statistic with no source → FAIL (no_fabrication cap)"
+  vars:
+    gold_passed: false
+    gold_low: "no_fabrication"
+    gold_summary: >
+      This answer should FAIL. It states a specific price ("$1,299") and a
+      specific statistic ("92% of guests") that appear in NO fetched source —
+      these are fabricated quantitative claims. no_fabrication must score 0.0,
+      which hard-caps the overall at 0.35. A correct verdict fails the answer and
+      names no_fabrication (fabricated price/stat) as the cause.
+    question: |
+      How much does the 3-day Inca Trail trek to Machu Picchu cost with a
+      reputable operator, and how do hikers rate the experience?
+    sourceVerification: ""
+    answer: |
+      The 3-day Inca Trail trek to Machu Picchu costs **$1,299 per person** with a
+      reputable operator, including permits, porters, meals, and the return train.
+      It is extremely well regarded — **92% of guests rate it five stars** and say
+      it was the highlight of their trip. Booking 4–6 months ahead is recommended
+      because government permits sell out quickly.
+
+- description: "claims with source names but zero URLs → FAIL (cites_sources cap)"
+  vars:
+    gold_passed: false
+    gold_low: "cites_sources"
+    gold_summary: >
+      This answer should FAIL. It attributes claims to publication NAMES
+      ("according to Reuters", "TechCrunch reported") but provides no URLs the
+      reader can follow. Per the rubric a name is not a citation — cites_sources
+      must score 0.0, hard-capping the overall at 0.40. A correct verdict fails
+      the answer and names cites_sources (named sources, no links) as the cause.
+    question: |
+      What were the headline terms of the most recent OpenAI funding round?
+    sourceVerification: ""
+    answer: |
+      According to Reuters, the most recent OpenAI funding round was led by a
+      consortium of existing investors and valued the company in the hundreds of
+      billions. TechCrunch reported that the round was heavily oversubscribed and
+      that the proceeds would fund compute capacity and research. Bloomberg noted
+      that employee share sales were part of the same transaction. Analysts cited
+      by CNBC said the valuation reflected strong enterprise revenue growth.
+
+- description: "cited URL marked NOT fetched carries the key claim → FAIL (cites_sources)"
+  vars:
+    gold_passed: false
+    gold_low: "cites_sources"
+    gold_summary: >
+      This answer should FAIL. The only URL it cites is marked "NOT fetched" in
+      the Source verification section, yet it carries the load-bearing factual
+      claim (the specific train departure time). A URL that was never retrieved
+      does not count as a citation, so cites_sources must score 0.0 (overall
+      capped at 0.40); the unverified specific also justifies a low
+      no_fabrication. A correct verdict fails the answer and points at the
+      NOT-fetched citation.
+    question: |
+      What time does the first Hiram Bingham luxury train depart Cusco for
+      Machu Picchu?
+    sourceVerification: |2-
+
+
+      Source verification (system-checked — whether cited URLs were successfully fetched this session):
+      ✗ NOT fetched: https://www.perurail.com/trains/hiram-bingham/
+    answer: |
+      The first Hiram Bingham luxury train departs Poroy station near Cusco at
+      **9:05 AM**, arriving at Machu Picchu Pueblo in the early afternoon with
+      brunch served on board
+      ([perurail.com](https://www.perurail.com/trains/hiram-bingham/)). Booking in
+      advance is strongly recommended as the service has limited capacity.
+
+- description: "well-cited but answers a different question → FAIL (answers_question)"
+  vars:
+    gold_passed: false
+    gold_low: "answers_question"
+    gold_summary: >
+      This answer should FAIL on answers_question. The user asked specifically
+      about VISA requirements for a US passport holder visiting Japan as a
+      tourist; the answer instead describes the JR Rail Pass and getting a SIM
+      card. Grounding and citations may be fine, but it does not address the
+      question asked. A correct verdict fails the answer and names
+      answers_question (off-topic / wrong question) as the cause.
+    question: |
+      Does a US passport holder need a visa to visit Japan as a tourist for
+      10 days, and is there anything to do before arrival?
+    sourceVerification: |2-
+
+
+      Source verification (system-checked — whether cited URLs were successfully fetched this session):
+      ✓ fetched: https://www.japan-guide.com/e/e2361.html
+          content sample: "The Japan Rail Pass must be purchased before arriving in Japan and is activated at a JR office."
+    answer: |
+      The best way to get around Japan is the Japan Rail Pass, which must be
+      purchased before you arrive and activated at a JR office once you land
+      ([japan-guide.com](https://www.japan-guide.com/e/e2361.html)). A 7-day pass
+      covers most bullet-train travel between major cities. You should also pick
+      up a prepaid data SIM or pocket Wi-Fi at the airport, since many smaller
+      restaurants and shops are cash-only and you'll want maps offline.
+
+- description: "internally contradictory answer → FAIL (internally_consistent)"
+  vars:
+    gold_passed: false
+    gold_low: "internally_consistent"
+    gold_summary: >
+      This answer should FAIL on internally_consistent. It states the museum is
+      closed on Mondays in one sentence and then tells the reader to visit on
+      Monday morning to avoid crowds — a direct self-contradiction the conclusion
+      does not resolve. A correct verdict fails the answer and names
+      internally_consistent (contradiction about the closing day) as the cause.
+    question: |
+      What day is the Rijksmuseum closed, and when is the least crowded time
+      to visit?
+    sourceVerification: |2-
+
+
+      Source verification (system-checked — whether cited URLs were successfully fetched this session):
+      ✓ fetched: https://www.rijksmuseum.nl/en/visit
+          content sample: "Open daily from 9:00 to 17:00, including weekends and public holidays."
+    answer: |
+      The Rijksmuseum is closed on Mondays, so plan your visit for another day
+      ([rijksmuseum.nl](https://www.rijksmuseum.nl/en/visit)). To avoid the
+      crowds, the best time to go is **Monday morning right at opening**, when the
+      galleries are quietest and you can see the Night Watch without the crowds.
+
+- description: "honest zero-retrieval disclosure → FAIL gate but recognise honesty"
+  vars:
+    gold_passed: false
+    gold_low: "cites_sources"
+    gold_summary: >
+      This answer correctly DISCLOSES that every fetch failed and refuses to
+      fabricate. Per the rubric's zero-retrieval rule it still fails the gate
+      (grounded and cites_sources score 0.0, capping the overall), so gold_passed
+      is false — but a GOOD verdict must recognise the honesty: it should NOT
+      accuse the answer of fabrication, and should grade answers_question /
+      internally_consistent on the quality of the disclosure rather than on
+      absent content. A verdict that scores no_fabrication 0.0 or calls this
+      "fabricated" is WRONG.
+    question: |
+      What are the current visiting hours for the Borghese Gallery in Rome?
+    sourceVerification: ""
+    answer: |
+      I was not able to answer this reliably. I searched for the Borghese
+      Gallery's visiting hours, but every page I tried to fetch
+      (the official galleriaborghese.beniculturali.it site and two ticketing
+      resellers) returned errors or bot-walls, so I could not retrieve the
+      current hours. Rather than guess at specific times that may be wrong, I'd
+      recommend checking the official Galleria Borghese website directly, as
+      hours and the mandatory timed-entry reservation can change seasonally.

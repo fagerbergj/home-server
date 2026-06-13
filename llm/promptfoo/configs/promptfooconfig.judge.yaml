@@ -1,0 +1,59 @@
+# Judge-the-judge suite — can a different-family CPU model grade the
+# agent-researcher G-Eval rubric as well as selene-mini, and how fast? The
+# provider is the CANDIDATE judge (env.MODEL); it produces a G-Eval verdict for
+# each gold-labelled fixture. Two asserts grade that verdict:
+#   - direction (javascript, deterministic): recompute the capped overall score
+#     and check the right pass/fail + failing criterion vs the fixture's gold.
+#   - verdict-quality (llm-rubric, Selene-70B): is the verdict's REASONING sound
+#     and non-hallucinated? This is the "70B judges the judge" half.
+# t/s is captured automatically by summarize.sh from the response timings, so the
+# same run yields the speed/quality tradeoff. concurrency 1 → grading defers and
+# Selene swaps in once for the batched grading phase.
+# Run ON jason-server:
+#   ./scripts/eval.sh --suite judge gemma4-12b gemma4-26b-a4b selene-mini
+providers:
+  - id: "openai:chat:{{ env.MODEL }}"
+    config:
+      apiBaseUrl: http://jason-server:11436/v1
+      apiKey: llm-swap
+      temperature: 0
+      max_tokens: 2048
+      omitDefaults: true
+      showThinking: false
+prompts:
+  - file://../test-suites/judge-prompt.yaml
+tests: ../test-suites/judge.yaml
+defaultTest:
+  threshold: 0.7
+  options:
+    provider:
+      id: openai:chat:selene
+      config:
+        apiBaseUrl: http://jason-server:11436/v1
+        apiKey: llm-swap
+    # The candidate may wrap the verdict in a ```json fence``` or a thinking
+    # preamble; unwrap/strip so both asserts see raw JSON.
+    transform: "(output.match(/```(?:json)?\\s*([\\s\\S]*?)```/) ? output.match(/```(?:json)?\\s*([\\s\\S]*?)```/)[1] : output).replace(/^(Thinking:|<think>)[\\s\\S]*?(<\\/think>|\\n\\n)/i, '').trim()"
+  assert:
+    - type: javascript
+      value: file://../test-suites/scripts/judge-grader.js
+      metric: direction
+    - type: llm-rubric
+      metric: verdict-quality
+      value: |
+        The text above (the model output) is a JUDGE'S VERDICT: a JSON object
+        scoring a web-research answer against a rubric. Decide whether this
+        verdict is CORRECT and well-reasoned.
+
+        Ground truth for this case: {{gold_summary}}
+
+        Give a HIGH score only if ALL of these hold:
+        - The verdict's overall `passed` / `score` matches the ground-truth
+          outcome (a verdict passes when its overall score is >= 0.7).
+        - It identifies the SAME failing criterion/criteria named in the ground
+          truth (if any) and does not invent unrelated failures.
+        - The per-criterion `reason` strings are factually accurate about the
+          answer — not hallucinated.
+
+        Give a LOW score if the verdict reaches the wrong outcome, blames the
+        wrong criterion, or its reasoning is incoherent or fabricated.

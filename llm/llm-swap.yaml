@@ -16,6 +16,21 @@ groups:
                  # grading phase after generation, so it never competes for VRAM
                  # with a model under test
 
+  # CPU judge candidates under eval, including the incumbent selene-mini. All run
+  # on CPU because that's the deployment target — a resident judge runs on CPU so
+  # it never swaps the GPU main group. swap:true so only ONE is RAM-resident at a
+  # time (the 26B-A4B alone is ~16GB RSS), which keeps two big CPU models from
+  # co-residing during the eval. NOTE: this makes selene-mini swappable rather
+  # than always-resident for Quack — re-settle its group once a judge is chosen.
+  cpujudge:
+    swap: true
+    exclusive: false
+    persistent: false
+    members:
+      - gemma4-12b
+      - gemma4-26b-a4b
+      - selene-mini
+
   # Stays loaded regardless of what the main group is doing.
   embed:
     swap: false
@@ -23,16 +38,6 @@ groups:
     persistent: true
     members:
       - qwen3-embed
-
-  # Adversarial judge for Quack. Like embed: CPU-only + persistent, so it stays
-  # resident and gives an INDEPENDENT second opinion without ever swapping the
-  # GPU main group.
-  judge:
-    swap: false
-    exclusive: false
-    persistent: true
-    members:
-      - selene-mini
 
 models:
   # --no-mmap is critical for the 65GB+ models in this group: mmap'd reads
@@ -268,3 +273,57 @@ models:
       -b 2048
       --parallel 2
       --port 9997
+
+  # ── Judge candidates (eval only) ─────────────────────────────────────────
+  # Benchmarked against selene-mini via the promptfoo `judge` suite: does a
+  # different-family model grade the agent-researcher G-Eval rubric as well as
+  # Selene, and how fast? Deterministic grading (temp 0, top-k 1). enable_thinking
+  # off — the rubric's reasoning lives in the per-criterion "reason" fields of the
+  # JSON verdict, not a separate thinking channel (matches selene-mini), and it
+  # keeps decode short. CPU-only (-ngl 0, GPUs hidden) like selene-mini — the
+  # deployment target is a resident CPU judge that never swaps the GPU main group.
+
+  # Dense 12B — the slower-but-simpler control (12B active on CPU).
+  "gemma4-12b":
+    proxy: "http://127.0.0.1:9995"
+    ttl: 600
+    env:
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
+    cmd: >
+      /app/llama-server
+      -hf unsloth/gemma-4-12b-it-GGUF:UD-Q6_K_XL
+      --alias gemma4-12b
+      --jinja
+      --temp 0
+      --top-k 1
+      -ngl 0
+      -t 24
+      -c 16384
+      -ub 2048
+      -b 2048
+      --chat-template-kwargs '{"enable_thinking": false}'
+      --port 9995
+
+  # 26B-A4B MoE — 4B active. On CPU only the 4B active path runs per token, so it
+  # should decode FASTER than the 8B selene-mini while carrying 26B of quality.
+  "gemma4-26b-a4b":
+    proxy: "http://127.0.0.1:9994"
+    ttl: 600
+    env:
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
+    cmd: >
+      /app/llama-server
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
+      --alias gemma4-26b-a4b
+      --jinja
+      --temp 0
+      --top-k 1
+      -ngl 0
+      -t 24
+      -c 16384
+      -ub 2048
+      -b 2048
+      --chat-template-kwargs '{"enable_thinking": false}'
+      --port 9994
