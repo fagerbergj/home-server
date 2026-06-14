@@ -85,9 +85,14 @@ models:
       --parallel 1
       --port 9999
 
-  # Thinking left ON (backs the clarify stage). --reasoning-format auto keeps
-  # reasoning out of `content`; needs a generous max_tokens (~4096+) or its
-  # reasoning truncates before the answer.
+  # Thinking ON but BOUNDED + cleanly extracted. --reasoning-format auto
+  # mis-routed qwen3.6's tool-call XML (qwen3_coder format) into reasoning_content,
+  # leaving content empty + no tool_calls (llama.cpp false-thinking-detection,
+  # gh#20809); unbounded thinking also ran past max_tokens before emitting any
+  # answer. Fix: deepseek format (explicit <think> -> reasoning_content; the answer
+  # AND tool calls stay in content, where they parse) + a 512-tok reasoning budget
+  # so thinking always ends and content is produced. Server-wide, so the clarify
+  # stage shares these (it already expected reasoning_content; budget is tunable).
   # --no-mmap for the same reason as the other large GPU models above (~25 GB
   # Q5): mmap'd weight reads serialize on single-threaded page faults, so a cold
   # VRAM reload after a swap/TTL-eviction stalls ~15 min instead of ~1 min.
@@ -100,7 +105,8 @@ models:
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
       --jinja
-      --reasoning-format auto
+      --reasoning-format deepseek
+      --reasoning-budget 512
       --temp 1.0
       --top-p 0.95
       --top-k 20
