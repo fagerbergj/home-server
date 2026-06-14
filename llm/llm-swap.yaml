@@ -96,6 +96,12 @@ models:
   # --no-mmap for the same reason as the other large GPU models above (~25 GB
   # Q5): mmap'd weight reads serialize on single-threaded page faults, so a cold
   # VRAM reload after a swap/TTL-eviction stalls ~15 min instead of ~1 min.
+  # --parallel 4: serve up to 4 concurrent node requests (matches Quack's
+  # dag.max_active_nodes=4). This PARTITIONS the existing -c 262144 KV pool into
+  # 4 slots of 65536 tokens each — VRAM is unchanged, only per-request context
+  # drops to 64K. Fine here: --reasoning-budget caps thinking at 512 and answers
+  # at ~8K, so a single research node rarely needs more. Cost is per-token decode
+  # latency (4 requests share GPU bandwidth); aggregate throughput is what rises.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -118,6 +124,7 @@ models:
       -fit off
       -ngl 999
       -c 262144
+      --parallel 4
       -ub 2048
       -b 2048
       --cache-type-k q8_0
