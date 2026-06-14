@@ -101,25 +101,21 @@ models:
       --parallel 1
       --port 9999
 
-  # Thinking OFF (experiment, 2026-06). qwen3.6's bounded-thinking config still
-  # leaked reasoning into content often enough that Quack needs StripThinking + a
-  # clean_output judge criterion to scrub it — so we kill thinking at the source,
-  # using the SAME mechanism proven on qwen3.5-9b below: --chat-template-kwargs
-  # enable_thinking:false. Belt-and-suspenders with --reasoning-budget 0 (llama.cpp's
-  # explicit "no thinking" switch) because enable_thinking:false alone has been
-  # reported unreliable on qwen3.6-35b-a3b (lmstudio-ai/lmstudio-bug-tracker#1559).
-  # --reasoning-format auto extracts any stray reasoning channel out of content.
-  # (Earlier, with thinking ON, auto mis-routed qwen3.6's tool-call XML into
-  # reasoning_content (gh#20809) — that needed deepseek format; with thinking OFF
-  # the model shouldn't open a think block, so auto should be safe. If tool calls
-  # break / content goes empty again, switch back to --reasoning-format deepseek.)
-  # If thinking STILL leaks, StripThinking + clean_output are the net, and the
-  # nuclear option is a quack-side empty <think></think> assistant prefill (the one
-  # workaround that reliably forces nothink per #1559).
-  # Sampling: Qwen3 NON-thinking general profile (temp 0.7 / top-p 0.8 / top-k 20 /
-  # min-p 0 / presence 1.5; matches the 9b and #1559's best-practices) — the old
-  # 1.0 / 0.95 was the thinking profile. Revert to bounded thinking: --reasoning-
-  # budget 512, --reasoning-format deepseek, drop enable_thinking, temp 1.0/top-p 0.95.
+  # Thinking ON, bounded (reverted 2026-06-14). We tried thinking OFF (--reasoning-
+  # budget 0 + enable_thinking:false) to stop reasoning leaks, but it appears to have
+  # REMOVED the model's ability to judge when it has enough: researchers ran away to
+  # hundreds of tool calls (688 observed), blowing the context window and burning
+  # 30+ min/node. Reasoning models use the think phase to self-regulate ("do I have
+  # enough? then stop and answer"), so we restore it.
+  # --reasoning-format deepseek: <think> → reasoning_content (out of content); the
+  # answer AND tool calls stay in content where they parse (--reasoning-format auto
+  # mis-routed qwen3.6's qwen3_coder tool-call XML, gh#20809 — do NOT use auto here).
+  # --reasoning-budget 512: bound thinking so it can't run past max_tokens before
+  # emitting an answer (tunable UP if it needs more room to conclude/stop).
+  # Any leak into content is scrubbed by Quack's StripThinking + clean_output judge
+  # criterion; runaway over-fetching is backstopped by a hard tool-call cap in the
+  # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
+  # / top-k 20 / min-p 0 / presence 1.5).
   # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
   # --parallel 2 + -c 131072: 2 concurrent nodes (matches Quack's dag.max_active_nodes
   # =2), KV split into 2× 65536 slots. Context halved from 262144 to leave VRAM for
@@ -133,10 +129,10 @@ models:
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
       --jinja
-      --reasoning-format auto
-      --reasoning-budget 0
-      --temp 0.7
-      --top-p 0.8
+      --reasoning-format deepseek
+      --reasoning-budget 512
+      --temp 1.0
+      --top-p 0.95
       --top-k 20
       --min-p 0
       --presence-penalty 1.5
@@ -151,7 +147,6 @@ models:
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --chat-template-kwargs '{"enable_thinking": false}'
       --port 9999
 
   # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
