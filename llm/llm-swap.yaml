@@ -2,36 +2,52 @@ healthCheckTimeout: 1200  # gpt-oss-120b + 256K KV cache for coder takes time to
 logLevel: debug
 
 groups:
-  # Only one chat model loaded at a time; won't evict the embed group.
-  main:
-    swap: true
-    exclusive: false
+  # GPU chat pair — Quack's worker + judge, CO-RESIDENT (swap:false) so neither
+  # swaps the other mid-request. ~40GB weights (qwen3.6 ~25GB + gemma ~15GB) + KV
+  # fits the 64GB box with room. exclusive:true so loading either evicts the coding
+  # / gpu-fallback groups — llama-swap does NOT track VRAM, eviction is rule-driven,
+  # so the big GPU groups MUST be mutually exclusive or they'd OOM each other.
+  # embed is persistent, so it survives the eviction.
+  chat:
+    swap: false
+    exclusive: true
+    persistent: false
     members:
-      - gpt-oss-120b          # planner
-      - qwen3.6-35b           # chat
-      - qwen3-coder-next      # implementer
-      - qwen3.5-9b            # doc-pipeline workhorse
-      - qwen3-vl-32b          # doc-pipeline OCR/vision
-      - selene   # promptfoo judge (Atla Selene 70B); swaps in for the batched
-                 # grading phase after generation, so it never competes for VRAM
-                 # with a model under test
+      - qwen3.6-35b           # orchestrator + web-researcher worker
+      - gemma4-26b-a4b        # live Quack judge (moved off CPU → GPU; see below)
 
-  # CPU judges. gemma4-26b-a4b is the LIVE agent-researcher (Quack) judge — it
-  # won the judge suite (faster than selene-mini AND more accurate; see promptfoo
-  # evals). gemma4-12b and selene-mini are retained as eval candidates. All run on
-  # CPU so the judge never swaps the GPU main group. swap:true so only ONE is
-  # RAM-resident at a time (the 26B-A4B alone is ~16GB RSS); the live judge's long
-  # TTL (below) keeps it warm, while the eval-only two evict quickly.
-  cpujudge:
+  # GPU coding group — evicts chat when you code, and chat evicts it back.
+  coding:
+    swap: false
+    exclusive: true
+    persistent: false
+    members:
+      - qwen3-coder-next
+
+  # Other big GPU models — fallbacks that swap in on demand and evict chat/coding.
+  # swap:true → one at a time; exclusive:true → unloads the chat/coding groups.
+  gpu-fallback:
+    swap: true
+    exclusive: true
+    persistent: false
+    members:
+      - gpt-oss-120b          # heavy reasoner (not used by Quack today)
+      - qwen3.5-9b            # doc-pipeline workhorse (migrating into Quack)
+      - qwen3-vl-32b          # doc-pipeline OCR/vision (migrating into Quack)
+      - selene                # promptfoo GPU judge (batched grading phase)
+
+  # CPU-only eval judges (GPUs hidden) — never touch GPU VRAM, so exclusive:false
+  # (they must NOT evict the GPU chat group). swap:true → one RAM-resident at a
+  # time. Eval-only now that gemma4-26b-a4b is the live judge on GPU.
+  cpu:
     swap: true
     exclusive: false
     persistent: false
     members:
       - gemma4-12b
-      - gemma4-26b-a4b
       - selene-mini
 
-  # Stays loaded regardless of what the main group is doing.
+  # Stays loaded regardless of what any GPU group is doing.
   embed:
     swap: false
     exclusive: false
@@ -85,23 +101,29 @@ models:
       --parallel 1
       --port 9999
 
-  # Thinking ON but BOUNDED + cleanly extracted. --reasoning-format auto
-  # mis-routed qwen3.6's tool-call XML (qwen3_coder format) into reasoning_content,
-  # leaving content empty + no tool_calls (llama.cpp false-thinking-detection,
-  # gh#20809); unbounded thinking also ran past max_tokens before emitting any
-  # answer. Fix: deepseek format (explicit <think> -> reasoning_content; the answer
-  # AND tool calls stay in content, where they parse) + a 512-tok reasoning budget
-  # so thinking always ends and content is produced. Server-wide, so the clarify
-  # stage shares these (it already expected reasoning_content; budget is tunable).
-  # --no-mmap for the same reason as the other large GPU models above (~25 GB
-  # Q5): mmap'd weight reads serialize on single-threaded page faults, so a cold
-  # VRAM reload after a swap/TTL-eviction stalls ~15 min instead of ~1 min.
-  # --parallel 4: serve up to 4 concurrent node requests (matches Quack's
-  # dag.max_active_nodes=4). This PARTITIONS the existing -c 262144 KV pool into
-  # 4 slots of 65536 tokens each — VRAM is unchanged, only per-request context
-  # drops to 64K. Fine here: --reasoning-budget caps thinking at 512 and answers
-  # at ~8K, so a single research node rarely needs more. Cost is per-token decode
-  # latency (4 requests share GPU bandwidth); aggregate throughput is what rises.
+  # Thinking OFF (experiment, 2026-06). qwen3.6's bounded-thinking config still
+  # leaked reasoning into content often enough that Quack needs StripThinking + a
+  # clean_output judge criterion to scrub it — so we kill thinking at the source,
+  # using the SAME mechanism proven on qwen3.5-9b below: --chat-template-kwargs
+  # enable_thinking:false. Belt-and-suspenders with --reasoning-budget 0 (llama.cpp's
+  # explicit "no thinking" switch) because enable_thinking:false alone has been
+  # reported unreliable on qwen3.6-35b-a3b (lmstudio-ai/lmstudio-bug-tracker#1559).
+  # --reasoning-format auto extracts any stray reasoning channel out of content.
+  # (Earlier, with thinking ON, auto mis-routed qwen3.6's tool-call XML into
+  # reasoning_content (gh#20809) — that needed deepseek format; with thinking OFF
+  # the model shouldn't open a think block, so auto should be safe. If tool calls
+  # break / content goes empty again, switch back to --reasoning-format deepseek.)
+  # If thinking STILL leaks, StripThinking + clean_output are the net, and the
+  # nuclear option is a quack-side empty <think></think> assistant prefill (the one
+  # workaround that reliably forces nothink per #1559).
+  # Sampling: Qwen3 NON-thinking general profile (temp 0.7 / top-p 0.8 / top-k 20 /
+  # min-p 0 / presence 1.5; matches the 9b and #1559's best-practices) — the old
+  # 1.0 / 0.95 was the thinking profile. Revert to bounded thinking: --reasoning-
+  # budget 512, --reasoning-format deepseek, drop enable_thinking, temp 1.0/top-p 0.95.
+  # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
+  # --parallel 2 + -c 131072: 2 concurrent nodes (matches Quack's dag.max_active_nodes
+  # =2), KV split into 2× 65536 slots. Context halved from 262144 to leave VRAM for
+  # the co-resident gemma judge.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -111,10 +133,10 @@ models:
       /app/llama-server
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
       --jinja
-      --reasoning-format deepseek
-      --reasoning-budget 512
-      --temp 1.0
-      --top-p 0.95
+      --reasoning-format auto
+      --reasoning-budget 0
+      --temp 0.7
+      --top-p 0.8
       --top-k 20
       --min-p 0
       --presence-penalty 1.5
@@ -123,12 +145,13 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 262144
-      --parallel 4
+      -c 131072
+      --parallel 2
       -ub 2048
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --chat-template-kwargs '{"enable_thinking": false}'
       --port 9999
 
   # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
@@ -322,24 +345,25 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active. On CPU only the 4B active path runs per token, so it
-  # should decode FASTER than the 8B selene-mini while carrying 26B of quality.
-  # --parallel 4 with -c 81920 = ~20K tokens/slot: production Quack G-Eval prompts
-  # run 10-16K (constitution + rubric + full answer + fetched-source samples) plus
-  # a ~2K verdict, so each of the 4 concurrent slots needs ~18K+ — smaller slots
-  # 400 like the old selene-mini 4x8K bug.
+  # 26B-A4B MoE — 4B active. MOVED OFF CPU → GPU (was -ngl 0, GPUs hidden) so it
+  # co-resides with qwen3.6 in the `chat` group: the judge is on Quack's critical
+  # path (the gate blocks the answer until the verdict), and GPU decode on the
+  # 10-16K-token rubric prompt is far faster than CPU. ~15 GB Q4 weights fit
+  # alongside qwen3.6 in the 64GB box. --no-mmap + --split-mode layer like the other
+  # large GPU models (layer-split avoids the AllReduce path on the contended 2nd
+  # GPU; -fa + q8 KV halves the cache). --parallel 2 with -c 49152 = ~24K tokens/slot:
+  # Quack G-Eval prompts run 10-16K plus a ~2K verdict, so each of the 2 concurrent
+  # slots (matches dag.max_active_nodes=2) needs ~18K+ — 24K is safe.
+  # To revert to CPU: restore the HIP/ROCR-hide env, -ngl 0, -t 24, drop --no-mmap/
+  # --split-mode/-fit/-fa/cache-type, set -c 81920 --parallel 4.
   # Sampling: gemma-4's model card prescribes top_p 0.95 / top_k 64 as the
-  # "standardized config across all use cases" — forcing greedy (temp 0 / top-k 1)
-  # ran the model off its calibrated distribution, which on the agentic judge
-  # showed up as meandering, slow decodes. We follow the card's top_p/top_k but
-  # hold temperature LOW (0.3) so verdicts stay near-deterministic without pure
-  # greedy. (Raise toward the card's 1.0 only if grading still looks off.)
+  # "standardized config across all use cases"; temp held LOW (0.3) so verdicts
+  # stay near-deterministic. (Raise toward the card's 1.0 only if grading looks off.)
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
@@ -349,11 +373,16 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      -ngl 0
-      -t 24
-      -c 81920
+      --no-mmap
+      --split-mode layer
+      -fit off
+      -ngl 999
+      -fa on
+      -c 49152
       -ub 2048
       -b 2048
-      --parallel 4
+      --parallel 2
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
