@@ -8,6 +8,7 @@ services:
       - PGID=1002 # run: getent group plex-ro
       - TZ=America/Chicago
       - VERSION=docker
+      - DOCKER_MODS=jefflessard/plex-vaapi-amdgpu-mod  # AMD VAAPI: injects recent mesa/libdrm, overrides Plex's stale bundled stack
     devices:
       - /dev/dri:/dev/dri
     group_add:
