@@ -16,27 +16,23 @@ groups:
       - qwen3.6-35b           # orchestrator + web-researcher worker
       - gemma4-26b-a4b        # live Quack judge (moved off CPU → GPU; see below)
 
-  # GPU media group — Quack's media-reader (Qwen3-Omni: image + audio) + judge.
-  # Mirrors the `chat` group layout: swap:false so both members run together,
-  # exclusive:true so activating this evicts chat/coding/vision/gpu-fallback.
-  # Switching chat↔media evicts and restarts gemma (brief); TTL keeps it warm.
+  # GPU media group — Quack's media-reader (Qwen3-Omni: image + audio).
+  # gemma4-26b-a4b can only be in one group (llm-swap constraint), so it stays
+  # in chat. The judge swaps in after the worker finishes — brief reload, acceptable.
   media:
     swap: false
     exclusive: true
     persistent: false
     members:
       - qwen3-omni-30b        # media-reader: image + audio (M4 Phase 2+)
-      - gemma4-26b-a4b        # live judge, co-resident
 
   # GPU vision group — Quack's image-reader (Qwen3-VL: dense OCR / handwriting).
-  # Promoted from gpu-fallback; mirrors chat/media so the judge stays co-resident.
   vision:
     swap: false
     exclusive: true
     persistent: false
     members:
       - qwen3-vl-32b          # image-reader: OCR, handwriting, difficult images
-      - gemma4-26b-a4b        # live judge, co-resident
 
   # GPU coding group — evicts chat when you code, and chat evicts it back.
   coding:
