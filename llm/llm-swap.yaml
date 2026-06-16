@@ -16,6 +16,28 @@ groups:
       - qwen3.6-35b           # orchestrator + web-researcher worker
       - gemma4-26b-a4b        # live Quack judge (moved off CPU → GPU; see below)
 
+  # GPU media group — Quack's media-reader (Qwen3-Omni: image + audio) + judge.
+  # Mirrors the `chat` group layout: swap:false so both members run together,
+  # exclusive:true so activating this evicts chat/coding/vision/gpu-fallback.
+  # Switching chat↔media evicts and restarts gemma (brief); TTL keeps it warm.
+  media:
+    swap: false
+    exclusive: true
+    persistent: false
+    members:
+      - qwen3-omni-30b        # media-reader: image + audio (M4 Phase 2+)
+      - gemma4-26b-a4b        # live judge, co-resident
+
+  # GPU vision group — Quack's image-reader (Qwen3-VL: dense OCR / handwriting).
+  # Promoted from gpu-fallback; mirrors chat/media so the judge stays co-resident.
+  vision:
+    swap: false
+    exclusive: true
+    persistent: false
+    members:
+      - qwen3-vl-32b          # image-reader: OCR, handwriting, difficult images
+      - gemma4-26b-a4b        # live judge, co-resident
+
   # GPU coding group — evicts chat when you code, and chat evicts it back.
   coding:
     swap: false
@@ -26,6 +48,7 @@ groups:
 
   # Other big GPU models — fallbacks that swap in on demand and evict chat/coding.
   # swap:true → one at a time; exclusive:true → unloads the chat/coding groups.
+  # qwen3-vl-32b promoted to the `vision` group (co-resident judge).
   gpu-fallback:
     swap: true
     exclusive: true
@@ -33,7 +56,6 @@ groups:
     members:
       - gpt-oss-120b          # heavy reasoner (not used by Quack today)
       - qwen3.5-9b            # doc-pipeline workhorse (migrating into Quack)
-      - qwen3-vl-32b          # doc-pipeline OCR/vision (migrating into Quack)
       - selene                # promptfoo GPU judge (batched grading phase)
 
   # CPU-only eval judges (GPUs hidden) — never touch GPU VRAM, so exclusive:false
@@ -222,6 +244,47 @@ models:
       -c 32768
       --image-min-tokens 2048
       --image-max-tokens 8192
+      --port 9999
+
+  # Qwen3-Omni 30B-A3B — M4 media-reader: native image + audio + text in one model.
+  # Q4_K_M ~17.3 GB main GGUF + bf16 mmproj ~2.1 GB. MoE (3B active params) so it
+  # co-resides with gemma4-26b-a4b (~15 GB) comfortably in 64 GB.
+  # --reasoning-format deepseek + --reasoning-budget 512: same as qwen3.6-35b
+  # (Omni shares the Qwen3 thinking architecture). --no-mmap: 17+ GB, cold mmap
+  # serializes on page faults. --parallel 2: matches dag.max_active_nodes=2.
+  # Audio ROCm support: verify on first deploy — llama.cpp omni audio is recent.
+  # If audio fails to load, drop --mmproj-url and fall back to image-only until
+  # a confirmed ROCm build ships with audio support.
+  "qwen3-omni-30b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
+    cmd: >
+      /app/llama-server
+      -hf ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+      --mmproj-url https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/resolve/main/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
+      --jinja
+      --reasoning-format deepseek
+      --reasoning-budget 512
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
+      --min-p 0
+      --presence-penalty 1.5
+      --no-mmap
+      --split-mode layer
+      -fit off
+      -ngl 999
+      -c 32768
+      --image-min-tokens 2048
+      --image-max-tokens 8192
+      --parallel 2
+      -ub 2048
+      -b 2048
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      -fa on
       --port 9999
 
   # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric

@@ -37,6 +37,11 @@ DEFAULTS=(
   # on the MoE keeps the CPU-resident RSS (~16GB) inside the server's RAM budget.
   "https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF/blob/main/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/blob/main/gemma-4-12b-it-UD-Q6_K_XL.gguf"
+  # Qwen3-Omni 30B-A3B — M4 media-reader (image + audio via llama.cpp omni support).
+  # Q4_K_M main GGUF (~17.3 GB) + bf16 mmproj (~2.1 GB). Pre-fetch so the first
+  # llm-swap load of the `media` group doesn't stall on an HF download.
+  "https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/blob/main/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf"
+  "https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/blob/main/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf"
 )
 
 # Parse "<org>/<repo>/(blob|resolve)/<branch>/<file>" out of a HF URL and download
