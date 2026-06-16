@@ -392,7 +392,6 @@ models:
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
-      --no-mmproj
       --alias gemma4-26b-a4b
       --jinja
       --temp 0.3
