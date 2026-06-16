@@ -229,8 +229,8 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -hf ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
-      --mmproj-url https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/resolve/main/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
+      -m /root/.cache/huggingface/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+      --mmproj /root/.cache/huggingface/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
       --jinja
       --reasoning-format deepseek
       --reasoning-budget 512
