@@ -1,7 +1,7 @@
 FROM ghcr.io/ggml-org/llama.cpp:server-rocm
 
 ARG TARGETARCH=amd64
-ARG LS_VER=216
+ARG LS_VER=226
 
 WORKDIR /app
 

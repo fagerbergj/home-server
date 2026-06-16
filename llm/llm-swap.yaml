@@ -1,77 +1,48 @@
 healthCheckTimeout: 1200  # gpt-oss-120b + 256K KV cache for coder takes time to init
 logLevel: debug
 
-groups:
-  # GPU chat pair — Quack's worker + judge, CO-RESIDENT (swap:false) so neither
-  # swaps the other mid-request. ~40GB weights (qwen3.6 ~25GB + gemma ~15GB) + KV
-  # fits the 64GB box with room. exclusive:true so loading either evicts the coding
-  # / gpu-fallback groups — llama-swap does NOT track VRAM, eviction is rule-driven,
-  # so the big GPU groups MUST be mutually exclusive or they'd OOM each other.
-  # embed is persistent, so it survives the eviction.
-  chat:
-    swap: false
-    exclusive: true
-    persistent: false
-    members:
-      - qwen3.6-35b           # orchestrator + web-researcher worker
-      - gemma4-26b-a4b        # live Quack judge (moved off CPU → GPU; see below)
+matrix:
+  vars:
+    # Quack GPU workers
+    g:   "qwen3.6-35b"       # chat / web-researcher
+    q:   "qwen3-omni-30b"    # media-reader (image + audio)
+    v:   "qwen3-vl-32b"      # image-reader (dense OCR / handwriting)
+    c:   "qwen3-coder-next"  # coding — evicts everyone for full VRAM
+    # Live Quack judge (GPU)
+    j:   "gemma4-26b-a4b"
+    # Large GPU fallbacks
+    p:   "gpt-oss-120b"      # heavy reasoner
+    n9:  "qwen3.5-9b"        # doc-pipeline workhorse
+    sl:  "selene"            # promptfoo GPU judge
+    # Always-on
+    e:   "qwen3-embed"
+    # CPU-only eval judges (batch grading only)
+    g12: "gemma4-12b"
+    sm:  "selene-mini"
 
-  # GPU media group — Quack's media-reader (Qwen3-Omni: image + audio).
-  # gemma4-26b-a4b can only be in one group (llm-swap constraint), so it stays
-  # in chat. The judge swaps in after the worker finishes — brief reload, acceptable.
-  media:
-    swap: false
-    exclusive: true
-    persistent: false
-    members:
-      - qwen3-omni-30b        # media-reader: image + audio (M4 Phase 2+)
+  costs:
+    # j costs 50 to evict → solver prefers keeping the judge warm when switching
+    # between workers (g→q switches evict g at cost 1, not j at cost 50).
+    j:   50
+    # e, g12, sm are essentially persistent: embed is always needed, CPU judges
+    # never touch GPU VRAM so evicting them is never justified.
+    e:   9999
+    g12: 9999
+    sm:  9999
 
-  # GPU vision group — Quack's image-reader (Qwen3-VL: dense OCR / handwriting).
-  vision:
-    swap: false
-    exclusive: true
-    persistent: false
-    members:
-      - qwen3-vl-32b          # image-reader: OCR, handwriting, difficult images
-
-  # GPU coding group — evicts chat when you code, and chat evicts it back.
-  coding:
-    swap: false
-    exclusive: true
-    persistent: false
-    members:
-      - qwen3-coder-next
-
-  # Other big GPU models — fallbacks that swap in on demand and evict chat/coding.
-  # swap:true → one at a time; exclusive:true → unloads the chat/coding groups.
-  # qwen3-vl-32b promoted to the `vision` group (co-resident judge).
-  gpu-fallback:
-    swap: true
-    exclusive: true
-    persistent: false
-    members:
-      - gpt-oss-120b          # heavy reasoner (not used by Quack today)
-      - qwen3.5-9b            # doc-pipeline workhorse (migrating into Quack)
-      - selene                # promptfoo GPU judge (batched grading phase)
-
-  # CPU-only eval judges (GPUs hidden) — never touch GPU VRAM, so exclusive:false
-  # (they must NOT evict the GPU chat group). swap:true → one RAM-resident at a
-  # time. Eval-only now that gemma4-26b-a4b is the live judge on GPU.
-  cpu:
-    swap: true
-    exclusive: false
-    persistent: false
-    members:
-      - gemma4-12b
-      - selene-mini
-
-  # Stays loaded regardless of what any GPU group is doing.
-  embed:
-    swap: false
-    exclusive: false
-    persistent: true
-    members:
-      - qwen3-embed
+  sets:
+    # Each Quack worker co-resides with the judge.
+    # Solver mechanics: when switching g→q, [q,j] costs 1 (evict g) vs [q] which
+    # costs 51 (evict g+j). Solver picks [q,j] → j stays warm across switches.
+    # Only coding (set "c" alone) forces j out — no alternative set contains c+j.
+    workers:  "(g | q | v) & j"
+    coding:   "c"
+    # Large fallbacks one at a time; no judge (too big to co-reside).
+    fallback: "p | n9 | sl"
+    # Embed is effectively persistent via cost 9999.
+    embed:    "e"
+    # CPU-only eval judges — batch grading; cost 9999 means never evicted.
+    cpu:      "g12 | sm"
 
 models:
   # --no-mmap is critical for the 65GB+ models in this group: mmap'd reads
@@ -427,7 +398,6 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      --no-mmap
       --split-mode layer
       -fit off
       -ngl 999
