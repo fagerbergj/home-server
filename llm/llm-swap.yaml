@@ -246,7 +246,7 @@ models:
       -c 32768
       --image-min-tokens 2048
       --image-max-tokens 8192
-      --parallel 2
+      --parallel 1
       -ub 2048
       -b 2048
       --cache-type-k q8_0
