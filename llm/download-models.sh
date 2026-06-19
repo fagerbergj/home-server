@@ -28,7 +28,7 @@ DEFAULTS=(
   "https://huggingface.co/unsloth/Qwen3-Coder-Next-GGUF/blob/main/Qwen3-Coder-Next-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/blob/main/Qwen3.5-9B-UD-Q4_K_XL.gguf"
   "https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/blob/main/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf"
-  "https://huggingface.co/Qwen/Qwen3-Embedding-8B-GGUF/blob/main/Qwen3-Embedding-8B-Q8_0.gguf"
+  "https://huggingface.co/Qwen/Qwen3-Embedding-4B-GGUF/blob/main/Qwen3-Embedding-4B-Q8_0.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF/blob/main/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf"
   "https://huggingface.co/mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF/blob/main/Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf"
   # Judge candidates under eval vs selene-mini (see promptfoo `judge` suite). The
