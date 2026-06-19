@@ -293,10 +293,12 @@ models:
 
   # CPU-only (-ngl 0): 4B (downgraded from 8B 2026-06 — 8B Q8 on CPU was slow,
   # up to minutes per embed under load). 4B Q8 (~4 GB) is materially faster and
-  # plenty for memory recall. -t 24 uses the box's cores like the other CPU
-  # models. NOTE: 4B emits 2560-dim vectors (8B was 4096) — drop the existing
-  # Qdrant memory collections so Quack recreates them at the new dimension
-  # (it sizes a collection only on first creation).
+  # plenty for memory recall. -t 8 (not 24): the all-core burst drove the die to
+  # Tjmax (92-101°C observed in Prometheus) and thermal-throttled mid-embed, so
+  # the same input ran 119ms cool vs ~6s hot; fewer threads = smaller thermal
+  # spike + more consistent latency on this cooling-limited box. NOTE: 4B emits
+  # 2560-dim vectors (8B was 4096) — drop the existing Qdrant memory collections
+  # so Quack recreates them at the new dimension (it sizes one only on creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     ttl: 600
@@ -312,7 +314,7 @@ models:
       --embedding
       --pooling last
       -ngl 0
-      -t 24
+      -t 8
       -ub 2048
       -b 2048
       --port 9998
