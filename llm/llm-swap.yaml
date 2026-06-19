@@ -291,8 +291,12 @@ models:
       --parallel 1
       --port 9999
 
-  # CPU-only (-ngl 0): 8B model is fast on CPU anyway, frees ~1.8 GB VRAM
-  # and avoids any GPU contention with the main group's chat/coder models.
+  # CPU-only (-ngl 0): 4B (downgraded from 8B 2026-06 — 8B Q8 on CPU was slow,
+  # up to minutes per embed under load). 4B Q8 (~4 GB) is materially faster and
+  # plenty for memory recall. -t 24 uses the box's cores like the other CPU
+  # models. NOTE: 4B emits 2560-dim vectors (8B was 4096) — drop the existing
+  # Qdrant memory collections so Quack recreates them at the new dimension
+  # (it sizes a collection only on first creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     ttl: 600
@@ -304,10 +308,11 @@ models:
       - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
-      -hf Qwen/Qwen3-Embedding-8B-GGUF:Q8_0
+      -hf Qwen/Qwen3-Embedding-4B-GGUF:Q8_0
       --embedding
       --pooling last
       -ngl 0
+      -t 24
       -ub 2048
       -b 2048
       --port 9998
