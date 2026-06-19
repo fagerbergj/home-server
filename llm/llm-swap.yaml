@@ -24,22 +24,30 @@ matrix:
     # j costs 50 to evict → solver prefers keeping the judge warm when switching
     # between workers (g→q switches evict g at cost 1, not j at cost 50).
     j:   50
-    # e, g12, sm are essentially persistent: embed is always needed, CPU judges
-    # never touch GPU VRAM so evicting them is never justified.
+    # e, g12, sm never touch GPU VRAM so evicting them is never justified. e is
+    # also pinned into every GPU set (see `sets`) so it stays co-resident — this
+    # cost just makes the solver prefer keeping it when a pick has a choice.
     e:   9999
     g12: 9999
     sm:  9999
 
   sets:
-    # Each Quack worker co-resides with the judge.
-    # Solver mechanics: when switching g→q, [q,j] costs 1 (evict g) vs [q] which
-    # costs 51 (evict g+j). Solver picks [q,j] → j stays warm across switches.
-    # Only coding (set "c" alone) forces j out — no alternative set contains c+j.
-    workers:  "(g | q | v) & j"
-    coding:   "c"
-    # Large fallbacks one at a time; no judge (too big to co-reside).
-    fallback: "p | n9 | sl"
-    # Embed is effectively persistent via cost 9999.
+    # Each Quack worker co-resides with the judge AND the CPU embedder (e).
+    # e is CPU-only (no VRAM), but the solver evicts any model NOT in the chosen
+    # set's target — so without `& e` here an embed request (M6 runs one on most
+    # turns via preload_memory recall) selects set "embed"=[e] and evicts the GPU
+    # worker, which then reloads on the next chat: a ~1-2min swap each way. Pinning
+    # e into every GPU set makes {worker, judge, embed} a valid loaded state, so an
+    # embed request is satisfied by the already-loaded set (no swap). cost 9999
+    # alone can't do this: it stops OTHER picks from evicting e, but if no set
+    # CONTAINS both, e must be evicted to load the workers.
+    # Solver mechanics for the GPU pair: switching g→q, [q,j,e] costs 1 (evict g)
+    # vs [q] which costs more (evict g+j); solver keeps j+e warm across switches.
+    workers:  "(g | q | v) & j & e"
+    coding:   "c & e"
+    # Large fallbacks one at a time; no judge (too big to co-reside), embed kept.
+    fallback: "(p | n9 | sl) & e"
+    # Pure-embed request when no GPU worker is loaded → just e.
     embed:    "e"
     # CPU-only eval judges — batch grading; cost 9999 means never evicted.
     cpu:      "g12 | sm"
