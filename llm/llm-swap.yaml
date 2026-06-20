@@ -24,17 +24,17 @@ matrix:
     # j costs 50 to evict → solver prefers keeping the judge warm when switching
     # between workers (g→q switches evict g at cost 1, not j at cost 50).
     j:   50
-    # e, g12, sm never touch GPU VRAM so evicting them is never justified. e is
-    # also pinned into every GPU set (see `sets`) so it stays co-resident — this
-    # cost just makes the solver prefer keeping it when a pick has a choice.
+    # e is GPU-resident now (~4 GB) and hit on most turns via preload_memory recall,
+    # so it's never worth evicting; pinned into every GPU set (see `sets`) too. g12,
+    # sm are CPU-only batch judges — evicting them buys no VRAM either.
     e:   9999
     g12: 9999
     sm:  9999
 
   sets:
-    # Each Quack worker co-resides with the judge AND the CPU embedder (e).
-    # e is CPU-only (no VRAM), but the solver evicts any model NOT in the chosen
-    # set's target — so without `& e` here an embed request (M6 runs one on most
+    # Each Quack worker co-resides with the judge AND the embedder (e, now GPU,
+    # ~4 GB). The solver evicts any model NOT in the chosen set's target — so
+    # without `& e` here an embed request (M6 runs one on most
     # turns via preload_memory recall) selects set "embed"=[e] and evicts the GPU
     # worker, which then reloads on the next chat: a ~1-2min swap each way. Pinning
     # e into every GPU set makes {worker, judge, embed} a valid loaded state, so an
@@ -291,30 +291,29 @@ models:
       --parallel 1
       --port 9999
 
-  # CPU-only (-ngl 0): 4B (downgraded from 8B 2026-06 — 8B Q8 on CPU was slow,
-  # up to minutes per embed under load). 4B Q8 (~4 GB) is materially faster and
-  # plenty for memory recall. -t 8 (not 24): the all-core burst drove the die to
-  # Tjmax (92-101°C observed in Prometheus) and thermal-throttled mid-embed, so
-  # the same input ran 119ms cool vs ~6s hot; fewer threads = smaller thermal
-  # spike + more consistent latency on this cooling-limited box. NOTE: 4B emits
-  # 2560-dim vectors (8B was 4096) — drop the existing Qdrant memory collections
-  # so Quack recreates them at the new dimension (it sizes one only on creation).
+  # GPU-resident (was CPU-only -ngl 0). The CPU embed WAS the thermal problem:
+  # bursty all-core embeds drove the die to Tjmax (92-101°C in Prometheus) and
+  # throttled mid-embed (119ms cool vs ~6s hot). On GPU it's sub-second and the
+  # die never spikes. 4B Q8 (~4 GB weights) + --embedding is encode-only (no
+  # growing KV), so it fits in the workers set's headroom alongside qwen3.6 +
+  # gemma. Did NOT -ncmoe the workers to make room: qwen3.6 is A3B — the experts
+  # are most of the weight and route per-token, so CPU expert offload is a
+  # sustained every-token load, thermally worse than the bursty embed it'd free.
+  # If the workers set OOMs on first load, trim a KV window (e.g. gemma -c) — keep
+  # compute on GPU, never offload experts. NOTE: 4B emits 2560-dim vectors (8B was
+  # 4096) — drop existing Qdrant collections so Quack recreates them at the new dim.
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     ttl: 600
-    # CPU-only (-ngl 0) but the ROCm build still init'd a HIP context holding
-    # ~1.8 GB on GPU0 — enough to push gpt-oss-120b's KV alloc over the VRAM
-    # cliff. Hide the GPUs from this process so it's truly RAM-only.
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -hf Qwen/Qwen3-Embedding-4B-GGUF:Q8_0
       --embedding
       --pooling last
-      -ngl 0
-      -t 8
+      --split-mode layer
+      -ngl 999
       -ub 2048
       -b 2048
       --port 9998
