@@ -390,11 +390,9 @@ models:
   # 10-16K-token rubric prompt is far faster than CPU. ~15 GB Q4 weights fit
   # alongside qwen3.6 in the 64GB box. --no-mmap + --split-mode layer like the other
   # large GPU models (layer-split avoids the AllReduce path on the contended 2nd
-  # GPU; -fa + q8 KV halves the cache). --parallel 2 with -c 65536 = 32K tokens/slot:
+  # GPU; -fa + q8 KV halves the cache). --parallel 2 with -c 49152 = ~24K tokens/slot:
   # Quack G-Eval prompts run 10-16K plus a ~2K verdict, so each of the 2 concurrent
-  # slots (matches dag.max_active_nodes=2) needs ~18K+ — 32K is safe. Sized DOWN from
-  # 128K to free ~VRAM for the now-GPU-resident embed in the workers set (the judge
-  # never needs 128K — its prompt is bounded by the rubric + one answer).
+  # slots (matches dag.max_active_nodes=2) needs ~18K+ — 24K is safe.
   # To revert to CPU: restore the HIP/ROCR-hide env, -ngl 0, -t 24, drop --no-mmap/
   # --split-mode/-fit/-fa/cache-type, set -c 81920 --parallel 4.
   # Sampling: gemma-4's model card prescribes top_p 0.95 / top_k 64 as the
@@ -417,7 +415,7 @@ models:
       -fit off
       -ngl 999
       -fa on
-      -c 65536
+      -c 131072
       -ub 2048
       -b 2048
       --parallel 2
