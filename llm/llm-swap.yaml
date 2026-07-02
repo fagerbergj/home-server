@@ -108,7 +108,15 @@ models:
   # answer AND tool calls stay in content where they parse (--reasoning-format auto
   # mis-routed qwen3.6's qwen3_coder tool-call XML, gh#20809 — do NOT use auto here).
   # --reasoning-budget 512: bound thinking so it can't run past max_tokens before
-  # emitting an answer (tunable UP if it needs more room to conclude/stop).
+  # emitting an answer. Kept at the self-regulation sweet spot — do NOT tune it to
+  # chase empty nodes. Empties were Qwen writing tool calls (and sometimes the whole
+  # answer) inside an unclosed <think>, so deepseek filed them under reasoning_content
+  # and content came back empty (llama.cpp#22684, closed not-planned). No budget value
+  # fixes both: bump it and answers get trapped in reasoning; drop it and researchers
+  # run away (688 tool calls). Quack's OpenAI adapter now RECOVERS the misclassification
+  # client-side — parses <tool_call> XML out of reasoning_content into real tool calls,
+  # and promotes a reasoning-only turn to the answer — so 512 is free to stay tuned for
+  # reasoning quality, not empties.
   # Any leak into content is scrubbed by Quack's StripThinking + clean_output judge
   # criterion; runaway over-fetching is backstopped by a hard tool-call cap in the
   # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
