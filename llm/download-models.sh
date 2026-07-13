@@ -25,7 +25,6 @@ DEFAULTS=(
   unsloth/gemma-4-12b-it-GGUF gemma-4-12b-it-UD-Q6_K_XL.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
-  deepreinforce-ai/Ornith-1.0-35B-GGUF ornith-1.0-35b-Q5_K_M.gguf
 )
 
 args=("$@")
