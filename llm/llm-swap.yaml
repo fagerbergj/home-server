@@ -270,6 +270,40 @@ models:
       -fa on
       --port 9999
 
+  # Candidate coding model — Qwen35MoE (35B total / ~3B active), 262K native
+  # context, RL'd specifically for agentic coding (tool-call scaffolding, not
+  # just code). Reasoning model (opens with <think>), same family shape as
+  # qwen3.6-35b/qwen3-coder-next. NOT wired into the `c` matrix var — eval
+  # against qwen3-coder-next first (see feedback: no premature "locked").
+  # --reasoning-format/--reasoning-budget: same rationale as qwen3.6-35b.
+  # --no-mmap: ~24.7 GB Q5_K_M. cache-type q8_0: UNVERIFIED — confirm this
+  # arch isn't hybrid-recurrent (coder-next's DeltaNet rejects KV quant).
+  "ornith-1.0-35b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
+    cmd: >
+      /app/llama-server
+      -hf deepreinforce-ai/Ornith-1.0-35B-GGUF:Q5_K_M
+      --jinja
+      --reasoning-format deepseek
+      --reasoning-budget 512
+      --temp 0.6
+      --top-p 0.95
+      --top-k 20
+      --no-mmap
+      --split-mode layer
+      -fit off
+      -ngl 999
+      -c 131072
+      --parallel 1
+      -ub 2048
+      -b 2048
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9999
+
   # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric
   # scoring). As a >30GB model it needs --no-mmap + tensor split (KV quant is
   # incompatible with tensor split, so KV stays fp16). Grading runs after
