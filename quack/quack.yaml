@@ -337,5 +337,9 @@ extensions:
     private_key_path: /run/secrets/quack-app.pem      # mounted from QUACK_GITHUB_APP_PRIVATE_KEY_PATH
     webhook_secret: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
     mention: "@quack"
-    triggers: [mention, pr_opened, label]             # @quack, auto-review on PR open, and on the label
-    auto_review_label: quack-auto-review
+    triggers: [mention, pr_opened, label, issue_plan, issue_implement, merge]  # full label-driven workflow
+    labels:
+      plan: "quack:plan"            # label an issue → quack posts an implementation plan
+      implement: "quack:implement"  # label an issue → quack implements the plan, opens a PR
+      review: "quack:review"        # label a PR → quack reviews it once (replaces auto_review_label)
+      merge: "quack:merge"          # label a PR → deterministic merge IF quack's latest review APPROVED
