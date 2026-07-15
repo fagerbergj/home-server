@@ -99,9 +99,16 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |
+| quack | `quack.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
 | rmfakecloud | `remarkable.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3005` | Yes | `*.jasonfagerberg.duckdns.org` |
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
+
+> **quack** routes through **Traefik** (like API Gateway / Authentik — forward to `:8090`), not a direct
+> container port. Traefik then splits it: `POST /api/v1/github/webhook` is **public** (GitHub delivers
+> there, HMAC-signed), while the UI + rest of the API sit behind **Authentik**. The GitHub App's webhook
+> URL must point at `https://quack.jasonfagerberg.duckdns.org/api/v1/github/webhook`, so this host must
+> stay public + Force-SSL (GitHub only delivers over HTTPS).
 
 > Grafana, Uptime Kuma, and the LLM API used to live here. They were moved to tailnet-only access in Phase 7 — pure admin surfaces, no off-tailnet device needs them.
 

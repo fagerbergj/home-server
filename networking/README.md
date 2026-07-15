@@ -18,6 +18,7 @@ Internet
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
     │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
+    │                      ──► quack.jasonfagerberg.duckdns.org       ──► Traefik        (8090) ──► quack (webhook public / UI via Authentik)
     │                      ──► remarkable.jasonfagerberg.duckdns.org  ──► rmfakecloud     (3005)
     │
     └── :25565 ──────────────────────────────────────────────────► Minecraft      (25565)
@@ -55,6 +56,7 @@ Reachable from anywhere on the internet via NPM.
 | Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 | Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Plex | `https://plex.jasonfagerberg.duckdns.org` |
+| quack | `https://quack.jasonfagerberg.duckdns.org` (UI via Authentik; `…/api/v1/github/webhook` public for the GitHub App) |
 | rmfakecloud | `https://remarkable.jasonfagerberg.duckdns.org` |
 
 ## Tailnet URLs
