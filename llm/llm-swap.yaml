@@ -44,7 +44,13 @@ matrix:
     # Solver mechanics for the GPU pair: switching g→q, [q,j,e] costs 1 (evict g)
     # vs [q] which costs more (evict g+j); solver keeps j+e warm across switches.
     workers:  "(g | q | v) & j & e"
-    coding:   "c & e"
+    # The coder co-resides with the judge too: a code REVIEW runs the reviewer (c)
+    # and the gate judge (j) in a tight loop, so without j here they thrashed (c
+    # evicted j every verdict, then reloaded its 256K KV — minutes each way). j's
+    # experts are offloaded to CPU (-ncmoe below) so its GPU footprint fits beside
+    # the ~55GB coder. j stays warm across the plan(g)→review(c) switch (both sets
+    # hold j & e), so a review takes ONE swap, not one per judge round.
+    coding:   "c & j & e"
     # Large fallbacks one at a time; no judge (too big to co-reside), embed kept.
     fallback: "(p | n9 | sl) & e"
     # Pure-embed request when no GPU worker is loaded → just e.
@@ -393,11 +399,16 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active. MOVED OFF CPU → GPU (was -ngl 0, GPUs hidden) so it
-  # co-resides with qwen3.6 in the `chat` group: the judge is on Quack's critical
-  # path (the gate blocks the answer until the verdict), and GPU decode on the
-  # 10-16K-token rubric prompt is far faster than CPU. ~15 GB Q4 weights fit
-  # alongside qwen3.6 in the 64GB box. --no-mmap + --split-mode layer like the other
+  # 26B-A4B MoE — 4B active. Attention/shared on GPU (-ngl 999), but the EXPERTS are
+  # offloaded to CPU (-ncmoe 99, -t 24): a code review runs the ~55GB coder AND the
+  # judge in a tight loop, and full-GPU gemma (~15GB) + coder blows the 64GB box, so
+  # they thrashed. Experts-on-CPU shrinks gemma's GPU footprint to a few GB (KV + a
+  # small dense part) so it co-resides in BOTH the `workers` (with qwen3.6) and
+  # `coding` (with the coder) sets. 4B active on 24 CPU threads keeps the judge — on
+  # Quack's critical path — acceptably fast on the 10-16K rubric prompt; -c 65536
+  # (~32K/slot × 2) trims KV for margin. Full-GPU was faster but couldn't co-reside
+  # with the coder. To revert to CPU-only: -ngl 0, drop --no-mmap/--split-mode/-fit/
+  # -fa/cache-type, -c 81920 --parallel 4. --no-mmap + --split-mode layer like the other
   # large GPU models (layer-split avoids the AllReduce path on the contended 2nd
   # GPU; -fa + q8 KV halves the cache). --parallel 2 with -c 49152 = ~24K tokens/slot:
   # Quack G-Eval prompts run 10-16K plus a ~2K verdict, so each of the 2 concurrent
@@ -423,8 +434,10 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
+      -ncmoe 99
+      -t 24
       -fa on
-      -c 131072
+      -c 65536
       -ub 2048
       -b 2048
       --parallel 2
