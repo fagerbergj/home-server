@@ -56,7 +56,7 @@ agents:
     provider: default
     memory_role: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 65536       # qwen3.6-35b served -c 131072 --parallel 2 ⇒ 65536/slot (one node = one slot)
+    context_window: 163840       # qwen3.6-35b served -c 327680 --parallel 2 ⇒ 163840/slot (one node = one slot)
     judge_rounds: 1             # research converges in one draft; extra rounds burn tokens re-fetching to fix citations. Draft must cite inline (see prompt.md).
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_user, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
@@ -65,7 +65,7 @@ agents:
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # falls back to QUACK_RESEARCHER_MODEL if unset (internal/config's expandEnv)
-    context_window: 65536
+    context_window: 262144            # coder served -c 262144 --parallel 1 ⇒ full 256K/node
     judge_rounds: 8             # coding needs iterate-until-tests-pass; the judge+revise grind is where quack converges on correct code (tunable)
     # run_code = CODE MODE (internal/tools/run_code.go): the model writes a JS program and the
     # tools above are its API, so one turn can read five files, grep and write a patch without any
@@ -85,7 +85,7 @@ agents:
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # reviews code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
-    context_window: 65536
+    context_window: 262144            # coder served -c 262144 --parallel 1 ⇒ full 256K/node
     judge_rounds: 1             # gemma judge is CPU-only (~5min/verdict); one round bounds a review to a single verdict. Raise if judge lives on GPU again.
     # READ-ONLY: reviews code, never modifies it — no write_file/edit_file/git_commit/git_push/delete_path/run_command.
     # load_skill/list_skills are auto-registered on every agent (see internal/serve/serve.go), so they're not listed here.
@@ -100,8 +100,8 @@ agents:
     bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
-    model: ${QUACK_CODER_MODEL}       # reads code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
-    context_window: 65536
+    model: ${QUACK_RESEARCHER_MODEL}  # 35b: exploration is reasoning-over-code (research), not code-writing — implementer/reviewer keep the coder
+    context_window: 163840            # 35b served -c 327680 --parallel 2 ⇒ 163840/slot
     judge_rounds: 2             # exploration is largely one-pass; 2 rounds closes a gate gap
     # READ-ONLY: understands a repo, never changes it — NO write/edit/commit/push/delete/run_command.
     # No web_search/web_fetch: its sources are the FILES it reads (cited <repo>@<path>), not web pages — so
@@ -117,7 +117,7 @@ agents:
     bundle: agents/synthesizer
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 65536       # same model as web-researcher
+    context_window: 163840       # same model as web-researcher
     judge_rounds: 1             # just combines already-vetted upstream node outputs; re-revising is low value
     tools: []
   media-reader:

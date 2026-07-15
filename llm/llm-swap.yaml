@@ -128,9 +128,10 @@ models:
   # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
   # / top-k 20 / min-p 0 / presence 1.5).
   # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
-  # --parallel 2 + -c 262144: 2 concurrent nodes (matches Quack's dag.max_active_nodes
-  # =2), KV split into 2× 131072 slots. Full 256K context — the judge is CPU-only now,
-  # so it no longer competes for this GPU's VRAM (the 35b runs alone here, ~38GB free).
+  # -c 327680 --parallel 2 = 2 KV slots of 160K (~25GB weights + ~33GB q8 KV ≈ 58GB, runs
+  # alone — the judge is CPU-only, so it no longer competes for this GPU). Two concurrent
+  # nodes (dag.max_active_nodes=2) each get 160K. 2×256K would need ~52GB KV (~77GB, OOM);
+  # 160K/slot is the largest that leaves a 2nd slot AND full-precision q8 KV.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -152,7 +153,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 262144
+      -c 327680
       --parallel 2
       -ub 2048
       -b 2048
@@ -166,6 +167,10 @@ models:
   # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40. --no-mmap (>30 GB).
   # NEW arch — VERIFY it loads on this image (Qwen3-Next/DeltaNet support is recent);
   # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
+  # -c 262144 --parallel 1 = one 256K KV slot (~40GB weights + ~17GB q8 KV ≈ 57GB, runs
+  # alone; gemma is CPU-only). One review/implement node gets the FULL 256K. A 2nd
+  # concurrent node (dag.max_active_nodes=2) waits for the slot rather than halving the
+  # context — depth over throughput. 2×256K would need -c 524288 (~34GB KV → ~74GB, OOM).
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -183,6 +188,7 @@ models:
       -fit off
       -ngl 999
       -c 262144
+      --parallel 1
       -ub 2048
       -b 2048
       --cache-type-k q8_0
@@ -429,6 +435,6 @@ models:
       -c 81920
       -ub 2048
       -b 2048
-      --parallel 4
+      --parallel 2
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
