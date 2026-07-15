@@ -128,13 +128,12 @@ models:
   # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
   # / top-k 20 / min-p 0 / presence 1.5).
   # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
-  # -c 262144 --parallel 2 = 2 KV slots of 128K, AND -ncmoe 12 offloads 12 layers' expert
-  # FFN to CPU. Together these shrink the GPU footprint (~25GB weights - ~5GB offloaded +
-  # ~30GB q8 KV ≈ 50GB) enough to CO-RESIDE the full-GPU gemma judge (~15GB) in the
-  # `workers` set — so orchestration/research judging never swaps. The 35b is off the tight
-  # judge loop, so 12 experts-on-CPU is a tolerable decode slowdown. Keeps the floor: 2
-  # concurrent nodes (dag.max_active_nodes=2), 128K each. (Raise -ncmoe if it OOMs beside
-  # gemma; lower it for a faster 35b if VRAM has room.)
+  # -c 262144 --parallel 2 = 2 KV slots of 128K. The context cut (from 320K) already frees
+  # most of the room; -ncmoe 4 offloads just 4 layers' expert FFN to CPU for a safety
+  # margin. Together ~34GB, so the full-GPU gemma judge (~15GB) CO-RESIDES in the `workers`
+  # set (~49GB, ample headroom) — orchestration/research judging never swaps. Keeps the
+  # floor: 2 concurrent nodes (dag.max_active_nodes=2), 128K each. (Raise -ncmoe if it OOMs
+  # beside gemma; -ncmoe 0 likely still fits if you want the 35b at full GPU speed.)
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -156,7 +155,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 12
+      -ncmoe 4
       -c 262144
       --parallel 2
       -ub 2048
