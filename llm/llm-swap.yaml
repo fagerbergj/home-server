@@ -399,30 +399,25 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active. Attention/shared on GPU (-ngl 999), but the EXPERTS are
-  # offloaded to CPU (-ncmoe 99, -t 24): a code review runs the ~55GB coder AND the
-  # judge in a tight loop, and full-GPU gemma (~15GB) + coder blows the 64GB box, so
-  # they thrashed. Experts-on-CPU shrinks gemma's GPU footprint to a few GB (KV + a
-  # small dense part) so it co-resides in BOTH the `workers` (with qwen3.6) and
-  # `coding` (with the coder) sets. 4B active on 24 CPU threads keeps the judge — on
-  # Quack's critical path — acceptably fast on the 10-16K rubric prompt; -c 65536
-  # (~32K/slot × 2) trims KV for margin. Full-GPU was faster but couldn't co-reside
-  # with the coder. To revert to CPU-only: -ngl 0, drop --no-mmap/--split-mode/-fit/
-  # -fa/cache-type, -c 81920 --parallel 4. --no-mmap + --split-mode layer like the other
-  # large GPU models (layer-split avoids the AllReduce path on the contended 2nd
-  # GPU; -fa + q8 KV halves the cache). --parallel 2 with -c 49152 = ~24K tokens/slot:
-  # Quack G-Eval prompts run 10-16K plus a ~2K verdict, so each of the 2 concurrent
-  # slots (matches dag.max_active_nodes=2) needs ~18K+ — 24K is safe.
-  # To revert to CPU: restore the HIP/ROCR-hide env, -ngl 0, -t 24, drop --no-mmap/
-  # --split-mode/-fit/-fa/cache-type, set -c 81920 --parallel 4.
-  # Sampling: gemma-4's model card prescribes top_p 0.95 / top_k 64 as the
-  # "standardized config across all use cases"; temp held LOW (0.3) so verdicts
-  # stay near-deterministic. (Raise toward the card's 1.0 only if grading looks off.)
+  # 26B-A4B MoE — 4B active. FULL CPU (-ngl 0, GPUs hidden). The coder is ~55GB —
+  # nearly the whole 63.7GB box — so even a few-GB GPU gemma OOMs at load beside it
+  # (verified: -ncmoe 99 core-dumped in graph_reserve). CPU-only uses ZERO VRAM, so
+  # gemma is ALWAYS co-resident with any GPU worker: both the `workers` (qwen3.6) and
+  # `coding` (coder) sets include j, so a code review never swaps the judge out — the
+  # thrash (coder evicting the judge every verdict, then reloading its 256K KV) is
+  # gone. Cost: CPU decode is slower than GPU, but 4B active on 24 threads handles the
+  # 10-16K G-Eval rubric acceptably, and it's off the critical swap path. GPUs hidden
+  # (HIP/ROCR) so the ROCm build holds no HIP context (same as the embed model).
+  # -c 81920 --parallel 4 = ~20K tokens/slot (gate prompts 10-16K + ~2K verdict fit).
+  # Was GPU (-ngl 999) when it only co-resided with the 25GB qwen3.6; the 55GB coder
+  # forced it to CPU. Sampling per gemma-4's card (top_p 0.95 / top_k 64), temp 0.3
+  # for near-deterministic verdicts.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
     env:
-      - "GPU_MAX_HW_QUEUES=1"
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
@@ -431,17 +426,11 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -ncmoe 99
+      -ngl 0
       -t 24
-      -fa on
-      -c 65536
+      -c 81920
       -ub 2048
       -b 2048
-      --parallel 2
-      --cache-type-k q8_0
-      --cache-type-v q8_0
+      --parallel 4
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
