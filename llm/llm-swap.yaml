@@ -128,9 +128,9 @@ models:
   # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
   # / top-k 20 / min-p 0 / presence 1.5).
   # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
-  # --parallel 2 + -c 131072: 2 concurrent nodes (matches Quack's dag.max_active_nodes
-  # =2), KV split into 2× 65536 slots. Context halved from 262144 to leave VRAM for
-  # the co-resident gemma judge.
+  # --parallel 2 + -c 262144: 2 concurrent nodes (matches Quack's dag.max_active_nodes
+  # =2), KV split into 2× 131072 slots. Full 256K context — the judge is CPU-only now,
+  # so it no longer competes for this GPU's VRAM (the 35b runs alone here, ~38GB free).
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -152,7 +152,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 131072
+      -c 262144
       --parallel 2
       -ub 2048
       -b 2048

@@ -21,13 +21,12 @@ services:
       # LLM (llm-swap on the llm_default network). Empty key — llm-swap doesn't auth.
       QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
       QUACK_LLM_API_KEY: ""
-      # All GPU roles run the coder so orchestrator + reviewer co-reside (one 55GB
-      # GPU model), and gemma judge/compaction is CPU-only (0 VRAM) — so a review
-      # never swaps models. 35b-as-orch OOM'd the box beside the coder (25+55>64) and
-      # thrashed. Revert orch/researcher to qwen3.6-35b only if you drop to a smaller
-      # coder that leaves room for the 35b to co-reside.
-      QUACK_ORCH_MODEL: qwen3-coder-next
-      QUACK_RESEARCHER_MODEL: qwen3-coder-next
+      # Orchestrator/researcher on the 35b (strong conversational intent + planning;
+      # coder-as-orch posted "please clarify" menus instead of reviewing). It doesn't
+      # co-reside with the 48GB coder, so a review costs ONE 35b->coder swap — fine now
+      # that gemma is CPU-only and never swaps. The 35b runs at full 256K context.
+      QUACK_ORCH_MODEL: qwen3.6-35b
+      QUACK_RESEARCHER_MODEL: qwen3.6-35b
       QUACK_CODER_MODEL: qwen3-coder-next
       QUACK_JUDGE_MODEL: gemma4-26b-a4b
       QUACK_IMAGE_MODEL: qwen3-vl-32b
