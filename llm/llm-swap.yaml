@@ -406,7 +406,8 @@ models:
   # and a review never swaps the judge out. Cost: CPU decode is ~3-5 min per call, so
   # gemma is the JUDGE ONLY — compaction was moved to the coder (fast, GPU, same set) and
   # reviewer judge_rounds cut to 1, bounding a review to a single ~5-min verdict. 4B
-  # active on 24 threads handles the 10-16K G-Eval rubric. GPUs hidden (HIP/ROCR) so the
+  # active on 16 threads (= physical cores; Zen1 SMT adds nothing to compute-bound
+  # prefill) handles the 10-16K G-Eval rubric. GPUs hidden (HIP/ROCR) so the
   # ROCm build holds no HIP context (same as the embed model). Sampling per gemma-4's
   # card (top_p 0.95 / top_k 64), temp 0.3 for near-deterministic verdicts.
   "gemma4-26b-a4b":
@@ -424,7 +425,7 @@ models:
       --top-p 0.95
       --top-k 64
       -ngl 0
-      -t 24
+      -t 16
       -c 81920
       -ub 2048
       -b 2048
