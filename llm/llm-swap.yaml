@@ -182,7 +182,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 131072
+      -c 65536
       -ub 2048
       -b 2048
       --cache-type-k q8_0
@@ -400,8 +400,9 @@ models:
       --port 9995
 
   # 26B-A4B MoE — 4B active, full GPU (-ngl 999, ~15GB). Co-resides with the coder in
-  # the `coding` set (c & j & e): the coder's context was halved to 128K, freeing ~13GB
-  # so a full-GPU gemma fits beside it (~42GB coder + ~15GB gemma < 63.7GB). This is the
+  # the `coding` set (c & j & e): the coder's context was cut to 64K (~35GB), leaving
+  # ~28GB so a full-GPU gemma loads reliably beside it, load-time peak included (at 128K
+  # the peak OOM'd gemma on reload). ~35GB coder + ~15GB gemma < 63.7GB. This is the
   # judge AND the compaction summariser, both on Quack's critical path — CPU gemma made
   # each verdict/compaction 3-5 min (measured), which stalled reviews; on GPU it's
   # seconds. --split-mode layer keeps it off the contended-2nd-GPU AllReduce path; -fa +
@@ -427,7 +428,7 @@ models:
       -fit off
       -ngl 999
       -fa on
-      -c 49152
+      -c 65536
       -ub 2048
       -b 2048
       --parallel 2
