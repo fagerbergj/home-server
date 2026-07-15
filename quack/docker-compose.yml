@@ -46,6 +46,8 @@ services:
     depends_on:
       quack-postgres:
         condition: service_healthy
+      quack-init:
+        condition: service_completed_successfully
     networks:
       - default
       - api_gateway
@@ -64,6 +66,16 @@ services:
       - "traefik.http.routers.quack.service=quack"
       - "traefik.http.routers.quack.middlewares=authentik@file"
     restart: unless-stopped
+
+  # One-shot: a freshly-created named volume is root-owned, but quack runs as the
+  # distroless nonroot uid 65532 and must write its clones/jail under /workspace.
+  # chown it before quack starts. Idempotent; exits immediately on subsequent runs.
+  quack-init:
+    image: alpine
+    command: ["chown", "-R", "65532:65532", "/workspace"]
+    volumes:
+      - quack-workspace:/workspace
+    restart: "no"
 
   quack-postgres:
     image: postgres:17-alpine
