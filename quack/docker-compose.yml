@@ -1,14 +1,16 @@
 # quack — GitHub PR-review bot (github.com/fagerbergj/quack).
-# Built from source at ~/workspace/agent-researcher (clone it there first).
+# Pulls the CI-published image from GHCR (quack's cd.yaml pushes on a version tag:
+# `git tag v0.1.0 && git push origin v0.1.0` → :latest moves). Watchtower watches
+# this container (it's NOT in updater/'s WATCHTOWER_DISABLE list) and auto-updates
+# it when a new release moves :latest. The GHCR package must be PUBLIC to pull
+# without credentials.
 # Ingress: NPM (TLS) → Traefik `api` entrypoint (:8090) → this container on
 # api_gateway. The /api/v1/github/webhook path is PUBLIC (GitHub HMAC-verifies);
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    build:
-      context: ~/workspace/agent-researcher
-      dockerfile: Dockerfile
+    image: ghcr.io/fagerbergj/quack:latest
     container_name: quack
     command: ["server", "run"]
     env_file:

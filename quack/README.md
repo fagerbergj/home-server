@@ -1,56 +1,74 @@
 # quack — GitHub PR-review bot
 
-[quack](https://github.com/fagerbergj/quack) reviews GitHub pull requests: mention
-`@quack` on a PR, open a PR (auto-review), or apply the `quack-auto-review` label,
-and it clones the repo, reads the diff, and posts an inline review.
+[quack](https://github.com/fagerbergj/quack) reviews GitHub pull requests. Trigger it three
+ways (configurable — `triggers` in `quack.yaml`):
+- **`@quack`** in a PR comment (e.g. `@quack review this PR`),
+- **PR opened** (auto-review), or
+- the **`quack-auto-review`** label applied.
 
-Built from source; reuses `llm-swap` + `qdrant` (from `../llm/`) and brings its own
-Postgres. Ingress: **NPM → Traefik (`api` entrypoint) → quack** on `api_gateway`.
-The `/api/v1/github/webhook` path is **public** (GitHub HMAC-signs it); the UI + rest
-of the API are behind **Authentik**.
+It clones the repo, checks out the PR head, reads the diff, and posts an inline GitHub review
+(findings + a verdict). Follow-up questions on the PR are answered conversationally from the
+same durable session.
 
-## Deploy (on the server)
+> **To deploy, run [`./setup.sh`](./setup.sh) on the server** — it walks through the whole
+> process. This README explains what the service is and how it's wired.
 
-1. **Clone the build source** (the compose builds from it):
-   ```bash
-   git clone https://github.com/fagerbergj/quack ~/workspace/agent-researcher
-   ```
-2. **Place the GitHub App private key** on the server, e.g. `~/.quack/quack-jason.private-key.pem`.
-3. **Fill secrets** in the root `../.env`:
-   - `QUACK_GITHUB_APP_CLIENT_ID` — from the App (github.com/settings/apps/quack-jason).
-   - `QUACK_GITHUB_APP_PRIVATE_KEY_PATH` — absolute path to the `.pem` from step 2.
-   - `QUACK_EXA_API_KEY` — Exa search key.
-   - Then `./generate-env.sh` to generate `QUACK_DB_PASSWORD` + `QUACK_GITHUB_APP_WEBHOOK_SECRET`.
-4. **Build + start:**
-   ```bash
-   cd quack && docker compose build && docker compose up -d
-   docker logs quack | grep "github extension enabled"   # confirm the App loaded
-   ```
-5. **NPM** (admin UI, :81): add a Proxy Host `quack.jasonfagerberg.duckdns.org` →
-   forward to the Traefik `api` entrypoint (`:8090`), TLS via the DuckDNS wildcard cert —
-   same as the existing `api.` / `documents.` hosts.
-6. **GitHub App** (github.com/settings/apps/quack-jason):
-   - **Webhook URL** = `https://quack.jasonfagerberg.duckdns.org/api/v1/github/webhook`
-   - **Webhook secret** = the `QUACK_GITHUB_APP_WEBHOOK_SECRET` from `../.env` (must match).
-   - **Install** the App on the repos to review (e.g. `fagerbergj/quack`, `fagerbergj/games`).
+## Architecture
 
-## Verify
-
-```bash
-# Public webhook route reachable + signature check active (bad sig ⇒ 401):
-curl -s -o /dev/null -w '%{http_code}\n' -XPOST \
-  https://quack.jasonfagerberg.duckdns.org/api/v1/github/webhook -d '{}'   # → 401
 ```
-Then `@quack review this PR` on an installed repo — the App's *Recent Deliveries* should
-show `202`, and quack posts a review. UI: `https://quack.jasonfagerberg.duckdns.org/`
-(Authentik login).
+GitHub ──webhook──▶ NPM (TLS) ──▶ Traefik `api` entrypoint (:8090) ──▶ quack :8080
+                                                                        │
+   llm-swap (LLM) ◀── llm_default ──┐                          quack-postgres (own DB)
+   qdrant (memory) ◀────────────────┘                          qdrant (shared, memory)
+```
 
-## Config
+- **Image:** runs the CI-published `ghcr.io/fagerbergj/quack:latest`. quack's `cd.yaml`
+  builds + pushes it on a version tag (`v*.*.*`); `:latest` moves only on a tagged release.
+- **Auto-update:** **Watchtower** watches this container (it is NOT in `updater/`'s
+  `WATCHTOWER_DISABLE_CONTAINERS`), so a new release is pulled + recreated on the daily run.
+- **Ingress:** NPM terminates TLS (DuckDNS wildcard cert) and forwards to Traefik's `api`
+  entrypoint; Traefik routes by host label. `Host(quack.jasonfagerberg.duckdns.org)`:
+  - `Path(/api/v1/github/webhook)` → **public** (GitHub can't SSO; it HMAC-signs — quack
+    verifies the signature). This router's Path rule out-prioritises the host-only one.
+  - everything else (UI + API) → **Authentik** SSO (`authentik@file`).
+- **Networks:** `api_gateway` (external — Traefik discovery), `llm_default` (external — reaches
+  `llm-swap` + `qdrant` from `../llm/`), plus its own `default` for `quack-postgres`.
+- **State:** its own `quack-postgres` (sessions + chat metadata) and a `quack-workspace`
+  volume (git clones / the filesystem jail). Semantic memory reuses the shared `qdrant`.
 
-`quack.yaml` is a copy of the upstream `config/quack.yaml` with two server edits: `web_fetch`
-→ `kind: direct` (no crawl4ai here) and `extensions.github` enabled. Models are set in
-`docker-compose.yml` (35b main, `qwen3-coder-next` for coding, gemma judge, vl image, omni media).
+## Configuration
 
-**If large-PR reviews stall** (models can't co-reside → swap thrash), fall back to a single
-review model: set `QUACK_ORCH_MODEL`/`QUACK_RESEARCHER_MODEL`/`QUACK_CODER_MODEL=qwen3-coder-next`
-and `QUACK_JUDGE_MODEL=` (empty) in `docker-compose.yml`, then recreate.
+**`quack.yaml`** — a copy of the upstream `config/quack.yaml` with two server-specific edits
+(a header comment in the file notes this; re-copy + re-apply if the upstream changes):
+1. `web_fetch` → `kind: direct` — there's no `crawl4ai` container here (the crawl4ai kind
+   fails startup without a URL); reviews use exa for search and a plain GET for the rare fetch.
+2. `extensions.github` **enabled** — `client_id`/`webhook_secret` from `${VAR}`,
+   `private_key_path: /run/secrets/quack-app.pem` (the mounted `.pem`), and
+   `triggers: [mention, pr_opened, label]`.
+
+**Models** (set in `docker-compose.yml`, pointing at `llm-swap`):
+
+| Role | Model | Env var |
+|------|-------|---------|
+| Orchestrator / researcher | `qwen3.6-35b` | `QUACK_ORCH_MODEL`, `QUACK_RESEARCHER_MODEL` |
+| Coding (implement/review/explore) | `qwen3-coder-next` | `QUACK_CODER_MODEL` |
+| Judge (trust gate) | `gemma4-26b-a4b` | `QUACK_JUDGE_MODEL` |
+| Compaction | `gemma4-26b-a4b` | `QUACK_COMPACTION_MODEL` |
+| Image / media | `qwen3-vl-32b` / `qwen3-omni-30b` | `QUACK_IMAGE_MODEL` / `QUACK_MEDIA_MODEL` |
+
+**Secrets** (root `../.env`) — set by hand: `QUACK_GITHUB_APP_CLIENT_ID`,
+`QUACK_GITHUB_APP_PRIVATE_KEY_PATH` (path to the `.pem` on the server), `QUACK_EXA_API_KEY`.
+Generated by `./generate-env.sh`: `QUACK_DB_PASSWORD`, `QUACK_GITHUB_APP_WEBHOOK_SECRET`
+(paste that webhook secret into the GitHub App too, so HMAC signatures match).
+
+## Operations
+
+- **Deploy / first run:** `./setup.sh` (preflight → secrets → pull → verify → prints the NPM +
+  GitHub-App steps). One-time before it: cut a quack release so the image exists
+  (`git tag v0.1.0 && git push origin v0.1.0`) and make the GHCR package **public**.
+- **Update:** automatic via Watchtower on the next tagged release; or `docker compose pull && up -d`.
+- **Logs:** `docker logs -f quack`. Health signal at startup: `github extension enabled`.
+- **If large-PR reviews stall** (models can't co-reside on the GPU → llama-swap thrash): fall back
+  to a single review model — set `QUACK_ORCH_MODEL`/`QUACK_RESEARCHER_MODEL`/`QUACK_CODER_MODEL`
+  all to `qwen3-coder-next` and `QUACK_JUDGE_MODEL=` (empty, judge off) in `docker-compose.yml`,
+  then `docker compose up -d`. The per-review fan-out keeps each node's context small, which helps.
