@@ -44,13 +44,13 @@ matrix:
     # Solver mechanics for the GPU pair: switching g→q, [q,j,e] costs 1 (evict g)
     # vs [q] which costs more (evict g+j); solver keeps j+e warm across switches.
     workers:  "(g | q | v) & j & e"
-    # The coder co-resides with the judge too: a code REVIEW runs the reviewer (c)
-    # and the gate judge (j) in a tight loop, so without j here they thrashed (c
-    # evicted j every verdict, then reloaded its 256K KV — minutes each way). j's
-    # experts are offloaded to CPU (-ncmoe below) so its GPU footprint fits beside
-    # the ~55GB coder. j stays warm across the plan(g)→review(c) switch (both sets
-    # hold j & e), so a review takes ONE swap, not one per judge round.
-    coding:   "c & j & e"
+    # The coder does NOT co-reside with the judge: the ~48GB coder + ~15GB GPU gemma
+    # exceed 63.7GB. So the judge (j) is deliberately absent here — during a code
+    # review/implement, a judge verdict swaps gemma in (evicting the coder) and the
+    # coder swaps back after (~1-2min each way, ACCEPTED for a ~20s GPU verdict vs the
+    # CPU judge's 3-5min + 10min timeouts). j stays warm in the `workers` set (it fits
+    # beside the 25-32GB workers), so orchestration/research judging never swaps.
+    coding:   "c & e"
     # Large fallbacks one at a time; no judge (too big to co-reside), embed kept.
     fallback: "(p | n9 | sl) & e"
     # Pure-embed request when no GPU worker is loaded → just e.
@@ -405,23 +405,21 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active, FULL CPU (-ngl 0, GPUs hidden, 0 VRAM). The coder is
-  # ~45-52GB (weights dominate; context barely moves it), so a 15GB GPU gemma never had
-  # reliable room beside it — its load-time peak OOM'd (exit 1 -> 502) even at 64K coder.
-  # CPU gemma uses ZERO VRAM, so it's ALWAYS co-resident (in `workers` and `coding` sets)
-  # and a review never swaps the judge out. Cost: CPU decode is ~3-5 min per call, so
-  # gemma is the JUDGE ONLY — compaction was moved to the coder (fast, GPU, same set) and
-  # reviewer judge_rounds cut to 1, bounding a review to a single ~5-min verdict. 4B
-  # active on 16 threads (= physical cores; Zen1 SMT adds nothing to compute-bound
-  # prefill) handles the 10-16K G-Eval rubric. GPUs hidden (HIP/ROCR) so the
-  # ROCm build holds no HIP context (same as the embed model). Sampling per gemma-4's
-  # card (top_p 0.95 / top_k 64), temp 0.3 for near-deterministic verdicts.
+  # 26B-A4B MoE — 4B active, GPU (-ngl 999, ~15GB). Verdicts are ~20s on GPU vs 3-5min
+  # (+ 10min timeouts) on CPU. It co-resides with the WORKERS (35b/omni/vl ~25-32GB +
+  # 15GB fits), so orchestration/research judging never swaps. It CANNOT co-reside with
+  # the ~48GB coder, so during code review/implement the judge swaps in against the coder
+  # (fast verdict + ~1-2min swap each way — ACCEPTED, deliberately, over the CPU judge's
+  # timeouts). Hence removed from the `coding` set but kept in `workers`. Compaction
+  # stays on the coder (no swap). --split-mode layer keeps it off the contended-2nd-GPU
+  # AllReduce path; -fa + q8 KV. Sampling per gemma-4's card (top_p 0.95 / top_k 64),
+  # temp 0.3. To revert to CPU (no swaps, slow): -ngl 0, HIP/ROCR-hide env, drop
+  # --split-mode/-fit/-fa/cache-type, and add j back to the `coding` set.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
@@ -430,11 +428,15 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      -ngl 0
-      -t 16
-      -c 81920
+      --split-mode layer
+      -fit off
+      -ngl 999
+      -fa on
+      -c 65536
       -ub 2048
       -b 2048
       --parallel 2
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
