@@ -86,7 +86,7 @@ agents:
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # reviews code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
     context_window: 65536
-    judge_rounds: 2             # a review is largely one-pass; 2 rounds is plenty to close a gate gap
+    judge_rounds: 1             # gemma judge is CPU-only (~5min/verdict); one round bounds a review to a single verdict. Raise if judge lives on GPU again.
     # READ-ONLY: reviews code, never modifies it — no write_file/edit_file/git_commit/git_push/delete_path/run_command.
     # load_skill/list_skills are auto-registered on every agent (see internal/serve/serve.go), so they're not listed here.
     # load_memory/stage_memory + the bundle's memory.md turn on task memory (M6): recall project conventions/decisions,

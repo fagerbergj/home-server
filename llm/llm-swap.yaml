@@ -182,7 +182,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 65536
+      -c 262144
       -ub 2048
       -b 2048
       --cache-type-k q8_0
@@ -399,23 +399,22 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active, full GPU (-ngl 999, ~15GB). Co-resides with the coder in
-  # the `coding` set (c & j & e): the coder's context was cut to 64K (~35GB), leaving
-  # ~28GB so a full-GPU gemma loads reliably beside it, load-time peak included (at 128K
-  # the peak OOM'd gemma on reload). ~35GB coder + ~15GB gemma < 63.7GB. This is the
-  # judge AND the compaction summariser, both on Quack's critical path — CPU gemma made
-  # each verdict/compaction 3-5 min (measured), which stalled reviews; on GPU it's
-  # seconds. --split-mode layer keeps it off the contended-2nd-GPU AllReduce path; -fa +
-  # q8 KV halves the cache. -c 49152 --parallel 2 = ~24K/slot (rubric 10-16K + verdict).
-  # To revert to CPU (if a larger coder context squeezes it out): -ngl 0, HIP/ROCR-hide
-  # env, drop --split-mode/-fit/-fa/cache-type, -c 81920 --parallel 4.
-  # Sampling per gemma-4's card (top_p 0.95 / top_k 64), temp 0.3 for near-deterministic
-  # verdicts.
+  # 26B-A4B MoE — 4B active, FULL CPU (-ngl 0, GPUs hidden, 0 VRAM). The coder is
+  # ~45-52GB (weights dominate; context barely moves it), so a 15GB GPU gemma never had
+  # reliable room beside it — its load-time peak OOM'd (exit 1 -> 502) even at 64K coder.
+  # CPU gemma uses ZERO VRAM, so it's ALWAYS co-resident (in `workers` and `coding` sets)
+  # and a review never swaps the judge out. Cost: CPU decode is ~3-5 min per call, so
+  # gemma is the JUDGE ONLY — compaction was moved to the coder (fast, GPU, same set) and
+  # reviewer judge_rounds cut to 1, bounding a review to a single ~5-min verdict. 4B
+  # active on 24 threads handles the 10-16K G-Eval rubric. GPUs hidden (HIP/ROCR) so the
+  # ROCm build holds no HIP context (same as the embed model). Sampling per gemma-4's
+  # card (top_p 0.95 / top_k 64), temp 0.3 for near-deterministic verdicts.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
     env:
-      - "GPU_MAX_HW_QUEUES=1"
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
@@ -424,15 +423,11 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -fa on
-      -c 65536
+      -ngl 0
+      -t 24
+      -c 81920
       -ub 2048
       -b 2048
-      --parallel 2
-      --cache-type-k q8_0
-      --cache-type-v q8_0
+      --parallel 4
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994

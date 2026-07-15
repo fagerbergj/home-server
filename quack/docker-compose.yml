@@ -33,7 +33,9 @@ services:
       QUACK_IMAGE_MODEL: qwen3-vl-32b
       QUACK_MEDIA_MODEL: qwen3-omni-30b
       QUACK_COMPACTION_ENABLED: "true"
-      QUACK_COMPACTION_MODEL: gemma4-26b-a4b
+      # Compaction on the coder (GPU, co-resident, fast). gemma is CPU-only now (~5min
+      # per call) so it's the JUDGE ONLY — compaction fires too often to sit on CPU.
+      QUACK_COMPACTION_MODEL: qwen3-coder-next
       QUACK_EMBED_MODEL: qwen3-embed
       # Semantic memory — reuse the existing qdrant (llm_default), gRPC port.
       QUACK_QDRANT_URL: qdrant:6334
