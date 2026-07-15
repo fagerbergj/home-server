@@ -1,16 +1,16 @@
 # quack — GitHub PR-review bot (github.com/fagerbergj/quack).
-# Pulls the CI-published image from GHCR (quack's cd.yaml pushes on a version tag:
-# `git tag v0.1.0 && git push origin v0.1.0` → :latest moves). Watchtower watches
-# this container (it's NOT in updater/'s WATCHTOWER_DISABLE list) and auto-updates
-# it when a new release moves :latest. The GHCR package must be PUBLIC to pull
-# without credentials.
+# PINNED to a release tag (quack's cd.yaml publishes an immutable X.Y.Z on `git tag
+# vX.Y.Z && git push`). A pinned tag does NOT move, so Watchtower does not auto-update
+# it — bump the tag below and `docker compose up -d` to deploy a new release. (Switch
+# back to `:latest` to resume continuous auto-deploy of every merge to main.) The GHCR
+# package must be PUBLIC to pull without credentials.
 # Ingress: NPM (TLS) → Traefik `api` entrypoint (:8090) → this container on
 # api_gateway. The /api/v1/github/webhook path is PUBLIC (GitHub HMAC-verifies);
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:latest
+    image: ghcr.io/fagerbergj/quack:0.2.0
     container_name: quack
     command: ["server", "run"]
     env_file:
