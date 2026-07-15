@@ -18,6 +18,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
 | document-pipeline | Ingests reMarkable notes + uploaded files: OCR, summarize, classify, embed |
+| quack | GitHub PR-review bot — clones repos and posts inline reviews on `@quack` / PR-open |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
 | Tailscale | Mesh VPN — remote access to LAN-only admin UIs, exit node, MagicDNS |
 | Uptime Kuma | Service status page — shows each container up/down |
@@ -47,6 +48,7 @@ home-server/
 ├── adblock/          # AdGuard Home DNS ad blocker
 ├── notes/            # rmfakecloud (reMarkable cloud emulator)
 ├── audio/            # faster-whisper GPU transcription
+├── quack/            # GitHub PR-review bot (built from ~/workspace/agent-researcher)
 └── README.md
 ```
 

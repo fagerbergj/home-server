@@ -1,0 +1,91 @@
+# quack — GitHub PR-review bot (github.com/fagerbergj/quack).
+# Built from source at ~/workspace/agent-researcher (clone it there first).
+# Ingress: NPM (TLS) → Traefik `api` entrypoint (:8090) → this container on
+# api_gateway. The /api/v1/github/webhook path is PUBLIC (GitHub HMAC-verifies);
+# the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
+# `llm` compose via the external llm_default network. Brings its own postgres.
+services:
+  quack:
+    build:
+      context: ~/workspace/agent-researcher
+      dockerfile: Dockerfile
+    container_name: quack
+    command: ["server", "run"]
+    env_file:
+      - ../.env
+    environment:
+      QUACK_CONFIG: /config/quack.yaml
+      QUACK_DATABASE_URL: postgres://quack:${QUACK_DB_PASSWORD}@quack-postgres:5432/quack?sslmode=disable
+      # LLM (llm-swap on the llm_default network). Empty key — llm-swap doesn't auth.
+      QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
+      QUACK_LLM_API_KEY: ""
+      # Models: 35b main, coder for coding, gemma judge, vl image, omni media.
+      QUACK_ORCH_MODEL: qwen3.6-35b
+      QUACK_RESEARCHER_MODEL: qwen3.6-35b
+      QUACK_CODER_MODEL: qwen3-coder-next
+      QUACK_JUDGE_MODEL: gemma4-26b-a4b
+      QUACK_IMAGE_MODEL: qwen3-vl-32b
+      QUACK_MEDIA_MODEL: qwen3-omni-30b
+      QUACK_COMPACTION_ENABLED: "true"
+      QUACK_COMPACTION_MODEL: gemma4-26b-a4b
+      QUACK_EMBED_MODEL: qwen3-embed
+      # Semantic memory — reuse the existing qdrant (llm_default), gRPC port.
+      QUACK_QDRANT_URL: qdrant:6334
+      # Web search (config uses kind: exa).
+      QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
+      # GitHub App (private key mounted below; client_id + webhook secret from .env).
+      QUACK_GITHUB_APP_CLIENT_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
+      QUACK_GITHUB_APP_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
+      QUACK_WORKSPACE_ROOT: /workspace
+    volumes:
+      - ./quack.yaml:/config/quack.yaml:ro
+      - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
+      - quack-workspace:/workspace
+    depends_on:
+      quack-postgres:
+        condition: service_healthy
+    networks:
+      - default
+      - api_gateway
+      - llm_default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.quack.loadbalancer.server.port=8080"
+      # PUBLIC webhook — GitHub can't SSO; it HMAC-signs. The Path rule out-prioritises
+      # the Host-only router below, so this bypasses Authentik.
+      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/api/v1/github/webhook`)"
+      - "traefik.http.routers.quack-webhook.entrypoints=api"
+      - "traefik.http.routers.quack-webhook.service=quack"
+      # Everything else (UI + API) behind Authentik SSO.
+      - "traefik.http.routers.quack.rule=Host(`quack.jasonfagerberg.duckdns.org`)"
+      - "traefik.http.routers.quack.entrypoints=api"
+      - "traefik.http.routers.quack.service=quack"
+      - "traefik.http.routers.quack.middlewares=authentik@file"
+    restart: unless-stopped
+
+  quack-postgres:
+    image: postgres:17-alpine
+    container_name: quack-postgres
+    environment:
+      POSTGRES_USER: quack
+      POSTGRES_PASSWORD: ${QUACK_DB_PASSWORD}
+      POSTGRES_DB: quack
+    volumes:
+      - quack-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quack -d quack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  default:
+  api_gateway:
+    external: true
+  llm_default:
+    external: true
+
+volumes:
+  quack-workspace:
+  quack-pg:

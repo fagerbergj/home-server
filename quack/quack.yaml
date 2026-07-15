@@ -1,0 +1,341 @@
+# Quack configuration for the HOME SERVER deploy.
+# This is a copy of ~/workspace/agent-researcher/config/quack.yaml with two edits:
+#   1. web_fetch kind: crawl4ai → direct   (no crawl4ai container on the server)
+#   2. extensions.github UNCOMMENTED        (the App is live here)
+# If the source config changes, re-copy it and re-apply those two edits.
+#
+# Structure is declarative; ${VAR} are interpolated from the environment (secrets
+# never live in this file). See docs/configuration.md.
+providers:
+  default:
+    kind: openai            # API protocol; the endpoint picks the actual server
+    endpoint: ${QUACK_LLM_ENDPOINT}
+    api_key: ${QUACK_LLM_API_KEY}
+
+# Named backend registry (like providers): consumers reference a store by name.
+# `kind` selects the adapter (the portability seam). A vector store also carries
+# how it vectorizes (embedder), its consolidation model, and recall defaults. A
+# store may `extends` another to reuse its connection (child fields override).
+stores:
+  default_postgres:
+    kind: postgres
+    url: ${QUACK_DATABASE_URL}
+  default_vector:
+    kind: qdrant                  # vector adapter; pgvector/sqlite are future adapters
+    url: ${QUACK_QDRANT_URL}            # empty (QUACK_QDRANT_URL unset) ⇒ memory self-disables
+    embedder:
+      provider: default
+      model: ${QUACK_EMBED_MODEL}
+    consolidation:
+      provider: default
+      model: ${QUACK_JUDGE_MODEL}       # reuse the always-warm judge (gemma) for extract/vet/consolidate
+    top_k: 5
+    min_score: 0.5                # drop recall hits below this cosine similarity (0 disables)
+
+# ADK session + chat persistence (references a store) plus context compaction,
+# which operates over that session history.
+session:
+  store: default_postgres
+  schema: sessions                # reserved: ADK's session service exposes no schema param yet
+  compaction:
+    enabled: ${QUACK_COMPACTION_ENABLED}  # unset ⇒ false
+    provider: default
+    model: ${QUACK_COMPACTION_MODEL}      # required when enabled; pick a worker-co-resident model (gemma)
+
+orchestrator:
+  provider: default
+  model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
+  # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
+
+# Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
+# bound here to a model and a selection of built-in tools. Add an agent by
+# dropping a bundle directory and adding an entry — no recompile.
+agents:
+  web-researcher:
+    bundle: agents/web-researcher
+    provider: default
+    memory_role: research   # shared-memory role bucket (see internal/memory/scope.go)
+    model: ${QUACK_RESEARCHER_MODEL}
+    context_window: 65536       # qwen3.6-35b served -c 131072 --parallel 2 ⇒ 65536/slot (one node = one slot)
+    judge_rounds: 1             # research converges in one draft; extra rounds burn tokens re-fetching to fix citations. Draft must cite inline (see prompt.md).
+    tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_user, ask_advisor,
+            ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
+  code-implementer:
+    bundle: agents/code-implementer   # prompt.md (ponytail ladder) + rubric.md (code-quality research + ponytail criteria)
+    provider: default
+    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
+    model: ${QUACK_CODER_MODEL}       # falls back to QUACK_RESEARCHER_MODEL if unset (internal/config's expandEnv)
+    context_window: 65536
+    judge_rounds: 8             # coding needs iterate-until-tests-pass; the judge+revise grind is where quack converges on correct code (tunable)
+    # run_code = CODE MODE (internal/tools/run_code.go): the model writes a JS program and the
+    # tools above are its API, so one turn can read five files, grep and write a patch without any
+    # of that bulk entering a 65k context. Per-agent opt-in; every tool above stays callable the
+    # normal way. In-script calls go through the SAME guarded tool objects, and the trust gate's
+    # ledger expands them, so nothing is unwatched. See docs/code-mode.md.
+    tools: [read_file, write_file, edit_file, list_dir, glob, grep, delete_path,
+            cd, git_clone, git_checkout, git_status, git_diff, git_log, git_commit, git_branch,
+            git_worktree_create, git_worktree_remove, git_push, git_pull, git_rebase,
+            run_command, ask_advisor, ask_user, load_memory, stage_memory, run_code]
+    # load_memory/stage_memory + the bundle's memory.md turn on shared memory: the implementer
+    # RECALLS what the explorer/reviewer already learned about this repo (build/test/lint commands,
+    # where things are registered, the reference feature, pre-existing failures) instead of
+    # rediscovering it every run — memory is bucketed by SUBJECT, not by agent (internal/memory/scope.go).
+  code-reviewer:
+    bundle: agents/code-reviewer      # prompt.md (reviewer identity/values) + rubric.md (is the REVIEW good) + review-code skill
+    provider: default
+    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
+    model: ${QUACK_CODER_MODEL}       # reviews code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
+    context_window: 65536
+    judge_rounds: 2             # a review is largely one-pass; 2 rounds is plenty to close a gate gap
+    # READ-ONLY: reviews code, never modifies it — no write_file/edit_file/git_commit/git_push/delete_path/run_command.
+    # load_skill/list_skills are auto-registered on every agent (see internal/serve/serve.go), so they're not listed here.
+    # load_memory/stage_memory + the bundle's memory.md turn on task memory (M6): recall project conventions/decisions,
+    # stage durable ones as it learns them — safe on a worker (its review is gate-judged, unlike the independent judge).
+    # web_fetch (no web_search): verify a specific external claim (API contract, library doc, known-vuln pattern) —
+    # "verify don't trust" past the repo. It flips on the gate's RequireRetrieval, but read_file already satisfies that,
+    # so a normal review that reads the changed files is fine; web_fetch does not force every review to fetch.
+    tools: [read_file, list_dir, glob, grep, web_fetch,
+            cd, git_clone, git_checkout, git_status, git_diff, git_log, ask_user, load_memory, stage_memory]
+  code-explorer:
+    bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
+    provider: default
+    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
+    model: ${QUACK_CODER_MODEL}       # reads code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
+    context_window: 65536
+    judge_rounds: 2             # exploration is largely one-pass; 2 rounds closes a gate gap
+    # READ-ONLY: understands a repo, never changes it — NO write/edit/commit/push/delete/run_command.
+    # No web_search/web_fetch: its sources are the FILES it reads (cited <repo>@<path>), not web pages — so
+    # RequireRetrieval does NOT fire (only web tools flip it; see internal/serve/serve.go) and it's judged by
+    # its bundle rubric (exploration quality), not the web-researcher's harsh web-citation bar.
+    # load_skill/list_skills are auto-registered. load_memory/stage_memory + memory.md turn on task memory (M6):
+    # recall/stage durable repo layout & conventions so repeat exploration of the same repo is faster.
+    # run_code = CODE MODE: exploration is exactly the read-many-files-and-summarize shape code mode
+    # is for — the files it reads never enter its context. See docs/code-mode.md.
+    tools: [read_file, list_dir, glob, grep,
+            cd, git_clone, git_checkout, git_status, git_diff, git_log, ask_user, load_memory, stage_memory, run_command, run_code]
+  synthesizer:
+    bundle: agents/synthesizer
+    provider: default
+    model: ${QUACK_RESEARCHER_MODEL}
+    context_window: 65536       # same model as web-researcher
+    judge_rounds: 1             # just combines already-vetted upstream node outputs; re-revising is low value
+    tools: []
+  media-reader:
+    bundle: agents/media-reader
+    provider: default
+    model: ${QUACK_MEDIA_MODEL}       # Qwen3-Omni (media llm-swap group); falls back to QUACK_RESEARCHER_MODEL if unset
+    context_window: 32768       # qwen3-omni-30b served -c 32768 --parallel 1
+    tools: []
+    inputs: [text, image, audio]
+    judge: false      # gemma (the judge) cannot open media — its verdict is noise
+  image-reader:
+    bundle: agents/image-reader
+    provider: default
+    model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
+    context_window: 32768       # qwen3-vl-32b served -c 32768
+    tools: []
+    inputs: [text, image]
+    judge: false      # gemma (the judge) cannot open media — its verdict is noise
+
+# Built-in tools. A tool with a dedicated external service sets kind + url. A
+# store-backed tool references a stores[] entry (the store supplies the adapter +
+# connection) and may override its namespace (collection/schema). See
+# internal/tools/backends.go.
+tools:
+  web_search:
+    kind: exa                     # searxng (needs url) | exa. exa used here because searxng is being bot-walled.
+    url: ${QUACK_SEARXNG_URL}           # SearXNG JSON API, e.g. http://searxng:8080; unused by kind: exa
+    # exa is keyless via Exa's hosted MCP by default (the no-docker path). With an
+    # api_key it uses Exa's REST API instead (structured JSON, more robust, no
+    # keyless-MCP rate-limiting):
+    auth:
+      kind: api_key
+      api_key: ${QUACK_EXA_API_KEY}
+    # exa is keyless via Exa's hosted MCP by default (the no-docker path). Add an
+    # api_key to use Exa's REST API instead (structured JSON, more robust):
+    # auth:
+    #   kind: api_key
+    #   api_key: ${QUACK_EXA_API_KEY}
+  web_fetch:
+    kind: direct                  # server-side edit: no crawl4ai container here — plain GET (crawl4ai needs a URL and fails startup without one)
+  # Memory tools (M6) — store-backed; binding one to an agent enables that memory.
+  stage_memory:                   # task memory: researchers stage tradecraft, the gate commits it
+    store: default_vector
+    collection: task_memory
+  commit_memory:                  # user memory: bind on the orchestrator to enable
+    store: default_vector
+    collection: user_memory
+
+# The trust gate wraps every agent and runs cheapest-first, each stage with its
+# own round budget (a stage with max_rounds:0 is skipped):
+#   1. deterministic_checks — free code checks (citation backing + length) that
+#      drive cheap targeted revisions to drop fabricated citations up front.
+#   2. judge — an independent model scores the answer; the worker revises on fail.
+# Deterministic citation/length scores are always folded into the judge's verdict.
+# The advisor (agents/advisor) is NOT a gate stage — it's a tool (ask_advisor,
+# see agents' tools: lists) the worker calls at its own discretion. It reuses
+# the judge's provider/model and is only registered on worker bundles that list
+# it when the judge is enabled (see below): leave judge.model empty to disable
+# both the judge and ask_advisor; the cheaper deterministic_checks stage still
+# runs.
+gates:
+  constitution_path: config/constitution.md   # global principles, used for the advisor + judge
+  rubric_path: config/rubric.md               # default scoring guide (agents may override with rubric.md in their bundle)
+  deterministic_checks:
+    max_rounds: 4   # free citation/length checks; up to 4 cheap worker revise cycles
+  judge:
+    provider: default
+    model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
+    max_rounds: 1           # expensive model-judge/revise rounds
+    threshold: 0.7          # PER-CRITERION pass bar: every rubric criterion must clear it.
+                            # On the rubric's 0-10 scale this is 7/10 ("met, with only
+                            # minor gaps"); the verdict score is the lowest criterion
+                            # (weakest-link gating, no averaging, no caps).
+    max_iterations: 6       # safety cap on the judge's model turns per round
+
+# DAG execution policy.
+dag:
+  max_active_runs: 3    # orchestrator RUNS concurrent server-wide; a burst queues (1-GPU: lower it)
+  max_active_nodes: 2   # how many nodes run concurrently; extras queue. Matched to the
+                        # worker server's --parallel 2 (2 KV slots @ 65536 tokens each);
+                        # the GPU judge (gemma4-26b-a4b, co-resident with the worker)
+                        # is also --parallel 2. Raising this past the worker's slot
+                        # count just queues requests at the model.
+
+server:
+  addr: ":8080"
+  # topology: how the stores are provided. embedded (sqlite, no containers) and
+  # external (you run Postgres/Qdrant and point the stores above at them) just
+  # run the process — the default. managed makes `quack server` bring up
+  # Postgres + Qdrant via an embedded docker-compose stack (`quack-stores`),
+  # wait for them to be ready, then run; `quack server stop` tears them down
+  # (volumes persist). managed needs host ports 5432 + 6334 free and docker
+  # available. Tool backends (search/fetch) are NOT managed — set them via the
+  # tools below (kind: exa for keyless, kind: direct for fetch).
+  # topology: managed
+
+# The agents' working disk (filesystem/git tools). One configured root; a
+# per-user jail lives under it (<root>/<user_id>/ — "local" today, the OIDC
+# subject later). Not bound to any agent's tools: list yet — see
+# .quack/plan-pr5-tool-schemas.md. Every field is optional; omitting this
+# section entirely still gets a working jail rooted at ./workspace with the
+# defaults below.
+workspace:
+  root: ${QUACK_WORKSPACE_ROOT}   # default ./workspace (compose: the volume mountpoint)
+  max_read_kb: 256                # read_file per-call cap; oversized reads truncate, never error
+  max_write_kb: 2048               # write_file per-call cap; oversized writes error (no truncated field to signal it)
+  max_results: 200                # grep/glob hits per call
+  max_list_entries: 500           # list_dir entries per call
+  timeout_seconds: 60
+
+  # sandbox: the OS boundary every run_command / gate-check CHILD PROCESS runs
+  # inside. The jail above is a PATH CHECK on the tools — it never constrained a
+  # child process, only its cwd, so before this a child (any child: `sh -c` slips
+  # through the metachar filter untouched) could read ~/.ssh, ~/.aws, .env, and
+  # anything else the server's OS user can read.
+  #   bwrap (default) — bubblewrap namespace: the child's filesystem is a
+  #     read-only system view plus exactly two writable paths (its own working
+  #     directory and its isolated $HOME). Nothing else EXISTS in there. Needs
+  #     no root and no daemon; install it (Debian/Ubuntu: `apt-get install
+  #     bubblewrap`). If it isn't installed/usable, the server REFUSES TO START.
+  #     Because the namespace IS the wall, run_command runs its command line in a
+  #     REAL SHELL (/bin/sh -c) in here: pipes, redirects, globs, $(…) and &&
+  #     all work. The metachar filter is not applied on this path — it blocked no
+  #     attack (`sh -c` never contained one of those characters), it only made
+  #     agents write throwaway script files to route around it.
+  #   none — children run with the server user's full filesystem authority.
+  #     Logs a loud WARN at startup. Only sane when the whole server is already
+  #     confined (a throwaway container/VM) or you trust the agents with that
+  #     account. With no OS boundary the habit guard is all there is, so THERE
+  #     run_command stays argv-only and still rejects & ; $ < > ` ( ).
+  sandbox: none   # bwrap cannot nest inside this Docker container (nested-namespace mount denied);
+                  # the container itself is the isolation boundary for this deploy.
+
+  # Per-child resource limits (rlimits). A runaway build (`npm ci` on a hostile
+  # repo, a test that allocates without bound) must not be able to take the host
+  # down with it. 0 = inherit the server's limit.
+  limits:
+    address_space_mb: 8192   # RLIMIT_AS, PER PROCESS. Do not tighten much: node's V8
+                             # reserves a huge VIRTUAL region at startup, so a small
+                             # limit doesn't slim a build, it stops node running at all.
+    max_procs: 512           # RLIMIT_NPROC — only applied inside the bwrap user namespace
+                             # (it is counted per-UID system-wide, so outside one it would
+                             # break every fork). --unshare-pid contains fork bombs anyway.
+    max_file_size_mb: 1024   # RLIMIT_FSIZE: one command cannot fill the disk.
+
+  # exec_path: extra PATH dirs for run_command/checks/git children — for toolchains
+  # outside the fixed system dirs (nvm, asdf, a $HOME-installed Go SDK). Under
+  # sandbox: bwrap each entry is ALSO bind-mounted READ-ONLY into the child (a
+  # `.../bin` entry brings its sibling lib/, libexec/ and share/ with it — nvm's
+  # `npm` is a symlink into ../lib), so the toolchain exists in there and nothing
+  # else on the host does. Entries are bound VERBATIM: a toolchain that keeps
+  # runtime files elsewhere in its prefix (a Go SDK's GOROOT — src/, pkg/) needs
+  # that directory listed too, or the child fails with "cannot find GOROOT" /
+  # exit 127 "No such file or directory". Anything under /usr is already covered.
+  # exec_path:
+  #   - /home/user/.nvm/versions/node/v22.22.3/bin
+  #   - /home/user/sdk/go1.25.0            # a GOROOT outside /usr: bind the whole SDK
+  # check_commands: allowed command PREFIXES the planner may complete into a
+  # code-implementer node's `checks` (§4) — the trust gate runs these against
+  # the node's own workdir after each draft. Empty = checks unavailable (the
+  # planner is told to omit `checks` entirely).
+  # check_commands: ["go build", "go test", "go vet", "npx tsc", "npm test"]
+  check_commands: []            # command PREFIXES plan nodes may use as deterministic gate checks.
+                                # Empty (default) = checks unavailable. Enable ONLY when the server's
+                                # runtime actually has the toolchain — the shipped Docker image does NOT
+                                # (git only); a check whose binary is missing fails the node closed.
+
+  # Deployment-level per-host HTTPS git credentials — ONE identity per host (a
+  # PAT), configured like every other secret. Empty (default) = public repos
+  # only. `token` MUST be an ${VAR} env reference (a literal secret here is a
+  # startup error, not a silent leak — see docs/configuration.md).
+  # git_credentials:
+  #   - host: github.com
+  #     username: x-access-token       # default; GitHub PATs use this
+  #     token: ${QUACK_GITHUB_TOKEN}
+
+  # git_push gates the git_push tool — the one outward-facing, non-undoable
+  # git operation in the set. Off by default even with a credential configured.
+  git_push: false
+
+  # Guard ladder (§4b): tool name -> none (default, unlisted) | judge |
+  # confirm | judge+confirm. Tier-0 always applies regardless of guard tier: the
+  # path jail for the fs/git TOOLS, the sandbox + rlimits for their CHILD
+  # PROCESSES, no force-push/push-to-main. ("No shell" is NOT a wall and is not
+  # Tier 0: a sandboxed run_command takes a real shell command line. The judge
+  # tier is what decides what a command may DO.)
+  guards:
+    delete_path: judge
+    git_rebase: judge
+    git_push: judge+confirm
+    run_command: judge+confirm   # the sandbox contains WHERE it can reach; the judge contains WHAT it does
+    # Code mode: the guard is on the SCRIPT. run_code is one tool call, so the judge
+    # and the human see the whole PROGRAM and approve it ONCE, before a line of it
+    # runs — and its calls are then not re-gated individually. A script that can run
+    # commands must be at least as guarded as a command, hence the same tier.
+    # (Lowering this entry cannot open a hole: run_code's tier is RAISED to the union
+    # of the tiers of every tool it binds — see tools.scriptTier.)
+    run_code: judge+confirm
+
+# Bundled integrations (inbound + outbound). Optional; each is off unless its
+# sub-section is present. Commented out here because dev/local runs typically
+# have no GitHub App — uncomment and set the env vars to enable it.
+#
+# extensions.github wires the GitHub App extension: a webhook receiver, App-authed
+# git credentials, and the App-mention trigger. It needs EXACTLY ONE issuer
+# (client_id — GitHub's recommendation — or the legacy numeric app_id) and EXACTLY
+# ONE private-key source (inline private_key PEM via ${VAR}, or private_key_path to
+# a mounted .pem). The App's CLIENT SECRET is NOT used (that's OAuth only). Secrets
+# (private_key, webhook_secret) MUST be ${VAR} env references — a literal is a
+# startup error. A present-but-empty block fails to boot, so keep it commented
+# until the env vars are actually set.
+# extensions.github ENABLED on the server (the .pem is mounted at the path below,
+# and QUACK_GITHUB_APP_CLIENT_ID / QUACK_GITHUB_APP_WEBHOOK_SECRET are set in .env).
+extensions:
+  github:
+    client_id: ${QUACK_GITHUB_APP_CLIENT_ID}
+    private_key_path: /run/secrets/quack-app.pem      # mounted from QUACK_GITHUB_APP_PRIVATE_KEY_PATH
+    webhook_secret: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
+    mention: "@quack"
+    triggers: [mention, pr_opened, label]             # @quack, auto-review on PR open, and on the label
+    auto_review_label: quack-auto-review
