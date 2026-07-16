@@ -5,6 +5,9 @@
 #   3. ask_user removed from all agents     (this deploy is driven by GitHub webhooks,
 #      not an interactive session — a HITL prompt has no one to answer, so it stalls
 #      and kills the node. Agents proceed on best judgment instead.)
+#   4. run_command/run_code/git_push guards → none (webhook runs can't answer confirm
+#      HITL, and per-command judge = a gemma swap per command; container is the boundary).
+#   5. per-agent `skills:` synced from 0.4.0's scoping (config/quack.yaml #270).
 # If the source config changes, re-copy it and re-apply these edits.
 #
 # Structure is declarative; ${VAR} are interpolated from the environment (secrets
@@ -48,6 +51,7 @@ session:
 orchestrator:
   provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
+  skills: [plan-work, format-markdown, present-coding-plan, contribute]
   # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
 
 # Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
@@ -56,6 +60,7 @@ orchestrator:
 agents:
   web-researcher:
     bundle: agents/web-researcher
+    skills: [format-markdown, research-git-repos]
     provider: default
     memory_role: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
@@ -65,6 +70,7 @@ agents:
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
     bundle: agents/code-implementer   # prompt.md (ponytail ladder) + rubric.md (code-quality research + ponytail criteria)
+    skills: [develop-feature, fix-bug, ponytail, ponytail-review, present-coding-plan, format-markdown]
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # falls back to QUACK_RESEARCHER_MODEL if unset (internal/config's expandEnv)
@@ -85,6 +91,7 @@ agents:
     # rediscovering it every run — memory is bucketed by SUBJECT, not by agent (internal/memory/scope.go).
   code-reviewer:
     bundle: agents/code-reviewer      # prompt.md (reviewer identity/values) + rubric.md (is the REVIEW good) + review-code skill
+    skills: [review-code, present-coding-plan, format-markdown, ponytail, ponytail-review]
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # reviews code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
@@ -101,6 +108,7 @@ agents:
             cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory]
   code-explorer:
     bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
+    skills: [research-git-repos, format-markdown, ponytail]
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}  # 35b: exploration is reasoning-over-code (research), not code-writing — implementer/reviewer keep the coder
@@ -118,6 +126,7 @@ agents:
             cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory, run_command, run_code]
   synthesizer:
     bundle: agents/synthesizer
+    skills: [format-markdown, present-coding-plan]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # same model as web-researcher
@@ -125,6 +134,7 @@ agents:
     tools: []
   media-reader:
     bundle: agents/media-reader
+    skills: [format-markdown]
     provider: default
     model: ${QUACK_MEDIA_MODEL}       # Qwen3-Omni (media llm-swap group); falls back to QUACK_RESEARCHER_MODEL if unset
     context_window: 32768       # qwen3-omni-30b served -c 32768 --parallel 1
@@ -133,6 +143,7 @@ agents:
     judge: false      # gemma (the judge) cannot open media — its verdict is noise
   image-reader:
     bundle: agents/image-reader
+    skills: [format-markdown]
     provider: default
     model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
     context_window: 32768       # qwen3-vl-32b served -c 32768
