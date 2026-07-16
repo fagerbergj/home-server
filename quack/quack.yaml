@@ -7,6 +7,8 @@
 #      and kills the node. Agents proceed on best judgment instead.)
 #   4. run_command/run_code/git_push guards → none (webhook runs can't answer confirm
 #      HITL, and per-command judge = a gemma swap per command; container is the boundary).
+#      Plus run_code_guard_standalone: true so run_code honors `none` instead of being
+#      floor-raised to judge by delete_path/git_rebase (#279).
 #   5. per-agent `skills:` synced from 0.4.0's scoping (config/quack.yaml #270).
 # If the source config changes, re-copy it and re-apply these edits.
 #
@@ -327,9 +329,15 @@ workspace:
     # and the human see the whole PROGRAM and approve it ONCE, before a line of it
     # runs — and its calls are then not re-gated individually. A script that can run
     # commands must be at least as guarded as a command, hence the same tier.
-    # (Lowering this entry cannot open a hole: run_code's tier is RAISED to the union
-    # of the tiers of every tool it binds — see tools.scriptTier.)
+    # (Normally run_code's tier is RAISED to the union of the tiers of every tool it
+    # binds — so delete_path/git_rebase: judge below would force run_code to judge.
+    # run_code_guard_standalone: true opts OUT of that floor so run_code honors the
+    # `none` above; the container is the boundary and per-call judge gates inside a
+    # script only thrash the gemma judge against the coder — see #279/tools.scriptTier.)
     run_code: none
+  # Guard run_code at ONLY its own tier above (no bound-tool floor raise). Trusted
+  # single-tenant bot; keeps run_code usable without a gemma swap on every call.
+  run_code_guard_standalone: true
 
 # Bundled integrations (inbound + outbound). Optional; each is off unless its
 # sub-section is present. Commented out here because dev/local runs typically
