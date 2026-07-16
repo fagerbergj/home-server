@@ -167,7 +167,11 @@ models:
   # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
   # ~49 GB Q4, 256K native, non-thinking. The hybrid layout has only ~12 attention
   # layers (2 KV heads) so the KV cache stays small → 256K fits despite the size
-  # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40. --no-mmap (>30 GB).
+  # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40 + repeat-penalty 1.05
+  # (Qwen3-Coder card) over a 1024-token window: the default 64-token window can't
+  # span a tool-call cycle (~150+ tokens), so verbatim re-issued tool calls went
+  # unpenalized — the model wedged into identical-call loops mid-task (quack #277
+  # evidence: looped WITH full correct context). --no-mmap (>30 GB).
   # NEW arch — VERIFY it loads on this image (Qwen3-Next/DeltaNet support is recent);
   # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
   # -c 262144 --parallel 1 = one 256K KV slot (~40GB weights + ~17GB q8 KV ≈ 57GB, runs
@@ -186,6 +190,8 @@ models:
       --temp 1.0
       --top-p 0.95
       --top-k 40
+      --repeat-penalty 1.05
+      --repeat-last-n 1024
       --no-mmap
       --split-mode layer
       -fit off
