@@ -191,7 +191,7 @@ models:
       --top-p 0.95
       --top-k 40
       --repeat-penalty 1.05
-      --repeat-last-n 1024
+      --repeat-last-n 16384
       --no-mmap
       --split-mode layer
       -fit off
