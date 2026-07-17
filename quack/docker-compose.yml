@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.6.5
+    image: ghcr.io/fagerbergj/quack:0.6.6
     container_name: quack
     command: ["server", "run"]
     env_file:
@@ -54,6 +54,9 @@ services:
       QUACK_PPROF_ADDR: ":6060"
     ports:
       - "127.0.0.1:6060:6060"   # pprof, host-loopback only — never exposed publicly
+      - "100.81.155.8:8080:8080" # quack API on the TAILSCALE interface only — first-party
+                                 # clients (quack CLI) over the tailnet; the tailnet is the
+                                 # auth boundary here, Authentik keeps guarding the public UI
     volumes:
       - ./quack.yaml:/config/quack.yaml:ro
       - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
