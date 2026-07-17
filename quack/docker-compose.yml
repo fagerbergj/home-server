@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.6.6
+    image: ghcr.io/fagerbergj/quack:0.6.7
     container_name: quack
     command: ["server", "run"]
     env_file:
@@ -20,6 +20,10 @@ services:
       # debug while we iterate on delivery/loop behavior (per-round vetting +
       # compaction trace); drop back to info once the flow is stable.
       QUACK_LOG_LEVEL: debug
+      # OTel emission (0.6.7): traces+metrics to the monitoring stack's collector
+      # (otel-collector joins llm_default). Read path = Grafana / Tempo TraceQL.
+      QUACK_OTEL_ENABLED: "true"
+      QUACK_OTEL_OTLP_ENDPOINT: http://otel-collector:4318
       QUACK_DATABASE_URL: postgres://quack:${QUACK_DB_PASSWORD}@quack-postgres:5432/quack?sslmode=disable
       # LLM (llm-swap on the llm_default network). Empty key — llm-swap doesn't auth.
       QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
