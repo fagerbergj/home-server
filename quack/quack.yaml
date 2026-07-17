@@ -106,9 +106,15 @@ agents:
     # web_fetch (no web_search): verify a specific external claim (API contract, library doc, known-vuln pattern) —
     # "verify don't trust" past the repo. It flips on the gate's RequireRetrieval, but read_file already satisfies that,
     # so a normal review that reads the changed files is fine; web_fetch does not force every review to fetch.
+    # github_add_review_comment/github_list_review_comments/github_delete_review_comment build
+    # and edit the inline-comment DRAFT (never posts — stage_review still gates the actual
+    # submit); github_list_pr_comments reads existing discussion so it doesn't repeat what's
+    # already been said. Extension tools are opt-in per agent (internal/tools.Deps.ExtTools) —
+    # NOT github_comment, which posts immediately with no gate in front of it.
     tools: [read_file, list_dir, glob, grep, web_fetch,
             cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory,
-            stage_review, stage_comment, unstage]
+            stage_review, stage_comment, unstage,
+            github_add_review_comment, github_list_review_comments, github_delete_review_comment, github_list_pr_comments]
   code-explorer:
     bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
     skills: [research-git-repos, format-markdown, ponytail]
