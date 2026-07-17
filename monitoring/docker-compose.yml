@@ -95,6 +95,30 @@ services:
       - "9836:5000"
     restart: unless-stopped
 
+  # ---- OTel spine for quack (staged 2026-07-17; see quack .quack/otel-observability-plan.md)
+  # otel-collector joins the shared llm_default network so the quack container
+  # reaches it as http://otel-collector:4318 (same pattern quack->llm-swap uses).
+  # Grafana is the trace UI (Tempo datasource provisioned) — no bespoke React.
+  tempo:
+    image: grafana/tempo:2.9.0
+    container_name: tempo
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - ./tempo/config.yaml:/etc/tempo/config.yaml:ro
+      - ./tempo/data:/var/tempo
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.135.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+      - default
+      - llm_default
+    restart: unless-stopped
+
   uptime-kuma:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
@@ -103,3 +127,7 @@ services:
     volumes:
       - ./uptime-kuma:/app/data
     restart: unless-stopped
+
+networks:
+  llm_default:
+    external: true

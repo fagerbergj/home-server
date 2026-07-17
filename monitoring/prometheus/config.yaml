@@ -18,3 +18,7 @@ scrape_configs:
   - job_name: smartctl
     static_configs:
       - targets: ['smartctl-exporter:9633']
+
+  - job_name: otel-collector   # quack's OTel metrics (staged with the tempo/collector services)
+    static_configs:
+      - targets: ['otel-collector:8889']
