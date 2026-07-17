@@ -106,6 +106,10 @@ services:
     volumes:
       - ./tempo/config.yaml:/etc/tempo/config.yaml:ro
       - ./tempo/data:/var/tempo
+    ports:
+      - "100.81.155.8:3200:3200" # Tempo query API on the TAILSCALE interface only —
+                                 # curl/TraceQL from first-party tooling (same pattern
+                                 # as quack's 18080); Grafana still uses the internal net
     restart: unless-stopped
 
   otel-collector:
