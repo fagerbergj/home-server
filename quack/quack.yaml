@@ -72,7 +72,7 @@ agents:
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
     bundle: agents/code-implementer   # prompt.md (ponytail ladder) + rubric.md (code-quality research + ponytail criteria)
-    skills: [develop-feature, fix-bug, ponytail, ponytail-review, present-coding-plan, format-markdown]
+    skills: [develop-feature, fix-bug, ponytail, ponytail-review, present-coding-plan, format-markdown, commit-authoring, pr-authoring]
     provider: default
     memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_CODER_MODEL}       # falls back to QUACK_RESEARCHER_MODEL if unset (internal/config's expandEnv)
@@ -85,8 +85,8 @@ agents:
     # ledger expands them, so nothing is unwatched. See docs/code-mode.md.
     tools: [read_file, write_file, edit_file, list_dir, glob, grep, delete_path,
             cd, git_clone, git_checkout, git_status, git_diff, git_log, git_commit, git_branch,
-            git_worktree_create, git_worktree_remove, git_push, git_pull, git_rebase,
-            run_command, ask_advisor, load_memory, stage_memory, run_code]
+            git_worktree_create, git_worktree_remove, git_pull, git_rebase,
+            run_command, ask_advisor, load_memory, stage_memory, stage_pr, stage_comment, unstage, run_code]
     # load_memory/stage_memory + the bundle's memory.md turn on shared memory: the implementer
     # RECALLS what the explorer/reviewer already learned about this repo (build/test/lint commands,
     # where things are registered, the reference feature, pre-existing failures) instead of
@@ -107,7 +107,8 @@ agents:
     # "verify don't trust" past the repo. It flips on the gate's RequireRetrieval, but read_file already satisfies that,
     # so a normal review that reads the changed files is fine; web_fetch does not force every review to fetch.
     tools: [read_file, list_dir, glob, grep, web_fetch,
-            cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory]
+            cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory,
+            stage_review, stage_comment, unstage]
   code-explorer:
     bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
     skills: [research-git-repos, format-markdown, ponytail]
@@ -128,7 +129,7 @@ agents:
             cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory, run_command, run_code]
   synthesizer:
     bundle: agents/synthesizer
-    skills: [format-markdown, present-coding-plan]
+    skills: [format-markdown, present-coding-plan, pr-authoring]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # same model as web-researcher
