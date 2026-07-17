@@ -48,6 +48,12 @@ session:
     provider: default
     model: ${QUACK_COMPACTION_MODEL}      # required when enabled; pick a worker-co-resident model (gemma)
 
+# OTel emission (quack 0.6.7): traces+metrics -> the monitoring stack's
+# otel-collector (llm_default network) -> tempo/prometheus/grafana.
+otel:
+  enabled: ${QUACK_OTEL_ENABLED}             # unset => true
+  otlp_endpoint: ${QUACK_OTEL_OTLP_ENDPOINT} # http://otel-collector:4318
+
 orchestrator:
   provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
