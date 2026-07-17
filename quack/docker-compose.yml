@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.5.3
+    image: ghcr.io/fagerbergj/quack:0.5.4
     container_name: quack
     command: ["server", "run"]
     env_file:
@@ -50,6 +50,10 @@ services:
       QUACK_GITHUB_APP_CLIENT_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
       QUACK_GITHUB_APP_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
       QUACK_WORKSPACE_ROOT: /workspace
+      # pprof for diagnosing the post-plan hang; loopback-published only (see ports).
+      QUACK_PPROF_ADDR: ":6060"
+    ports:
+      - "127.0.0.1:6060:6060"   # pprof, host-loopback only — never exposed publicly
     volumes:
       - ./quack.yaml:/config/quack.yaml:ro
       - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
