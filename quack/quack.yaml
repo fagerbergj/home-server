@@ -2,14 +2,12 @@
 # This is a copy of ~/workspace/agent-researcher/config/quack.yaml with these edits:
 #   1. web_fetch kind: crawl4ai → direct   (no crawl4ai container on the server)
 #   2. extensions.github UNCOMMENTED        (the App is live here)
-#   3. ask_user removed from all agents     (this deploy is driven by GitHub webhooks,
+#   3. ask_user removed from the researcher (this deploy is driven by GitHub webhooks,
 #      not an interactive session — a HITL prompt has no one to answer, so it stalls
 #      and kills the node. Agents proceed on best judgment instead.)
-#   4. run_command/run_code/git_push guards → none (webhook runs can't answer confirm
-#      HITL, and per-command judge = a gemma swap per command; container is the boundary).
-#      Plus run_code_guard_standalone: true so run_code honors `none` instead of being
-#      floor-raised to judge by delete_path/git_rebase (#279).
-#   5. per-agent `skills:` synced from 0.4.0's scoping (config/quack.yaml #270).
+#   4. (0.6.0) code agents are external ACP subprocesses (acp: blocks below) — no
+#      native coding tools, so the old guard-tier edits are moot; guards is empty.
+#   5. context_window raised to the coder's full 256K for the three code agents.
 # If the source config changes, re-copy it and re-apply these edits.
 #
 # Structure is declarative; ${VAR} are interpolated from the environment (secrets
@@ -71,68 +69,42 @@ agents:
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
-    bundle: agents/code-implementer   # prompt.md (ponytail ladder) + rubric.md (code-quality research + ponytail criteria)
-    skills: [develop-feature, fix-bug, ponytail, ponytail-review, present-coding-plan, format-markdown, commit-authoring, pr-authoring]
+    bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
     provider: default
-    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
-    model: ${QUACK_CODER_MODEL}       # falls back to QUACK_RESEARCHER_MODEL if unset (internal/config's expandEnv)
-    context_window: 262144            # coder served -c 262144 --parallel 1 ⇒ full 256K/node
-    judge_rounds: 1             # 1 while we diagnose the judge: the revise grind (was 8) masked a miscalibrated gate. Raise once the rubric reliably passes a correct implementation.
-    # run_code = CODE MODE (internal/tools/run_code.go): the model writes a JS program and the
-    # tools above are its API, so one turn can read five files, grep and write a patch without any
-    # of that bulk entering a 65k context. Per-agent opt-in; every tool above stays callable the
-    # normal way. In-script calls go through the SAME guarded tool objects, and the trust gate's
-    # ledger expands them, so nothing is unwatched. See docs/code-mode.md.
-    tools: [read_file, write_file, edit_file, list_dir, glob, grep, delete_path,
-            cd, git_clone, git_checkout, git_status, git_diff, git_log, git_commit, git_branch,
-            git_worktree_create, git_worktree_remove, git_pull, git_rebase,
-            run_command, ask_advisor, load_memory, stage_memory, stage_pr, stage_comment, unstage, run_code]
-    # load_memory/stage_memory + the bundle's memory.md turn on shared memory: the implementer
-    # RECALLS what the explorer/reviewer already learned about this repo (build/test/lint commands,
-    # where things are registered, the reference feature, pre-existing failures) instead of
-    # rediscovering it every run — memory is bucketed by SUBJECT, not by agent (internal/memory/scope.go).
+    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
+    context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
+    judge_rounds: 1
+    # ACP coder (quack 0.6.0+, docs/acp-coder.md): the worker is an `opencode acp`
+    # subprocess (shipped in the image). provider/model above bind qwen3-coder-next
+    # via OPENCODE_CONFIG_CONTENT; git push is denied in the subprocess (delivery
+    # stays gate-owned); the gate reads commits off the clone (augmentFromRepo);
+    # quack's skill library rides in via opencode skills.paths.
+    acp:
+      command: ["opencode", "acp"]
   code-reviewer:
-    bundle: agents/code-reviewer      # prompt.md (reviewer identity/values) + rubric.md (is the REVIEW good) + review-code skill
-    skills: [review-code, present-coding-plan, format-markdown, ponytail, ponytail-review]
+    bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
     provider: default
-    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
-    model: ${QUACK_CODER_MODEL}       # reviews code; reuse the coder model (falls back to QUACK_RESEARCHER_MODEL if unset)
-    context_window: 262144            # coder served -c 262144 --parallel 1 ⇒ full 256K/node
-    judge_rounds: 1             # gemma judge is GPU (~20s) but swaps against the coder (~2min each way); one round keeps a review to one swap. Raise if judge co-resides with the coder.
-    # READ-ONLY: reviews code, never modifies it — no write_file/edit_file/git_commit/git_push/delete_path/run_command.
-    # load_skill/list_skills are auto-registered on every agent (see internal/serve/serve.go), so they're not listed here.
-    # load_memory/stage_memory + the bundle's memory.md turn on task memory (M6): recall project conventions/decisions,
-    # stage durable ones as it learns them — safe on a worker (its review is gate-judged, unlike the independent judge).
-    # web_fetch (no web_search): verify a specific external claim (API contract, library doc, known-vuln pattern) —
-    # "verify don't trust" past the repo. It flips on the gate's RequireRetrieval, but read_file already satisfies that,
-    # so a normal review that reads the changed files is fine; web_fetch does not force every review to fetch.
-    # github_add_review_comment/github_list_review_comments/github_delete_review_comment build
-    # and edit the inline-comment DRAFT (never posts — stage_review still gates the actual
-    # submit); github_list_pr_comments reads existing discussion so it doesn't repeat what's
-    # already been said. Extension tools are opt-in per agent (internal/tools.Deps.ExtTools) —
-    # NOT github_comment, which posts immediately with no gate in front of it.
-    tools: [read_file, list_dir, glob, grep, web_fetch,
-            cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory,
-            stage_review, stage_comment, unstage,
-            github_add_review_comment, github_list_review_comments, github_delete_review_comment, github_list_pr_comments]
+    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}
+    context_window: 262144
+    judge_rounds: 1
+    # External ACP reviewer, read_only: runs the change with its own tools, never
+    # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
+    # (inline comments included) — vetting.augmentFromAnswer.
+    acp:
+      command: ["opencode", "acp"]
+      read_only: true
   code-explorer:
-    bundle: agents/code-explorer      # prompt.md (read-only explorer, research-git-repos) + rubric.md (grades EXPLORATION: code-grounding/accuracy/usefulness, NOT web citations) + memory.md (repo layout/conventions)
-    skills: [research-git-repos, format-markdown, ponytail]
+    bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
     provider: default
-    memory_role: coding   # shared-memory role bucket (see internal/memory/scope.go)
-    model: ${QUACK_RESEARCHER_MODEL}  # 35b: exploration is reasoning-over-code (research), not code-writing — implementer/reviewer keep the coder
-    context_window: 131072            # 35b served -c 262144 --parallel 2 ⇒ 131072/slot
-    judge_rounds: 2             # exploration is largely one-pass; 2 rounds closes a gate gap
-    # READ-ONLY: understands a repo, never changes it — NO write/edit/commit/push/delete/run_command.
-    # No web_search/web_fetch: its sources are the FILES it reads (cited <repo>@<path>), not web pages — so
-    # RequireRetrieval does NOT fire (only web tools flip it; see internal/serve/serve.go) and it's judged by
-    # its bundle rubric (exploration quality), not the web-researcher's harsh web-citation bar.
-    # load_skill/list_skills are auto-registered. load_memory/stage_memory + memory.md turn on task memory (M6):
-    # recall/stage durable repo layout & conventions so repeat exploration of the same repo is faster.
-    # run_code = CODE MODE: exploration is exactly the read-many-files-and-summarize shape code mode
-    # is for — the files it reads never enter its context. See docs/code-mode.md.
-    tools: [read_file, list_dir, glob, grep,
-            cd, git_clone, git_checkout, git_status, git_diff, git_log, load_memory, stage_memory, run_command, run_code]
+    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}
+    context_window: 262144
+    judge_rounds: 2
+    acp:
+      command: ["opencode", "acp"]
+      read_only: true
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring]
@@ -300,13 +272,13 @@ workspace:
   #   - /home/user/sdk/go1.25.0            # a GOROOT outside /usr: bind the whole SDK
   # check_commands: allowed command PREFIXES the planner may complete into a
   # code-implementer node's `checks` (§4) — the trust gate runs these against
-  # the node's own workdir after each draft. Empty = checks unavailable (the
-  # planner is told to omit `checks` entirely).
-  # check_commands: ["go build", "go test", "go vet", "npx tsc", "npm test"]
-  check_commands: []            # command PREFIXES plan nodes may use as deterministic gate checks.
-                                # Empty (default) = checks unavailable. Enable ONLY when the server's
-                                # runtime actually has the toolchain — the shipped Docker image does NOT
-                                # (git only); a check whose binary is missing fails the node closed.
+  # the node's own workdir after each draft, and DERIVES a repo's own build/vet/
+  # test commands from them when the planner set none. The image ships the go +
+  # node toolchains (#283), and since quack 0.6.0 each derived check is gated on
+  # its binary existing — a missing toolchain derives nothing instead of failing
+  # the node. Explicit [] would disable checks entirely (the pre-0.6.0 state:
+  # the gate never actually compiled or tested a coder node's work).
+  check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make"]
 
   # Deployment-level per-host HTTPS git credentials — ONE identity per host (a
   # PAT), configured like every other secret. Empty (default) = public repos
@@ -317,31 +289,16 @@ workspace:
   #     username: x-access-token       # default; GitHub PATs use this
   #     token: ${QUACK_GITHUB_TOKEN}
 
-  # git_push gates the git_push tool — the one outward-facing, non-undoable
-  # git operation in the set. Off by default even with a credential configured.
-  git_push: false
-
   # Guard ladder (§4b): tool name -> none (default, unlisted) | judge |
   # confirm | judge+confirm. Tier-0 always applies regardless of guard tier: the
   # path jail for the fs/git TOOLS, the sandbox + rlimits for their CHILD
   # PROCESSES, no force-push/push-to-main. ("No shell" is NOT a wall and is not
   # Tier 0: a sandboxed run_command takes a real shell command line. The judge
   # tier is what decides what a command may DO.)
-  guards:
-    delete_path: judge
-    git_rebase: judge
-    git_push: none   # App-authed push to a feature branch on our own repo; confirm can't be answered in a webhook run
-    run_command: none   # trusted single-tenant bot on our own repos in the quack container; judge=per-command gemma swap thrash, confirm=HITL that kills webhook-run nodes (no one to confirm). See #261.
-    # Code mode: the guard is on the SCRIPT. run_code is one tool call, so the judge
-    # and the human see the whole PROGRAM and approve it ONCE, before a line of it
-    # runs — and its calls are then not re-gated individually. A script that can run
-    # commands must be at least as guarded as a command, hence the same tier.
-    # (Normally run_code's tier is RAISED to the union of the tiers of every tool it
-    # binds — so delete_path/git_rebase: judge below would force run_code to judge.
-    # run_code_guard_standalone: true opts OUT of that floor so run_code honors the
-    # `none` above; the container is the boundary and per-call judge gates inside a
-    # script only thrash the gemma judge against the coder — see #279/tools.scriptTier.)
-    run_code: none
+  # guards: no default entries — the native fs/git/run_command tools are gone in
+  # 0.6.0 (code agents are external ACP subprocesses); the ladder mechanism stays
+  # available for any remaining tool.
+  guards: {}
   # Guard run_code at ONLY its own tier above (no bound-tool floor raise). Trusted
   # single-tenant bot; keeps run_code usable without a gemma swap on every call.
   run_code_guard_standalone: true
