@@ -164,6 +164,40 @@ models:
       --cache-type-v q8_0
       --port 9999
 
+  # Qwen3.6-27B-MTP — DENSE 27B, ~18 GB Q4. Small enough to CO-RESIDE with the
+  # 15 GB gemma judge in 64 GB (the 49 GB coder-next can't). Added for the
+  # openwiki bakeoff: if it writes wikis as well as coder-next, a resident
+  # 27B+gemma pair eliminates the worker<->judge swap. Dense ⇒ no -ncmoe.
+  # -c 65536/parallel 1 keeps KV modest for co-residence; tune up once it proves out.
+  "qwen3.6-27b":
+    proxy: "http://127.0.0.1:9993"
+    ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
+    cmd: >
+      /app/llama-server
+      -hf unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL
+      --jinja
+      --reasoning-format deepseek
+      --reasoning-budget 512
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0
+      --presence-penalty 1.5
+      -fa on
+      --no-mmap
+      --split-mode layer
+      -fit off
+      -ngl 999
+      -c 65536
+      --parallel 1
+      -ub 2048
+      -b 2048
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --port 9993
+
   # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
   # ~49 GB Q4, 256K native, non-thinking. The hybrid layout has only ~12 attention
   # layers (2 KV heads) so the KV cache stays small → 256K fits despite the size
