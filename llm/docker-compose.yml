@@ -33,7 +33,7 @@ services:
     # Override base image's healthcheck (curls :8080); llama-swap listens on 11436
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
-      interval: 30s
+      interval: 300s
       timeout: 5s
       retries: 3
       start_period: 30s
