@@ -84,9 +84,12 @@ models:
     # it — which halves the KV and buys back headroom.
     # -ncmoe 4: offload the expert FFN of 4 layers to CPU for margin; with q8 KV
     # freeing VRAM this can likely drop back toward 2 for speed once it's stable.
+    # All models load via -m (direct on-disk GGUF), not -hf: with HF_HUB_OFFLINE=1
+    # and an inconsistent HF cache, -hf resolution exits 1 before loading. -m loads
+    # the file directly (llama.cpp auto-loads split parts 2-3 from the first).
     cmd: >
       /app/llama-server
-      -hf ggml-org/gpt-oss-120b-GGUF
+      -m /root/.cache/huggingface/hub/models--ggml-org--gpt-oss-120b-GGUF/snapshots/d932fcea62f83e088d8f076a2cd2d7eb02dfa682/gpt-oss-120b-mxfp4-00001-of-00003.gguf
       --jinja
       --reasoning-format auto
       --temp 1.0
@@ -141,7 +144,7 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.6-35B-A3B-GGUF/snapshots/a483e9e6cbd595906af30beda3187c2663a1118c/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
       --jinja
       --reasoning-format deepseek
       --reasoning-budget 512
@@ -176,7 +179,7 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3.6-27B-MTP-GGUF:UD-Q4_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/5cb35eb3dcbf52dbce5f87dbc64df6aaffadcace/Qwen3.6-27B-UD-Q4_K_XL.gguf
       --jinja
       --reasoning-format deepseek
       --reasoning-budget 512
@@ -219,7 +222,7 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3-Coder-Next-GGUF/snapshots/ce09c67b53bc8739eef83fe67b2f5d293c270632/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
       --jinja
       --temp 1.0
       --top-p 0.95
@@ -244,7 +247,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.5-9B-GGUF/snapshots/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-UD-Q4_K_XL.gguf
       --jinja
       --temp 0.7
       --top-p 0.8
@@ -269,7 +272,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3-VL-32B-Instruct-GGUF/snapshots/b9262a359f54dead8e2609f6146e2fc3398fd0d9/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf
       --mmproj-url https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-F32.gguf
       --jinja
       --temp 0.7
@@ -338,7 +341,7 @@ models:
     ttl: 600
     cmd: >
       /app/llama-server
-      -hf mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF:Q4_K_M
+      -m /root/.cache/huggingface/hub/models--mradermacher--Selene-1-Llama-3.3-70B-i1-GGUF/snapshots/2c66624be930abf9d354e8cd16a9d85f38ac3ff8/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf
       --alias selene
       --jinja
       --temp 0
@@ -373,7 +376,7 @@ models:
       - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
-      -hf Qwen/Qwen3-Embedding-4B-GGUF:Q8_0
+      -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
       -ngl 0
@@ -400,7 +403,7 @@ models:
       - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
-      -hf mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF:Q8_0
+      -m /root/.cache/huggingface/hub/models--mradermacher--Selene-1-Mini-Llama-3.1-8B-GGUF/snapshots/d77990ca9a17c406260b64defada9ce396ffdfd6/Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf
       --alias selene-mini
       --jinja
       --temp 0
@@ -434,7 +437,7 @@ models:
       - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
-      -hf unsloth/gemma-4-12b-it-GGUF:UD-Q6_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-12b-it-GGUF/snapshots/3249fa54d5efa384afc552cc6700ad091efd5c39/gemma-4-12b-it-UD-Q6_K_XL.gguf
       --no-mmproj
       --alias gemma4-12b
       --jinja
@@ -465,7 +468,7 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -hf unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL
+      -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-26B-A4B-it-GGUF/snapshots/3bb10d594514ef4edb7f3a65d41a7e4eb8c5767a/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
       --alias gemma4-26b-a4b
       --jinja
       --temp 0.3
