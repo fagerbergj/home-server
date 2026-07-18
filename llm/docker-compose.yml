@@ -35,12 +35,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.llm-swap.loadbalancer.server.port=11436"
-      - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/v1`)"
+      # Public base URL is .../openai/v1 ; strip /openai so llama-swap sees /v1/*
+      - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/openai`)"
       - "traefik.http.routers.llm-swap.entrypoints=api"
       - "traefik.http.routers.llm-swap.service=llm-swap"
-      - "traefik.http.routers.llm-swap.middlewares=llm-apikey"
+      - "traefik.http.routers.llm-swap.middlewares=llm-apikey,llm-strip"
+      - "traefik.http.middlewares.llm-strip.stripprefix.prefixes=/openai"
       # Middleware defined here (not in the file provider) so compose expands
       # ${LLM_API_KEY} from .env — Traefik's file provider does NOT expand env vars.
+      # NOTE: deploy with LLM_API_KEY in the environment (interactive shell, or
+      # `set -a && . ../.env`); compose does not source the export-style root .env.
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.headerName=X-API-Key"
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.keys[0]=${LLM_API_KEY}"
 
