@@ -89,7 +89,7 @@ models:
     # the file directly (llama.cpp auto-loads split parts 2-3 from the first).
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/direct/gpt-oss-120b-mxfp4-00001-of-00003.gguf
+      -m /root/.cache/huggingface/direct/gpt-oss-120b-MXFP4.gguf
       --jinja
       --reasoning-format auto
       --temp 1.0
