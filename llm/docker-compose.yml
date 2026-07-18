@@ -34,8 +34,6 @@ services:
       - "traefik.http.routers.llm-swap.middlewares=llm-apikey@file"
 
   qdrant:
-
-  qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
     volumes:
