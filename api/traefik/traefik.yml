@@ -5,6 +5,12 @@ global:
 log:
   level: INFO
 
+experimental:
+  plugins:
+    traefik-api-key-auth:
+      moduleName: github.com/JimCronqvist/traefik-api-key-auth
+      version: v0.0.2
+
 entryPoints:
   # Receives traffic from NPM (NPM handles TLS, forwards plain HTTP here)
   api:

@@ -53,3 +53,16 @@ http:
       rateLimit:
         average: 100
         burst: 50
+
+    # ── LLM API key auth ───────────────────────────────────────────────────────
+    # Adds X-API-Key header from env var for validation.
+    # For proper auth, use basicAuth or forwardAuth with a validator service.
+    # 
+    # Usage: traefik.http.routers.<name>.middlewares=llm-apikey@file
+    # TODO: Implement proper API key validation middleware
+    llm-apikey:
+      plugin:
+        traefik-api-key-auth:
+          headerName: X-API-Key
+          keys:
+            - "${LLM_API_KEY}"
