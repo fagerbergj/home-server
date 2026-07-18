@@ -329,6 +329,7 @@ extensions:
     private_key_path: /run/secrets/quack-app.pem      # mounted from QUACK_GITHUB_APP_PRIVATE_KEY_PATH
     webhook_secret: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
     mention: "@quack"
+    allowed_users: [fagerbergj]   # (#357) only these logins can invoke quack; empty = deny-all
     # 4h: the ~30 tok/s local coder with judge+revise rounds needs more than the
     # 2h default on implement runs — the wall killed a real run mid-push (#286).
     run_timeout_minutes: 240
