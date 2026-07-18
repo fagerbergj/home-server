@@ -441,7 +441,7 @@ models:
       -fit off
       -ngl 999
       -fa on
-      -c 65536
+      -c 131072
       -ub 2048
       -b 2048
       --parallel 1
