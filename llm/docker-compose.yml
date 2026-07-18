@@ -28,7 +28,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.llm-swap.loadbalancer.server.port=11436"
-      - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/openapi`)"
+      - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/v1/openai`)"
       - "traefik.http.routers.llm-swap.entrypoints=api"
       - "traefik.http.routers.llm-swap.service=llm-swap"
       - "traefik.http.routers.llm-swap.middlewares=llm-apikey@file"
