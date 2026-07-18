@@ -45,8 +45,9 @@ services:
       # ${LLM_API_KEY} from .env — Traefik's file provider does NOT expand env vars.
       # NOTE: deploy with LLM_API_KEY in the environment (interactive shell, or
       # `set -a && . ../.env`); compose does not source the export-style root .env.
-      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.headerName=X-API-Key"
-      # Also accept Authorization: Bearer <key> so standard OpenAI clients work
+      # Standard OpenAI auth: Authorization: Bearer <key>. The plugin is either/or —
+      # bearerToken mode parses "Bearer <key>" out of headerName, so headerName=Authorization.
+      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.headerName=Authorization"
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.bearerToken=true"
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.keys[0]=${LLM_API_KEY}"
 
