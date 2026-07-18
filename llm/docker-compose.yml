@@ -12,6 +12,11 @@ services:
       - ROCBLAS_USE_HIPBLASLT=0
       - HF_TOKEN=${HF_TOKEN:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
+      # Serve models from the local HF cache only — never phone home to resolve a
+      # commit at startup. A fully-downloaded model must not fail because HF is
+      # unreachable (that broke gpt-oss-120b's -hf load). Download models
+      # out-of-band (hf download); serving is offline.
+      - HF_HUB_OFFLINE=1
     volumes:
       - ./llm-swap.yaml:/app/config.yaml:ro
       - /mnt/cache/huggingface:/root/.cache/huggingface
