@@ -25,6 +25,13 @@ services:
       - default
       - api_gateway
     restart: unless-stopped
+    # Override base image's healthcheck (curls :8080); llama-swap listens on 11436
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.llm-swap.loadbalancer.server.port=11436"
