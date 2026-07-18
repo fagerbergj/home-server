@@ -58,5 +58,9 @@ services:
       - qdrant
     restart: unless-stopped
 
+networks:
+  api_gateway:
+    external: true
+
 volumes:
   qdrant-data:
