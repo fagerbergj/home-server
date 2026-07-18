@@ -38,7 +38,11 @@ services:
       - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/v1`)"
       - "traefik.http.routers.llm-swap.entrypoints=api"
       - "traefik.http.routers.llm-swap.service=llm-swap"
-      - "traefik.http.routers.llm-swap.middlewares=llm-apikey@file"
+      - "traefik.http.routers.llm-swap.middlewares=llm-apikey"
+      # Middleware defined here (not in the file provider) so compose expands
+      # ${LLM_API_KEY} from .env — Traefik's file provider does NOT expand env vars.
+      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.headerName=X-API-Key"
+      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.keys[0]=${LLM_API_KEY}"
 
   qdrant:
     image: qdrant/qdrant:latest
