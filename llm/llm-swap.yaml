@@ -131,12 +131,15 @@ models:
   # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
   # / top-k 20 / min-p 0 / presence 1.5).
   # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
-  # -c 262144 --parallel 2 = 2 KV slots of 128K. The context cut (from 320K) already frees
-  # most of the room; -ncmoe 4 offloads just 4 layers' expert FFN to CPU for a safety
-  # margin. Together ~34GB, so the full-GPU gemma judge (~15GB) CO-RESIDES in the `workers`
-  # set (~49GB, ample headroom) — orchestration/research judging never swaps. Keeps the
-  # floor: 2 concurrent nodes (dag.max_active_nodes=2), 128K each. (Raise -ncmoe if it OOMs
-  # beside gemma; -ncmoe 0 likely still fits if you want the 35b at full GPU speed.)
+  # -c 262144 --parallel 1 = one 256K KV slot (now the single model behind
+  # ORCH/RESEARCHER/CODER — see quack/docker-compose.yml). -ncmoe 4 offloads
+  # just 4 layers' expert FFN to CPU for a safety margin; together ~34GB, so
+  # the full-GPU gemma judge (~15GB) CO-RESIDES in the `workers` set (~49GB,
+  # ample headroom) — orchestration/research/coding judging never swaps.
+  # A 2nd concurrent DAG node (dag.max_active_nodes=2) now QUEUES for this
+  # single slot instead of getting its own 128K slot (was --parallel 2).
+  # (Raise -ncmoe if it OOMs beside gemma; -ncmoe 0 likely still fits if you
+  # want the 35b at full GPU speed.)
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -160,7 +163,7 @@ models:
       -ngl 999
       -ncmoe 4
       -c 262144
-      --parallel 2
+      --parallel 1
       -ub 2048
       -b 2048
       --cache-type-k q8_0

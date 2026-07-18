@@ -28,13 +28,14 @@ services:
       # LLM (llm-swap on the llm_default network). Empty key — llm-swap doesn't auth.
       QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
       QUACK_LLM_API_KEY: ""
-      # Orchestrator/researcher on the 35b (strong conversational intent + planning;
-      # coder-as-orch posted "please clarify" menus instead of reviewing). It doesn't
-      # co-reside with the 48GB coder, so a review costs ONE 35b->coder swap — fine now
-      # that gemma is CPU-only and never swaps. The 35b runs at full 256K context.
+      # One model (35b) for orchestrator/researcher/coder — strong conversational
+      # intent + planning (coder-as-orch posted "please clarify" menus instead of
+      # reviewing) and openwiki bakeoff winner for code comprehension (judge
+      # overall 7/10 vs. next-best 4/10). Single 256K-context slot, co-resides
+      # with the GPU gemma judge (~49GB) — chat/research/coding never swaps it.
       QUACK_ORCH_MODEL: qwen3.6-35b
       QUACK_RESEARCHER_MODEL: qwen3.6-35b
-      QUACK_CODER_MODEL: qwen3-coder-next
+      QUACK_CODER_MODEL: qwen3.6-35b
       QUACK_JUDGE_MODEL: gemma4-26b-a4b
       QUACK_IMAGE_MODEL: qwen3-vl-32b
       QUACK_MEDIA_MODEL: qwen3-omni-30b
