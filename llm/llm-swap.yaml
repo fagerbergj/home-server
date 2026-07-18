@@ -179,7 +179,7 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.6-27B-MTP-GGUF/snapshots/5cb35eb3dcbf52dbce5f87dbc64df6aaffadcace/Qwen3.6-27B-UD-Q4_K_XL.gguf
+      -m /root/.cache/huggingface/direct/Qwen3.6-27B-UD-Q4_K_XL.gguf
       --jinja
       --reasoning-format deepseek
       --reasoning-budget 512
@@ -187,13 +187,13 @@ models:
       --top-p 0.95
       --top-k 20
       --min-p 0
-      --presence-penalty 1.5
+      --presence-penalty 0
       -fa on
       --no-mmap
       --split-mode layer
       -fit off
       -ngl 999
-      -c 65536
+      -c 131072
       --parallel 1
       -ub 2048
       -b 2048
