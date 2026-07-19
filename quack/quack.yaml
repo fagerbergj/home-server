@@ -71,7 +71,7 @@ agents:
     memory_role: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # qwen3.6-35b served -c 262144 --parallel 2 ⇒ 131072/slot (one node = one slot)
-    judge_rounds: 1             # research converges in one draft; extra rounds burn tokens re-fetching to fix citations. Draft must cite inline (see prompt.md).
+    judge_rounds: 3             # co-resident judge (gemma), no swap cost — afford extra citation/quality passes. Draft must cite inline (see prompt.md).
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
@@ -80,7 +80,7 @@ agents:
     memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
     context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
-    judge_rounds: 1
+    judge_rounds: 5             # implementation is high-stakes; co-resident judge, no swap cost — afford more revise rounds
     # ACP coder (quack 0.6.0+, docs/acp-coder.md): the worker is an `opencode acp`
     # subprocess (shipped in the image). provider/model above bind qwen3-coder-next
     # via OPENCODE_CONFIG_CONTENT; git push is denied in the subprocess (delivery
@@ -94,7 +94,7 @@ agents:
     memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
-    judge_rounds: 1
+    judge_rounds: 5             # review is high-stakes; co-resident judge, no swap cost
     # External ACP reviewer, read_only: runs the change with its own tools, never
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
     # (inline comments included) — vetting.augmentFromAnswer.
@@ -107,7 +107,7 @@ agents:
     memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
-    judge_rounds: 2
+    judge_rounds: 5             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
       command: ["opencode", "acp"]
       read_only: true
