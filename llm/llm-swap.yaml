@@ -480,7 +480,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 4
+      -ncmoe 8
       -fa on
       -c 131072
       -ub 2048
