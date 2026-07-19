@@ -187,7 +187,7 @@ gates:
   judge:
     provider: default
     model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
-    max_rounds: 1           # expensive model-judge/revise rounds
+    max_rounds: 3           # up to 3 model-judge/revise rounds — affordable here since the judge (gemma) is co-resident, no model swap per round
     threshold: 0.7          # PER-CRITERION pass bar: every rubric criterion must clear it.
                             # On the rubric's 0-10 scale this is 7/10 ("met, with only
                             # minor gaps"); the verdict score is the lowest criterion
