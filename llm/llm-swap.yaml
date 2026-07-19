@@ -161,7 +161,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 2
+      -ncmoe 8
       -c 262144
       --parallel 1
       -ub 2048
