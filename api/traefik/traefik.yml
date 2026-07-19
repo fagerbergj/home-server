@@ -21,6 +21,14 @@ entryPoints:
         - "127.0.0.1/32"
         - "172.16.0.0/12"
         - "192.168.0.0/16"
+    transport:
+      respondingTimeouts:
+        # quack's SSE streams (/api/v1/.../stream) can be legitimately idle for
+        # minutes during a slow model/tool/judge round. The 180s default idleTimeout
+        # closes the connection mid-run. Raise the ceiling so a live-but-quiet
+        # stream survives. (Durable fix is a server-side SSE heartbeat; this is the
+        # proxy-side backstop — and NPM in front still needs proxy_read_timeout raised.)
+        idleTimeout: "1h"
 
   # Dashboard only — mapped to host port 8091, never forwarded through NPM
   traefik:
