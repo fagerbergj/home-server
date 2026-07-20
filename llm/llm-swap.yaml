@@ -370,7 +370,12 @@ models:
   # so Quack recreates them at the new dimension (it sizes one only on creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
-    ttl: 600
+    # 0 = never idle-unload → resident. RAM-only (-ngl 0, GPUs hidden below), so
+    # residency costs ~4GB RAM and zero VRAM. At ttl 600 it unloaded during long
+    # (16min+) explore nodes with no embed calls, then cold-loaded (~95s) on the
+    # node-handoff memory-commit — blowing Quack's 60s embed budget (#436) and
+    # thrashing the worker GPU. Keep it warm so the handoff never pays that.
+    ttl: 0
     # CPU-only (-ngl 0) but the ROCm build still init'd a HIP context holding
     # ~1.8 GB on GPU0 — enough to push gpt-oss-120b's KV alloc over the VRAM
     # cliff. Hide the GPUs from this process so it's truly RAM-only.
