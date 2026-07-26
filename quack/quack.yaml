@@ -291,6 +291,15 @@ workspace:
     JAVA_HOME: /toolchains/jdk17
     ANDROID_HOME: /toolchains/android-sdk
     ANDROID_SDK_ROOT: /toolchains/android-sdk
+    # JVM tooling ignores $HOME: java derives user.home from the passwd entry,
+    # so the jail's isolated home never reaches it and every tool writes to the
+    # unwritable /home/nonroot unless pointed somewhere explicitly. Each tool
+    # needs its own var - without these the build dies at "could not create
+    # parent directory for lock file" (gradle) and AndroidLocationsBuildService
+    # (AGP).
+    GRADLE_USER_HOME: /workspace/local/.quack-home/.gradle
+    ANDROID_USER_HOME: /workspace/local/.quack-home/.android
+    ANDROID_PREFS_ROOT: /workspace/local/.quack-home
     # daemon off: each gate check is a fresh short-lived child, so a lingering
     # daemon is just memory held on a box that also runs the models.
     # installations.paths is how ONE JAVA_HOME still serves repos needing
