@@ -275,9 +275,10 @@ workspace:
   # exit 127 "No such file or directory". Anything under /usr is already covered.
   # The Android/JDK toolchain lives in the quack-toolchains volume (mounted at
   # /toolchains, provisioned out-of-band) — the image ships only go+node, so
-  # anything Kotlin/Gradle has to come from here. JDK 8 is also in the volume
-  # (/toolchains/jdk8) for the pre-AGP-8 state of a repo; JAVA_HOME below picks
-  # 17 because AGP 8.x requires it.
+  # anything Kotlin/Gradle has to come from here. JDKs 17/21/25 are present;
+  # JAVA_HOME below picks 17 as the floor AGP 8.x requires, and Gradle selects
+  # a newer one per-project (see GRADLE_OPTS). Nothing older than 17 is
+  # installed, so a Gradle/AGP older than that simply cannot build here.
   exec_path:
     - /toolchains/jdk17/bin
     - /toolchains/android-sdk/platform-tools
@@ -294,9 +295,8 @@ workspace:
     # daemon is just memory held on a box that also runs the models.
     # installations.paths is how ONE JAVA_HOME still serves repos needing
     # different JDKs — Gradle 6.7+ picks per-project from its own toolchain
-    # block. Below 6.7 there is no such mechanism and JAVA_HOME above wins,
-    # so a Gradle 5 repo has to be built on the JDK 8 it was written for.
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.paths=/toolchains/jdk8,/toolchains/jdk17"
+    # block. Below 6.7 there is no such mechanism and JAVA_HOME above wins.
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.paths=/toolchains/jdk17,/toolchains/jdk21,/toolchains/jdk25"
 
   # check_commands: allowed command PREFIXES the planner may complete into a
   # code-implementer node's `checks` (§4) — the trust gate runs these against
