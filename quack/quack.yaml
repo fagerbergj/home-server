@@ -57,7 +57,7 @@ otel:
 orchestrator:
   provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
-  skills: [plan-work, format-markdown, present-coding-plan, contribute]
+  skills: [plan-work, format-markdown, present-coding-plan, contribute, write-mermaid]
   # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
 
 # Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
@@ -66,9 +66,10 @@ orchestrator:
 agents:
   web-researcher:
     bundle: agents/web-researcher
-    skills: [format-markdown, research-git-repos]
+    skills: [format-markdown, research-git-repos, write-mermaid]
     provider: default
-    memory_role: research   # shared-memory role bucket (see internal/memory/scope.go)
+    memory:
+      bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # qwen3.6-35b served -c 262144 --parallel 2 ⇒ 131072/slot (one node = one slot)
     judge_rounds: 3             # co-resident judge (gemma), no swap cost — afford extra citation/quality passes. Draft must cite inline (see prompt.md).
@@ -77,7 +78,8 @@ agents:
   code-implementer:
     bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
     provider: default
-    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
     context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
     judge_rounds: 5             # implementation is high-stakes; co-resident judge, no swap cost — afford more revise rounds
@@ -91,7 +93,8 @@ agents:
   code-reviewer:
     bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
     provider: default
-    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
     judge_rounds: 5             # review is high-stakes; co-resident judge, no swap cost
@@ -104,7 +107,8 @@ agents:
   code-explorer:
     bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
     provider: default
-    memory_role: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
     judge_rounds: 5             # exploration grounds all downstream coding; co-resident judge, no swap cost
@@ -113,7 +117,7 @@ agents:
       read_only: true
   synthesizer:
     bundle: agents/synthesizer
-    skills: [format-markdown, present-coding-plan, pr-authoring]
+    skills: [format-markdown, present-coding-plan, pr-authoring, write-mermaid]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # same model as web-researcher
@@ -336,9 +340,6 @@ workspace:
   # 0.6.0 (code agents are external ACP subprocesses); the ladder mechanism stays
   # available for any remaining tool.
   guards: {}
-  # Guard run_code at ONLY its own tier above (no bound-tool floor raise). Trusted
-  # single-tenant bot; keeps run_code usable without a gemma swap on every call.
-  run_code_guard_standalone: true
 
 # Bundled integrations (inbound + outbound). Optional; each is off unless its
 # sub-section is present. Commented out here because dev/local runs typically
