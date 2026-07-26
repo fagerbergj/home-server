@@ -290,9 +290,13 @@ workspace:
     JAVA_HOME: /toolchains/jdk17
     ANDROID_HOME: /toolchains/android-sdk
     ANDROID_SDK_ROOT: /toolchains/android-sdk
-    # Keep Gradle's daemon off: each gate check is a fresh short-lived child, so
-    # a lingering daemon is just memory held on a box that also runs the models.
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+    # daemon off: each gate check is a fresh short-lived child, so a lingering
+    # daemon is just memory held on a box that also runs the models.
+    # installations.paths is how ONE JAVA_HOME still serves repos needing
+    # different JDKs — Gradle 6.7+ picks per-project from its own toolchain
+    # block. Below 6.7 there is no such mechanism and JAVA_HOME above wins,
+    # so a Gradle 5 repo has to be built on the JDK 8 it was written for.
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.paths=/toolchains/jdk8,/toolchains/jdk17"
 
   # check_commands: allowed command PREFIXES the planner may complete into a
   # code-implementer node's `checks` (§4) — the trust gate runs these against
