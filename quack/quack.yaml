@@ -273,9 +273,27 @@ workspace:
   # runtime files elsewhere in its prefix (a Go SDK's GOROOT — src/, pkg/) needs
   # that directory listed too, or the child fails with "cannot find GOROOT" /
   # exit 127 "No such file or directory". Anything under /usr is already covered.
-  # exec_path:
-  #   - /home/user/.nvm/versions/node/v22.22.3/bin
-  #   - /home/user/sdk/go1.25.0            # a GOROOT outside /usr: bind the whole SDK
+  # The Android/JDK toolchain lives in the quack-toolchains volume (mounted at
+  # /toolchains, provisioned out-of-band) — the image ships only go+node, so
+  # anything Kotlin/Gradle has to come from here. JDK 8 is also in the volume
+  # (/toolchains/jdk8) for the pre-AGP-8 state of a repo; JAVA_HOME below picks
+  # 17 because AGP 8.x requires it.
+  exec_path:
+    - /toolchains/jdk17/bin
+    - /toolchains/android-sdk/platform-tools
+    - /toolchains/android-sdk/cmdline-tools/latest/bin
+
+  # env: extra environment for workspace children AND the ACP coding agent —
+  # the half exec_path can't do, since Gradle finds the JDK via JAVA_HOME and
+  # AGP finds the SDK via ANDROID_HOME, not by scanning PATH.
+  env:
+    JAVA_HOME: /toolchains/jdk17
+    ANDROID_HOME: /toolchains/android-sdk
+    ANDROID_SDK_ROOT: /toolchains/android-sdk
+    # Keep Gradle's daemon off: each gate check is a fresh short-lived child, so
+    # a lingering daemon is just memory held on a box that also runs the models.
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
   # check_commands: allowed command PREFIXES the planner may complete into a
   # code-implementer node's `checks` (§4) — the trust gate runs these against
   # the node's own workdir after each draft, and DERIVES a repo's own build/vet/
@@ -284,7 +302,7 @@ workspace:
   # its binary existing — a missing toolchain derives nothing instead of failing
   # the node. Explicit [] would disable checks entirely (the pre-0.6.0 state:
   # the gate never actually compiled or tested a coder node's work).
-  check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make"]
+  check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make", "./gradlew"]
 
   # Deployment-level per-host HTTPS git credentials — ONE identity per host (a
   # PAT), configured like every other secret. Empty (default) = public repos

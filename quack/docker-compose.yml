@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.14.0
+    image: ghcr.io/fagerbergj/quack:0.15.0
     container_name: quack
     command: ["server", "run"]
     env_file:
@@ -66,6 +66,10 @@ services:
       - ./quack.yaml:/config/quack.yaml:ro
       - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
       - quack-workspace:/workspace
+      # Android/JDK toolchain for the code agents + gate checks (quack 0.15.0
+      # workspace.exec_path/env). Provisioned out-of-band, not by this compose -
+      # declared external so a `down -v` can never wipe several GB of SDK.
+      - quack-toolchains:/toolchains
     depends_on:
       quack-postgres:
         condition: service_healthy
@@ -126,3 +130,5 @@ networks:
 volumes:
   quack-workspace:
   quack-pg:
+  quack-toolchains:
+    external: true
