@@ -333,9 +333,11 @@ extensions:
     # 4h: the ~30 tok/s local coder with judge+revise rounds needs more than the
     # 2h default on implement runs — the wall killed a real run mid-push (#286).
     run_timeout_minutes: 240
-    triggers: [mention, label, issue_plan, issue_implement, merge]  # reviews ONLY on the quack:review label — no auto-review on PR open (pr_opened removed)
+    triggers: [mention, label, issue_plan, issue_implement, merge, ci_fix, pr_fix]  # reviews ONLY on the quack:review label — no auto-review on PR open (pr_opened removed)
     labels:
       plan: "quack:plan"            # label an issue → quack posts an implementation plan
       implement: "quack:implement"  # label an issue → quack implements the plan, opens a PR
       review: "quack:review"        # label a PR → quack reviews it once (replaces auto_review_label)
       merge: "quack:merge"          # label a PR → deterministic merge IF quack's latest review APPROVED
+      monitor: "quack:monitor"    # label a PR → auto-heal it when CI fails (ci_fix)
+      fix: "quack:fix"            # label a PR → fix its failing checks once (pr_fix)
