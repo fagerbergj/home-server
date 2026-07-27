@@ -253,8 +253,15 @@ workspace:
   #     confined (a throwaway container/VM) or you trust the agents with that
   #     account. With no OS boundary the habit guard is all there is, so THERE
   #     run_command stays argv-only and still rejects & ; $ < > ` ( ).
-  sandbox: none   # bwrap cannot nest inside this Docker container (nested-namespace mount denied);
-                  # the container itself is the isolation boundary for this deploy.
+  #   landlock - a self-applied Landlock ruleset (no new namespace): the child
+  #     restricts ITSELF then execs, so it works inside an unprivileged
+  #     container where bwrap can't nest. Requires Linux kernel >= 6.2
+  #     (Landlock ABI >= 3); the server REFUSES TO START otherwise.
+  sandbox: landlock   # (0.16.0) bwrap can't nest in this unprivileged container, but Landlock is a
+                      # self-restriction rather than a namespace construction, so it applies here.
+                      # This is the first deploy where the ACP coding agent has an OS boundary at
+                      # all: RW = its node dir + isolated HOME + tmp, RO = system dirs + /toolchains.
+                      # Host kernel 6.8 (ABI >= 3 confirmed). Was `none` through 0.15.x.
 
   # Per-child resource limits (rlimits). A runaway build (`npm ci` on a hostile
   # repo, a test that allocates without bound) must not be able to take the host
@@ -283,7 +290,16 @@ workspace:
   # JAVA_HOME below picks 17 as the floor AGP 8.x requires, and Gradle selects
   # a newer one per-project (see GRADLE_OPTS). Nothing older than 17 is
   # installed, so a Gradle/AGP older than that simply cannot build here.
+  # (0.16.0) /toolchains itself is listed FIRST because exec_path entries are also
+  # what the sandbox grants read-only. Under `sandbox: none` there were no grants
+  # at all, so everything under /toolchains was reachable; under landlock only the
+  # listed dirs (+ a bin/ entry's lib/libexec/share siblings) are, and a JDK reads
+  # conf/security/java.security while AGP reads platforms/ and build-tools/ — none
+  # of which is a sibling of a bin/. One entry covering the whole read-only
+  # toolchain tree is simpler than enumerating each JDK and SDK subdir; the cost is
+  # one PATH entry that holds no executables, which exec lookup just skips.
   exec_path:
+    - /toolchains
     - /toolchains/jdk17/bin
     - /toolchains/android-sdk/platform-tools
     - /toolchains/android-sdk/cmdline-tools/latest/bin
@@ -320,6 +336,19 @@ workspace:
   # the node. Explicit [] would disable checks entirely (the pre-0.6.0 state:
   # the gate never actually compiled or tested a coder node's work).
   check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make", "./gradlew"]
+
+  # (0.16.0) gc: the periodic disk reaper. Set explicitly rather than inherited,
+  # because the first sweep on this deploy is destructive: /workspace has ~15G
+  # accumulated over weeks of dogfooding across 33 scopes. Note what it does NOT
+  # touch — .quack-home's npm/go/Gradle caches are 9.8G of that 15G and are left
+  # alone on purpose (a cache TTL makes every later run re-download its world),
+  # so this reclaims the chat scopes and gate scratch, not the bulk. Cache
+  # pressure needs size-bounded eviction, not a TTL.
+  gc:
+    enabled: true
+    chat_ttl_hours: 168      # 7 days idle; never a chat with a run in flight
+    scratch_ttl_hours: 6     # gate baseline worktrees + .quack-home/tmp
+    interval_hours: 1
 
   # Deployment-level per-host HTTPS git credentials — ONE identity per host (a
   # PAT), configured like every other secret. Empty (default) = public repos
