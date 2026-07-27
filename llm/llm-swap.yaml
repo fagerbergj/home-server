@@ -459,12 +459,6 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # -ncmoe 16 (was 8): with -fit off the VRAM ask is fixed, so when the workers were
-  # holding ~60 of 64 GB llama-server SIGABRT'd in the fit step rather than degrading,
-  # and every judge call 502'd until something evicted (observed 2026-07-27, a live
-  # plan run). Offloading more expert layers to CPU shrinks the ask instead of
-  # gambling on free VRAM; only 4B is active per token, so the cost is modest.
-  #
   # 26B-A4B MoE — 4B active, GPU (-ngl 999, ~15GB). Verdicts are ~20s on GPU vs 3-5min
   # (+ 10min timeouts) on CPU. It co-resides with the WORKERS (35b/omni/vl ~25-32GB +
   # 15GB fits), so orchestration/research judging never swaps. It CANNOT co-reside with
@@ -491,7 +485,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 16
+      -ncmoe 12   # (with -fit off the VRAM ask is fixed: too high and a busy GPU SIGABRTs it)
       -fa on
       -c 131072
       -ub 2048
