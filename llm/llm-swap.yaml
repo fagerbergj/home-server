@@ -467,8 +467,10 @@ models:
   # timeouts). Hence removed from the `coding` set but kept in `workers`. Compaction
   # stays on the coder (no swap). --split-mode layer keeps it off the contended-2nd-GPU
   # AllReduce path; -fa + q8 KV. Sampling per gemma-4's card (top_p 0.95 / top_k 64),
-  # temp 0.3. To revert to CPU (no swaps, slow): -ngl 0, HIP/ROCR-hide env, drop
-  # --split-mode/-fit/-fa/cache-type, and add j back to the `coding` set.
+  # temp 0.3. -ncmoe trades VRAM for CPU: with -fit off the ask is fixed, so too low
+  # SIGABRTs against busy workers. To revert to CPU (no swaps, slow): -ngl 0,
+  # HIP/ROCR-hide env, drop --split-mode/-fit/-fa/cache-type, and add j back to the
+  # `coding` set.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
@@ -485,7 +487,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 12   # (with -fit off the VRAM ask is fixed: too high and a busy GPU SIGABRTs it)
+      -ncmoe 12
       -fa on
       -c 131072
       -ub 2048
