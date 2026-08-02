@@ -26,7 +26,17 @@ sonarr:
       - template: sonarr-v4-quality-profile-anime
       - template: sonarr-v4-custom-formats-anime
 
-    custom_formats: []
+    custom_formats:
+      # Always prioritize Dual Audio releases (dual-audio wins over single-audio of same quality)
+      - trash_ids:
+          - 418f50b10f1907201b6cfdf881f467b7  # Anime Dual Audio
+        assign_scores_to:
+          - name: WEB-1080p
+            score: 2000
+          - name: WEB-2160p
+            score: 2000
+          - name: Remux-1080p - Anime
+            score: 2000
 
 radarr:
   movies:
