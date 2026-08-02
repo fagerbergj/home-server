@@ -37,6 +37,8 @@ sonarr:
             score: 2000
           - name: Remux-1080p - Anime
             score: 2000
+          - name: Low Availability
+            score: 2000
 
 radarr:
   movies:
