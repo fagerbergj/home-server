@@ -25,7 +25,7 @@ providers:
 stores:
   default_ledger:
     kind: filesystem
-    root: /app/workspace/recordings
+    root: /workspace/recordings
   default_postgres:
     kind: postgres
     url: ${QUACK_DATABASE_URL}
