@@ -51,6 +51,13 @@ matrix:
     # CPU judge's 3-5min + 10min timeouts). j stays warm in the `workers` set (it fits
     # beside the 25-32GB workers), so orchestration/research judging never swaps.
     coding:   "c & e"
+    # Judge ALONE - the state the `coding` comment above assumes exists but no set
+    # provided: `workers` is the only other set holding j and it also demands a
+    # 25-32GB worker, so a verdict requested mid-coding had no satisfiable minimal
+    # state. gemma was launched on top of the still-resident coder, didn't fit, and
+    # llama-server SEGFAULTED into a restart loop instead of swapping (quack #650:
+    # every gated run then delivered unvetted).
+    judge:    "j & e"
     # Large fallbacks one at a time; no judge (too big to co-reside), embed kept.
     fallback: "(p | n9 | sl) & e"
     # Pure-embed request when no GPU worker is loaded → just e.
