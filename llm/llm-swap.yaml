@@ -475,7 +475,8 @@ models:
   # stays on the coder (no swap). --split-mode layer keeps it off the contended-2nd-GPU
   # AllReduce path; -fa + q8 KV. Sampling per gemma-4's card (top_p 0.95 / top_k 64),
   # temp 0.3. -ncmoe trades VRAM for CPU: with -fit off the ask is fixed, so too low
-  # SIGABRTs against busy workers. To revert to CPU (no swaps, slow): -ngl 0,
+  # SIGABRTs against busy workers — raised 12→18 after nine 502s in one day, all on
+  # code nodes (judge dying on load while the coder still held VRAM). To revert to CPU (no swaps, slow): -ngl 0,
   # HIP/ROCR-hide env, drop --split-mode/-fit/-fa/cache-type, and add j back to the
   # `coding` set.
   "gemma4-26b-a4b":
@@ -494,7 +495,7 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -ncmoe 12
+      -ncmoe 18
       -fa on
       -c 131072
       -ub 2048
