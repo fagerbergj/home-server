@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup notes
+    url: https://github.com/fagerbergj/home-server/blob/main/setup.md
+    about: How the stack is wired and deployed.
