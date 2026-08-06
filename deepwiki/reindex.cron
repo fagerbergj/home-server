@@ -1,0 +1,3 @@
+# Deepwiki nightly reindex (03:00) - runs when quack should be idle to avoid saturating llm-swap's single embedding slot.
+# Install with: echo 'line below' | crontab -
+0 3 * * * /home/fagerbergj/workspace/home-server/deepwiki/reindex.sh >> /var/log/deepwiki-reindex.log 2>&1
