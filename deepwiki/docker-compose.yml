@@ -14,6 +14,12 @@ services:
       - GENERATOR_MODEL=qwen3.5-9b
       - DEEPWIKI_MAX_CONCURRENT_WIKI_TASKS=1
       - DEEPWIKI_WIKI_PAGE_CONCURRENCY=1
+    ports:
+      # Tailnet-only, matching the quack pattern: bound to the tailscale
+      # interface so it is never on the LAN or the public internet. deepwiki
+      # has no auth of its own and indexes home-server, so tailnet membership
+      # IS the access boundary.
+      - "100.81.155.8:3007:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.deepwiki.rule=Host(`deepwiki.jasonfagerberg.duckdns.org`)"
