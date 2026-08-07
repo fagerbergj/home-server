@@ -1,6 +1,6 @@
 services:
   deepwiki:
-    build: ./deepwiki-open
+    image: ghcr.io/asyncfuncai/deepwiki-open:sha-cbd1ebd
     container_name: deepwiki
     env_file:
       - ../.env
