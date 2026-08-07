@@ -27,6 +27,9 @@ services:
       - OPENSEARCH_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=${OPENSEARCH_INDEX:-documents}
       - PIPELINE_SYSTEM_USER_ID=4fc55e8a27ebf91f9650c48a59468793350b8d49b4777021966e2eb2d2b0dfb5
+      # Read via os.Getenv, never interpolated here - unset leaves the MCP
+      # endpoint unauthenticated rather than failing, so it must be named.
+      - MCP_API_KEY=${MCP_API_KEY}
     depends_on:
       shared-postgres:
         condition: service_healthy
