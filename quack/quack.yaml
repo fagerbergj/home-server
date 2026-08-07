@@ -276,9 +276,11 @@ workspace:
   # repo, a test that allocates without bound) must not be able to take the host
   # down with it. 0 = inherit the server's limit.
   limits:
-    address_space_mb: 8192   # RLIMIT_AS, PER PROCESS. Do not tighten much: node's V8
-                             # reserves a huge VIRTUAL region at startup, so a small
-                             # limit doesn't slim a build, it stops node running at all.
+    address_space_mb: 0      # OFF with max_file_size_mb, bisecting quack#798 - each was
+                             # previously tested with the OTHER still on, which proves
+                             # nothing. Was 8192. RLIMIT_AS, PER PROCESS: node's V8 reserves
+                             # a huge VIRTUAL region at startup, so a small limit doesn't
+                             # slim a build, it stops node running at all.
     max_procs: 512           # RLIMIT_NPROC — only applied inside the bwrap user namespace
                              # (it is counted per-UID system-wide, so outside one it would
                              # break every fork). --unshare-pid contains fork bombs anyway.
