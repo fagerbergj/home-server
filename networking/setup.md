@@ -223,6 +223,7 @@ These never need to leave the tailnet — no NPM proxy host, no Authentik route.
 - qBittorrent web UI
 - Authentik direct (`:9000`) — only useful for break-glass; normal use is the public `auth.` host
 - llm-swap API (`:11436`) — no auth on the upstream; tailnet membership is the access boundary
+- deepwiki (`:3007`) — no auth of its own, and it indexes `home-server`, so tailnet membership is the access boundary. Deliberately no NPM proxy host: its Traefik router exists but nothing public routes to it.
 - Grafana (`:3004`) — admin-only metrics dashboard
 - Uptime Kuma (`:3001`) — personal status board, not a public status page
 
