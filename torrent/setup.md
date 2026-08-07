@@ -11,7 +11,7 @@
    - `[Interface] Address` → `WIREGUARD_ADDRESSES` — **IPv4 only** (e.g. `10.150.x.x/32`). AirVPN's config also includes an IPv6 address (`fd7d:.../128`); drop it, gluetun fails to start with IPv6 addresses unless IPv6 support is explicitly enabled.
    - `[Peer] PresharedKey` → `WIREGUARD_PRESHARED_KEY`
 3. **Client Area > Forwarded Ports > Add** — reserve any single port. This is your `AIRVPN_FORWARDED_PORT`. AirVPN's port forwarding is static and tied to your account; the same port works on every server.
-4. Add all four values to `~/workspace/home-server/.env` (see root `.env.example`):
+4. Add all four values to `~/workspace/home-server/torrent/.env` (see `torrent/.env.example`):
    ```
    WIREGUARD_PRIVATE_KEY=...
    WIREGUARD_PRESHARED_KEY=...
