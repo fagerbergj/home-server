@@ -1,0 +1,39 @@
+services:
+  deepwiki:
+    image: ghcr.io/asyncfuncai/deepwiki-open:sha-cbd1ebd
+    container_name: deepwiki
+    env_file:
+      - ../.env
+    environment:
+      - PORT=8001
+      - NODE_ENV=production
+      - SERVER_BASE_URL=http://localhost:8001
+      - LITELLM_BASE_URL=http://llm-swap:11436
+      - DEEPWIKI_EMBEDDER_TYPE=litellm
+      - EMBEDDING_MODEL=qwen3-embed
+      - GENERATOR_MODEL=qwen3.5-9b
+      - DEEPWIKI_MAX_CONCURRENT_WIKI_TASKS=1
+      - DEEPWIKI_WIKI_PAGE_CONCURRENCY=1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.deepwiki.rule=Host(`deepwiki.jasonfagerberg.duckdns.org`)"
+      - "traefik.http.routers.deepwiki.entrypoints=api"
+      - "traefik.http.services.deepwiki.loadbalancer.server.port=3000"
+    networks:
+      - api_gateway
+      - llm_default
+    volumes:
+      - deepwiki-db:/root/.adalflow
+      - /home/jason-server/workspace/home-server:/repos/home-server:ro
+      - /home/jason-server/workspace/document-pipeline:/repos/document-pipeline:ro
+      - /home/jason-server/workspace/games:/repos/games:ro
+    restart: unless-stopped
+
+volumes:
+  deepwiki-db:
+
+networks:
+  api_gateway:
+    external: true
+  llm_default:
+    external: true
