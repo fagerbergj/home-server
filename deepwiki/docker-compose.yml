@@ -2,8 +2,11 @@ services:
   deepwiki:
     image: ghcr.io/asyncfuncai/deepwiki-open:sha-cbd1ebd
     container_name: deepwiki
-    env_file:
-      - ../.env
+    # DELIBERATELY no `env_file: ../.env`. This image dumps its whole environment
+    # (`declare -x ...`) to stdout at startup, so every secret in that file landed
+    # in `docker logs deepwiki` - Anthropic, Authentik, B2, the backup passphrase,
+    # the *arr keys. deepwiki needs the handful of variables below and nothing
+    # else; it clones public repos anonymously and holds no credential of ours.
     environment:
       - PORT=8001
       - NODE_ENV=production

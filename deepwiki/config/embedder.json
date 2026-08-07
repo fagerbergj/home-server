@@ -2,8 +2,8 @@
   "embedder": {
     "client_class": "OpenAIClient",
     "initialize_kwargs": {
-      "api_key": "${OPENAI_API_KEY}",
-      "base_url": "${OPENAI_BASE_URL}"
+      "api_key": "noauth",
+      "base_url": "http://llm-swap:11436/v1"
     },
     "batch_size": 10,
     "model_kwargs": {
