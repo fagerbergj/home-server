@@ -276,9 +276,12 @@ workspace:
   # repo, a test that allocates without bound) must not be able to take the host
   # down with it. 0 = inherit the server's limit.
   limits:
-    address_space_mb: 8192   # RLIMIT_AS, PER PROCESS. Do not tighten much: node's V8
-                             # reserves a huge VIRTUAL region at startup, so a small
-                             # limit doesn't slim a build, it stops node running at all.
+    address_space_mb: 0      # DISABLED while bisecting quack#798: 0.26.0 (#646) started
+                             # applying these to the long-lived ACP subprocess, and opencode
+                             # now dies at initialize on `PRAGMA wal_checkpoint(PASSIVE)`.
+                             # Was 8192. RLIMIT_AS, PER PROCESS - node's V8 reserves a huge
+                             # VIRTUAL region at startup, so a small limit doesn't slim a
+                             # build, it stops node running at all.
     max_procs: 512           # RLIMIT_NPROC — only applied inside the bwrap user namespace
                              # (it is counted per-UID system-wide, so outside one it would
                              # break every fork). --unshare-pid contains fork bombs anyway.
