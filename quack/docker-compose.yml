@@ -13,8 +13,12 @@ services:
     image: ghcr.io/fagerbergj/quack:0.26.1
     container_name: quack
     command: ["server", "run"]
-    env_file:
-      - ../.env
+    # No `env_file: ../.env`. That handed this container all 63 variables - the
+    # restic password, B2 keys, WireGuard private key, Authentik secret - when it
+    # needs the four QUACK_* below. Values still come from ../.env, but through
+    # `docker compose --env-file ../.env` interpolation, so only what is named
+    # here reaches the process. QUACK_GITHUB_APP_PRIVATE_KEY_PATH stays out: it is
+    # a HOST path for the volume mount, not something the container reads.
     environment:
       QUACK_CONFIG: /config/quack.yaml
       # debug while we iterate on delivery/loop behavior (per-round vetting +
