@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-ENV_FILE="../.env"
+ENV_FILE="./.env"
 
 # Generates and sets a key only if not already present — safe to re-run
 set_secret() {
@@ -22,8 +22,11 @@ set_secret() {
 }
 
 touch "$ENV_FILE"
+chmod 600 "$ENV_FILE"
 
 set_secret RMFAKECLOUD_JWT_SECRET_KEY "$(openssl rand -hex 32)"
 set_secret RMFAKECLOUD_STORAGE_URL "https://remarkable.jasonfagerberg.duckdns.org"
-set_secret COUCHDB_USER "admin"
-set_secret COUCHDB_PASSWORD "$(openssl rand -hex 24)"
+
+echo
+echo "Still set by hand in $ENV_FILE (not auto-generated):"
+echo "  GMAIL_APP_PASSWORD — https://myaccount.google.com/apppasswords"

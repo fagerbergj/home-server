@@ -4,8 +4,6 @@ services:
     container_name: rmfakecloud
     ports:
       - "3005:3000"
-    env_file:
-      - ../.env
     environment:
       - JWT_SECRET_KEY=${RMFAKECLOUD_JWT_SECRET_KEY}
       - STORAGE_URL=${RMFAKECLOUD_STORAGE_URL}
