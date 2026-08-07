@@ -10,8 +10,8 @@ services:
       - SERVER_BASE_URL=http://localhost:8001
       - LITELLM_BASE_URL=http://llm-swap:11436
       - DEEPWIKI_EMBEDDER_TYPE=litellm
-      - EMBEDDING_MODEL=text-embedding-3-small
-      - GENERATOR_MODEL=qwen/qwen2.5-72b-instruct
+      - EMBEDDING_MODEL=qwen3-embed
+      - GENERATOR_MODEL=qwen3.5-9b
       - DEEPWIKI_MAX_CONCURRENT_WIKI_TASKS=1
       - DEEPWIKI_WIKI_PAGE_CONCURRENCY=1
     labels:
@@ -24,11 +24,9 @@ services:
       - llm_default
     volumes:
       - deepwiki-db:/root/.adalflow
-      - /home/fagerbergj/workspace/nightsout:/repos/nightsout:ro
-      - /home/fagerbergj/workspace/home-server:/repos/home-server:ro
-      - /home/fagerbergj/workspace/dotagents:/repos/dotagents:ro
-      - /home/fagerbergj/workspace/document-pipeline:/repos/document-pipeline:ro
-      - /home/fagerbergj/workspace/games:/repos/games:ro
+      - /home/jason-server/workspace/home-server:/repos/home-server:ro
+      - /home/jason-server/workspace/document-pipeline:/repos/document-pipeline:ro
+      - /home/jason-server/workspace/games:/repos/games:ro
     restart: unless-stopped
 
 volumes:
