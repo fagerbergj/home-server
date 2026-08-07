@@ -4,7 +4,7 @@
 # Safe to re-run — it never destroys data; mutating steps ask first.
 set -euo pipefail
 cd "$(dirname "$0")"
-ENV_FILE="../.env"
+ENV_FILE="./.env"
 
 say()  { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[1;32m✓\033[0m %s\n' "$*"; }
@@ -19,7 +19,7 @@ for net in api_gateway llm_default; do
   else echo "  MISSING network '$net' — bring up its owning compose first (api/ for api_gateway, llm/ for llm_default)"; exit 1; fi
 done
 
-# ── 2. Secrets in ../.env ───────────────────────────────────────────────────
+# ── 2. Secrets in ./.env ───────────────────────────────────────────────────
 say "Secrets ($ENV_FILE)"
 touch "$ENV_FILE"; source "$ENV_FILE" 2>/dev/null || true
 need_manual=0
