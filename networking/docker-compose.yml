@@ -14,8 +14,6 @@ services:
   duckdns-updater:
     image: linuxserver/duckdns:latest
     container_name: duckdns-updater
-    env_file:
-      - ../.env
     environment:
       - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
       - TOKEN=${DUCKDNS_TOKEN}

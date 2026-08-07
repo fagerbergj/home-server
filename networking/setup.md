@@ -23,7 +23,7 @@ DDNS is handled by the `duckdns-updater` container — no router config needed.
 1. Go to [duckdns.org](https://www.duckdns.org) and sign in
 2. Claim the subdomain `jasonfagerberg` (or your preferred name)
 3. Copy your token
-4. Add to `~/workspace/home-server/.env`:
+4. Add to `~/workspace/home-server/networking/.env`:
    ```
    DUCKDNS_SUBDOMAIN=jasonfagerberg
    DUCKDNS_TOKEN=<your-token>
