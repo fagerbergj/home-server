@@ -15,11 +15,10 @@ services:
       - DEEPWIKI_MAX_CONCURRENT_WIKI_TASKS=1
       - DEEPWIKI_WIKI_PAGE_CONCURRENCY=1
     ports:
-      # Tailnet-only, matching the quack pattern: bound to the tailscale
-      # interface so it is never on the LAN or the public internet. deepwiki
-      # has no auth of its own and indexes home-server, so tailnet membership
-      # IS the access boundary.
-      - "100.81.155.8:3007:3000"
+      # Broad bind like the arr stack - reachable on the LAN and the tailnet,
+      # but never port-forwarded and with no NPM proxy host, so it stays off
+      # the public internet.
+      - "3007:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.deepwiki.rule=Host(`deepwiki.jasonfagerberg.duckdns.org`)"
