@@ -81,7 +81,7 @@ agents:
       bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # qwen3.6-35b served -c 262144 --parallel 2 ⇒ 131072/slot (one node = one slot)
-    judge_rounds: 3             # co-resident judge (gemma), no swap cost — afford extra citation/quality passes. Draft must cite inline (see prompt.md).
+    judge_rounds: 2             # co-resident judge (gemma), no swap cost. Draft must cite inline (see prompt.md).
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
@@ -91,7 +91,7 @@ agents:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
     context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
-    judge_rounds: 5             # implementation is high-stakes; co-resident judge, no swap cost — afford more revise rounds
+    judge_rounds: 2             # implementation is high-stakes, but past round 2 the revise grind rarely converges
     # ACP coder (quack 0.6.0+, docs/acp-coder.md): the worker is an `opencode acp`
     # subprocess (shipped in the image). provider/model above bind qwen3-coder-next
     # via OPENCODE_CONFIG_CONTENT; git push is denied in the subprocess (delivery
@@ -106,7 +106,7 @@ agents:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
-    judge_rounds: 5             # review is high-stakes; co-resident judge, no swap cost
+    judge_rounds: 2             # review is high-stakes; co-resident judge, no swap cost
     # External ACP reviewer, read_only: runs the change with its own tools, never
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
     # (inline comments included) — vetting.augmentFromAnswer.
@@ -120,7 +120,7 @@ agents:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
     context_window: 262144
-    judge_rounds: 5             # exploration grounds all downstream coding; co-resident judge, no swap cost
+    judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
       command: ["opencode", "acp"]
       read_only: true
@@ -130,7 +130,7 @@ agents:
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072       # same model as web-researcher
-    judge_rounds: 3             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted; co-resident judge, no swap cost
+    judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted
     tools: []
   media-reader:
     bundle: agents/media-reader
@@ -200,7 +200,7 @@ gates:
   judge:
     provider: default
     model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
-    max_rounds: 3           # up to 3 model-judge/revise rounds — affordable here since the judge (gemma) is co-resident, no model swap per round
+    max_rounds: 2           # default for any agent without its own judge_rounds (a per-agent value OVERRIDES this, it is not a ceiling - serve.go's perAgentGate)
     threshold: 0.7          # PER-CRITERION pass bar: every rubric criterion must clear it.
                             # On the rubric's 0-10 scale this is 7/10 ("met, with only
                             # minor gaps"); the verdict score is the lowest criterion
