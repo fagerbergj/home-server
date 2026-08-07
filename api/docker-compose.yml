@@ -4,8 +4,6 @@ services:
     # Pin to an immutable X.Y.Z here when a deploy should be deliberate.
     image: ghcr.io/fagerbergj/document-pipeline:latest
     container_name: document-pipeline
-    env_file:
-      - ../.env
     environment:
       - OCR_MODEL=${OCR_MODEL}
       - CLARIFY_MODEL=${CLARIFY_MODEL}
@@ -69,8 +67,6 @@ services:
   shared-postgres:
     image: postgres:17-alpine
     container_name: shared-postgres
-    env_file:
-      - ../.env
     environment:
       POSTGRES_USER: ${SHARED_DB_USER}
       POSTGRES_PASSWORD: ${SHARED_DB_PASSWORD}
