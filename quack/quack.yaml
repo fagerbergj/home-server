@@ -276,16 +276,18 @@ workspace:
   # repo, a test that allocates without bound) must not be able to take the host
   # down with it. 0 = inherit the server's limit.
   limits:
-    address_space_mb: 0      # DISABLED while bisecting quack#798: 0.26.0 (#646) started
-                             # applying these to the long-lived ACP subprocess, and opencode
-                             # now dies at initialize on `PRAGMA wal_checkpoint(PASSIVE)`.
-                             # Was 8192. RLIMIT_AS, PER PROCESS - node's V8 reserves a huge
-                             # VIRTUAL region at startup, so a small limit doesn't slim a
-                             # build, it stops node running at all.
+    address_space_mb: 8192   # RLIMIT_AS, PER PROCESS. Do not tighten much: node's V8
+                             # reserves a huge VIRTUAL region at startup, so a small
+                             # limit doesn't slim a build, it stops node running at all.
     max_procs: 512           # RLIMIT_NPROC — only applied inside the bwrap user namespace
                              # (it is counted per-UID system-wide, so outside one it would
                              # break every fork). --unshare-pid contains fork bombs anyway.
-    max_file_size_mb: 1024   # RLIMIT_FSIZE: one command cannot fill the disk.
+    max_file_size_mb: 0      # OFF pending quack#798. 0.26.0 (#646) started applying this to
+                             # the ACP subprocess, whose opencode.db is ALREADY 1.27GB - past
+                             # the 1024 ceiling - so every `PRAGMA wal_checkpoint` hit EFBIG
+                             # and opencode died at initialize. A fixed FSIZE cannot bound a
+                             # long-lived agent with a growing DB; restore only once #798
+                             # decides what that process's ceiling should be.
 
   # exec_path: extra PATH dirs for run_command/checks/git children — for toolchains
   # outside the fixed system dirs (nvm, asdf, a $HOME-installed Go SDK). Under
