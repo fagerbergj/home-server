@@ -32,7 +32,7 @@ First transcription request downloads pyannote models (~500 MB) into `./model-ca
 
 ## Configuration
 
-Set in the root `.env` or `docker-compose.yml` environment:
+Set in `audio/.env` or `docker-compose.yml` environment:
 
 | Variable | Default | Notes |
 |---|---|---|

@@ -38,7 +38,7 @@ pyannote's diarization model is open-source but gated for usage tracking. One-ti
    - Type: Read
    - Name: anything (e.g. `home-server-audio`)
    - Copy the `hf_...` string immediately (it won't show again)
-4. Add to the root `.env`:
+4. Add to `audio/.env` (see `audio/.env.example`):
    ```
    HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
    ```
@@ -99,7 +99,7 @@ You can re-enroll the same name multiple times — additional samples accumulate
 
 ## Troubleshooting
 
-- **`HF_TOKEN not set`** — token missing from `.env` or env not picked up. `docker compose config` to verify it's in the rendered service env.
+- **`HF_TOKEN not set`** — token missing from `audio/.env` or env not picked up. `docker compose config` to verify it's in the rendered service env.
 - **`Pipeline.from_pretrained returned None`** — token is set but you haven't accepted the pyannote license. Visit the model pages above and click Agree.
 - **`/dev/kfd: no such file or directory`** — ROCm kernel module not loaded. Run `rocm-smi` on the host; if it fails, check that `amdgpu-install --usecase=rocm,dkms` completed and you rebooted.
 - **`permission denied /dev/kfd`** — user not in `render` group. `sudo usermod -aG render,video $USER` then log out and back in.
