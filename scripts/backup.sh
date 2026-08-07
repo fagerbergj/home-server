@@ -16,7 +16,7 @@
 #   - qBittorrent config            torrent/config/
 #   - Authentik postgres DB         pg_dump via docker exec
 #   - Authentik media/certs         api/data/authentik-media/ + api/data/authentik-certs/
-#   - .env                          repo root .env (gpg-encrypted)
+#   - env files                     root .env + every <stack>/.env (gpg-encrypted)
 #   - System config                 /etc/fstab, /etc/mdadm/mdadm.conf
 #   - Root crontab
 #
@@ -25,12 +25,12 @@
 # the irreplaceable bits.
 # Plex/audiobook media files live on the media pool — not backed up here.
 #
-# .env is encrypted with gpg before writing. Requires BACKUP_GPG_PASSPHRASE
+# Env files are encrypted with gpg before writing. Requires BACKUP_GPG_PASSPHRASE
 # in .env or environment. Falls back to skipping if not set.
 #
 # Offsite backup (optional, additive): if RESTIC_REPOSITORY and RESTIC_PASSWORD
 # are set in .env, the irreplaceable subset (photos, documents, postgres dumps,
-# vaultwarden data, rmfakecloud, env.gpg) is pushed to a restic repo after the
+# vaultwarden data, rmfakecloud, env.tar.gpg) is pushed to a restic repo after the
 # local backup finishes. Works with any restic backend — S3, Backblaze B2,
 # rsync.net, SFTP. Restic handles encryption, dedup, and retention.
 #
@@ -54,9 +54,13 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [[ -d /mnt/personal ]] || die "/mnt/personal is not mounted"
 [[ -f "$ENV_FILE" ]] || die ".env not found at $ENV_FILE"
 
-# Load DB credentials from .env
+# Root first, then each stack's own file - the pg_dump credentials below moved
+# into photos/.env, so sourcing only the root would break once it is pruned.
 # shellcheck disable=SC1090
-set -a; source "$ENV_FILE"; set +a
+set -a
+source "$ENV_FILE"
+for f in "$REPO_ROOT"/*/.env; do [[ -f "$f" ]] && source "$f"; done
+set +a
 
 mkdir -p "$DEST"
 log "Backing up to $DEST"
@@ -141,15 +145,19 @@ rsync -a --delete "$REPO_ROOT/api/data/authentik-certs/" "$DEST/authentik-certs/
 
 # ── .env (encrypted) ──────────────────────────────────────────────────────
 
-log ".env (encrypted)..."
+log "env files (encrypted)..."
 if command -v gpg &>/dev/null && [[ -n "${BACKUP_GPG_PASSPHRASE:-}" ]]; then
-    gpg --batch --yes --passphrase "$BACKUP_GPG_PASSPHRASE" \
-        --symmetric --cipher-algo AES256 \
-        --output "$DEST/env.gpg" \
-        "$ENV_FILE"
-    log "  .env encrypted to env.gpg"
+    # Each stack owns its secrets now, so the root .env alone is not a full
+    # restore. Paths are stored repo-relative so a restore lands them back.
+    mapfile -t ENV_FILES < <(cd "$REPO_ROOT" && ls .env */.env 2>/dev/null)
+    [[ ${#ENV_FILES[@]} -gt 0 ]] || die "no env files found under $REPO_ROOT"
+    tar -C "$REPO_ROOT" -cf - "${ENV_FILES[@]}" \
+      | gpg --batch --yes --passphrase "$BACKUP_GPG_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            --output "$DEST/env.tar.gpg"
+    log "  ${#ENV_FILES[@]} env file(s) encrypted to env.tar.gpg: ${ENV_FILES[*]}"
 else
-    log "  WARNING: skipping .env backup — set BACKUP_GPG_PASSPHRASE in .env to enable"
+    log "  WARNING: skipping env backup — set BACKUP_GPG_PASSPHRASE to enable"
 fi
 
 # ── System config ─────────────────────────────────────────────────────────
@@ -168,7 +176,7 @@ ls -lh "$DEST"
 # ── Offsite (restic — provider-agnostic, uses RESTIC_REPOSITORY URL) ──────
 #
 # Pushes only the irreplaceable subset (photos, documents, postgres dumps,
-# vaultwarden, rmfakecloud, env.gpg) — not the full local backup. Restic
+# vaultwarden, rmfakecloud, env.tar.gpg) — not the full local backup. Restic
 # handles encryption, deduplication, and retention.
 #
 # One-time setup before this runs cleanly:
@@ -198,7 +206,7 @@ if [[ -n "${RESTIC_REPOSITORY:-}" && -n "${RESTIC_PASSWORD:-}" ]]; then
             "$DEST/rmfakecloud"
             "$DEST/minecraft"
         )
-        [[ -f "$DEST/env.gpg" ]] && OFFSITE_SOURCES+=("$DEST/env.gpg")
+        [[ -f "$DEST/env.tar.gpg" ]] && OFFSITE_SOURCES+=("$DEST/env.tar.gpg")
 
         log "  Sources (size each):"
         for src in "${OFFSITE_SOURCES[@]}"; do
