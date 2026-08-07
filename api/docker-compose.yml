@@ -1,8 +1,8 @@
 services:
   document-pipeline:
-    build:
-      context: ~/workspace/document-pipeline
-      dockerfile: Dockerfile
+    # Published by document-pipeline's publish.yml on every push to main.
+    # Pin to an immutable X.Y.Z here when a deploy should be deliberate.
+    image: ghcr.io/fagerbergj/document-pipeline:latest
     container_name: document-pipeline
     env_file:
       - ../.env
