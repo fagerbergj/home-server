@@ -1,11 +1,41 @@
 #!/usr/bin/env bash
-# Reindex all tracked repos in deepwiki.
+# Incrementally reindex tracked repos in deepwiki.
 #
-# To install as a nightly cron job (03:00), add these lines to root crontab:
-#   $ echo '0 3 * * * /home/jason-server/workspace/home-server/deepwiki/reindex.sh >> "$LOG" 2>&1' | crontab -
-set -euo pipefail
+# deepwiki-open has no incremental update at any layer: the wiki-page cache
+# short-circuits a resubmit to a no-op (api/services/wiki/tasks.py
+# wiki_cache_exists gate, checked BEFORE indexing even starts), the
+# embedding cache is all-or-nothing (api/rag/pipeline.py), and the clone is
+# never re-pulled (api/repository.py, no `git fetch`/`pull`). This script is
+# the incremental layer deepwiki doesn't have: it only touches a repo whose
+# upstream default branch actually moved since the last VERIFIED success, by
+# deleting that repo's clone + embedding db + wiki-page cache and letting
+# deepwiki rebuild it from scratch - a full re-embed, but only for repos
+# that changed.
+#
+# CRON IS CURRENTLY DISABLED on jason-server (commented out in root's/the
+# deploy user's crontab) - the re-index-on-change path above has not yet
+# been exercised end to end on this host (queue contention during rollout
+# prevented a full observed run; see the commit that introduced this
+# comment for exactly what was and wasn't verified). Re-enabling is a
+# deliberate step to take once that path has actually been watched
+# through to a completed, verified run - don't just uncomment this on
+# faith.
+#
+# To re-enable as a nightly cron job (03:00):
+#   $ crontab -l | { cat; echo '0 3 * * * /home/jason-server/workspace/home-server/deepwiki/reindex.sh >> $HOME/deepwiki-reindex.log 2>&1'; } | crontab -
+#
+# Cadence should stay nightly once re-enabled: the skip path is cheap (one
+# `git ls-remote` per repo), but a real reindex is still a CPU-heavy embed
+# job on the same box that serves quack's models, so it should stay confined
+# to off-peak hours rather than firing more often.
 
-LOG="${DEEPWIKI_REINDEX_LOG:-$HOME/deepwiki-reindex.log}"
+STATE="${DEEPWIKI_REINDEX_STATE:-$HOME/.deepwiki-reindex.state}"
+API="http://localhost:3007/api"
+CONTAINER="deepwiki"
+POLL_INTERVAL=30
+POLL_MAX=480 # ~4h ceiling per repo
+
+set -u
 
 REPOS=(
   "https://github.com/fagerbergj/nightsout"
@@ -16,28 +46,148 @@ REPOS=(
   "https://github.com/fagerbergj/games"
 )
 
-for repo_url in "${REPOS[@]}"; do
+log() { echo "[$(date '+%F %T')] $*"; }
+
+touch "$STATE"
+
+state_get() {
+  awk -F'\t' -v k="$1" '$1==k{print $2; found=1} END{if(!found) exit 1}' "$STATE"
+}
+
+state_set() {
+  local key="$1" sha="$2" tmp
+  tmp=$(mktemp "${STATE}.XXXXXX")
+  awk -F'\t' -v k="$key" '$1!=k' "$STATE" >"$tmp"
+  printf '%s\t%s\n' "$key" "$sha" >>"$tmp"
+  mv "$tmp" "$STATE"
+}
+
+# One repo at a time, own scope for its intermediate vars - a failure here
+# must never take the rest of the loop down with it (no top-level set -e).
+reindex_one() {
+  local repo_url="$1" repo_name repo_owner key remote_sha last_sha
+  local active_resp active_id submit task_id status since resp err
+  local non_empty_max cache_check
+
   repo_name=$(basename "$repo_url")
   repo_owner=$(basename "$(dirname "$repo_url")")
+  key="${repo_owner}/${repo_name}"
 
-  echo "[$(date '+%F %T')] Starting index for $repo_name ..."
-  # POST /wiki/tasks requires owner AND repo alongside repo_url - sending
-  # repo_url alone returns 422.
-  docker exec deepwiki curl -sfX POST "http://localhost:8001/wiki/tasks" \
-    -H "Content-Type: application/json" \
-    -d "{\"repo_url\": \"$repo_url\", \"owner\": \"$repo_owner\", \"repo\": \"$repo_name\", \"type\": \"github\"}" || {
-      echo "[$(date '+%F %T')] FAILED to submit task for $repo_name" >> "$LOG" 2>&1
+  remote_sha=$(git ls-remote "$repo_url" HEAD 2>/dev/null | cut -f1)
+  if [ -z "$remote_sha" ]; then
+    log "FAIL $key: could not resolve remote HEAD via git ls-remote"
+    return 1
+  fi
+
+  last_sha=$(state_get "$key" || true)
+
+  if [ "$remote_sha" = "$last_sha" ]; then
+    log "SKIP $key: unchanged at $remote_sha"
+    return 0
+  fi
+
+  active_resp=$(curl -sf "$API/wiki/tasks?status=active" 2>/dev/null)
+  if [ $? -ne 0 ]; then
+    log "FAIL $key: could not reach deepwiki API to check in-flight tasks"
+    return 1
+  fi
+  active_id=$(echo "$active_resp" | jq -r --arg o "$repo_owner" --arg r "$repo_name" \
+    '.[] | select(.owner==$o and .repo==$r) | .id' 2>/dev/null)
+  if [ -n "$active_id" ]; then
+    log "SKIP $key: task $active_id already in flight, not touching its cache"
+    return 1
+  fi
+
+  log "START $key: ${last_sha:-<none>} -> $remote_sha"
+
+  # Force a real rebuild: drop the clone, the embedding db, AND the
+  # wiki-page cache. The wiki-page cache alone would otherwise short-circuit
+  # the POST below straight to from_cache=true with no work done at all.
+  if ! docker exec "$CONTAINER" rm -rf \
+    "/root/.adalflow/repo/${repo_owner}_${repo_name}" \
+    "/root/.adalflow/repo/databases/${repo_owner}_${repo_name}.pkl"; then
+    log "FAIL $key: could not clear clone/db inside container"
+    return 1
+  fi
+  # A missing wiki cache 404s here - that just means there was none yet.
+  curl -sf -X DELETE \
+    "$API/wiki_cache?owner=${repo_owner}&repo=${repo_name}&repo_type=github&language=en" \
+    >/dev/null 2>&1
+
+  since=$(date +%s)
+
+  submit=$(curl -sf -X POST "$API/wiki/tasks" -H "Content-Type: application/json" \
+    -d "{\"repo_url\": \"$repo_url\", \"owner\": \"$repo_owner\", \"repo\": \"$repo_name\", \"type\": \"github\"}")
+  if [ $? -ne 0 ]; then
+    log "FAIL $key: POST /wiki/tasks failed"
+    return 1
+  fi
+  task_id=$(echo "$submit" | jq -r '.task_id // empty')
+  if [ -z "$task_id" ]; then
+    log "FAIL $key: submit response had no task_id: $submit"
+    return 1
+  fi
+  if [ "$(echo "$submit" | jq -r '.from_cache // false')" = "true" ]; then
+    log "FAIL $key: submit returned from_cache=true right after we cleared the cache - not trusting it"
+    return 1
+  fi
+
+  status="unknown"
+  resp=""
+  for ((i = 0; i < POLL_MAX; i++)); do
+    resp=$(curl -sf "$API/wiki/tasks/$task_id" 2>/dev/null) || {
+      sleep "$POLL_INTERVAL"
       continue
-  }
-
-  while true; do
-    resp=$(docker exec deepwiki curl -sf "http://localhost:8001/repo/index/status?repo_url=$repo_url&type=github" 2>/dev/null) || { echo "[$(date '+%F %T')] FAILED to get status for $repo_name, retrying..." >> "$LOG" 2>&1; sleep 30; continue; }
-    status=$(echo "$resp" | python3 -c "import sys,json; print(str(json.load(sys.stdin).get('ready',False)).lower())")
-    if [ "$status" = "true" ]; then break; fi
-    sleep 30
+    }
+    status=$(echo "$resp" | jq -r '.status // "unknown"')
+    case "$status" in
+    completed | failed) break ;;
+    esac
+    sleep "$POLL_INTERVAL"
   done
 
-  echo "[$(date '+%F %T')] DONE $repo_name at $(date)" >> "$LOG" 2>&1
+  if [ "$status" != "completed" ]; then
+    err=$(echo "$resp" | jq -r '.error // "no error field"' 2>/dev/null)
+    log "FAIL $key: task ended with status=$status ($err)"
+    return 1
+  fi
+
+  # The initial embed pass never logs its non-empty/empty breakdown (that
+  # only happens on a cache RE-load); wiki-page generation reloads the db it
+  # just saved, so a healthy run always produces at least one such line in
+  # this window. None found, or all zero, means the embeddings are unusable
+  # even though the task reported success - the exact failure mode that once
+  # stored 856 documents with zero usable embeddings.
+  non_empty_max=$(docker logs --since "$since" "$CONTAINER" 2>&1 |
+    grep -oP 'embeddings: \K[0-9]+(?= non-empty)' |
+    sort -rn | head -1)
+  non_empty_max=${non_empty_max:-0}
+
+  if [ "$non_empty_max" -eq 0 ]; then
+    log "FAIL $key: task completed but no non-empty embeddings observed in logs - treating as failure"
+    return 1
+  fi
+
+  cache_check=$(curl -sf "$API/wiki_cache?owner=${repo_owner}&repo=${repo_name}&repo_type=github&language=en" 2>/dev/null)
+  if [ -z "$cache_check" ] || [ "$cache_check" = "null" ]; then
+    log "FAIL $key: task completed but wiki cache is still empty"
+    return 1
+  fi
+
+  state_set "$key" "$remote_sha"
+  log "OK $key: reindexed at $remote_sha (max non-empty embeddings seen: $non_empty_max)"
+  return 0
+}
+
+fail_count=0
+for repo_url in "${REPOS[@]}"; do
+  reindex_one "$repo_url" || fail_count=$((fail_count + 1))
 done
 
-echo "[$(date '+%F %T')] Reindex complete at $(date)" >> "$LOG" 2>&1
+if [ "$fail_count" -gt 0 ]; then
+  log "Reindex complete with $fail_count repo(s) failed or skipped-with-warning"
+else
+  log "Reindex complete, all repos up to date"
+fi
+
+exit $((fail_count > 0 ? 1 : 0))
