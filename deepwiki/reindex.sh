@@ -18,11 +18,14 @@ REPOS=(
 
 for repo_url in "${REPOS[@]}"; do
   repo_name=$(basename "$repo_url")
+  repo_owner=$(basename "$(dirname "$repo_url")")
 
   echo "[$(date '+%F %T')] Starting index for $repo_name ..."
+  # POST /wiki/tasks requires owner AND repo alongside repo_url - sending
+  # repo_url alone returns 422.
   docker exec deepwiki curl -sfX POST "http://localhost:8001/wiki/tasks" \
     -H "Content-Type: application/json" \
-    -d "{\"repo_url\": \"$repo_url\", \"type\": \"github\"}" || {
+    -d "{\"repo_url\": \"$repo_url\", \"owner\": \"$repo_owner\", \"repo\": \"$repo_name\", \"type\": \"github\"}" || {
       echo "[$(date '+%F %T')] FAILED to submit task for $repo_name" >> "$LOG" 2>&1
       continue
   }
