@@ -10,6 +10,13 @@ services:
       - SERVER_BASE_URL=http://localhost:8001
       - LITELLM_BASE_URL=http://llm-swap:11436
       - DEEPWIKI_EMBEDDER_TYPE=litellm
+      # adalflow constructs an OpenAI client even under the litellm embedder and
+      # hard-fails without these. llm-swap does not authenticate, so the key is a
+      # placeholder; the base URL keeps any OpenAI-client path on llm-swap rather
+      # than reaching for api.openai.com.
+      - OPENAI_API_KEY=noauth
+      - OPENAI_BASE_URL=http://llm-swap:11436/v1
+      - OPENAI_API_BASE=http://llm-swap:11436/v1
       - EMBEDDING_MODEL=qwen3-embed
       - GENERATOR_MODEL=qwen3.5-9b
       - DEEPWIKI_MAX_CONCURRENT_WIKI_TASKS=1
