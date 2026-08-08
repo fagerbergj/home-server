@@ -13,9 +13,9 @@ services:
     image: ghcr.io/fagerbergj/quack:0.27.0
     container_name: quack
     command: ["server", "run"]
-    # Values interpolate from ../.env via --env-file at deploy; only what is
-    # named here reaches the container. The private-key PATH is for the host
-    # mount below, so it deliberately stays out of the container's env.
+    # Values interpolate from quack/.env, which compose reads by default; only
+    # what is named here reaches the container. The private-key PATH is for the
+    # host mount below, so it stays out of the container's env.
     environment:
       QUACK_CONFIG: /config/quack.yaml
       # debug while we iterate on delivery/loop behavior (per-round vetting +
