@@ -10,6 +10,7 @@ services:
       - NODE_ENV=production
       - SERVER_BASE_URL=http://localhost:8001
       - LITELLM_BASE_URL=http://llm-swap:11436
+      - OPENROUTER_BASE_URL=http://llm-swap:11436/v1
       - DEEPWIKI_EMBEDDER_TYPE=litellm
       # adalflow constructs an OpenAI client even under the litellm embedder and
       # hard-fails without these. llm-swap does not authenticate, so the key is a
@@ -44,6 +45,7 @@ services:
       # Image ships a LiteLLMClient built against a different adalflow: it passes
       # kwargs this one rejects, so the provider TypeErrors before any request.
       - ./config/litellm.py:/app/api/clients/litellm.py:ro
+      - ./config/openrouter.py:/app/api/clients/openrouter.py:ro
       - deepwiki-db:/root/.adalflow
       - /home/jason-server/workspace/home-server:/repos/home-server:ro
       - /home/jason-server/workspace/document-pipeline:/repos/document-pipeline:ro

@@ -31,6 +31,10 @@
 
 STATE="${DEEPWIKI_REINDEX_STATE:-$HOME/.deepwiki-reindex.state}"
 API="http://localhost:3007/api"
+# openrouter is the only client that reaches llm-swap: the others go through
+# adalflow's OpenAIClient, which speaks OpenAI's Responses API exclusively.
+PROVIDER="${DEEPWIKI_PROVIDER:-openrouter}"
+MODEL="${DEEPWIKI_MODEL:-qwen3.6-35b}"
 CONTAINER="deepwiki"
 POLL_INTERVAL=30
 POLL_MAX=480 # ~4h ceiling per repo
