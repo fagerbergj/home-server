@@ -36,10 +36,11 @@ services:
       - api_gateway
       - llm_default
     volumes:
-      # The image's embedder.json hardcodes OpenAIClient + text-embedding-3-small
-      # with no base_url, so EMBEDDING_MODEL was ignored and every embed call
-      # went to api.openai.com. This one points at llm-swap.
+      # Both configs pin a provider at llm-swap. EMBEDDING_MODEL/GENERATOR_MODEL
+      # are not honoured: the image ships default_provider google and an embedder
+      # hardcoded to text-embedding-3-small, so unpinned calls leave the network.
       - ./config/embedder.json:/app/api/config/embedder.json:ro
+      - ./config/generator.json:/app/api/config/generator.json:ro
       - deepwiki-db:/root/.adalflow
       - /home/jason-server/workspace/home-server:/repos/home-server:ro
       - /home/jason-server/workspace/document-pipeline:/repos/document-pipeline:ro
