@@ -116,8 +116,10 @@ reindex_one() {
 
   since=$(date +%s)
 
+  # provider/model are required: the request schema defaults provider to
+  # "google", and generator.json's default_provider does not reach this path.
   submit=$(curl -sf -X POST "$API/wiki/tasks" -H "Content-Type: application/json" \
-    -d "{\"repo_url\": \"$repo_url\", \"owner\": \"$repo_owner\", \"repo\": \"$repo_name\", \"type\": \"github\"}")
+    -d "{\"repo_url\": \"$repo_url\", \"owner\": \"$repo_owner\", \"repo\": \"$repo_name\", \"type\": \"github\", \"provider\": \"$PROVIDER\", \"model\": \"$MODEL\"}")
   if [ $? -ne 0 ]; then
     log "FAIL $key: POST /wiki/tasks failed"
     return 1

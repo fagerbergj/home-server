@@ -41,6 +41,9 @@ services:
       # hardcoded to text-embedding-3-small, so unpinned calls leave the network.
       - ./config/embedder.json:/app/api/config/embedder.json:ro
       - ./config/generator.json:/app/api/config/generator.json:ro
+      # Image ships a LiteLLMClient built against a different adalflow: it passes
+      # kwargs this one rejects, so the provider TypeErrors before any request.
+      - ./config/litellm.py:/app/api/clients/litellm.py:ro
       - deepwiki-db:/root/.adalflow
       - /home/jason-server/workspace/home-server:/repos/home-server:ro
       - /home/jason-server/workspace/document-pipeline:/repos/document-pipeline:ro
