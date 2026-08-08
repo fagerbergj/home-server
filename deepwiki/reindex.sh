@@ -37,7 +37,9 @@ PROVIDER="${DEEPWIKI_PROVIDER:-openrouter}"
 MODEL="${DEEPWIKI_MODEL:-qwen3.6-35b}"
 CONTAINER="deepwiki"
 POLL_INTERVAL=30
-POLL_MAX=480 # ~4h ceiling per repo
+# 12h. A CPU embedder puts a large repo hours past any tidy ceiling, and giving
+# up early does not stop the task - it finishes unrecorded and gets redone.
+POLL_MAX=1440
 
 set -u
 
@@ -154,7 +156,13 @@ reindex_one() {
 
   if [ "$status" != "completed" ]; then
     err=$(echo "$resp" | jq -r '.error // "no error field"' 2>/dev/null)
-    log "FAIL $key: task ended with status=$status ($err)"
+    # Running out of poll budget does not stop the task - it keeps going and
+    # finishes unrecorded. Say which happened so the log isn't read as a defeat.
+    if [ "$status" = "failed" ]; then
+      log "FAIL $key: task reported failed ($err)"
+    else
+      log "GAVE UP $key: still status=$status after $((POLL_MAX * POLL_INTERVAL / 3600))h; the task is STILL RUNNING and may yet succeed. Not recorded, so the next run redoes it - check the wiki cache before letting that happen."
+    fi
     return 1
   fi
 
