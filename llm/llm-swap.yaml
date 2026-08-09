@@ -21,74 +21,45 @@ matrix:
     sm:  "selene-mini"
 
   costs:
-    # j costs 50 to evict → solver prefers keeping the judge warm when switching
-    # between workers (g→q switches evict g at cost 1, not j at cost 50).
-    j:   50
-    # e now holds ~5.8 GB on GPU0, so it is no longer free to keep: below j, and
-    # low enough that `fallback` (which excludes e) can still evict it to fit a
-    # 59 GB model. g12/sm stay CPU-only, so evicting them is never justified.
-    e:   40
-    g12: 9999
-    sm:  9999
+    j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
+    e:   40    # below j, but low enough that `fallback` can still evict it for a 59GB model
+    g12: 9999  # CPU-only, never worth evicting
+    sm:  9999  # CPU-only, never worth evicting
 
   sets:
-    # Each Quack worker co-resides with the judge AND the embedder. The solver
-    # evicts anything NOT in the chosen set, so without `& e` an embed request
-    # (Quack runs one on most turns via preload_memory recall, and again on the
-    # node-handoff commit) would pick set "embed"=[e] and evict the GPU worker -
-    # a ~1-2min swap each way, several times per node.
+    # & e is required: without it, Quack's frequent embed calls (memory recall,
+    # node-handoff) would pick the "embed" set and evict the GPU worker instead.
     workers:  "(g | q | v) & j & e"
-    # The coder does NOT co-reside with the judge: the ~48GB coder + ~15GB GPU gemma
-    # exceed 63.7GB. So the judge (j) is deliberately absent here — during a code
-    # review/implement, a judge verdict swaps gemma in (evicting the coder) and the
-    # coder swaps back after (~1-2min each way, ACCEPTED for a ~20s GPU verdict vs the
-    # CPU judge's 3-5min + 10min timeouts). j stays warm in the `workers` set (it fits
-    # beside the 25-32GB workers), so orchestration/research judging never swaps.
+    # j excluded: coder (~48GB) + GPU judge (~15GB) exceed 63.7GB. A verdict swaps
+    # gemma in/out around the coder (~1-2min each way) - accepted over the CPU
+    # judge's 3-5min+timeouts. j stays resident via the `workers` set instead.
     coding:   "c & e"
-    # Judge ALONE - the state the `coding` comment above assumes exists but no set
-    # provided: `workers` is the only other set holding j and it also demands a
-    # 25-32GB worker, so a verdict requested mid-coding had no satisfiable minimal
-    # state. gemma was launched on top of the still-resident coder, didn't fit, and
-    # llama-server SEGFAULTED into a restart loop instead of swapping (quack #650:
-    # every gated run then delivered unvetted).
+    # Gives a mid-coding verdict a satisfiable state without a GPU worker. Without
+    # it, gemma launched on top of the resident coder, didn't fit, and llama-server
+    # SEGFAULTED into a restart loop (every gated run then delivered unvetted).
     judge:    "j & e"
-    # Large fallbacks one at a time; no judge AND no embed - a 59 GB model has
-    # room for neither. An embed during one of these pays a swap; they are rare.
+    # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
     fallback: "(p | n9 | sl)"
     # Pure-embed request when no GPU worker is loaded → just e.
     embed:    "e"
-    # CPU-only eval judges — batch grading; cost 9999 means never evicted.
+    # CPU-only eval judges - batch grading, never evicted (see costs above).
     cpu:      "g12 | sm"
 
 models:
-  # --no-mmap is critical for the 65GB+ models in this group: mmap'd reads
-  # serialize on page faults (single-threaded), turning a 1-min load into 30+
-  # minutes. Direct sequential reads load 65GB in under a minute. Cost: peak
-  # RSS during load equals the full model size and no warm-restart page cache.
+  # All entries load via -m (direct path), not -hf: HF_HUB_OFFLINE=1 + an
+  # inconsistent HF cache makes -hf resolution exit 1 before load.
   "gpt-oss-120b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
     env:
       - "GPU_MAX_HW_QUEUES=1"
-    # Native MXFP4 GGUF (ggml-org), ~59 GiB — gpt-oss is TRAINED in MXFP4, so the
-    # f16 upcast (unsloth :F16, 65.4 GB) added ~6 GB for zero quality gain. The
-    # MXFP4 file is the canonical full-quality weights. The ~6 GB it frees lets
-    # us run native 128K context (-c 131072) with only a modest -ncmoe offload.
-    # --reasoning-format auto: extract the harmony `analysis` channel into
-    # reasoning_content instead of leaving it inline in `content`. Without it
-    # the model's planning text leaks into the answer.
-    # --split-mode layer (NOT tensor): tensor-split's AllReduce init fails when
-    # GPU1 is contended (e.g. the immich vaapi transcode holds a HIP context) ->
-    # "AllReduce init failed (n_devices != 2?)" -> meta-backend butterfly fallback
-    # -> GGML_ASSERT(buffer)/cudaMalloc OOM in graph_reserve at load (2026-05-25;
-    # same bug family as minimax). Layer-split (pipeline) avoids the AllReduce path.
-    # Dropping tensor-split also UNLOCKS KV quant (q8_0 below) — tensor-split forbids
-    # it — which halves the KV and buys back headroom.
-    # -ncmoe 4: offload the expert FFN of 4 layers to CPU for margin; with q8 KV
-    # freeing VRAM this can likely drop back toward 2 for speed once it's stable.
-    # All models load via -m (direct on-disk GGUF), not -hf: with HF_HUB_OFFLINE=1
-    # and an inconsistent HF cache, -hf resolution exits 1 before loading. -m loads
-    # the file directly (llama.cpp auto-loads split parts 2-3 from the first).
+    # --no-mmap: page-fault-serialized mmap reads take 30+min on 65GB+ models;
+    # direct reads load in under a minute (costs full-model peak RSS at load).
+    # --split-mode layer, NOT tensor: tensor-split's AllReduce init fails when
+    # GPU1 is contended, and forbids KV quant. Layer-split avoids both.
+    # MXFP4 is gpt-oss's native trained precision (not a lesser quant) - the f16
+    # upcast is ~6GB larger for no quality gain; that headroom funds native -c 131072.
+    # --reasoning-format auto: without it, harmony's analysis channel leaks into content.
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/direct/gpt-oss-120b-MXFP4.gguf
@@ -109,39 +80,16 @@ models:
       --parallel 1
       --port 9999
 
-  # Thinking ON, bounded (reverted 2026-06-14). We tried thinking OFF (--reasoning-
-  # budget 0 + enable_thinking:false) to stop reasoning leaks, but it appears to have
-  # REMOVED the model's ability to judge when it has enough: researchers ran away to
-  # hundreds of tool calls (688 observed), blowing the context window and burning
-  # 30+ min/node. Reasoning models use the think phase to self-regulate ("do I have
-  # enough? then stop and answer"), so we restore it.
-  # --reasoning-format deepseek: <think> → reasoning_content (out of content); the
-  # answer AND tool calls stay in content where they parse (--reasoning-format auto
-  # mis-routed qwen3.6's qwen3_coder tool-call XML, gh#20809 — do NOT use auto here).
-  # --reasoning-budget 512: bound thinking so it can't run past max_tokens before
-  # emitting an answer. Kept at the self-regulation sweet spot — do NOT tune it to
-  # chase empty nodes. Empties were Qwen writing tool calls (and sometimes the whole
-  # answer) inside an unclosed <think>, so deepseek filed them under reasoning_content
-  # and content came back empty (llama.cpp#22684, closed not-planned). No budget value
-  # fixes both: bump it and answers get trapped in reasoning; drop it and researchers
-  # run away (688 tool calls). Quack's OpenAI adapter now RECOVERS the misclassification
-  # client-side — parses <tool_call> XML out of reasoning_content into real tool calls,
-  # and promotes a reasoning-only turn to the answer — so 512 is free to stay tuned for
-  # reasoning quality, not empties.
-  # Any leak into content is scrubbed by Quack's StripThinking + clean_output judge
-  # criterion; runaway over-fetching is backstopped by a hard tool-call cap in the
-  # gate (internal/vetting). Sampling = Qwen3 thinking profile (temp 1.0 / top-p 0.95
-  # / top-k 20 / min-p 0 / presence 1.5).
-  # --no-mmap: ~25 GB Q5, mmap'd reads serialize on page faults (cold reload ~15min).
-  # -c 262144 --parallel 1 = one 256K KV slot (now the single model behind
-  # ORCH/RESEARCHER/CODER — see quack/docker-compose.yml). -ncmoe 4 offloads
-  # just 4 layers' expert FFN to CPU for a safety margin; together ~34GB, so
-  # the full-GPU gemma judge (~15GB) CO-RESIDES in the `workers` set (~49GB,
-  # ample headroom) — orchestration/research/coding judging never swaps.
-  # A 2nd concurrent DAG node (dag.max_active_nodes=2) now QUEUES for this
-  # single slot instead of getting its own 128K slot (was --parallel 2).
-  # (Raise -ncmoe if it OOMs beside gemma; -ncmoe 0 likely still fits if you
-  # want the 35b at full GPU speed.)
+  # Reasoning ON, --reasoning-budget 512 (bounded): thinking lets the model
+  # self-regulate - removing it entirely caused runaway tool-calling (100s of
+  # calls). Don't retune the budget to chase empty answers; Quack's OpenAI
+  # adapter recovers misrouted tool-calls/answers from reasoning_content client-side.
+  # --reasoning-format deepseek (not auto): auto mis-routes this model's tool-call
+  # XML into content.
+  # --no-mmap: ~25GB Q5, cold mmap reload ~15min.
+  # -c 262144 --parallel 1 = one 256K slot shared by both concurrent DAG nodes
+  # (dag.max_active_nodes=2 queues for it rather than getting its own). -ncmoe 4
+  # leaves headroom for the GPU gemma judge (~15GB) to co-reside in `workers`.
   "qwen3.6-35b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -172,11 +120,9 @@ models:
       --cache-type-v q8_0
       --port 9999
 
-  # Qwen3.6-27B-MTP — DENSE 27B, ~18 GB Q4. Small enough to CO-RESIDE with the
-  # 15 GB gemma judge in 64 GB (the 49 GB coder-next can't). Added for the
-  # openwiki bakeoff: if it writes wikis as well as coder-next, a resident
-  # 27B+gemma pair eliminates the worker<->judge swap. Dense ⇒ no -ncmoe.
-  # -c 65536/parallel 1 keeps KV modest for co-residence; tune up once it proves out.
+  # Dense 27B (~18GB Q4, no -ncmoe) - small enough to co-reside with the 15GB
+  # gemma judge (unlike the 49GB coder-next). -c 65536/parallel 1 keeps KV
+  # modest for co-residence; raise once proven out.
   "qwen3.6-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
@@ -206,20 +152,15 @@ models:
       --cache-type-v q8_0
       --port 9993
 
-  # Qwen3-Coder-Next — 80B/3B-active HYBRID MoE (Gated DeltaNet + Gated Attention),
-  # ~49 GB Q4, 256K native, non-thinking. The hybrid layout has only ~12 attention
-  # layers (2 KV heads) so the KV cache stays small → 256K fits despite the size
-  # (~55 GB w/ q8 KV). Sampling temp 1.0/top-p 0.95/top-k 40 + repeat-penalty 1.05
-  # (Qwen3-Coder card) over a 1024-token window: the default 64-token window can't
-  # span a tool-call cycle (~150+ tokens), so verbatim re-issued tool calls went
-  # unpenalized — the model wedged into identical-call loops mid-task (quack #277
-  # evidence: looped WITH full correct context). --no-mmap (>30 GB).
-  # NEW arch — VERIFY it loads on this image (Qwen3-Next/DeltaNet support is recent);
-  # if unsupported or q8 KV rejects the recurrent state, that surfaces at load.
-  # -c 262144 --parallel 1 = one 256K KV slot (~40GB weights + ~17GB q8 KV ≈ 57GB, runs
-  # alone; gemma is CPU-only). One review/implement node gets the FULL 256K. A 2nd
-  # concurrent node (dag.max_active_nodes=2) waits for the slot rather than halving the
-  # context — depth over throughput. 2×256K would need -c 524288 (~34GB KV → ~74GB, OOM).
+  # 80B/3B-active hybrid MoE: only ~12 attention layers (2 KV heads) keep the KV
+  # cache small, so 256K native context fits despite the ~49GB Q4 size.
+  # --repeat-penalty 1.05 over a 1024-token window (not the 64-token default): a
+  # tool-call cycle runs ~150+ tokens, so the default window let repeated calls
+  # go unpenalized and the model wedged into identical-call loops mid-task.
+  # --no-mmap: >30GB. NEW arch (Qwen3-Next/DeltaNet) - verify it still loads and
+  # accepts q8 KV if the model file changes.
+  # -c 262144 --parallel 1 = one 256K slot (~57GB, runs alone); a 2nd concurrent
+  # node queues for it rather than halving context. 2x256K would need -c 524288 (OOMs).
   "qwen3-coder-next":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -266,12 +207,9 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9999
 
-  # Qwen3-VL 32B — OCR/vision for the document-pipeline. Handwriting needs the
-  # bigger model; OCR is offline/batch so the slower speed is fine. Vision-mode
-  # sampling per Qwen's VL recommendation (temp 0.7, top_p 0.8, top_k 20,
-  # presence 1.5, repeat 1.0 — NOT the text-mode 1.0/1.0/40/presence 2.0). mmproj
-  # via --mmproj-url (this build has no --mmproj-hf); F32 projector is materially
-  # better for OCR. OCR requests should set max_tokens up to 16384.
+  # Vision-mode sampling (temp .7/top_p .8/top_k 20/presence 1.5/repeat 1.0) -
+  # NOT the text-mode profile (1.0/1.0/40/presence 2.0) used for other Qwen models.
+  # --mmproj-url (no --mmproj-hf on this build); F32 projector for OCR accuracy.
   "qwen3-vl-32b":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -292,15 +230,12 @@ models:
       --image-max-tokens 8192
       --port 9999
 
-  # Qwen3-Omni 30B-A3B — M4 media-reader: native image + audio + text in one model.
-  # Q4_K_M ~17.3 GB main GGUF + bf16 mmproj ~2.1 GB. MoE (3B active params) so it
-  # co-resides with gemma4-26b-a4b (~15 GB) comfortably in 64 GB.
-  # --reasoning-format deepseek + --reasoning-budget 512: same as qwen3.6-35b
-  # (Omni shares the Qwen3 thinking architecture). --no-mmap: 17+ GB, cold mmap
-  # serializes on page faults. --parallel 2: matches dag.max_active_nodes=2.
-  # Audio ROCm support: verify on first deploy — llama.cpp omni audio is recent.
-  # If audio fails to load, drop --mmproj-url and fall back to image-only until
-  # a confirmed ROCm build ships with audio support.
+  # M4 media-reader (native image+audio+text). MoE (3B active) co-resides with
+  # gemma4-26b-a4b (~15GB) comfortably in 64GB. Reasoning-format/budget: same
+  # rationale as qwen3.6-35b (shares the Qwen3 thinking architecture).
+  # --no-mmap: 17+GB, cold mmap serializes on page faults.
+  # Audio ROCm support is recent - verify on first deploy; if it fails to load,
+  # drop the --mmproj arg and run image-only until a confirmed build ships with audio.
   "qwen3-omni-30b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
@@ -333,14 +268,10 @@ models:
       -fa on
       --port 9999
 
-  # GPU promptfoo judge — Atla Selene-1 70B (purpose-trained for 1-5 rubric
-  # scoring). As a >30GB model it needs --no-mmap + tensor split (KV quant is
-  # incompatible with tensor split, so KV stays fp16). Grading runs after
-  # generation with the model under test swapped out, so the judge has both GPUs.
-  # --parallel 1: grading runs at concurrency 1 (one call at a time), so the
-  # single slot gets the whole -c budget. -c 32768 is sized for the compare
-  # phase, whose select-best prompt holds all four models' (long) responses at
-  # once; per-suite grading needs far less.
+  # >30GB, so --no-mmap + --split-mode tensor (both GPUs, model under test is
+  # swapped out) - tensor-split forbids KV quant, so KV stays fp16 here.
+  # -c 32768 is sized for the compare phase (holds all four models' full
+  # responses at once); per-suite grading needs far less.
   "selene":
     proxy: "http://127.0.0.1:9999"
     ttl: 600
@@ -362,27 +293,20 @@ models:
       --parallel 1
       --port 9999
 
-  # CPU-only (-ngl 0): 4B (downgraded from 8B 2026-06 — 8B Q8 on CPU was slow,
-  # up to minutes per embed under load). 4B Q8 (~4 GB) is materially faster and
-  # plenty for memory recall. -t 8 (not 24): the all-core burst drove the die to
-  # Tjmax (92-101°C observed in Prometheus) and thermal-throttled mid-embed, so
-  # the same input ran 119ms cool vs ~6s hot; fewer threads = smaller thermal
-  # spike + more consistent latency on this cooling-limited box. NOTE: 4B emits
-  # 2560-dim vectors (8B was 4096) — drop the existing Qdrant memory collections
-  # so Quack recreates them at the new dimension (it sizes one only on creation).
+  # CPU-only 4B Q8 (~4GB) - 8B was too slow on CPU (minutes/embed under load).
+  # -t 8 (not 24): all-core embeds hit Tjmax (92-101C) and thermal-throttle
+  # (119ms cool vs ~6s hot); fewer threads trades peak speed for consistency.
+  # 4B emits 2560-dim vectors (8B was 4096): switching embed models requires
+  # dropping the existing Qdrant memory collections (dimension is set once, on creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
-    # 0 = never idle-unload → resident. RAM-only (-ngl 0, GPUs hidden below), so
-    # residency costs ~4GB RAM and zero VRAM. At ttl 600 it unloaded during long
-    # (16min+) explore nodes with no embed calls, then cold-loaded (~95s) on the
-    # node-handoff memory-commit — blowing Quack's 60s embed budget (#436) and
-    # thrashing the worker GPU. Keep it warm so the handoff never pays that.
+    # ttl 0 (always resident, ~4GB RAM/0 VRAM): at ttl 600 it idle-unloaded during
+    # long explore nodes, then cold-loaded (~95s) on handoff - blowing Quack's
+    # 60s embed budget and thrashing the worker GPU.
     ttl: 0
-    # Pinned to GPU0, never split. Measured with worker+judge resident: GPU1 has
-    # ~4.4 GB free at Quack's 131k context cap and ~2.1 GB at the server's 262k,
-    # under the ~5.8 GB this needs (4 GB weights + ~1.8 GB HIP context); GPU0
-    # keeps ~10 GB. Also dropped from the `fallback` set - 59 GB gpt-oss-120b
-    # cannot spare it.
+    # Pinned GPU0: GPU1's free margin with worker+judge resident (~2.1-4.4GB)
+    # is under the ~5.8GB this needs; GPU0 keeps ~10GB free. Also excluded from
+    # `fallback` - the 59GB gpt-oss-120b can't spare it.
     env:
       - "HIP_VISIBLE_DEVICES=0"
       - "ROCR_VISIBLE_DEVICES=0"
@@ -398,16 +322,10 @@ models:
       -b 2048
       --port 9998
 
-  # CPU-only adversarial judge for Quack — Atla Selene-1 Mini 8B (same family as
-  # the 70B `selene`, purpose-trained for 1-5 rubric scoring). Resident like the
-  # embed model so it never swaps the GPU main group and always offers an
-  # INDEPENDENT second opinion. GPUs hidden so the ROCm build doesn't hold a HIP
-  # context (same fix as qwen3-embed). Deterministic grading (temp 0, top-k 1).
-  # --parallel 2 × -c 65536 = 32K tokens per slot. The G-Eval prompt
-  # (constitution + rubric + question + full answer + fetched-source samples)
-  # measured 10-16K tokens in practice — the old 4×8K slots rejected every call
-  # with a 400, so all answers surfaced unvetted. Two slots still cover
-  # concurrent gate judging; with -t 24 each call uses most cores anyway.
+  # CPU-only, resident (like qwen3-embed) so it never swaps the GPU main group;
+  # GPUs hidden so the ROCm build doesn't hold a HIP context.
+  # --parallel 2 x -c 65536: the G-Eval prompt measured 10-16K tokens in
+  # practice - the old 4x8K slots rejected calls with a 400, so answers surfaced unvetted.
   "selene-mini":
     proxy: "http://127.0.0.1:9997"
     ttl: 1800
@@ -429,17 +347,11 @@ models:
       --parallel 2
       --port 9997
 
-  # ── Judge candidates (eval only) ─────────────────────────────────────────
-  # Benchmarked against selene-mini via the promptfoo `judge` suite: does a
-  # different-family model grade the agent-researcher G-Eval rubric as well as
-  # Selene, and how fast? Deterministic grading (temp 0, top-k 1). enable_thinking
-  # off — the rubric's reasoning lives in the per-criterion "reason" fields of the
-  # JSON verdict, not a separate thinking channel (matches selene-mini), and it
-  # keeps decode short. CPU-only (-ngl 0, GPUs hidden) like selene-mini — the
-  # deployment target is a resident CPU judge that never swaps the GPU main group.
-  # --no-mmproj: these are vision GGUFs, so -hf auto-pulls an mmproj projector;
-  # this build can't load gemma-4's 'gemma4uv' projector and aborts at load. We
-  # only need text grading, so skip the projector entirely.
+  # ── Judge candidates (eval only, promptfoo `judge` suite) ──────────────────
+  # enable_thinking off: rubric reasoning lives in the JSON verdict's "reason"
+  # fields, not a thinking channel; also keeps decode short.
+  # --no-mmproj: these are vision GGUFs so -hf auto-pulls a projector, and this
+  # build can't load gemma-4's projector (aborts at load) - we only need text.
 
   # Dense 12B — the slower-but-simpler control (12B active on CPU).
   "gemma4-12b":
@@ -464,19 +376,14 @@ models:
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9995
 
-  # 26B-A4B MoE — 4B active, GPU (-ngl 999, ~15GB). Verdicts are ~20s on GPU vs 3-5min
-  # (+ 10min timeouts) on CPU. It co-resides with the WORKERS (35b/omni/vl ~25-32GB +
-  # 15GB fits), so orchestration/research judging never swaps. It CANNOT co-reside with
-  # the ~48GB coder, so during code review/implement the judge swaps in against the coder
-  # (fast verdict + ~1-2min swap each way — ACCEPTED, deliberately, over the CPU judge's
-  # timeouts). Hence removed from the `coding` set but kept in `workers`. Compaction
-  # stays on the coder (no swap). --split-mode layer keeps it off the contended-2nd-GPU
-  # AllReduce path; -fa + q8 KV. Sampling per gemma-4's card (top_p 0.95 / top_k 64),
-  # temp 0.3. -ncmoe trades VRAM for CPU: with -fit off the ask is fixed, so too low
-  # SIGABRTs against busy workers — raised 12→18 after nine 502s in one day, all on
-  # code nodes (judge dying on load while the coder still held VRAM). To revert to CPU (no swaps, slow): -ngl 0,
-  # HIP/ROCR-hide env, drop --split-mode/-fit/-fa/cache-type, and add j back to the
-  # `coding` set.
+  # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit); can't
+  # co-reside with the coder, so it swaps in for code-review verdicts instead
+  # (see `sets.coding` above). Compaction stays on the coder - no swap there.
+  # -ncmoe 18 (raised from 12): with -fit off the VRAM ask is fixed, and too low
+  # SIGABRTs when launched against an already-busy worker - 18 is the margin
+  # that stopped repeated 502s on code nodes.
+  # To revert to CPU-only (no swaps, slower): -ngl 0, hide HIP/ROCR env, drop
+  # --split-mode/-fit/-fa/cache-type, and add j back to the `coding` set.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
