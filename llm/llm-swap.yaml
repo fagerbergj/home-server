@@ -22,7 +22,7 @@ matrix:
 
   costs:
     j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
-    e:   9999  # CPU-only, never worth evicting
+    e:   9999  # always resident (ttl 0), never worth evicting
     g12: 9999  # CPU-only, never worth evicting
     sm:  9999  # CPU-only, never worth evicting
 
@@ -55,8 +55,9 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     # --no-mmap: page-fault-serialized mmap reads take 30+min on 65GB+ models;
     # direct reads load in under a minute (costs full-model peak RSS at load).
-    # --split-mode layer, NOT tensor: tensor parallelism's AllReduce init fails
-    # when GPU1 is contended. (-ts/--tensor-split is a RATIO and is unaffected.)
+    # --split-mode layer, NOT tensor: no XGMI between the two cards, so tensor
+    # parallelism's per-token AllReduce crosses PCIe - measured 30% slower.
+    # (-ts/--tensor-split is a RATIO, a separate flag, and is unaffected.)
     # MXFP4 is gpt-oss's native trained precision (not a lesser quant) - the f16
     # upcast is ~6GB larger for no quality gain; that headroom funds native -c 131072.
     # --reasoning-format auto: without it, harmony's analysis channel leaks into content.
@@ -293,28 +294,25 @@ models:
       --parallel 1
       --port 9999
 
-  # CPU-only 4B Q8 (~4GB) - 8B was too slow on CPU (minutes/embed under load).
-  # -t 8 (not 24): all-core embeds hit Tjmax (92-101C) and thermal-throttle
-  # (119ms cool vs ~6s hot); fewer threads trades peak speed for consistency.
+  # 4B Q8 (~6GB on GPU) - 8B was too slow when this ran on CPU.
   # 4B emits 2560-dim vectors (8B was 4096): switching embed models requires
   # dropping the existing Qdrant memory collections (dimension is set once, on creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
-    # ttl 0 (always resident, ~4GB RAM/0 VRAM): at ttl 600 it idle-unloaded during
-    # long explore nodes, then cold-loaded (~95s) on handoff - blowing Quack's
-    # 60s embed budget and thrashing the worker GPU.
+    # ttl 0 (always resident): at ttl 600 it idle-unloaded during long explore
+    # nodes, then cold-loaded on handoff - blowing Quack's 60s embed budget.
     ttl: 0
-    # CPU-only for now, pending llm-swap experimentation. GPUs hidden because the
-    # ROCm build holds a ~1.8GB HIP context on GPU0 even at -ngl 0.
+    # Pinned to GPU1 alone; the judge's -ts leans on GPU0 to pay for it.
+    # Set ONE visibility var - HIP_ and ROCR_ together nest and select nothing,
+    # which silently falls back to CPU.
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "HIP_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
-      -ngl 0
+      -ngl 999
       -c 4096
       -t 8
       -ub 2048
@@ -378,9 +376,9 @@ models:
   # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit); can't
   # co-reside with the coder, so it swaps in for code-review verdicts instead
   # (see `sets.coding` above). Compaction stays on the coder - no swap there.
-  # -ncmoe 18 (raised from 12): with -fit off the VRAM ask is fixed, and too low
-  # SIGABRTs when launched against an already-busy worker - 18 is the margin
-  # that stopped repeated 502s on code nodes.
+  # -ncmoe 8 + -ts 78,22: -ts leans on GPU0 because the embedder owns 6GB of
+  # GPU1. Retest a launch against a BUSY worker before lowering further - too
+  # low used to SIGABRT there (it no longer does at 8).
   # To revert to CPU-only (no swaps, slower): -ngl 0, hide HIP/ROCR env, drop
   # --split-mode/-fit/-fa/cache-type, and add j back to the `coding` set.
   "gemma4-26b-a4b":
@@ -397,10 +395,10 @@ models:
       --top-p 0.95
       --top-k 64
       --split-mode layer
-      --tensor-split 70,30
+      --tensor-split 78,22
       -fit off
       -ngl 999
-      -ncmoe 18
+      -ncmoe 8
       -fa on
       -c 131072
       -ub 2048
