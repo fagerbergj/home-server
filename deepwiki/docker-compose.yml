@@ -52,6 +52,23 @@ services:
       - /home/jason-server/workspace/games:/repos/games:ro
     restart: unless-stopped
 
+  # Thin Devin-compatible MCP over the deepwiki instance above
+  # (read_wiki_structure / read_wiki_contents / ask_question).
+  # quack's code agents reach it on api_gateway; 3008 is for LAN/tailnet testing.
+  deepwiki-open-mcp:
+    build:
+      context: https://github.com/fagerbergj/deepwiki-open-mcp.git#0a62b43e21531bbc8e4d0e3d428faaa4b061d021
+    container_name: deepwiki-open-mcp
+    environment:
+      - DEEPWIKI_URL=http://deepwiki:3000
+      - DEEPWIKI_PROVIDER=openrouter
+      - DEEPWIKI_MODEL=qwen3.6-35b
+    ports:
+      - "3008:8080"
+    networks:
+      - api_gateway
+    restart: unless-stopped
+
 volumes:
   deepwiki-db:
 
