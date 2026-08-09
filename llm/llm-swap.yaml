@@ -22,7 +22,7 @@ matrix:
 
   costs:
     j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
-    e:   40    # below j, but low enough that `fallback` can still evict it for a 59GB model
+    e:   9999  # CPU-only, never worth evicting
     g12: 9999  # CPU-only, never worth evicting
     sm:  9999  # CPU-only, never worth evicting
 
@@ -39,7 +39,7 @@ matrix:
     # SEGFAULTED into a restart loop (every gated run then delivered unvetted).
     judge:    "j & e"
     # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
-    fallback: "(p | n9 | sl)"
+    fallback: "(p | n9 | sl) & e"
     # Pure-embed request when no GPU worker is loaded → just e.
     embed:    "e"
     # CPU-only eval judges - batch grading, never evicted (see costs above).
@@ -55,8 +55,8 @@ models:
       - "GPU_MAX_HW_QUEUES=1"
     # --no-mmap: page-fault-serialized mmap reads take 30+min on 65GB+ models;
     # direct reads load in under a minute (costs full-model peak RSS at load).
-    # --split-mode layer, NOT tensor: tensor-split's AllReduce init fails when
-    # GPU1 is contended, and forbids KV quant. Layer-split avoids both.
+    # --split-mode layer, NOT tensor: tensor parallelism's AllReduce init fails
+    # when GPU1 is contended. (-ts/--tensor-split is a RATIO and is unaffected.)
     # MXFP4 is gpt-oss's native trained precision (not a lesser quant) - the f16
     # upcast is ~6GB larger for no quality gain; that headroom funds native -c 131072.
     # --reasoning-format auto: without it, harmony's analysis channel leaks into content.
@@ -269,7 +269,7 @@ models:
       --port 9999
 
   # >30GB, so --no-mmap + --split-mode tensor (both GPUs, model under test is
-  # swapped out) - tensor-split forbids KV quant, so KV stays fp16 here.
+  # swapped out). KV stays fp16 here: quantized KV needs -fa, which this lacks.
   # -c 32768 is sized for the compare phase (holds all four models' full
   # responses at once); per-suite grading needs far less.
   "selene":
@@ -304,18 +304,17 @@ models:
     # long explore nodes, then cold-loaded (~95s) on handoff - blowing Quack's
     # 60s embed budget and thrashing the worker GPU.
     ttl: 0
-    # Pinned GPU0: GPU1's free margin with worker+judge resident (~2.1-4.4GB)
-    # is under the ~5.8GB this needs; GPU0 keeps ~10GB free. Also excluded from
-    # `fallback` - the 59GB gpt-oss-120b can't spare it.
+    # CPU-only for now, pending llm-swap experimentation. GPUs hidden because the
+    # ROCm build holds a ~1.8GB HIP context on GPU0 even at -ngl 0.
     env:
-      - "HIP_VISIBLE_DEVICES=0"
-      - "ROCR_VISIBLE_DEVICES=0"
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
-      -ngl 99
+      -ngl 0
       -c 4096
       -t 8
       -ub 2048
