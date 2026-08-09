@@ -397,8 +397,6 @@ models:
       --top-p 0.95
       --top-k 64
       --split-mode layer
-      # ratio is by LAYER COUNT, and -ncmoe makes layers uneven, so 70/30 of the
-      # layers is what lands ~even VRAM (50/50 measured as no change at all).
       --tensor-split 70,30
       -fit off
       -ngl 999
