@@ -193,6 +193,24 @@ reindex_one() {
   return 0
 }
 
+# Named repos limit the run to those; no args means all of REPOS. A reindex is
+# hours of CPU on the box serving quack's models, so being able to scope one
+# beats hand-editing state (which would mark stale content as verified).
+if [ $# -gt 0 ]; then
+  selected=()
+  for want in "$@"; do
+    for repo_url in "${REPOS[@]}"; do
+      [ "$(basename "$repo_url")" = "$want" ] && selected+=("$repo_url")
+    done
+  done
+  if [ ${#selected[@]} -ne $# ]; then
+    log "FAIL: unknown repo in: $*"
+    log "known: $(for r in "${REPOS[@]}"; do printf '%s ' "$(basename "$r")"; done)"
+    exit 2
+  fi
+  REPOS=("${selected[@]}")
+fi
+
 fail_count=0
 for repo_url in "${REPOS[@]}"; do
   reindex_one "$repo_url" || fail_count=$((fail_count + 1))
