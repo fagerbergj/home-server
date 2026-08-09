@@ -50,6 +50,11 @@ REPOS=(
   "https://github.com/fagerbergj/dotagents"
   "https://github.com/fagerbergj/document-pipeline"
   "https://github.com/fagerbergj/games"
+  # OSS libraries quack leans on - indexed as knowledge bases (2026-08-09)
+  "https://github.com/google/adk-go"
+  "https://github.com/coder/acp-go-sdk"
+  "https://github.com/a2aproject/a2a-go"
+  "https://github.com/modelcontextprotocol/go-sdk"
 )
 
 log() { echo "[$(date '+%F %T')] $*"; }
