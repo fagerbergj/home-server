@@ -24,25 +24,19 @@ matrix:
     # j costs 50 to evict → solver prefers keeping the judge warm when switching
     # between workers (g→q switches evict g at cost 1, not j at cost 50).
     j:   50
-    # e, g12, sm never touch GPU VRAM so evicting them is never justified. e is
-    # also pinned into every GPU set (see `sets`) so it stays co-resident — this
-    # cost just makes the solver prefer keeping it when a pick has a choice.
-    e:   9999
+    # e now holds ~5.8 GB on GPU0, so it is no longer free to keep: below j, and
+    # low enough that `fallback` (which excludes e) can still evict it to fit a
+    # 59 GB model. g12/sm stay CPU-only, so evicting them is never justified.
+    e:   40
     g12: 9999
     sm:  9999
 
   sets:
-    # Each Quack worker co-resides with the judge AND the CPU embedder (e).
-    # e is CPU-only (no VRAM), but the solver evicts any model NOT in the chosen
-    # set's target — so without `& e` here an embed request (M6 runs one on most
-    # turns via preload_memory recall) selects set "embed"=[e] and evicts the GPU
-    # worker, which then reloads on the next chat: a ~1-2min swap each way. Pinning
-    # e into every GPU set makes {worker, judge, embed} a valid loaded state, so an
-    # embed request is satisfied by the already-loaded set (no swap). cost 9999
-    # alone can't do this: it stops OTHER picks from evicting e, but if no set
-    # CONTAINS both, e must be evicted to load the workers.
-    # Solver mechanics for the GPU pair: switching g→q, [q,j,e] costs 1 (evict g)
-    # vs [q] which costs more (evict g+j); solver keeps j+e warm across switches.
+    # Each Quack worker co-resides with the judge AND the embedder. The solver
+    # evicts anything NOT in the chosen set, so without `& e` an embed request
+    # (Quack runs one on most turns via preload_memory recall, and again on the
+    # node-handoff commit) would pick set "embed"=[e] and evict the GPU worker -
+    # a ~1-2min swap each way, several times per node.
     workers:  "(g | q | v) & j & e"
     # The coder does NOT co-reside with the judge: the ~48GB coder + ~15GB GPU gemma
     # exceed 63.7GB. So the judge (j) is deliberately absent here — during a code
@@ -58,8 +52,9 @@ matrix:
     # llama-server SEGFAULTED into a restart loop instead of swapping (quack #650:
     # every gated run then delivered unvetted).
     judge:    "j & e"
-    # Large fallbacks one at a time; no judge (too big to co-reside), embed kept.
-    fallback: "(p | n9 | sl) & e"
+    # Large fallbacks one at a time; no judge AND no embed - a 59 GB model has
+    # room for neither. An embed during one of these pays a swap; they are rare.
+    fallback: "(p | n9 | sl)"
     # Pure-embed request when no GPU worker is loaded → just e.
     embed:    "e"
     # CPU-only eval judges — batch grading; cost 9999 means never evicted.
@@ -383,18 +378,20 @@ models:
     # node-handoff memory-commit — blowing Quack's 60s embed budget (#436) and
     # thrashing the worker GPU. Keep it warm so the handoff never pays that.
     ttl: 0
-    # CPU-only (-ngl 0) but the ROCm build still init'd a HIP context holding
-    # ~1.8 GB on GPU0 — enough to push gpt-oss-120b's KV alloc over the VRAM
-    # cliff. Hide the GPUs from this process so it's truly RAM-only.
+    # Pinned to GPU0, never split. Measured with worker+judge resident: GPU1 has
+    # ~4.4 GB free at Quack's 131k context cap and ~2.1 GB at the server's 262k,
+    # under the ~5.8 GB this needs (4 GB weights + ~1.8 GB HIP context); GPU0
+    # keeps ~10 GB. Also dropped from the `fallback` set - 59 GB gpt-oss-120b
+    # cannot spare it.
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "HIP_VISIBLE_DEVICES=0"
+      - "ROCR_VISIBLE_DEVICES=0"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
-      -ngl 0
+      -ngl 99
       -t 8
       -ub 2048
       -b 2048
