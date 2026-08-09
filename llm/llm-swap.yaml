@@ -397,6 +397,7 @@ models:
       --top-p 0.95
       --top-k 64
       --split-mode layer
+      --tensor-split 50,50
       -fit off
       -ngl 999
       -ncmoe 18
