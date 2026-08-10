@@ -50,6 +50,7 @@ REPOS=(
   "https://github.com/fagerbergj/dotagents"
   "https://github.com/fagerbergj/document-pipeline"
   "https://github.com/fagerbergj/games"
+  "https://github.com/fagerbergj/deepwiki-open-mcp"
   # OSS libraries quack leans on - indexed as knowledge bases (2026-08-09)
   "https://github.com/google/adk-go"
   "https://github.com/coder/acp-go-sdk"
