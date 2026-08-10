@@ -56,7 +56,7 @@ services:
   # (read_wiki_structure / read_wiki_contents / ask_question).
   # quack's code agents reach it on api_gateway; 3008 is for LAN/tailnet testing.
   deepwiki-open-mcp:
-    image: ghcr.io/fagerbergj/deepwiki-open-mcp:0.1.0
+    image: ghcr.io/fagerbergj/deepwiki-open-mcp:0.2.0
     container_name: deepwiki-open-mcp
     environment:
       - DEEPWIKI_URL=http://deepwiki:3000
