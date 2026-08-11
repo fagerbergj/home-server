@@ -5,12 +5,12 @@
 # back to `:latest` to resume continuous auto-deploy of every merge to main.) The GHCR
 # package must be PUBLIC to pull without credentials.
 # Ingress: NPM (TLS) → Traefik `api` entrypoint (:8090) → this container on
-# api_gateway. The /api/v1/github/webhook path is PUBLIC (GitHub HMAC-verifies);
+# api_gateway. The /github/webhook path is PUBLIC (GitHub HMAC-verifies);
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.28.1
+    image: ghcr.io/fagerbergj/quack:0.29.0
     container_name: quack
     command: ["server", "run"]
     # Values interpolate from quack/.env, which compose reads by default; only
@@ -85,7 +85,7 @@ services:
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
       # PUBLIC webhook — GitHub can't SSO; it HMAC-signs. The Path rule out-prioritises
       # the Host-only router below, so this bypasses Authentik.
-      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/api/v1/github/webhook`)"
+      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/github/webhook`)"
       - "traefik.http.routers.quack-webhook.entrypoints=api"
       - "traefik.http.routers.quack-webhook.service=quack"
       # Everything else (UI + API) behind Authentik SSO.

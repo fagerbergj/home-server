@@ -419,3 +419,21 @@ extensions:
       review: "quack:review"        # label a PR → quack reviews it once (replaces auto_review_label)
       merge: "quack:merge"          # label a PR → deterministic merge IF quack's latest review APPROVED
       fix: "quack:fix"            # PERSISTENT flag (#656): while present, quack fixes the PR on ANY CI failure, one attempt per failure. Absorbed quack:monitor.
+
+  # extensions.remarkable polls the rmfakecloud container (shared api_gateway
+  # network) and dispatches new/updated tablet documents into the bound
+  # document-ingest workflow. DISABLED until RMFAKECLOUD_EMAIL/PASSWORD land in
+  # quack/.env (the rmfakecloud UI account) — uncomment then. Note quack#829:
+  # PDF ingest fails at the model boundary today; max_attempts caps the retries.
+  # remarkable:
+  #   base_url: http://rmfakecloud:3000
+  #   email: ${RMFAKECLOUD_EMAIL}
+  #   password: ${RMFAKECLOUD_PASSWORD}
+  #   poll_interval: 2m
+  #   folder_filter: ""            # all folders; set e.g. "Inbox" to scope
+
+# Durable chat attachments (v0.29.0): uploaded/dispatched files persist as
+# Postgres Large Objects in this store and survive restarts; absent store:
+# would mean RAM-only. Rides the same DB as sessions.
+artifacts:
+  store: default_postgres
