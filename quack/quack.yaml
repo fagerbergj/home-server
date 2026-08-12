@@ -354,6 +354,9 @@ workspace:
   # the node. Explicit [] would disable checks entirely (the pre-0.6.0 state:
   # the gate never actually compiled or tested a coder node's work).
   check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make", "./gradlew"]
+  # Bootstrap run once per provisioned clone/worktree AND before gate checks
+  # (v0.30.0): quack's own repo needs these before go test/make can pass.
+  check_setup: ["make plugins", "npm --prefix scripts ci"]
 
   # (0.16.0) gc: the periodic disk reaper. Set explicitly rather than inherited,
   # because the first sweep on this deploy is destructive: /workspace has ~15G
@@ -431,6 +434,14 @@ extensions:
   #   password: ${RMFAKECLOUD_PASSWORD}
   #   poll_interval: 2m
   #   folder_filter: ""            # all folders; set e.g. "Inbox" to scope
+
+  # In-app token/cost dashboard (Usage in the nav rail). Charts gen_ai.client.*
+  # metrics via a narrow GET-only proxy. prometheus/tempo are host-published;
+  # the container reaches them over the Tailscale IP.
+  usage:
+    prometheus_url: http://100.81.155.8:9090
+    tempo_url: http://100.81.155.8:3200
+    default_range: 24h
 
 # Durable chat attachments (v0.29.0): uploaded/dispatched files persist as
 # Postgres Large Objects in this store and survive restarts; absent store:
