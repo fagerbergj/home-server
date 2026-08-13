@@ -78,7 +78,7 @@ observability:
 orchestrator:
   provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
-  skills: [plan-work, format-markdown, present-coding-plan, contribute, write-mermaid]
+  skills: [plan-work, format-markdown, present-coding-plan, contribute, mermaid-authoring]
   # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
 
 # Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
@@ -87,7 +87,7 @@ orchestrator:
 agents:
   web-researcher:
     bundle: agents/web-researcher
-    skills: [format-markdown, research-git-repos, write-mermaid]
+    skills: [format-markdown, research-git-repos, mermaid-authoring]
     provider: default
     memory:
       bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
@@ -138,7 +138,7 @@ agents:
       read_only: true
   synthesizer:
     bundle: agents/synthesizer
-    skills: [format-markdown, present-coding-plan, pr-authoring, write-mermaid]
+    skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # same model as web-researcher
