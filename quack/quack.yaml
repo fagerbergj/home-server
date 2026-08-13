@@ -111,8 +111,6 @@ agents:
     # quack's skill library rides in via opencode skills.paths.
     acp:
       command: ["opencode", "acp"]
-      mcp_servers:
-        - http://deepwiki-open-mcp:8080/mcp   # self-hosted deepwiki Q&A (indexed repos incl. adk-go, acp-go-sdk)
   code-reviewer:
     bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
     provider: default
@@ -127,8 +125,6 @@ agents:
     acp:
       command: ["opencode", "acp"]
       read_only: true
-      mcp_servers:
-        - http://deepwiki-open-mcp:8080/mcp
   code-explorer:
     bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
     provider: default
@@ -140,8 +136,6 @@ agents:
     acp:
       command: ["opencode", "acp"]
       read_only: true
-      mcp_servers:
-        - http://deepwiki-open-mcp:8080/mcp
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring, write-mermaid]
