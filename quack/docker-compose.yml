@@ -93,6 +93,9 @@ services:
       - "traefik.http.routers.quack.entrypoints=api"
       - "traefik.http.routers.quack.service=quack"
       - "traefik.http.routers.quack.middlewares=authentik@file"
+    # quack's SIGTERM drain (server.shutdown_grace_seconds, 20s) needs Docker to
+    # wait longer than its 10s default before SIGKILL.
+    stop_grace_period: 30s
     restart: unless-stopped
 
   # One-shot: a freshly-created named volume is root-owned, but quack runs as the
