@@ -344,6 +344,33 @@ models:
       --parallel 2
       --port 9997
 
+  # Dense 30B agentic candidate (~16GB Q4), no set membership until it passes eval.
+  # NEW arch, needs llama.cpp b10353+; if the mmproj aborts at load, run text-only.
+  "muse-glimmer-30b":
+    proxy: "http://127.0.0.1:9996"
+    ttl: 600
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q4_K_XL.gguf
+      --mmproj /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-Q8_0.gguf
+      --alias muse-glimmer-30b
+      --jinja
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --no-mmap
+      -ngl 999
+      -c 131072
+      --parallel 1
+      -ub 2048
+      -b 2048
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      -fa on
+      --port 9996
+
   # ── Judge candidates (eval only, promptfoo `judge` suite) ──────────────────
   # enable_thinking off: rubric reasoning lives in the JSON verdict's "reason"
   # fields, not a thinking channel; also keeps decode short.

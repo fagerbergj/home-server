@@ -25,6 +25,8 @@ DEFAULTS=(
   unsloth/gemma-4-12b-it-GGUF gemma-4-12b-it-UD-Q6_K_XL.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
+  unsloth/Muse-Glimmer-30B-GGUF Muse-Glimmer-30B-UD-Q4_K_XL.gguf
+  unsloth/Muse-Glimmer-30B-GGUF mmproj-Muse-Glimmer-30B-Q8_0.gguf
 )
 
 args=("$@")
