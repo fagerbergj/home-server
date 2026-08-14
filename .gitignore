@@ -32,6 +32,7 @@ torrent/configarr/config/secrets.yml
 notes/rmfakecloud-data/
 installer-rm12.sh
 api/data/
+langfuse/data/
 
 # .* above hides .github/ too; templates and workflows must be tracked.
 !.github/
