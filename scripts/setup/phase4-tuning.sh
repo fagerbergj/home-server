@@ -6,18 +6,21 @@
 # doesn't evict process memory to swap.
 #
 # Why ARC needs a cap on this server:
-#   - Default ARC ceiling is ~50% of RAM (~24 GB on a 48 GB box).
+#   - Default ARC ceiling is ~50% of RAM (~31 GB of the 62 GB here).
 #   - ARC doesn't release memory promptly under pressure from non-ZFS
 #     consumers (kernel page cache for ext4 reads).
-#   - The result: loading a 65 GB GGUF from /mnt/cache (ext4)
-#     hammers swap because the kernel can't reclaim ARC fast enough.
+#   - The result: loading a large GGUF from /mnt/cache (ext4) hammers
+#     swap because the kernel can't reclaim ARC fast enough.
 #
-# 16 GB ARC is plenty for media-mostly workloads (Plex/torrents are
-# network-bound, not cache-bound). Personal pool sees small writes that
-# don't benefit from a giant ARC either.
+# 8 GB, lowered from 16: the resident llama-server set now dominates RAM
+# (--no-mmap keeps each model fully resident - ~16 GB for the 27B worker,
+# ~8 GB for the judge, plus the CPU-only embedder). At 16 GB, ARC plus
+# models exhausted RAM and the kernel swapped out model pages, which with
+# --no-mmap are hot - decode fell to ~2 tok/s, i.e. disk speed. Media
+# workloads (Plex/torrents) are network-bound and don't need the cache.
 set -euo pipefail
 
-ARC_MAX_BYTES=$((16 * 1024 * 1024 * 1024))
+ARC_MAX_BYTES=$((8 * 1024 * 1024 * 1024))
 SWAPPINESS=10
 
 echo "=== Phase 4: Memory tuning ==="
@@ -45,7 +48,9 @@ echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
 
 echo ""
 echo "Setting vm.swappiness to $SWAPPINESS..."
-echo "vm.swappiness=$SWAPPINESS" | sudo tee /etc/sysctl.d/99-swappiness.conf >/dev/null
+# One file owns swappiness. Earlier duplicates (99-swappiness.conf,
+# 99-sysctl.conf, an entry in sysctl.conf) silently overrode this one.
+echo "vm.swappiness=$SWAPPINESS" | sudo tee /etc/sysctl.d/99-llm-swap.conf >/dev/null
 sudo sysctl --system | grep swappiness | tail -1
 
 # ---------------------------------------------------------------------------
@@ -58,5 +63,7 @@ echo ""
 awk '/^c_max/ {printf "  ARC max: %.1f GB\n", $3/1024/1024/1024} /^size/ {printf "  ARC now: %.1f GB\n", $3/1024/1024/1024}' /proc/spl/kstat/zfs/arcstats
 echo "  vm.swappiness: $(cat /proc/sys/vm/swappiness)"
 echo ""
-echo "If swap is still in use from before tuning, drain it:"
+echo "Swap in use from before tuning drains on its own as pages are touched."
+echo "Only force it when 'free -h' shows swap used < available RAM, or the"
+echo "swapoff will fail or OOM pulling everything back at once:"
 echo "  sudo swapoff -a && sudo swapon -a"
