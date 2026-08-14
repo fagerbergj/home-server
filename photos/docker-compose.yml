@@ -55,7 +55,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.2.0
+    image: docker.io/tensorchord/pgvecto-rs:pg14-v0.4.0
     container_name: immich-postgres
     networks:
       - backend
