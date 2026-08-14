@@ -100,7 +100,7 @@ services:
   # reaches it as http://otel-collector:4318 (same pattern quack->llm-swap uses).
   # Grafana is the trace UI (Tempo datasource provisioned) — no bespoke React.
   tempo:
-    image: grafana/tempo:2.9.0
+    image: grafana/tempo:3.0.2
     container_name: tempo
     command: ["-config.file=/etc/tempo/config.yaml"]
     volumes:
