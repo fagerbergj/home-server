@@ -17,24 +17,23 @@ providers:
     kind: openai            # API protocol; the endpoint picks the actual server
     endpoint: ${QUACK_LLM_ENDPOINT}
     api_key: ${QUACK_LLM_API_KEY}
-    # Cloud-equivalent rates (LiteLLM price DB, 2026-08-13) — cost is computed
-    # quack-side (tokens × price; the API response has no cost field).
-    # qwen3.6-35b-a3b: libertai 0.15/0.50, pinstripes 0.14/0.45 (scaleway 0.25/1.50 outlier)
-    # gemma4 absent from the DB; gemma-3-27b-it analog ~0.06-0.12 / 0.16-0.20
-    # qwen3.8-27b is open-weights and absent from the DB; nearest analog is
-    # qwen3.6-27b (same dense 27B class) at openrouter 0.289/2.40 — one
-    # provider, not a median like the rows below.
+    # Cloud-equivalent rates, all from openrouter's /api/v1/models (2026-08-14)
+    # so one source prices the whole fleet. Cost is computed quack-side
+    # (tokens × price; the API response has no cost field).
     models:
+      # qwen3.8-27b isn't on openrouter (only the far larger 3.8-max/2.4t);
+      # qwen/qwen3.6-27b is the nearest analog — same dense 27B class.
       qwen3.8-27b:
-        input_per_mtok: 0.29
-        output_per_mtok: 2.40
-      qwen3.6-35b:
+        input_per_mtok: 0.60
+        output_per_mtok: 3.60
+      qwen3.6-35b:                  # qwen/qwen3.6-35b-a3b
         input_per_mtok: 0.15
-        output_per_mtok: 0.50
-      gemma4-26b-a4b:
-        input_per_mtok: 0.10
-        output_per_mtok: 0.20
-      # qwen3-embedding-8b analogs: llamagate 0.02, novita 0.07, scaleway 0.10 (output N/A)
+        output_per_mtok: 1.00
+      gemma4-26b-a4b:               # google/gemma-4-26b-a4b-it
+        input_per_mtok: 0.12
+        output_per_mtok: 0.40
+      # No embedding models on openrouter; unchanged qwen3-embedding-8b
+      # analogs (llamagate 0.02, novita 0.07, scaleway 0.10; output N/A).
       qwen3-embed:
         input_per_mtok: 0.07
         output_per_mtok: 0
