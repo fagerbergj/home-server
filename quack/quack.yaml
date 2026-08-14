@@ -379,7 +379,7 @@ workspace:
   # pressure needs size-bounded eviction, not a TTL.
   gc:
     enabled: true
-    chat_ttl_hours: 168      # 7 days idle; never a chat with a run in flight
+    chat_ttl_hours: 72       # 3 days idle; never a chat with a run in flight
     scratch_ttl_hours: 6     # gate baseline worktrees + .quack-home/tmp
     interval_hours: 1
 
