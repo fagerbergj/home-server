@@ -86,7 +86,7 @@ services:
       - default
 
   opensearch:
-    image: opensearchproject/opensearch:2
+    image: opensearchproject/opensearch:3
     container_name: opensearch
     environment:
       - discovery.type=single-node
