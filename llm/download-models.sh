@@ -15,7 +15,8 @@ DEFAULTS=(
   ggml-org/gpt-oss-120b-GGUF gpt-oss-120b-mxfp4-00002-of-00003.gguf
   ggml-org/gpt-oss-120b-GGUF gpt-oss-120b-mxfp4-00003-of-00003.gguf
   unsloth/Qwen3.6-35B-A3B-GGUF Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-  unsloth/Qwen3-Coder-Next-GGUF Qwen3-Coder-Next-UD-Q4_K_XL.gguf
+  unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q4_K_XL.gguf
+  unsloth/Qwen3.8-27B-GGUF mmproj-BF16.gguf
   unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q4_K_XL.gguf
   unsloth/Qwen3-VL-32B-Instruct-GGUF Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf
   Qwen/Qwen3-Embedding-4B-GGUF Qwen3-Embedding-4B-Q8_0.gguf

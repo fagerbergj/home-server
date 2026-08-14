@@ -1,4 +1,4 @@
-healthCheckTimeout: 1200  # gpt-oss-120b + 256K KV cache for coder takes time to init
+healthCheckTimeout: 1200  # gpt-oss-120b + 256K KV cache models take time to init
 logLevel: debug
 
 matrix:
@@ -7,7 +7,6 @@ matrix:
     g:   "qwen3.6-35b"       # chat / web-researcher
     q:   "qwen3-omni-30b"    # media-reader (image + audio)
     v:   "qwen3-vl-32b"      # image-reader (dense OCR / handwriting)
-    c:   "qwen3-coder-next"  # coding — evicts everyone for full VRAM
     # Live Quack judge (GPU)
     j:   "gemma4-26b-a4b"
     # Large GPU fallbacks
@@ -24,13 +23,6 @@ matrix:
     # & e is required: without it, Quack's frequent embed calls (memory recall,
     # node-handoff) would pick the "embed" set and evict the GPU worker instead.
     workers:  "(g | q | v) & j & e"
-    # j excluded: coder (~48GB) + GPU judge (~15GB) exceed 63.7GB. A verdict swaps
-    # gemma in/out around the coder (~1-2min each way) - accepted over the CPU
-    # judge's 3-5min+timeouts. j stays resident via the `workers` set instead.
-    coding:   "c & e"
-    # Gives a mid-coding verdict a satisfiable state without a GPU worker. Without
-    # it, gemma launched on top of the resident coder, didn't fit, and llama-server
-    # SEGFAULTED into a restart loop (every gated run then delivered unvetted).
     judge:    "j & e"
     # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
     fallback: "(p | n9) & e"
@@ -113,17 +105,21 @@ models:
       --cache-type-v q8_0
       --port 9999
 
-  # Dense 27B (~18GB Q4, no -ncmoe) - small enough to co-reside with the 15GB
-  # gemma judge (unlike the 49GB coder-next). -c 65536/parallel 1 keeps KV
-  # modest for co-residence; raise once proven out.
-  "qwen3.6-27b":
+  # Dense 27B, hybrid Gated DeltaNet + Gated Attention (Qwen3-Next lineage, same
+  # arch family as the old coder-next) with native image+video vision. NEW arch
+  # for this file - if the mmproj aborts at load or KV quant segfaults, drop
+  # --cache-type-k/v first, then --mmproj (text-only) if still unstable.
+  # Sampling is Qwen's published thinking-mode preset (matches qwen3.6-35b's).
+  # -c 262144 = native context (256K, extensible to 1M - not using the 1M mode).
+  "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
     env:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/direct/Qwen3.6-27B-UD-Q4_K_XL.gguf
+      -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q4_K_XL.gguf
+      --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
       --jinja
       --reasoning-format deepseek
       --reasoning-budget 512
@@ -137,49 +133,15 @@ models:
       --split-mode layer
       -fit off
       -ngl 999
-      -c 131072
+      -c 262144
+      --image-min-tokens 2048
+      --image-max-tokens 8192
       --parallel 1
       -ub 2048
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9993
-
-  # 80B/3B-active hybrid MoE: only ~12 attention layers (2 KV heads) keep the KV
-  # cache small, so 256K native context fits despite the ~49GB Q4 size.
-  # --repeat-penalty 1.05 over a 1024-token window (not the 64-token default): a
-  # tool-call cycle runs ~150+ tokens, so the default window let repeated calls
-  # go unpenalized and the model wedged into identical-call loops mid-task.
-  # --no-mmap: >30GB. NEW arch (Qwen3-Next/DeltaNet) - verify it still loads and
-  # accepts q8 KV if the model file changes.
-  # -c 262144 --parallel 1 = one 256K slot (~57GB, runs alone); a 2nd concurrent
-  # node queues for it rather than halving context. 2x256K would need -c 524288 (OOMs).
-  "qwen3-coder-next":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 1800
-    env:
-      - "GPU_MAX_HW_QUEUES=1"
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3-Coder-Next-GGUF/snapshots/ce09c67b53bc8739eef83fe67b2f5d293c270632/Qwen3-Coder-Next-UD-Q4_K_XL.gguf
-      --jinja
-      --temp 1.0
-      --top-p 0.95
-      --top-k 40
-      --repeat-penalty 1.05
-      --repeat-last-n 16384
-      --no-mmap
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -c 262144
-      --parallel 1
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -fa on
-      --port 9999
 
   "qwen3.5-9b":
     proxy: "http://127.0.0.1:9999"
@@ -313,14 +275,12 @@ models:
       -fa on
       --port 9996
 
-  # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit); can't
-  # co-reside with the coder, so it swaps in for code-review verdicts instead
-  # (see `sets.coding` above). Compaction stays on the coder - no swap there.
+  # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit).
   # -ncmoe 8 + -ts 78,22: -ts leans on GPU0 because the embedder owns 6GB of
   # GPU1. Retest a launch against a BUSY worker before lowering further - too
   # low used to SIGABRT there (it no longer does at 8).
   # To revert to CPU-only (no swaps, slower): -ngl 0, hide HIP/ROCR env, drop
-  # --split-mode/-fit/-fa/cache-type, and add j back to the `coding` set.
+  # --split-mode/-fit/-fa/cache-type.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls

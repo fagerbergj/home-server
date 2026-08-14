@@ -57,10 +57,6 @@ curl -s -o /dev/null -w "%{http_code}\n" http://jason-server:11436/v1/models
 
 Should return `200`. From a non-tailnet device on the public internet the request should fail outright — that's the access boundary working.
 
-## 6. Configure OpenCode (optional)
-
-Follow [opencode_setup.md](opencode_setup.md) to wire OpenCode at a coder model (e.g. `qwen3-coder-next`).
-
 ## Adding or swapping a model
 
 1. Edit `llm-swap.yaml` — add a new key under `models:` with its `cmd: > /app/llama-server ...` line. Mirror an existing entry for the flag pattern (`--jinja`, `--no-mmap`, `--split-mode tensor`, etc.).
