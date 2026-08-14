@@ -14,6 +14,12 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  # Reached over the shared langfuse_default network (same external-network
+  # pattern as llm_default). otlphttp appends /v1/traces to this endpoint.
+  otlphttp/langfuse:
+    endpoint: http://langfuse-web:3000/api/public/otel
+    headers:
+      Authorization: ${env:LANGFUSE_OTLP_AUTH}
   prometheus:
     endpoint: 0.0.0.0:8889
 service:
@@ -21,7 +27,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/tempo]
+      exporters: [otlp/tempo, otlphttp/langfuse]
     metrics:
       receivers: [otlp]
       processors: [batch]

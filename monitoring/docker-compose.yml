@@ -116,11 +116,15 @@ services:
     image: otel/opentelemetry-collector-contrib:0.135.0
     container_name: otel-collector
     command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      # Basic <base64 pk:sk> for langfuse ingest — see monitoring/.env.example.
+      - LANGFUSE_OTLP_AUTH=${LANGFUSE_OTLP_AUTH}
     volumes:
       - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
     networks:
       - default
       - llm_default
+      - langfuse_default
     restart: unless-stopped
 
   uptime-kuma:
@@ -134,4 +138,6 @@ services:
 
 networks:
   llm_default:
+    external: true
+  langfuse_default:
     external: true
