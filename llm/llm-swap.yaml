@@ -13,18 +13,12 @@ matrix:
     # Large GPU fallbacks
     p:   "gpt-oss-120b"      # heavy reasoner
     n9:  "qwen3.5-9b"        # doc-pipeline workhorse
-    sl:  "selene"            # promptfoo GPU judge
     # Always-on
     e:   "qwen3-embed"
-    # CPU-only eval judges (batch grading only)
-    g12: "gemma4-12b"
-    sm:  "selene-mini"
 
   costs:
     j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
     e:   9999  # always resident (ttl 0), never worth evicting
-    g12: 9999  # CPU-only, never worth evicting
-    sm:  9999  # CPU-only, never worth evicting
 
   sets:
     # & e is required: without it, Quack's frequent embed calls (memory recall,
@@ -39,11 +33,9 @@ matrix:
     # SEGFAULTED into a restart loop (every gated run then delivered unvetted).
     judge:    "j & e"
     # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
-    fallback: "(p | n9 | sl) & e"
+    fallback: "(p | n9) & e"
     # Pure-embed request when no GPU worker is loaded → just e.
     embed:    "e"
-    # CPU-only eval judges - batch grading, never evicted (see costs above).
-    cpu:      "g12 | sm"
 
 models:
   # All entries load via -m (direct path), not -hf: HF_HUB_OFFLINE=1 + an
@@ -269,31 +261,6 @@ models:
       -fa on
       --port 9999
 
-  # >30GB, so --no-mmap + --split-mode tensor (both GPUs, model under test is
-  # swapped out). KV stays fp16 here: quantized KV needs -fa, which this lacks.
-  # -c 32768 is sized for the compare phase (holds all four models' full
-  # responses at once); per-suite grading needs far less.
-  "selene":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--mradermacher--Selene-1-Llama-3.3-70B-i1-GGUF/snapshots/2c66624be930abf9d354e8cd16a9d85f38ac3ff8/Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf
-      --alias selene
-      --jinja
-      --temp 0
-      --top-k 1
-      --no-mmap
-      --split-mode tensor
-      -fit off
-      -ngl 999
-      -c 32768
-      -ub 2048
-      -b 2048
-      -fa on
-      --parallel 1
-      --port 9999
-
   # 4B Q8 (~6GB on GPU) - 8B was too slow when this ran on CPU.
   # 4B emits 2560-dim vectors (8B was 4096): switching embed models requires
   # dropping the existing Qdrant memory collections (dimension is set once, on creation).
@@ -318,31 +285,6 @@ models:
       -ub 2048
       -b 2048
       --port 9998
-
-  # CPU-only, resident (like qwen3-embed) so it never swaps the GPU main group;
-  # GPUs hidden so the ROCm build doesn't hold a HIP context.
-  # --parallel 2 x -c 65536: the G-Eval prompt measured 10-16K tokens in
-  # practice - the old 4x8K slots rejected calls with a 400, so answers surfaced unvetted.
-  "selene-mini":
-    proxy: "http://127.0.0.1:9997"
-    ttl: 1800
-    env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--mradermacher--Selene-1-Mini-Llama-3.1-8B-GGUF/snapshots/d77990ca9a17c406260b64defada9ce396ffdfd6/Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf
-      --alias selene-mini
-      --jinja
-      --temp 0
-      --top-k 1
-      -ngl 0
-      -t 24
-      -c 65536
-      -ub 2048
-      -b 2048
-      --parallel 2
-      --port 9997
 
   # Dense 30B agentic candidate (~16GB Q4), no set membership until it passes eval.
   # NEW arch, needs llama.cpp b10353+; if the mmproj aborts at load, run text-only.
@@ -370,35 +312,6 @@ models:
       --cache-type-v q8_0
       -fa on
       --port 9996
-
-  # ── Judge candidates (eval only, promptfoo `judge` suite) ──────────────────
-  # enable_thinking off: rubric reasoning lives in the JSON verdict's "reason"
-  # fields, not a thinking channel; also keeps decode short.
-  # --no-mmproj: these are vision GGUFs so -hf auto-pulls a projector, and this
-  # build can't load gemma-4's projector (aborts at load) - we only need text.
-
-  # Dense 12B — the slower-but-simpler control (12B active on CPU).
-  "gemma4-12b":
-    proxy: "http://127.0.0.1:9995"
-    ttl: 600
-    env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-12b-it-GGUF/snapshots/3249fa54d5efa384afc552cc6700ad091efd5c39/gemma-4-12b-it-UD-Q6_K_XL.gguf
-      --no-mmproj
-      --alias gemma4-12b
-      --jinja
-      --temp 0
-      --top-k 1
-      -ngl 0
-      -t 24
-      -c 16384
-      -ub 2048
-      -b 2048
-      --chat-template-kwargs '{"enable_thinking": false}'
-      --port 9995
 
   # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit); can't
   # co-reside with the coder, so it swaps in for code-review verdicts instead

@@ -19,10 +19,7 @@ DEFAULTS=(
   unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q4_K_XL.gguf
   unsloth/Qwen3-VL-32B-Instruct-GGUF Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf
   Qwen/Qwen3-Embedding-4B-GGUF Qwen3-Embedding-4B-Q8_0.gguf
-  mradermacher/Selene-1-Llama-3.3-70B-i1-GGUF Selene-1-Llama-3.3-70B.i1-Q4_K_M.gguf
-  mradermacher/Selene-1-Mini-Llama-3.1-8B-GGUF Selene-1-Mini-Llama-3.1-8B.Q8_0.gguf
   unsloth/gemma-4-26B-A4B-it-GGUF gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
-  unsloth/gemma-4-12b-it-GGUF gemma-4-12b-it-UD-Q6_K_XL.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
   unsloth/Muse-Glimmer-30B-GGUF Muse-Glimmer-30B-UD-Q4_K_XL.gguf
