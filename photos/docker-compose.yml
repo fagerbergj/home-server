@@ -31,7 +31,7 @@ services:
     # Pinned to v2.4.1 — release-rocm uses MIGraphXExecutionProvider which crashes on all
     # recent RDNA generations (gfx1030–gfx1201). v2.4.1 uses ROCMExecutionProvider instead.
     # Do not upgrade until https://github.com/immich-app/immich/issues/27387 is resolved.
-    image: ghcr.io/immich-app/immich-machine-learning:v2.4.1-rocm
+    image: ghcr.io/immich-app/immich-machine-learning:v3.1.0-rocm
     container_name: immich-machine-learning
     networks:
       - backend
