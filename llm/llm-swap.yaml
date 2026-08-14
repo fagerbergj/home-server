@@ -7,6 +7,7 @@ matrix:
     g:   "qwen3.6-35b"       # chat / web-researcher
     q:   "qwen3-omni-30b"    # media-reader (image + audio)
     v:   "qwen3-vl-32b"      # image-reader (dense OCR / handwriting)
+    g38: "qwen3.8-27b"       # dense hybrid, native vision - candidate chat/vision worker
     # Live Quack judge (GPU)
     j:   "gemma4-26b-a4b"
     # Large GPU fallbacks
@@ -22,7 +23,7 @@ matrix:
   sets:
     # & e is required: without it, Quack's frequent embed calls (memory recall,
     # node-handoff) would pick the "embed" set and evict the GPU worker instead.
-    workers:  "(g | q | v) & j & e"
+    workers:  "(g | q | v | g38) & j & e"
     judge:    "j & e"
     # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
     fallback: "(p | n9) & e"
