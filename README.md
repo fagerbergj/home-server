@@ -8,16 +8,15 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 |---------|---------|
 | AdGuard Home | Network-wide DNS ad blocker |
 | Audiobookshelf | Self-hosted audiobook server |
-| faster-whisper | GPU-accelerated speech-to-text for audio transcription |
 | CouchDB | reMarkable notes backup (local vault) |
 | Diun | Watches excluded images and emails when updates are available |
 | Games | Next.js games launcher (Kings Corner and future browser games) |
 | Grafana + Prometheus | System and container metrics dashboard |
 | Immich | Personal photo backup and browsing with ML-powered search |
+| Langfuse | LLM observability + eval datasets, fed by quack's OTLP traces |
 | llm-swap + Open WebUI | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
-| document-pipeline | Ingests reMarkable notes + uploaded files: OCR, summarize, classify, embed |
 | quack | GitHub PR-review bot — clones repos and posts inline reviews on `@quack` / PR-open |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
 | Tailscale | Mesh VPN — remote access to LAN-only admin UIs, exit node, MagicDNS |
@@ -47,10 +46,14 @@ home-server/
 ├── passwords/        # Vaultwarden password manager
 ├── adblock/          # AdGuard Home DNS ad blocker
 ├── notes/            # rmfakecloud (reMarkable cloud emulator)
-├── audio/            # faster-whisper GPU transcription
+├── langfuse/         # Langfuse (LLM observability + evals)
 ├── quack/            # GitHub PR-review bot (built from ~/workspace/agent-researcher)
 └── README.md
 ```
+
+`api/` (document-pipeline + shared-postgres + opensearch) and `audio/`
+(faster-whisper) are stopped — their compose files and data volumes are kept
+until document-pipeline's data is ported into quack.
 
 ## Media Storage
 

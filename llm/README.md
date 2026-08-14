@@ -22,20 +22,22 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 
 | Key in `llm-swap.yaml` | GGUF | Notes |
 |---|---|---|
-| `gpt-oss-120b` | `unsloth/gpt-oss-120b-GGUF:F16` (MXFP4 native) | Primary chat model. Modern tool-call template, ~5 B active of 120 B total. Tensor-split across both GPUs. |
-| `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M` | Proven middle-tier chat model + A/B compare partner for evals. |
-| `gemma4-26b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_M` | Same-class challenger to qwen3.6-35b (26 B MoE, ~4 B active). |
-| `qwen3-coder-next` | `unsloth/Qwen3-Coder-Next-GGUF:UD-Q4_K_M` | Code specialist (80 B MoE, 3 B active). Hybrid DeltaNet/Attention — do not set KV quant. 256 K context. |
+| `qwen3.8-27b` | `unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL` | Primary worker (quack orchestrator/researcher/coder). Dense 27 B hybrid Gated-DeltaNet/Attention with native vision. MTP self-speculative decoding (`--spec-type draft-mtp`) roughly doubles decode. 256 K context. |
+| `gpt-oss-120b` | `ggml-org/gpt-oss-120b-GGUF` (MXFP4 native) | Heavy reasoner fallback. Modern tool-call template, ~5 B active of 120 B total. 128 K native. |
+| `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL` | Previous primary chat model, kept as an A/B compare partner. |
+| `gemma4-26b-a4b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL` | Live quack judge (26 B MoE, ~4 B active). `-ncmoe 8` keeps it ~15 GB so it co-resides with a worker. |
 | `qwen3.5-9b` | `unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL` | Small/fast model for cheap requests and eval baselines. |
-| `qwen3-vl-32b` | `unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL` | Vision model used by document-pipeline OCR (mmproj-F32 via --mmproj-url). |
-| `qwen3-embed` | `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0` | Persistent embedding model on CPU. Stays loaded. |
+| `qwen3-vl-32b` | `unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL` | Dense-OCR / handwriting vision model (mmproj-F32 via --mmproj-url). |
+| `qwen3-omni-30b` | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Q4_K_M` | Media reader — native image + audio. |
+| `muse-glimmer-30b` | `unsloth/Muse-Glimmer-30B-GGUF:UD-Q4_K_XL` | Dense 30 B candidate, no set membership until it passes eval. |
+| `qwen3-embed` | `Qwen/Qwen3-Embedding-4B-GGUF:Q8_0` | Embeddings, CPU-only and always resident (`ttl: 0`) so it never competes for VRAM. |
 
 ## Pre-pulling models
 
 First request to a never-pulled model blocks while llama-server downloads the GGUF (can take minutes for the 65 GB ones). To warm the cache up front:
 
 ```bash
-./download-models.sh   # all models incl. the Selene judge
+./download-models.sh   # every model in the lineup above
 ```
 
 GGUFs land in `/mnt/cache/huggingface/`. Re-runs are cheap (HF cache dedupes).
@@ -68,9 +70,11 @@ From outside the home network — connect via Tailscale, then any OpenAI-compati
 
 ## Evaluating models
 
-See [promptfoo/README.md](promptfoo/README.md) for the eval harness. Suites cover architecture/coding/math/tool-calls/large-code.
-
-The judge is `selene` — Atla Selene-1 70B, a GPU model inside llm-swap (port 11436), used for both per-model rubric grading and the A/B compare phase. It's in the main swap group, so it loads on demand and swaps in only for the grading phase (after generation), never competing for VRAM with a model under test. Nothing extra to start.
+The promptfoo harness under [promptfoo/](promptfoo/) still exists but is dormant —
+its Selene judges were retired from `llm-swap.yaml`, so its suites won't run
+as-written. Evaluation is moving to [Langfuse](../langfuse/), which ingests
+quack's real OTLP traces and turns them into eval datasets; see
+`monitoring/otel-collector/config.yaml` for the trace fan-out.
 
 ## Updating
 
@@ -82,6 +86,7 @@ docker compose up -d
 
 ## Resource notes
 
-- 2× R9700 = 64 GB VRAM. gpt-oss-120b (~65 GB MXFP4) tensor-split across both leaves only ~3 GB headroom — long contexts get tight, watch for OOM on multi-tool tool-call chains.
+- 2× R9700 = 64 GB VRAM. Models span both cards with `--split-mode layer`, not tensor — there's no XGMI link, so tensor parallelism's per-token AllReduce crosses PCIe and measured ~30% slower.
+- The steady-state resident set is one worker + the gemma judge + the embedder. `qwen3.8-27b` at 256 K with MTP plus the judge measured ~59 GB of the 63.7 GB usable, which is why the embedder runs on CPU.
 - Plex transcoding uses VAAPI on `/dev/dri` — separate from llama.cpp's ROCm compute on `/dev/kfd`. No contention.
 - HuggingFace cache lives on `/mnt/cache/huggingface/` (SATA SSD, ~500 GB).
