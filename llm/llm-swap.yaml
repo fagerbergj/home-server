@@ -111,7 +111,22 @@ models:
   # for this file - if the mmproj aborts at load or KV quant segfaults, drop
   # --cache-type-k/v first, then --mmproj (text-only) if still unstable.
   # Sampling is Qwen's published thinking-mode preset (matches qwen3.6-35b's).
-  # -c 262144 = native context (256K, extensible to 1M - not using the 1M mode).
+  # --spec-type draft-mtp: self-speculative decoding off the GGUF's own baked-in
+  # MTP head (blk.64.nextn.* - otherwise logged "unused tensor... ignoring" at
+  # load). Measured ~39 t/s avg (up to ~44 t/s warm) vs ~25.6 t/s without, at
+  # ~70% draft-token acceptance. MTP's own draft context costs enough VRAM that
+  # native 262144 didn't fit alongside gemma4-26b-a4b + a GPU-resident
+  # qwen3-embed - raising gemma's -ncmoe didn't fix it (the extra offload landed
+  # almost entirely on GPU0, not the GPU1 side embed needed) and neither did
+  # rebalancing this model's own --tensor-split (still segfaulted 2/2 times even
+  # once byte math said there was room - a real per-context floor ROCm needs
+  # that isn't visible in the free-memory reading, or explicit split + -fit off
+  # instability on this hybrid arch). The fix that actually worked: qwen3-embed
+  # moved to CPU entirely (see its entry) - 100% resident dense weights need
+  # 100% GPU, so the only real lever here was removing a competitor, not
+  # reshuffling one. 1M/2x context extension don't work regardless (server
+  # hard-caps n_ctx_slot to n_ctx_train=262144 regardless of --rope-scaling
+  # yarn, wasting VRAM if requested higher).
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
@@ -142,6 +157,7 @@ models:
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
+      --spec-type draft-mtp
       --port 9993
 
   "qwen3.5-9b":
@@ -224,27 +240,33 @@ models:
       -fa on
       --port 9999
 
-  # 4B Q8 (~6GB on GPU) - 8B was too slow when this ran on CPU.
+  # 4B Q8, CPU-only (was GPU1-pinned; moved to CPU to fund qwen3.8-27b's full
+  # 262144 + MTP context - see its comment. This 4B is NOT the 8B that was too
+  # slow on CPU (that's why the fleet moved to 4B in the first place). Measured
+  # ~83ms/req idle; under real concurrent load (a live generation + judge call
+  # running at once) it degraded to ~0.8-4s/req - still 15-70x under Quack's
+  # 60s embed budget. Re-verify that margin if traffic patterns change a lot.
   # 4B emits 2560-dim vectors (8B was 4096): switching embed models requires
   # dropping the existing Qdrant memory collections (dimension is set once, on creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     # ttl 0 (always resident): at ttl 600 it idle-unloaded during long explore
     # nodes, then cold-loaded on handoff - blowing Quack's 60s embed budget.
+    # Still relevant on CPU (avoids ever hitting a cold-load in the hot path).
     ttl: 0
-    # Pinned to GPU1 alone; the judge's -ts leans on GPU0 to pay for it.
-    # Set ONE visibility var - HIP_ and ROCR_ together nest and select nothing,
-    # which silently falls back to CPU.
+    # GPUs hidden so the ROCm build doesn't hold a HIP context - same both-empty
+    # pattern as the old CPU-only judges (gemma4-12b/selene-mini, since retired).
     env:
-      - "HIP_VISIBLE_DEVICES=1"
+      - "HIP_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES="
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
-      -ngl 999
+      -ngl 0
       -c 4096
-      -t 8
+      -t 24
       -ub 2048
       -b 2048
       --port 9998
