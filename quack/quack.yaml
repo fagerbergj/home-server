@@ -21,7 +21,13 @@ providers:
     # quack-side (tokens × price; the API response has no cost field).
     # qwen3.6-35b-a3b: libertai 0.15/0.50, pinstripes 0.14/0.45 (scaleway 0.25/1.50 outlier)
     # gemma4 absent from the DB; gemma-3-27b-it analog ~0.06-0.12 / 0.16-0.20
+    # qwen3.8-27b is open-weights and absent from the DB; nearest analog is
+    # qwen3.6-27b (same dense 27B class) at openrouter 0.289/2.40 — one
+    # provider, not a median like the rows below.
     models:
+      qwen3.8-27b:
+        input_per_mtok: 0.29
+        output_per_mtok: 2.40
       qwen3.6-35b:
         input_per_mtok: 0.15
         output_per_mtok: 0.50
