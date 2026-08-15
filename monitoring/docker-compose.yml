@@ -81,7 +81,7 @@ services:
     restart: unless-stopped
 
   amd-exporter:
-    image: rocm/device-metrics-exporter:v1.5.0
+    image: rocm/device-metrics-exporter:v1.5.1
     container_name: amd-exporter
     devices:
       - /dev/kfd
