@@ -306,7 +306,7 @@ models:
   # --split-mode/-fit/-fa/cache-type.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
-    ttl: 1800   # live agent-researcher judge — 30 min keeps it warm between calls
+    ttl: 3600   # 2x the workers: called once per gated node, so 1800 expired between calls and every round re-prefilled cold (0 cached vs ~29K prompts)
     env:
       - "GPU_MAX_HW_QUEUES=1"
     cmd: >
