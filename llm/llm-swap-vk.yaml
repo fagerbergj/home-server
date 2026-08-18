@@ -1,0 +1,42 @@
+# Vulkan llm-swap (see llm-swap-vk.Dockerfile). ONE model, ONE card. Vulkan enumerates
+# the cards in the OPPOSITE order to HIP: VK device 0 == the card HIP calls 1. quack's `vulkan`
+# provider points here; the HIP llm-swap (llm-swap.yaml) keeps gemma/embed/the rest.
+healthCheckTimeout: 1200
+logLevel: info
+
+models:
+  # Same flags as the HIP entry in llm-swap.yaml except the device pin. Measured on
+  # GPU0 vs HIP, same card/flags: decode 48.6/52.3 vs 40.6/44.8 t/s; prefill 34.8 vs
+  # 46.3 (worse - reviews are decode-heavy, first-turn prefill pays). Vision works.
+  "qwen3.8-27b":
+    proxy: "http://127.0.0.1:9993"
+    ttl: 1800
+    env:
+      - "GGML_VK_VISIBLE_DEVICES=0"
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q4_K_XL.gguf
+      --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
+      --jinja
+      --reasoning-format deepseek
+      --chat-template-kwargs '{"reasoning_effort":"medium"}'
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0
+      --presence-penalty 0
+      -fa on
+      --no-mmap
+      -fit off
+      -ngl 999
+      -c 262144
+      --image-min-tokens 2048
+      --image-max-tokens 8192
+      --parallel 1
+      -ub 512
+      -b 2048
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --port 9993
