@@ -113,8 +113,11 @@ models:
   # Sampling is Qwen's published thinking-mode preset (matches qwen3.6-35b's).
   # --spec-type draft-mtp: self-speculative decoding off the GGUF's own baked-in
   # MTP head (blk.64.nextn.* - otherwise logged "unused tensor... ignoring" at
-  # load). Measured ~39 t/s avg (up to ~44 t/s warm) vs ~25.6 t/s without, at
-  # ~70% draft-token acceptance. MTP's own draft context costs enough VRAM that
+  # load). --spec-draft-n-max 2 (default 3): idle-GPU A/B, 8 runs each -
+  # 29.4 t/s vs 27.7 t/s, acceptance 38% vs 30%; at ~30% the third draft
+  # token is mostly waste. --spec-draft-p-min 0.65 was tried and LOST (25.7
+  # t/s): acceptance doubles to 66% but drafting is cheap here, so filtering
+  # forgoes more wins than it saves. MTP's own draft context costs enough VRAM that
   # native 262144 didn't fit alongside gemma4-26b-a4b + a GPU-resident
   # qwen3-embed - raising gemma's -ncmoe didn't fix it (the extra offload landed
   # almost entirely on GPU0, not the GPU1 side embed needed) and neither did
@@ -158,6 +161,7 @@ models:
       --cache-type-k q8_0
       --cache-type-v q8_0
       --spec-type draft-mtp
+      --spec-draft-n-max 2
       --port 9993
 
   "qwen3.5-9b":
