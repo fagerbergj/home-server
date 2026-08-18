@@ -111,6 +111,9 @@ models:
   # draft-mtp uses the GGUF's baked-in MTP head. Measured, idle GPU, 8 runs each:
   # n-max 2 29.4 t/s vs default-3 27.7; p-min 0.65 LOSES (25.7); unsloth Q4_0 32.0 but
   # coarser than UD - kept UD-Q4_K_XL; ggml-org Q4_K_M has no MTP head, will not load.
+  # Reasoning: template defaults to xhigh; only chat_template_kwargs reaches it (the
+  # OpenAI reasoning_effort field is ignored by this build). medium measured 59% less
+  # reasoning with a longer answer. No --reasoning-budget: it truncated mid-thought.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
@@ -122,7 +125,7 @@ models:
       --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
       --jinja
       --reasoning-format deepseek
-      --reasoning-budget 512
+      --chat-template-kwargs '{"reasoning_effort":"medium"}'
       --temp 1.0
       --top-p 0.95
       --top-k 20
