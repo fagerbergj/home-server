@@ -65,6 +65,7 @@ models:
       --cache-type-v q8_0
       --parallel 1
       --port 9999
+      --metrics
 
   # Reasoning ON, --reasoning-budget 512 (bounded): thinking lets the model
   # self-regulate - removing it entirely caused runaway tool-calling (100s of
@@ -105,6 +106,7 @@ models:
       --cache-type-k q8_0
       --cache-type-v q8_0
       --port 9999
+      --metrics
 
   # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): dense
   # 27B decodes ~39 t/s on one R9700 and the 2-card layer split bought nothing but
@@ -146,6 +148,7 @@ models:
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --port 9993
+      --metrics
 
   "qwen3.5-9b":
     proxy: "http://127.0.0.1:9999"
@@ -165,6 +168,7 @@ models:
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9999
+      --metrics
 
   # Vision-mode sampling (temp .7/top_p .8/top_k 20/presence 1.5/repeat 1.0) -
   # NOT the text-mode profile (1.0/1.0/40/presence 2.0) used for other Qwen models.
@@ -188,6 +192,7 @@ models:
       --image-min-tokens 2048
       --image-max-tokens 8192
       --port 9999
+      --metrics
 
   # M4 media-reader (native image+audio+text). MoE (3B active) co-resides with
   # gemma4-26b-a4b (~15GB) comfortably in 64GB. Reasoning-format/budget: same
@@ -226,6 +231,7 @@ models:
       --cache-type-v q8_0
       -fa on
       --port 9999
+      --metrics
 
   # 4B Q8 on GPU0 with gemma (ROCR_VISIBLE_DEVICES=0). Measured 15-64ms/req GPU vs
   # 0.8-4s on CPU under load. 2560-dim vectors: switching embed models means dropping
@@ -249,6 +255,7 @@ models:
       -ub 2048
       -b 2048
       --port 9998
+      --metrics
 
   # Dense 30B agentic candidate (~16GB Q4), no set membership until it passes eval.
   # NEW arch, needs llama.cpp b10353+; if the mmproj aborts at load, run text-only.
@@ -276,6 +283,7 @@ models:
       --cache-type-v q8_0
       -fa on
       --port 9996
+      --metrics
 
   # 26B-A4B MoE, ~17GB, on GPU0 with the embedder (ROCR_VISIBLE_DEVICES=0), 11GB
   # headroom. Decodes ~48 t/s with a card to itself. -ncmoe 8 kept from the shared
@@ -306,3 +314,4 @@ models:
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
+      --metrics
