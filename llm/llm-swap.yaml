@@ -106,19 +106,19 @@ models:
       --cache-type-v q8_0
       --port 9999
 
-  # Dense 27B hybrid (Gated DeltaNet + attention), native vision. Full 262144 only fits
-  # with qwen3-embed on CPU (see its entry); 1M via yarn is capped at n_ctx_train anyway.
-  # draft-mtp uses the GGUF's baked-in MTP head. Measured, idle GPU, 8 runs each:
-  # n-max 2 29.4 t/s vs default-3 27.7; p-min 0.65 LOSES (25.7); unsloth Q4_0 32.0 but
-  # coarser than UD - kept UD-Q4_K_XL; ggml-org Q4_K_M has no MTP head, will not load.
-  # Reasoning: template defaults to xhigh; only chat_template_kwargs reaches it (the
-  # OpenAI reasoning_effort field is ignored by this build). medium measured 59% less
-  # reasoning with a longer answer. No --reasoning-budget: it truncated mid-thought.
+  # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): dense
+  # 27B decodes ~39 t/s on one R9700 and the 2-card layer split bought nothing but
+  # contention with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short
+  # calls swing 17-38 t/s; 512 pins them at 39-40. KV q4_0 (not q8): same decode,
+  # frees ~4GB so 262144 fits alone. draft-mtp: n-max 2 beats 3; p-min 0.65 loses.
+  # UD-Q4_K_XL kept over Q4_0 (+9%, coarser); ggml-org Q4_K_M has no MTP head.
+  # Reasoning medium via chat_template_kwargs (the API field is ignored); no budget.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
     env:
       - "GPU_MAX_HW_QUEUES=1"
+      - "ROCR_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q4_K_XL.gguf
@@ -133,17 +133,16 @@ models:
       --presence-penalty 0
       -fa on
       --no-mmap
-      --split-mode layer
       -fit off
       -ngl 999
       -c 262144
       --image-min-tokens 2048
       --image-max-tokens 8192
       --parallel 1
-      -ub 2048
+      -ub 512
       -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
+      --cache-type-k q4_0
+      --cache-type-v q4_0
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --port 9993
@@ -228,31 +227,23 @@ models:
       -fa on
       --port 9999
 
-  # 4B Q8, CPU-only (was GPU1-pinned; moved to CPU to fund qwen3.8-27b's full
-  # 262144 + MTP context - see its comment. This 4B is NOT the 8B that was too
-  # slow on CPU (that's why the fleet moved to 4B in the first place). Measured
-  # ~83ms/req idle; under real concurrent load (a live generation + judge call
-  # running at once) it degraded to ~0.8-4s/req - still 15-70x under Quack's
-  # 60s embed budget. Re-verify that margin if traffic patterns change a lot.
-  # 4B emits 2560-dim vectors (8B was 4096): switching embed models requires
-  # dropping the existing Qdrant memory collections (dimension is set once, on creation).
+  # 4B Q8 on GPU0 with gemma (ROCR_VISIBLE_DEVICES=0). Measured 15-64ms/req GPU vs
+  # 0.8-4s on CPU under load. 2560-dim vectors: switching embed models means dropping
+  # the Qdrant memory collections (dimension is fixed at creation).
   "qwen3-embed":
     proxy: "http://127.0.0.1:9998"
     # ttl 0 (always resident): at ttl 600 it idle-unloaded during long explore
     # nodes, then cold-loaded on handoff - blowing Quack's 60s embed budget.
     # Still relevant on CPU (avoids ever hitting a cold-load in the hot path).
     ttl: 0
-    # GPUs hidden so the ROCm build doesn't hold a HIP context - same both-empty
-    # pattern as the old CPU-only judges (gemma4-12b/selene-mini, since retired).
     env:
-      - "HIP_VISIBLE_DEVICES="
-      - "ROCR_VISIBLE_DEVICES="
+      - "ROCR_VISIBLE_DEVICES=0"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding
       --pooling last
-      -ngl 0
+      -ngl 999
       -c 4096
       -t 24
       -ub 2048
@@ -286,17 +277,15 @@ models:
       -fa on
       --port 9996
 
-  # 26B-A4B MoE, ~15GB GPU: co-resides with `workers` (25-32GB workers fit).
-  # -ncmoe 8 + -ts 78,22: -ts leans on GPU0 because the embedder owns 6GB of
-  # GPU1. Retest a launch against a BUSY worker before lowering further - too
-  # low used to SIGABRT there (it no longer does at 8).
-  # To revert to CPU-only (no swaps, slower): -ngl 0, hide HIP/ROCR env, drop
-  # --split-mode/-fit/-fa/cache-type.
+  # 26B-A4B MoE, ~17GB, on GPU0 with the embedder (ROCR_VISIBLE_DEVICES=0), 11GB
+  # headroom. Decodes ~48 t/s with a card to itself. -ncmoe 8 kept from the shared
+  # era; retest lower against a busy worker before changing (it used to SIGABRT).
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 3600   # 2x the workers: called once per gated node, so 1800 expired between calls and every round re-prefilled cold (0 cached vs ~29K prompts)
     env:
       - "GPU_MAX_HW_QUEUES=1"
+      - "ROCR_VISIBLE_DEVICES=0"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-26B-A4B-it-GGUF/snapshots/3bb10d594514ef4edb7f3a65d41a7e4eb8c5767a/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
@@ -305,8 +294,6 @@ models:
       --temp 0.3
       --top-p 0.95
       --top-k 64
-      --split-mode layer
-      --tensor-split 78,22
       -fit off
       -ngl 999
       -ncmoe 8
