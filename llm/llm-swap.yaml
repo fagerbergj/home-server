@@ -106,34 +106,11 @@ models:
       --cache-type-v q8_0
       --port 9999
 
-  # Dense 27B, hybrid Gated DeltaNet + Gated Attention (Qwen3-Next lineage, same
-  # arch family as the old coder-next) with native image+video vision. NEW arch
-  # for this file - if the mmproj aborts at load or KV quant segfaults, drop
-  # --cache-type-k/v first, then --mmproj (text-only) if still unstable.
-  # Sampling is Qwen's published thinking-mode preset (matches qwen3.6-35b's).
-  # --spec-type draft-mtp: self-speculative decoding off the GGUF's own baked-in
-  # MTP head (blk.64.nextn.* - otherwise logged "unused tensor... ignoring" at
-  # load). --spec-draft-n-max 2 (default 3): idle-GPU A/B, 8 runs each -
-  # 29.4 t/s vs 27.7 t/s, acceptance 38% vs 30%; at ~30% the third draft
-  # token is mostly waste. --spec-draft-p-min 0.65 was tried and LOST (25.7
-  # t/s): acceptance doubles to 66% but drafting is cheap here, so filtering
-  # forgoes more wins than it saves. Quant grid (same bench): unsloth Q4_0
-  # 32.0 t/s, bartowski Q4_K_M 29.0, bartowski Q6_K 26.4 - kept UD-Q4_K_XL
-  # over the faster Q4_0 because UD spends more bits on sensitive layers and
-  # the reviewer's job is being right. ggml-org Q4_K_M has NO MTP head
-  # (draft-mtp refuses to load) - do not use it. MTP's own draft context costs enough VRAM that
-  # native 262144 didn't fit alongside gemma4-26b-a4b + a GPU-resident
-  # qwen3-embed - raising gemma's -ncmoe didn't fix it (the extra offload landed
-  # almost entirely on GPU0, not the GPU1 side embed needed) and neither did
-  # rebalancing this model's own --tensor-split (still segfaulted 2/2 times even
-  # once byte math said there was room - a real per-context floor ROCm needs
-  # that isn't visible in the free-memory reading, or explicit split + -fit off
-  # instability on this hybrid arch). The fix that actually worked: qwen3-embed
-  # moved to CPU entirely (see its entry) - 100% resident dense weights need
-  # 100% GPU, so the only real lever here was removing a competitor, not
-  # reshuffling one. 1M/2x context extension don't work regardless (server
-  # hard-caps n_ctx_slot to n_ctx_train=262144 regardless of --rope-scaling
-  # yarn, wasting VRAM if requested higher).
+  # Dense 27B hybrid (Gated DeltaNet + attention), native vision. Full 262144 only fits
+  # with qwen3-embed on CPU (see its entry); 1M via yarn is capped at n_ctx_train anyway.
+  # draft-mtp uses the GGUF's baked-in MTP head. Measured, idle GPU, 8 runs each:
+  # n-max 2 29.4 t/s vs default-3 27.7; p-min 0.65 LOSES (25.7); unsloth Q4_0 32.0 but
+  # coarser than UD - kept UD-Q4_K_XL; ggml-org Q4_K_M has no MTP head, will not load.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
