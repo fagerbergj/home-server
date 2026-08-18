@@ -117,7 +117,11 @@ models:
   # 29.4 t/s vs 27.7 t/s, acceptance 38% vs 30%; at ~30% the third draft
   # token is mostly waste. --spec-draft-p-min 0.65 was tried and LOST (25.7
   # t/s): acceptance doubles to 66% but drafting is cheap here, so filtering
-  # forgoes more wins than it saves. MTP's own draft context costs enough VRAM that
+  # forgoes more wins than it saves. Quant grid (same bench): unsloth Q4_0
+  # 32.0 t/s, bartowski Q4_K_M 29.0, bartowski Q6_K 26.4 - kept UD-Q4_K_XL
+  # over the faster Q4_0 because UD spends more bits on sensitive layers and
+  # the reviewer's job is being right. ggml-org Q4_K_M has NO MTP head
+  # (draft-mtp refuses to load) - do not use it. MTP's own draft context costs enough VRAM that
   # native 262144 didn't fit alongside gemma4-26b-a4b + a GPU-resident
   # qwen3-embed - raising gemma's -ncmoe didn't fix it (the extra offload landed
   # almost entirely on GPU0, not the GPU1 side embed needed) and neither did
