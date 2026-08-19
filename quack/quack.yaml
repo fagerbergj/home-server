@@ -124,13 +124,12 @@ agents:
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
     context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
     judge_rounds: 2             # implementation is high-stakes, but past round 2 the revise grind rarely converges
-    # ACP coder (quack 0.6.0+, docs/acp-coder.md): the worker is an `opencode acp`
-    # subprocess (shipped in the image). provider/model above bind qwen3-coder-next
-    # via OPENCODE_CONFIG_CONTENT; git push is denied in the subprocess (delivery
-    # stays gate-owned); the gate reads commits off the clone (augmentFromRepo);
-    # quack's skill library rides in via opencode skills.paths.
+    # ACP coder: pi behind the tools/pi-acp shim (0.42.0, quack#969). Same config
+    # env contract as opencode; git push denied extension-side; skills via the
+    # shim's settings wiring; per-call OTLP spans when OTEL_EXPORTER_OTLP_ENDPOINT
+    # is in workspace.env below.
     acp:
-      command: ["opencode", "acp"]
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
   code-reviewer:
     bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
     provider: vulkan
@@ -143,7 +142,7 @@ agents:
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
     # (inline comments included) — vetting.augmentFromAnswer.
     acp:
-      command: ["opencode", "acp"]
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
       read_only: true
   code-explorer:
     bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
@@ -154,7 +153,7 @@ agents:
     context_window: 262144
     judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
-      command: ["opencode", "acp"]
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
       read_only: true
   synthesizer:
     bundle: agents/synthesizer
@@ -354,6 +353,8 @@ workspace:
   # the half exec_path can't do, since Gradle finds the JDK via JAVA_HOME and
   # AGP finds the SDK via ANDROID_HOME, not by scanning PATH.
   env:
+    # pi shim's per-LLM-call OTLP spans (0.42.0); same collector quack itself uses.
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     JAVA_HOME: /toolchains/jdk17
     ANDROID_HOME: /toolchains/android-sdk
     ANDROID_SDK_ROOT: /toolchains/android-sdk
