@@ -67,10 +67,9 @@ models:
       --port 9999
       --metrics
 
-  # Reasoning ON, --reasoning-budget 512 (bounded): thinking lets the model
-  # self-regulate - removing it entirely caused runaway tool-calling (100s of
-  # calls). Don't retune the budget to chase empty answers; Quack's OpenAI
-  # adapter recovers misrouted tool-calls/answers from reasoning_content client-side.
+  # Thinking UNBOUNDED: budget 512 made it thrash (105 tool calls / 20 min on a
+  # PR review vs 48 calls / 14 min unbounded, same PR). Disabling thinking
+  # entirely caused runaway tool-calling - leave it on with no budget.
   # --reasoning-format deepseek (not auto): auto mis-routes this model's tool-call
   # XML into content.
   # --no-mmap: ~25GB Q5, cold mmap reload ~15min.
@@ -87,12 +86,11 @@ models:
       -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.6-35B-A3B-GGUF/snapshots/a483e9e6cbd595906af30beda3187c2663a1118c/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
       --jinja
       --reasoning-format deepseek
-      --reasoning-budget 512
       --temp 1.0
       --top-p 0.95
       --top-k 20
       --min-p 0
-      --presence-penalty 1.5
+      --presence-penalty 0
       -fa on
       --no-mmap
       --split-mode layer
@@ -101,7 +99,7 @@ models:
       -ncmoe 2
       -c 262144
       --parallel 1
-      -ub 2048
+      -ub 512
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
