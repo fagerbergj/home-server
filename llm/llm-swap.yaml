@@ -121,7 +121,7 @@ models:
       - "ROCR_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q4_K_XL.gguf
+      -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q4_K_XL-v3.gguf
       --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
       --jinja
       --reasoning-format deepseek
