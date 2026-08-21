@@ -56,6 +56,9 @@ services:
       QUACK_GITHUB_APP_CLIENT_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
       QUACK_GITHUB_APP_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
       QUACK_WORKSPACE_ROOT: /workspace
+      # rmfakecloud UI account for extensions.remarkable (values in quack/.env)
+      RMFAKECLOUD_EMAIL: ${RMFAKECLOUD_EMAIL}
+      RMFAKECLOUD_PASSWORD: ${RMFAKECLOUD_PASSWORD}
       # pprof for diagnosing the post-plan hang; loopback-published only (see ports).
       QUACK_PPROF_ADDR: ":6060"
     ports:
