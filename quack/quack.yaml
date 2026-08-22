@@ -261,12 +261,9 @@ gates:
 
 # DAG execution policy.
 dag:
-  max_active_runs: 1    # orchestrator RUNS concurrent server-wide; a burst queues (1-GPU: lower it)
-  max_active_nodes: 1   # ONE GPU: concurrent mixed-model nodes (35b researcher + coder ACP) evict each other PER AGENT-LOOP STEP — a 3m39s completion that was ~all model loading. Serialize nodes; same-model sequences swap once per phase.
-                        # worker server's --parallel 2 (2 KV slots @ 65536 tokens each);
-                        # the GPU judge (gemma4-26b-a4b, co-resident with the worker)
-                        # is also --parallel 2. Raising this past the worker's slot
-                        # count just queues requests at the model.
+  # PER-RUN node ceiling only. Real GPU concurrency comes from the model's
+  # limits.sessions/kv_tokens above (#1007 admission), which is global.
+  max_active_nodes: 8
 
 server:
   addr: ":8080"
