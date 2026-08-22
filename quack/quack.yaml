@@ -37,18 +37,6 @@ providers:
       qwen3-embed:
         input_per_mtok: 0.07
         output_per_mtok: 0
-  # Same llama.cpp, Vulkan backend, GPU1, qwen3.8-27b only (llm/llm-swap-vk.yaml):
-  # dense 27B decodes ~20% faster on Vulkan than HIP. Everything else stays on
-  # `default` (HIP, GPU0) - MoE gemma and the embedder are slower on Vulkan.
-  vulkan:
-    kind: openai
-    endpoint: ${QUACK_LLM_VK_ENDPOINT}
-    api_key: ${QUACK_LLM_API_KEY}
-    models:
-      qwen3.8-27b:
-        input_per_mtok: 0.60
-        output_per_mtok: 3.60
-
 # Named backend registry (like providers): consumers reference a store by name.
 # `kind` selects the adapter (the portability seam). A vector store also carries
 # how it vectorizes (embedder), its consolidation model, and recall defaults. A
@@ -96,7 +84,7 @@ observability:
     retention_days: 30
 
 orchestrator:
-  provider: vulkan
+  provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
   skills: [plan-work, format-markdown, present-coding-plan, contribute, mermaid-authoring]
   # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
@@ -108,7 +96,7 @@ agents:
   web-researcher:
     bundle: agents/web-researcher
     skills: [format-markdown, research-git-repos, mermaid-authoring]
-    provider: vulkan
+    provider: default
     memory:
       bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
@@ -118,7 +106,7 @@ agents:
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
     bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
-    provider: vulkan
+    provider: default
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
@@ -132,7 +120,7 @@ agents:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
   code-reviewer:
     bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
-    provider: vulkan
+    provider: default
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
@@ -146,7 +134,7 @@ agents:
       read_only: true
   code-explorer:
     bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
-    provider: vulkan
+    provider: default
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
@@ -158,7 +146,7 @@ agents:
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
-    provider: vulkan
+    provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # same model as web-researcher
     judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted

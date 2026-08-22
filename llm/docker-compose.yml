@@ -56,32 +56,6 @@ services:
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.bearerToken=true"
       - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.keys[0]=${LLM_API_KEY}"
 
-  # Vulkan llama-swap, qwen3.8-27b only, on the card HIP calls GPU1 (see llm-swap-vk.yaml). Not on the
-  # public gateway - quack's `vulkan` provider reaches it over llm_default.
-  llm-swap-vk:
-    build:
-      context: .
-      dockerfile: llm-swap-vk.Dockerfile
-    container_name: llm-swap-vk
-    environment:
-      - HF_HUB_OFFLINE=1
-    volumes:
-      - ./llm-swap-vk.yaml:/app/config.yaml:ro
-      - /mnt/cache/huggingface:/root/.cache/huggingface
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-      - "993"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11437/v1/models"]
-      interval: 300s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
