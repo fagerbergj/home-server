@@ -149,7 +149,7 @@ agents:
     tools: [check_mermaid]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 262144       # same model as web-researcher
+    context_window: 131072       # measured: ~7.9k per upstream node, 47k for a 6-node fan-in
     judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted
   media-reader:
     bundle: agents/media-reader
