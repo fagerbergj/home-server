@@ -146,6 +146,7 @@ agents:
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
+    tools: [check_mermaid]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # same model as web-researcher
