@@ -37,7 +37,7 @@ services:
       QUACK_RESEARCHER_MODEL: qwen3.8-27b
       QUACK_CODER_MODEL: qwen3.8-27b
       QUACK_JUDGE_MODEL: gemma4-26b-a4b
-      QUACK_IMAGE_MODEL: qwen3-vl-32b
+      QUACK_IMAGE_MODEL: qwen3.8-27b
       QUACK_MEDIA_MODEL: qwen3-omni-30b
       QUACK_COMPACTION_ENABLED: "true"
       # Compaction on gemma (GPU, co-resident with the 35b workers set). During a 35b

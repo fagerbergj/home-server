@@ -4,10 +4,8 @@ logLevel: debug
 matrix:
   vars:
     # Quack GPU workers
-    g:   "qwen3.6-35b"       # chat / web-researcher
-    q:   "qwen3-omni-30b"    # media-reader (image + audio)
-    v:   "qwen3-vl-32b"      # image-reader (dense OCR / handwriting)
-    g38: "qwen3.8-27b"       # dense hybrid, native vision - candidate chat/vision worker
+    q:   "qwen3-omni-30b"    # media-reader: the only audio-capable model
+    g38: "qwen3.8-27b"       # chat / research / code / vision - the default worker
     # Live Quack judge (GPU)
     j:   "gemma4-26b-a4b"
     # Large GPU fallbacks
@@ -23,7 +21,7 @@ matrix:
   sets:
     # & e is required: without it, Quack's frequent embed calls (memory recall,
     # node-handoff) would pick the "embed" set and evict the GPU worker instead.
-    workers:  "(g | q | v | g38) & j & e"
+    workers:  "(g38 | q) & j & e"
     judge:    "j & e"
     # No judge/embed - a 59GB model has room for neither; an embed here pays a swap.
     fallback: "(p | n9) & e"
@@ -67,52 +65,13 @@ models:
       --port 9999
       --metrics
 
-  # Thinking UNBOUNDED: budget 512 made it thrash (105 tool calls / 20 min on a
-  # PR review vs 48 calls / 14 min unbounded, same PR). Disabling thinking
-  # entirely caused runaway tool-calling - leave it on with no budget.
-  # --reasoning-format deepseek (not auto): auto mis-routes this model's tool-call
-  # XML into content.
-  # --no-mmap: ~25GB Q5, cold mmap reload ~15min.
-  # -c 262144 --parallel 1 = one 256K slot shared by both concurrent DAG nodes
-  # (dag.max_active_nodes=2 queues for it rather than getting its own). -ncmoe 4
-  # leaves headroom for the GPU gemma judge (~15GB) to co-reside in `workers`.
-  "qwen3.6-35b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 1800
-    env:
-      - "GPU_MAX_HW_QUEUES=1"
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.6-35B-A3B-GGUF/snapshots/a483e9e6cbd595906af30beda3187c2663a1118c/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-      --jinja
-      --reasoning-format deepseek
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --presence-penalty 0
-      -fa on
-      --no-mmap
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -ncmoe 2
-      -c 262144
-      --parallel 1
-      -ub 512
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --port 9999
-      --metrics
-
   # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
   # 17-38 t/s. KV q5_1 (~8.7GB at 262144); q8_0 would need ~12GB and doesn't fit.
   # --parallel 4 --kv-unified: 4 slots share the whole 262144 pool rather than
   # getting 65536 each, so one long node can still use it all. draft-mtp: n-max 2 beats 3.
-  # UD-Q4_K_XL kept over Q4_0 (+9%, coarser); ggml-org Q4_K_M has no MTP head.
+  # UD-Q5_K_XL: unsloth's dynamic quant; ggml-org Q4_K_M has no MTP head.
   # Reasoning medium via chat_template_kwargs (the API field is ignored); no budget.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
@@ -170,33 +129,9 @@ models:
       --port 9999
       --metrics
 
-  # Vision-mode sampling (temp .7/top_p .8/top_k 20/presence 1.5/repeat 1.0) -
-  # NOT the text-mode profile (1.0/1.0/40/presence 2.0) used for other Qwen models.
-  # --mmproj-url (no --mmproj-hf on this build); F32 projector for OCR accuracy.
-  "qwen3-vl-32b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 600
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3-VL-32B-Instruct-GGUF/snapshots/b9262a359f54dead8e2609f6146e2fc3398fd0d9/Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf
-      --mmproj-url https://huggingface.co/unsloth/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-F32.gguf
-      --jinja
-      --temp 0.7
-      --top-p 0.8
-      --top-k 20
-      --min-p 0
-      --presence-penalty 1.5
-      --repeat-penalty 1.0
-      -ngl 999
-      -c 32768
-      --image-min-tokens 2048
-      --image-max-tokens 8192
-      --port 9999
-      --metrics
-
-  # M4 media-reader (native image+audio+text). MoE (3B active) co-resides with
-  # gemma4-26b-a4b (~15GB) comfortably in 64GB. Reasoning-format/budget: same
-  # rationale as qwen3.6-35b (shares the Qwen3 thinking architecture).
+  # M4 media-reader, kept for AUDIO only - qwen3.8-27b covers text/image/video.
+  # MoE (3B active) co-resides with gemma4-26b-a4b (~15GB) comfortably in 64GB.
+  # reasoning-format deepseek: auto mis-routes Qwen3 tool-call XML into content.
   # --no-mmap: 17+GB, cold mmap serializes on page faults.
   # Audio ROCm support is recent - verify on first deploy; if it fails to load,
   # drop the --mmproj arg and run image-only until a confirmed build ships with audio.
@@ -250,7 +185,8 @@ models:
       --embedding
       --pooling last
       -ngl 999
-      -c 4096
+      -c 16384
+      --parallel 4
       -t 24
       -ub 2048
       -b 2048
@@ -309,7 +245,8 @@ models:
       -c 131072
       -ub 2048
       -b 2048
-      --parallel 1
+      --parallel 2
+      --kv-unified
       --cache-type-k q8_0
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
