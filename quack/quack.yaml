@@ -7,7 +7,8 @@
 #      and kills the node. Agents proceed on best judgment instead.)
 #   4. (0.6.0) code agents are external ACP subprocesses (acp: blocks below) — no
 #      native coding tools, so the old guard-tier edits are moot; guards is empty.
-#   5. context_window raised to the coder's full 256K for the three code agents.
+#   5. context_window sized per agent from measured Langfuse usage (#1007);
+#      only code-implementer keeps the full 256K.
 # If the source config changes, re-copy it and re-apply these edits.
 #
 # Structure is declarative; ${VAR} are interpolated from the environment (secrets
@@ -17,26 +18,57 @@ providers:
     kind: openai            # API protocol; the endpoint picks the actual server
     endpoint: ${QUACK_LLM_ENDPOINT}
     api_key: ${QUACK_LLM_API_KEY}
-    # Cloud-equivalent rates, all from openrouter's /api/v1/models (2026-08-14)
-    # so one source prices the whole fleet. Cost is computed quack-side
-    # (tokens × price; the API response has no cost field).
-    models:
-      # qwen3.8-27b isn't on openrouter (only the far larger 3.8-max/2.4t);
-      # qwen/qwen3.6-27b is the nearest analog — same dense 27B class.
-      qwen3.8-27b:
-        input_per_mtok: 0.60
-        output_per_mtok: 3.60
-      qwen3.6-35b:                  # qwen/qwen3.6-35b-a3b
-        input_per_mtok: 0.15
-        output_per_mtok: 1.00
-      gemma4-26b-a4b:               # google/gemma-4-26b-a4b-it
-        input_per_mtok: 0.12
-        output_per_mtok: 0.40
-      # No embedding models on openrouter; unchanged qwen3-embedding-8b
-      # analogs (llamagate 0.02, novita 0.07, scaleway 0.10; output N/A).
-      qwen3-embed:
-        input_per_mtok: 0.07
-        output_per_mtok: 0
+    limits:
+      active:                 # distinct models per role llm-swap keeps resident (its `sets`)
+        worker: 1
+        judge: 1
+        embed: 1
+
+# Registry keyed by RESOLVED model name. context_window/limits mirror what
+# llm/llm-swap.yaml launches each model with (-c, --parallel). Cost is
+# cloud-equivalent from openrouter /api/v1/models (2026-08-14) so one source
+# prices the fleet; quack computes it (the API response has no cost field).
+models:
+  # Not on openrouter (only the far larger 3.8-max/2.4t); qwen/qwen3.6-27b is
+  # the nearest analog - same dense 27B class.
+  qwen3.8-27b:
+    provider: default
+    role: worker
+    context_window: 262144
+    limits:
+      sessions: 4
+      kv_tokens: 262144
+    cost:
+      input_per_mtok: 0.60
+      output_per_mtok: 3.60
+  gemma4-26b-a4b:             # google/gemma-4-26b-a4b-it; judge + compaction
+    provider: default
+    role: judge
+    context_window: 131072
+    limits:
+      sessions: 2
+      kv_tokens: 131072
+    cost:
+      input_per_mtok: 0.12
+      output_per_mtok: 0.40
+  qwen3-omni-30b:             # media-reader, kept for audio only
+    provider: default
+    role: worker
+    context_window: 32768
+    limits:
+      sessions: 1
+      kv_tokens: 32768
+  # No embedding models on openrouter; qwen3-embedding-8b analogs
+  # (llamagate 0.02, novita 0.07, scaleway 0.10; output N/A).
+  qwen3-embed:
+    provider: default
+    role: embed
+    context_window: 4096
+    limits:
+      sessions: 4
+    cost:
+      input_per_mtok: 0.07
+      output_per_mtok: 0
 # Named backend registry (like providers): consumers reference a store by name.
 # `kind` selects the adapter (the portability seam). A vector store also carries
 # how it vectorizes (embedder), its consolidation model, and recall defaults. A
@@ -100,7 +132,7 @@ agents:
     memory:
       bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 262144       # qwen3.6-35b is served -c 262144 --parallel 1 = one full slot
+    context_window: 131072       # measured p50 67k / max 108k
     judge_rounds: 2             # co-resident judge (gemma), no swap cost. Draft must cite inline (see prompt.md).
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
@@ -110,7 +142,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
-    context_window: 262144            # coder served -c 262144 --parallel 1 => full 256K/node
+    context_window: 262144            # the whole pool: an implementer runs alone by design
     judge_rounds: 2             # implementation is high-stakes, but past round 2 the revise grind rarely converges
     # ACP coder: pi behind the tools/pi-acp shim (0.42.0, quack#969). Same config
     # env contract as opencode; git push denied extension-side; skills via the
@@ -124,7 +156,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
-    context_window: 262144
+    context_window: 65536        # measured max 19.4k; headroom for large diffs
     judge_rounds: 2             # review is high-stakes; co-resident judge, no swap cost
     # External ACP reviewer, read_only: runs the change with its own tools, never
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
@@ -138,7 +170,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
-    context_window: 262144
+    context_window: 65536        # reviewer-like footprint
     judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
@@ -165,7 +197,7 @@ agents:
     skills: [format-markdown]
     provider: default
     model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
-    context_window: 32768       # qwen3-vl-32b served -c 32768
+    context_window: 65536       # on qwen3.8-27b's native vision now
     tools: []
     inputs: [text, image]
     judge: false      # gemma (the judge) cannot open media — its verdict is noise
