@@ -151,7 +151,6 @@ agents:
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # same model as web-researcher
     judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted
-    tools: []
   media-reader:
     bundle: agents/media-reader
     skills: [format-markdown]
