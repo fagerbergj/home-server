@@ -57,7 +57,7 @@ stores:
     consolidation:
       provider: default
       model: ${QUACK_JUDGE_MODEL}       # reuse the always-warm judge (gemma) for extract/vet/consolidate
-      interval_minutes: 1440            # daily burst-dedupe sweep (#849 phase 5)
+      schedule: "0 2 * * *"             # daily burst-dedupe sweep, 2am (never at boot)
       retention_days: 0                 # keep invalidated points + memory_ops forever (explicit)
     top_k: 5
     min_score: 0.5                # drop recall hits below this cosine similarity (0 disables)
