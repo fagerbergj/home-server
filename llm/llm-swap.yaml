@@ -68,7 +68,8 @@ models:
   # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
-  # 17-38 t/s. KV q5_1 (~8.7GB at 262144); q8_0 would need ~12GB and doesn't fit.
+  # 17-38 t/s. KV MUST be q4_0: q5_1 has no HIP flash-attn kernel, so attention
+  # falls back to CPU (measured 14 cores pegged, GPU at 3%, on an 8.8k prompt).
   # --parallel 4 --kv-unified: 4 slots share the whole 262144 pool rather than
   # getting 65536 each, so one long node can still use it all. draft-mtp: n-max 2 beats 3.
   # UD-Q5_K_XL: unsloth's dynamic quant; ggml-org Q4_K_M has no MTP head.
@@ -102,8 +103,8 @@ models:
       --kv-unified
       -ub 512
       -b 2048
-      --cache-type-k q5_1
-      --cache-type-v q5_1
+      --cache-type-k q4_0
+      --cache-type-v q4_0
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --port 9993
