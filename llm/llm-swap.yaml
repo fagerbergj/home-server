@@ -106,10 +106,10 @@ models:
       --port 9999
       --metrics
 
-  # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): dense
-  # 27B decodes ~39 t/s on one R9700 and the 2-card layer split bought nothing but
-  # contention with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short
-  # calls swing 17-38 t/s; 512 pins them at 39-40. KV q4_0 (not q8): same decode,
+  # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): decodes
+  # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
+  # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
+  # 17-38 t/s. KV q4_0 (not q8): same decode,
   # frees ~4GB so 262144 fits alone. draft-mtp: n-max 2 beats 3; p-min 0.65 loses.
   # UD-Q4_K_XL kept over Q4_0 (+9%, coarser); ggml-org Q4_K_M has no MTP head.
   # Reasoning medium via chat_template_kwargs (the API field is ignored); no budget.

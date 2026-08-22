@@ -6,7 +6,7 @@ End-to-end setup for the home server. Follow phases in order.
 
 This guide assumes the target hardware in `hardware.md`:
 
-- **500GB NVMe (M.2)** → OS drive (`nvme0n1`) — Ubuntu Server 24.04 LTS + Docker
+- **500GB NVMe (M.2)** → OS drive (`nvme0n1`) — Ubuntu Server 26.04 LTS + Docker
 - **4× 26TB Seagate Exos `ST26000NM000C`** → `media` ZFS pool (RAIDZ2) at `/mnt/media`
 - **2× 8TB Dell `J7W80`** → `personal` ZFS pool (2-way mirror) at `/mnt/personal`
 - **LSI 9300-16i HBA (IT mode)** → all six HDDs hang off this card, in PCIEX1_4
@@ -17,7 +17,7 @@ Before starting, burn-in the new HDDs (`badblocks -wsv` for recertified, `smartc
 
 ---
 
-## Phase 1 — OS Install (Ubuntu Server 24.04 LTS)
+## Phase 1 — OS Install (Ubuntu Server 26.04 LTS)
 
 1. Boot the server from your Ubuntu Server USB drive (spam F12 or DEL on POST to get boot menu)
 2. Install Ubuntu Server:
@@ -131,33 +131,28 @@ source ~/workspace/home-server/.env
 
 ## Phase 3 — AMD GPU Drivers (ROCm)
 
-The in-tree `amdgpu` kernel driver doesn't support RDNA 4 (gfx1201 / R9700). Install the out-of-tree DKMS module + ROCm stack from AMD's repo.
+The in-tree `amdgpu` driver supports RDNA 4 (gfx1201 / R9700) — no out-of-tree DKMS module. ROCm ships in the Ubuntu archive.
 
 ### Install ROCm
 
 ```bash
-# Download the amdgpu-install meta-package (check https://repo.radeon.com/amdgpu-install/ for latest)
-curl -fsSL https://repo.radeon.com/amdgpu-install/latest/ubuntu/jammy/amdgpu-install_7.2.3.70203-1_all.deb \
-  -o /tmp/amdgpu-install.deb
-sudo apt install -y /tmp/amdgpu-install.deb
-
-# Install ROCm + DKMS kernel module (DKMS builds the out-of-tree driver for gfx1201)
-sudo amdgpu-install --usecase=rocm,dkms
+# Host-side ROCm userspace (rocm-smi, rocminfo). The llama.cpp containers bundle
+# their own ROCm, so the host only strictly needs the in-tree kernel driver.
+sudo apt install -y rocm
 
 # Add your user to the render and video groups for GPU access
 sudo usermod -aG render,video "$USER"
-
-sudo reboot
 ```
 
 ### Verify
 
 ```bash
+ls /dev/kfd /dev/dri/renderD*   # compute + render nodes, one renderD per card
 rocm-smi
 nvtop
 ```
 
-You should see the R9700 listed with temperature, VRAM, and clock info.
+You should see both R9700s listed with temperature, VRAM, and clock info.
 
 ---
 
@@ -375,7 +370,7 @@ sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu noble stable" | \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update

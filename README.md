@@ -1,6 +1,6 @@
 # Home Server
 
-Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configuration, docker compose files, and setup notes.
+Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configuration, docker compose files, and setup notes.
 
 ## Use Cases
 
@@ -26,7 +26,7 @@ Personal home server running Ubuntu Server 24.04 LTS. This repo tracks configura
 
 ## OS
 
-**Ubuntu Server 24.04 LTS** — chosen for strong GPU driver support (ROCm for AMD) and Docker compatibility.
+**Ubuntu Server 26.04 LTS** — chosen for strong GPU driver support (ROCm for AMD) and Docker compatibility.
 
 ## Architecture
 
