@@ -68,8 +68,8 @@ models:
   # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
-  # 17-38 t/s. KV MUST be q4_0: q5_1 has no HIP flash-attn kernel, so attention
-  # falls back to CPU (measured 14 cores pegged, GPU at 3%, on an 8.8k prompt).
+  # 17-38 t/s. KV stays q4_0: on q5_1 an 8.8k-prompt request ran with 14 cores
+  # pegged and the GPU at 3%; reverting the cache type alone restored GPU execution.
   # --parallel 4 --kv-unified: 4 slots share the whole 262144 pool rather than
   # getting 65536 each, so one long node can still use it all. draft-mtp: n-max 2 beats 3.
   # UD-Q5_K_XL: unsloth's dynamic quant; ggml-org Q4_K_M has no MTP head.
