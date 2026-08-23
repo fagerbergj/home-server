@@ -1,6 +1,6 @@
-# NON-PROD quack for pre-PR QA. Distinct project name/container names/volumes/port
-# from quack/docker-compose.yml so `docker compose` here never touches prod.
-# No traefik/api_gateway — reached directly over the tailnet, like the CLI port on prod.
+# NON-PROD quack for pre-PR QA. Runs on this laptop (not the server) so it can be
+# built/iterated on locally; reaches the server's shared llm-swap over Tailscale.
+# Distinct project name/containers/volumes/port from quack/docker-compose.yml.
 name: quack-qa
 services:
   quack-qa:
@@ -12,7 +12,7 @@ services:
       QUACK_LOG_LEVEL: debug
       QUACK_OTEL_ENABLED: "false"   # keep QA traces out of prod's dashboards
       QUACK_DATABASE_URL: postgres://quack:${QUACK_QA_DB_PASSWORD}@quack-qa-postgres:5432/quack?sslmode=disable
-      QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
+      QUACK_LLM_ENDPOINT: http://100.81.155.8:11436/v1   # shared llm-swap over the tailnet
       QUACK_LLM_API_KEY: ""
       QUACK_ORCH_MODEL: qwen3.8-27b
       QUACK_RESEARCHER_MODEL: qwen3.8-27b
@@ -26,7 +26,7 @@ services:
       QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
       QUACK_WORKSPACE_ROOT: /workspace
     ports:
-      - "100.81.155.8:18081:8080"   # tailnet-only, mirrors prod's 18080 pattern
+      - "127.0.0.1:18081:8080"   # laptop-local: browser + CLI both hit localhost
     volumes:
       - ./quack.qa.yaml:/config/quack.yaml:ro
       - quack-qa-workspace:/workspace
@@ -35,10 +35,6 @@ services:
         condition: service_healthy
       quack-qa-init:
         condition: service_completed_successfully
-    networks:
-      - default
-      - llm_default
-    stop_grace_period: 30s
     restart: unless-stopped
 
   quack-qa-init:
@@ -63,11 +59,6 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-networks:
-  default:
-  llm_default:
-    external: true
 
 volumes:
   quack-qa-workspace:
