@@ -70,8 +70,10 @@ models:
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
   # 17-38 t/s. KV stays q4_0: on q5_1 an 8.8k-prompt request ran with 14 cores
   # pegged and the GPU at 3%; reverting the cache type alone restored GPU execution.
-  # --parallel 4 --kv-unified: 4 slots share the whole 262144 pool rather than
-  # getting 65536 each, so one long node can still use it all. draft-mtp: n-max 2 beats 3.
+  # --parallel 2 --kv-unified: slots share the whole 262144 pool rather than
+  # splitting it, so one long node can still use it all. 2 not 4: at 30k prompts
+  # 2 concurrent requests measured 151.9s vs 123.7s run serially (0.81x).
+  # draft-mtp: n-max 2 beats 3.
   # UD-Q5_K_XL: unsloth's dynamic quant; ggml-org Q4_K_M has no MTP head.
   # reasoning_effort low + a 4096 thinking budget: at medium/unbounded a single
   # step burned 8.8-18k reasoning tokens. The budget MESSAGE matters - the old
@@ -103,7 +105,7 @@ models:
       -c 262144
       --image-min-tokens 2048
       --image-max-tokens 8192
-      --parallel 4
+      --parallel 2
       --kv-unified
       -ub 512
       -b 2048
