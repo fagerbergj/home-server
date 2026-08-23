@@ -36,7 +36,7 @@ models:
     role: worker
     context_window: 262144
     limits:
-      sessions: 4
+      sessions: 2
       kv_tokens: 262144
     cost:
       input_per_mtok: 0.60
