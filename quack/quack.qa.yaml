@@ -1,0 +1,462 @@
+# NON-PROD QA quack config. Copy of quack.yaml, isolated for pre-PR QA:
+#   - own postgres (QUACK_DATABASE_URL points at quack-qa-postgres, not prod's)
+#   - github/remarkable extensions dropped (no App secrets, no shared rmfakecloud state)
+#   - model session limits lowered so QA traffic can't starve prod on shared llm-swap
+# Keep in sync with quack.yaml's structure by hand; re-diff after editing quack.yaml.
+providers:
+  default:
+    kind: openai            # API protocol; the endpoint picks the actual server
+    endpoint: ${QUACK_LLM_ENDPOINT}
+    api_key: ${QUACK_LLM_API_KEY}
+    limits:
+      active:                 # distinct models per role llm-swap keeps resident (its `sets`)
+        worker: 1
+        judge: 1
+        embed: 1
+
+# Registry keyed by RESOLVED model name. context_window/limits mirror what
+# llm/llm-swap.yaml launches each model with (-c, --parallel). Cost is
+# cloud-equivalent from openrouter /api/v1/models (2026-08-14) so one source
+# prices the fleet; quack computes it (the API response has no cost field).
+models:
+  # Not on openrouter (only the far larger 3.8-max/2.4t); qwen/qwen3.6-27b is
+  # the nearest analog - same dense 27B class.
+  qwen3.8-27b:
+    provider: default
+    role: worker
+    context_window: 262144
+    limits:
+      sessions: 1   # QA-only: kept below prod's 2 so QA can't starve prod on shared llm-swap
+      kv_tokens: 262144
+    cost:
+      input_per_mtok: 0.60
+      output_per_mtok: 3.60
+  gemma4-26b-a4b:             # google/gemma-4-26b-a4b-it; judge + compaction
+    provider: default
+    role: judge
+    context_window: 131072
+    limits:
+      sessions: 1   # QA-only: see qwen3.8-27b note
+      kv_tokens: 131072
+    cost:
+      input_per_mtok: 0.12
+      output_per_mtok: 0.40
+  qwen3-omni-30b:             # media-reader, kept for audio only
+    provider: default
+    role: worker
+    context_window: 32768
+    limits:
+      sessions: 1
+      kv_tokens: 32768
+  # No embedding models on openrouter; qwen3-embedding-8b analogs
+  # (llamagate 0.02, novita 0.07, scaleway 0.10; output N/A).
+  qwen3-embed:
+    provider: default
+    role: embed
+    context_window: 4096
+    limits:
+      sessions: 4
+    cost:
+      input_per_mtok: 0.07
+      output_per_mtok: 0
+# Named backend registry (like providers): consumers reference a store by name.
+# `kind` selects the adapter (the portability seam). A vector store also carries
+# how it vectorizes (embedder), its consolidation model, and recall defaults. A
+# store may `extends` another to reuse its connection (child fields override).
+stores:
+  default_ledger:
+    kind: filesystem
+    root: /workspace/recordings
+  default_postgres:
+    kind: postgres
+    url: ${QUACK_DATABASE_URL}
+  default_vector:
+    kind: qdrant                  # vector adapter; pgvector/sqlite are future adapters
+    url: ""                       # unset on purpose: QA doesn't share prod's qdrant memory
+    embedder:
+      provider: default
+      model: ${QUACK_EMBED_MODEL}
+    consolidation:
+      provider: default
+      model: ${QUACK_JUDGE_MODEL}       # reuse the always-warm judge (gemma) for extract/vet/consolidate
+      schedule: "0 2 * * *"             # daily burst-dedupe sweep, 2am (never at boot)
+      retention_days: 0                 # keep invalidated points + memory_ops forever (explicit)
+    top_k: 5
+    min_score: 0.5                # drop recall hits below this cosine similarity (0 disables)
+
+# ADK session + chat persistence (references a store) plus context compaction,
+# which operates over that session history.
+session:
+  store: default_postgres
+  compaction:
+    enabled: ${QUACK_COMPACTION_ENABLED}  # unset ⇒ false
+    provider: default
+    model: ${QUACK_COMPACTION_MODEL}      # required when enabled; pick a worker-co-resident model (gemma)
+
+# OTel emission (quack 0.6.7): traces+metrics -> the monitoring stack's
+# otel-collector (llm_default network) -> tempo/prometheus/grafana.
+# 0.19.0: otel moved under observability; recording = the replay ledger
+# (docs: quack repo, milestone 0.19.0). Ledger dir rides the workspace volume.
+observability:
+  otel:
+    enabled: ${QUACK_OTEL_ENABLED}             # unset => true
+    otlp_endpoint: ${QUACK_OTEL_OTLP_ENDPOINT} # http://otel-collector:4318
+  recording:
+    store: default_ledger                      # enabled follows otel.enabled
+    retention_days: 30
+
+orchestrator:
+  provider: default
+  model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
+  skills: [plan-work, format-markdown, present-coding-plan, contribute, mermaid-authoring]
+  # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
+
+# Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
+# bound here to a model and a selection of built-in tools. Add an agent by
+# dropping a bundle directory and adding an entry — no recompile.
+agents:
+  web-researcher:
+    bundle: agents/web-researcher
+    skills: [format-markdown, research-git-repos, mermaid-authoring]
+    provider: default
+    memory:
+      bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
+    model: ${QUACK_RESEARCHER_MODEL}
+    context_window: 131072       # measured p50 67k / max 108k
+    judge_rounds: 2             # co-resident judge (gemma), no swap cost. Draft must cite inline (see prompt.md).
+    tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
+            ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
+  code-implementer:
+    bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
+    provider: default
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
+    context_window: 262144            # the whole pool: an implementer runs alone by design
+    judge_rounds: 2             # implementation is high-stakes, but past round 2 the revise grind rarely converges
+    # ACP coder: pi behind the tools/pi-acp shim (0.42.0, quack#969). Same config
+    # env contract as opencode; git push denied extension-side; skills via the
+    # shim's settings wiring; per-call OTLP spans when OTEL_EXPORTER_OTLP_ENDPOINT
+    # is in workspace.env below.
+    acp:
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+  code-reviewer:
+    bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
+    provider: default
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}
+    context_window: 65536        # measured max 19.4k; headroom for large diffs
+    judge_rounds: 2             # review is high-stakes; co-resident judge, no swap cost
+    # External ACP reviewer, read_only: runs the change with its own tools, never
+    # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
+    # (inline comments included) — vetting.augmentFromAnswer.
+    acp:
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+      read_only: true
+  code-explorer:
+    bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
+    provider: default
+    memory:
+      bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
+    model: ${QUACK_CODER_MODEL}
+    context_window: 131072       # measured 65-100k live; 65536 under-reserved and 3 nodes overran the pool
+    judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
+    acp:
+      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+      read_only: true
+  synthesizer:
+    bundle: agents/synthesizer
+    skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
+    tools: [check_mermaid]
+    provider: default
+    model: ${QUACK_RESEARCHER_MODEL}
+    context_window: 131072       # measured: ~7.9k per upstream node, 47k for a 6-node fan-in
+    judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted
+  media-reader:
+    bundle: agents/media-reader
+    skills: [format-markdown]
+    provider: default
+    model: ${QUACK_MEDIA_MODEL}       # Qwen3-Omni (media llm-swap group); falls back to QUACK_RESEARCHER_MODEL if unset
+    context_window: 32768       # qwen3-omni-30b served -c 32768 --parallel 1
+    tools: []
+    inputs: [text, image, audio]
+    judge: false      # gemma (the judge) cannot open media — its verdict is noise
+  image-reader:
+    bundle: agents/image-reader
+    skills: [format-markdown]
+    provider: default
+    model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
+    context_window: 65536       # on qwen3.8-27b's native vision now
+    tools: []
+    inputs: [text, image]
+    judge: false      # gemma (the judge) cannot open media — its verdict is noise
+
+# Built-in tools. A tool with a dedicated external service sets kind + url. A
+# store-backed tool references a stores[] entry (the store supplies the adapter +
+# connection) and may override its namespace (collection/schema). See
+# internal/tools/backends.go.
+tools:
+  web_search:
+    kind: exa                     # searxng (needs url) | exa. exa used here because searxng is being bot-walled.
+    url: ${QUACK_SEARXNG_URL}           # SearXNG JSON API, e.g. http://searxng:8080; unused by kind: exa
+    # exa is keyless via Exa's hosted MCP by default (the no-docker path). With an
+    # api_key it uses Exa's REST API instead (structured JSON, more robust, no
+    # keyless-MCP rate-limiting):
+    auth:
+      kind: api_key
+      api_key: ${QUACK_EXA_API_KEY}
+    # exa is keyless via Exa's hosted MCP by default (the no-docker path). Add an
+    # api_key to use Exa's REST API instead (structured JSON, more robust):
+    # auth:
+    #   kind: api_key
+    #   api_key: ${QUACK_EXA_API_KEY}
+  web_fetch:
+    kind: direct                  # server-side edit: no crawl4ai container here — plain GET (crawl4ai needs a URL and fails startup without one)
+  # Memory tools (M6) — store-backed; binding one to an agent enables that memory.
+  stage_memory:                   # task memory: researchers stage tradecraft, the gate commits it
+    store: default_vector
+    collection: task_memory
+  commit_memory:                  # user memory: bind on the orchestrator to enable
+    store: default_vector
+    collection: user_memory
+
+# The trust gate wraps every agent and runs cheapest-first, each stage with its
+# own round budget (a stage with max_rounds:0 is skipped):
+#   1. deterministic_checks — free code checks (citation backing + length) that
+#      drive cheap targeted revisions to drop fabricated citations up front.
+#   2. judge — an independent model scores the answer; the worker revises on fail.
+# Deterministic citation/length scores are always folded into the judge's verdict.
+# The advisor (agents/advisor) is NOT a gate stage — it's a tool (ask_advisor,
+# see agents' tools: lists) the worker calls at its own discretion. It reuses
+# the judge's provider/model and is only registered on worker bundles that list
+# it when the judge is enabled (see below): leave judge.model empty to disable
+# both the judge and ask_advisor; the cheaper deterministic_checks stage still
+# runs.
+gates:
+  constitution_path: config/constitution.md   # global principles, used for the advisor + judge
+  rubric_path: config/rubric.md               # default scoring guide (agents may override with rubric.md in their bundle)
+  deterministic_checks:
+    max_rounds: 4   # free citation/length checks; up to 4 cheap worker revise cycles
+  judge:
+    max_output_tokens: 8192      # verdicts are small; bounds runaway generations (2026-08-13 incident)
+    provider: default
+    model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
+    max_rounds: 2           # default for any agent without its own judge_rounds (a per-agent value OVERRIDES this, it is not a ceiling - serve.go's perAgentGate)
+    threshold: 0.7          # PER-CRITERION pass bar: every rubric criterion must clear it.
+                            # On the rubric's 0-10 scale this is 7/10 ("met, with only
+                            # minor gaps"); the verdict score is the lowest criterion
+                            # (weakest-link gating, no averaging, no caps).
+    max_iterations: 6       # safety cap on the judge's model turns per round
+
+# DAG execution policy.
+dag:
+  # PER-RUN node ceiling only. Real GPU concurrency comes from the model's
+  # limits.sessions/kv_tokens above (#1007 admission), which is global.
+  max_active_nodes: 8
+
+server:
+  addr: ":8080"
+  # topology: how the stores are provided. embedded (sqlite, no containers) and
+  # external (you run Postgres/Qdrant and point the stores above at them) just
+  # run the process — the default. managed makes `quack server` bring up
+  # Postgres + Qdrant via an embedded docker-compose stack (`quack-stores`),
+  # wait for them to be ready, then run; `quack server stop` tears them down
+  # (volumes persist). managed needs host ports 5432 + 6334 free and docker
+  # available. Tool backends (search/fetch) are NOT managed — set them via the
+  # tools below (kind: exa for keyless, kind: direct for fetch).
+  # topology: managed
+
+# workflows: extends the planner's catalog; a nodes: list binds a dispatch
+# naming the workflow straight to that DAG (no planner LLM call).
+# document-ingest is what extensions.remarkable dispatches into.
+workflows:
+  - name: document-ingest
+    trigger: "Ingest a new document (e.g. a reMarkable export) into the knowledge base"
+    agents: [media-reader, synthesizer]
+    shape: "ONE `media-reader` node (transcribes the attached document) -> ONE `synthesizer` node (terminal - writes the structured summary)"
+    nodes:
+      - id: transcribe
+        agent: media-reader
+        task: "Transcribe this document's full content, preserving structure (headings, lists, sketches described in words).\n\n{{ask}}"
+      - id: summarize
+        agent: synthesizer
+        depends_on: [transcribe]
+        task: "Write a structured Markdown summary of the transcribed document above: key facts, decisions, and action items.\n\n{{ask}}"
+
+# The agents' working disk (filesystem/git tools). One configured root; a
+# per-user jail lives under it (<root>/<user_id>/ — "local" today, the OIDC
+# subject later). Not bound to any agent's tools: list yet — see
+# .quack/plan-pr5-tool-schemas.md. Every field is optional; omitting this
+# section entirely still gets a working jail rooted at ./workspace with the
+# defaults below.
+workspace:
+  root: ${QUACK_WORKSPACE_ROOT}   # default ./workspace (compose: the volume mountpoint)
+  max_read_kb: 256                # read_file per-call cap; oversized reads truncate, never error
+  max_write_kb: 2048               # write_file per-call cap; oversized writes error (no truncated field to signal it)
+  max_results: 200                # grep/glob hits per call
+  max_list_entries: 500           # list_dir entries per call
+  timeout_seconds: 60
+
+  # sandbox: the OS boundary every run_command / gate-check CHILD PROCESS runs
+  # inside. The jail above is a PATH CHECK on the tools — it never constrained a
+  # child process, only its cwd, so before this a child (any child: `sh -c` slips
+  # through the metachar filter untouched) could read ~/.ssh, ~/.aws, .env, and
+  # anything else the server's OS user can read.
+  #   bwrap (default) — bubblewrap namespace: the child's filesystem is a
+  #     read-only system view plus exactly two writable paths (its own working
+  #     directory and its isolated $HOME). Nothing else EXISTS in there. Needs
+  #     no root and no daemon; install it (Debian/Ubuntu: `apt-get install
+  #     bubblewrap`). If it isn't installed/usable, the server REFUSES TO START.
+  #     Because the namespace IS the wall, run_command runs its command line in a
+  #     REAL SHELL (/bin/sh -c) in here: pipes, redirects, globs, $(…) and &&
+  #     all work. The metachar filter is not applied on this path — it blocked no
+  #     attack (`sh -c` never contained one of those characters), it only made
+  #     agents write throwaway script files to route around it.
+  #   none — children run with the server user's full filesystem authority.
+  #     Logs a loud WARN at startup. Only sane when the whole server is already
+  #     confined (a throwaway container/VM) or you trust the agents with that
+  #     account. With no OS boundary the habit guard is all there is, so THERE
+  #     run_command stays argv-only and still rejects & ; $ < > ` ( ).
+  #   landlock - a self-applied Landlock ruleset (no new namespace): the child
+  #     restricts ITSELF then execs, so it works inside an unprivileged
+  #     container where bwrap can't nest. Requires Linux kernel >= 6.2
+  #     (Landlock ABI >= 3); the server REFUSES TO START otherwise.
+  sandbox: landlock   # (0.16.0) bwrap can't nest in this unprivileged container, but Landlock is a
+                      # self-restriction rather than a namespace construction, so it applies here.
+                      # This is the first deploy where the ACP coding agent has an OS boundary at
+                      # all: RW = its node dir + isolated HOME + tmp, RO = system dirs + /toolchains.
+                      # Host kernel 6.8 (ABI >= 3 confirmed). Was `none` through 0.15.x.
+
+  # Per-child resource limits (rlimits). A runaway build (`npm ci` on a hostile
+  # repo, a test that allocates without bound) must not be able to take the host
+  # down with it. 0 = inherit the server's limit.
+  limits:
+    address_space_mb: 8192   # RLIMIT_AS, PER PROCESS. Restored on 0.26.1 (quack#798): these
+                             # reach the gate's one-shot children only - the ACP agent
+                             # subprocess now runs with no ceiling. Do not tighten much:
+                             # node's V8 reserves a huge VIRTUAL region at startup, so a
+                             # small limit doesn't slim a build, it stops node running at all.
+    max_procs: 512           # RLIMIT_NPROC — only applied inside the bwrap user namespace
+                             # (it is counted per-UID system-wide, so outside one it would
+                             # break every fork). --unshare-pid contains fork bombs anyway.
+    max_file_size_mb: 1024   # RLIMIT_FSIZE: one command cannot fill the disk. Restored on
+                             # 0.26.1 - it no longer reaches the ACP agent, whose opencode.db
+                             # was already past this ceiling and died on every WAL checkpoint.
+
+  # exec_path: extra PATH dirs for run_command/checks/git children — for toolchains
+  # outside the fixed system dirs (nvm, asdf, a $HOME-installed Go SDK). Under
+  # sandbox: bwrap each entry is ALSO bind-mounted READ-ONLY into the child (a
+  # `.../bin` entry brings its sibling lib/, libexec/ and share/ with it — nvm's
+  # `npm` is a symlink into ../lib), so the toolchain exists in there and nothing
+  # else on the host does. Entries are bound VERBATIM: a toolchain that keeps
+  # runtime files elsewhere in its prefix (a Go SDK's GOROOT — src/, pkg/) needs
+  # that directory listed too, or the child fails with "cannot find GOROOT" /
+  # exit 127 "No such file or directory". Anything under /usr is already covered.
+  # The Android/JDK toolchain lives in the quack-toolchains volume (mounted at
+  # /toolchains, provisioned out-of-band) — the image ships only go+node, so
+  # anything Kotlin/Gradle has to come from here. JDKs 17/21/25 are present;
+  # JAVA_HOME below picks 17 as the floor AGP 8.x requires, and Gradle selects
+  # a newer one per-project (see GRADLE_OPTS). Nothing older than 17 is
+  # installed, so a Gradle/AGP older than that simply cannot build here.
+  # (0.16.0) /toolchains itself is listed FIRST because exec_path entries are also
+  # what the sandbox grants read-only. Under `sandbox: none` there were no grants
+  # at all, so everything under /toolchains was reachable; under landlock only the
+  # listed dirs (+ a bin/ entry's lib/libexec/share siblings) are, and a JDK reads
+  # conf/security/java.security while AGP reads platforms/ and build-tools/ — none
+  # of which is a sibling of a bin/. One entry covering the whole read-only
+  # toolchain tree is simpler than enumerating each JDK and SDK subdir; the cost is
+  # one PATH entry that holds no executables, which exec lookup just skips.
+  exec_path:
+    - /toolchains
+    - /toolchains/jdk17/bin
+    - /toolchains/android-sdk/platform-tools
+    - /toolchains/android-sdk/cmdline-tools/latest/bin
+
+  # env: extra environment for workspace children AND the ACP coding agent —
+  # the half exec_path can't do, since Gradle finds the JDK via JAVA_HOME and
+  # AGP finds the SDK via ANDROID_HOME, not by scanning PATH.
+  env:
+    # pi shim's per-LLM-call OTLP spans (0.42.0); same collector quack itself uses.
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    JAVA_HOME: /toolchains/jdk17
+    ANDROID_HOME: /toolchains/android-sdk
+    ANDROID_SDK_ROOT: /toolchains/android-sdk
+    # JVM tooling ignores $HOME: java derives user.home from the passwd entry,
+    # so the jail's isolated home never reaches it and every tool writes to the
+    # unwritable /home/nonroot unless pointed somewhere explicitly. Each tool
+    # needs its own var - without these the build dies at "could not create
+    # parent directory for lock file" (gradle) and AndroidLocationsBuildService
+    # (AGP).
+    GRADLE_USER_HOME: /workspace/local/.quack-home/.gradle
+    ANDROID_USER_HOME: /workspace/local/.quack-home/.android
+    ANDROID_PREFS_ROOT: /workspace/local/.quack-home
+    # daemon off: each gate check is a fresh short-lived child, so a lingering
+    # daemon is just memory held on a box that also runs the models.
+    # installations.paths is how ONE JAVA_HOME still serves repos needing
+    # different JDKs — Gradle 6.7+ picks per-project from its own toolchain
+    # block. Below 6.7 there is no such mechanism and JAVA_HOME above wins.
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.paths=/toolchains/jdk17,/toolchains/jdk21,/toolchains/jdk25"
+
+  # check_commands: allowed command PREFIXES the planner may complete into a
+  # code-implementer node's `checks` (§4) — the trust gate runs these against
+  # the node's own workdir after each draft, and DERIVES a repo's own build/vet/
+  # test commands from them when the planner set none. The image ships the go +
+  # node toolchains (#283), and since quack 0.6.0 each derived check is gated on
+  # its binary existing — a missing toolchain derives nothing instead of failing
+  # the node. Explicit [] would disable checks entirely (the pre-0.6.0 state:
+  # the gate never actually compiled or tested a coder node's work).
+  check_commands: ["go build", "go vet", "go test", "npm run", "npm test", "npx tsc", "make", "./gradlew"]
+  # Bootstrap run once per provisioned clone/worktree AND before gate checks
+  # (v0.30.0): quack's own repo needs these before go test/make can pass.
+  check_setup: ["make plugins", "npm --prefix scripts ci"]
+
+  # (0.16.0) gc: the periodic disk reaper. Set explicitly rather than inherited,
+  # because the first sweep on this deploy is destructive: /workspace has ~15G
+  # accumulated over weeks of dogfooding across 33 scopes. Note what it does NOT
+  # touch — .quack-home's npm/go/Gradle caches are 9.8G of that 15G and are left
+  # alone on purpose (a cache TTL makes every later run re-download its world),
+  # so this reclaims the chat scopes and gate scratch, not the bulk. Cache
+  # pressure needs size-bounded eviction, not a TTL.
+  gc:
+    enabled: true
+    chat_ttl_hours: 72       # 3 days idle; never a chat with a run in flight
+    scratch_ttl_hours: 6     # gate baseline worktrees + .quack-home/tmp
+    interval_hours: 1
+
+  # Deployment-level per-host HTTPS git credentials — ONE identity per host (a
+  # PAT), configured like every other secret. Empty (default) = public repos
+  # only. `token` MUST be an ${VAR} env reference (a literal secret here is a
+  # startup error, not a silent leak — see docs/configuration.md).
+  # git_credentials:
+  #   - host: github.com
+  #     username: x-access-token       # default; GitHub PATs use this
+  #     token: ${QUACK_GITHUB_TOKEN}
+
+  # Guard ladder (§4b): tool name -> none (default, unlisted) | judge |
+  # confirm | judge+confirm. Tier-0 always applies regardless of guard tier: the
+  # path jail for the fs/git TOOLS, the sandbox + rlimits for their CHILD
+  # PROCESSES, no force-push/push-to-main. ("No shell" is NOT a wall and is not
+  # Tier 0: a sandboxed run_command takes a real shell command line. The judge
+  # tier is what decides what a command may DO.)
+  # guards: no default entries — the native fs/git/run_command tools are gone in
+  # 0.6.0 (code agents are external ACP subprocesses); the ladder mechanism stays
+  # available for any remaining tool.
+  guards: {}
+
+# github/remarkable extensions dropped for QA: no App secrets to mount, and
+# remarkable would double-poll prod's shared rmfakecloud instance.
+extensions:
+  # In-app token/cost dashboard (Usage in the nav rail). Charts gen_ai.client.*
+  # metrics via a narrow GET-only proxy. prometheus/tempo are host-published;
+  # the container reaches them over the Tailscale IP.
+  usage:
+    prometheus_url: http://100.81.155.8:9090
+    tempo_url: http://100.81.155.8:3200
+    default_range: 24h
+
+# Durable chat attachments (v0.29.0): uploaded/dispatched files persist as
+# Postgres Large Objects in this store and survive restarts; absent store:
+# would mean RAM-only. Rides the same DB as sessions.
+artifacts:
+  store: default_postgres

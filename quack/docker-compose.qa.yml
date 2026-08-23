@@ -1,0 +1,74 @@
+# NON-PROD quack for pre-PR QA. Distinct project name/container names/volumes/port
+# from quack/docker-compose.yml so `docker compose` here never touches prod.
+# No traefik/api_gateway — reached directly over the tailnet, like the CLI port on prod.
+name: quack-qa
+services:
+  quack-qa:
+    image: ghcr.io/fagerbergj/quack:0.47.0   # same released image prod runs
+    container_name: quack-qa
+    command: ["server", "run"]
+    environment:
+      QUACK_CONFIG: /config/quack.yaml
+      QUACK_LOG_LEVEL: debug
+      QUACK_OTEL_ENABLED: "false"   # keep QA traces out of prod's dashboards
+      QUACK_DATABASE_URL: postgres://quack:${QUACK_QA_DB_PASSWORD}@quack-qa-postgres:5432/quack?sslmode=disable
+      QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1
+      QUACK_LLM_API_KEY: ""
+      QUACK_ORCH_MODEL: qwen3.8-27b
+      QUACK_RESEARCHER_MODEL: qwen3.8-27b
+      QUACK_CODER_MODEL: qwen3.8-27b
+      QUACK_JUDGE_MODEL: gemma4-26b-a4b
+      QUACK_IMAGE_MODEL: qwen3.8-27b
+      QUACK_MEDIA_MODEL: qwen3-omni-30b
+      QUACK_COMPACTION_ENABLED: "true"
+      QUACK_COMPACTION_MODEL: gemma4-26b-a4b
+      QUACK_EMBED_MODEL: qwen3-embed
+      QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
+      QUACK_WORKSPACE_ROOT: /workspace
+    ports:
+      - "100.81.155.8:18081:8080"   # tailnet-only, mirrors prod's 18080 pattern
+    volumes:
+      - ./quack.qa.yaml:/config/quack.yaml:ro
+      - quack-qa-workspace:/workspace
+    depends_on:
+      quack-qa-postgres:
+        condition: service_healthy
+      quack-qa-init:
+        condition: service_completed_successfully
+    networks:
+      - default
+      - llm_default
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  quack-qa-init:
+    image: alpine
+    command: ["chown", "-R", "65532:65532", "/workspace"]
+    volumes:
+      - quack-qa-workspace:/workspace
+    restart: "no"
+
+  quack-qa-postgres:
+    image: postgres:17-alpine
+    container_name: quack-qa-postgres
+    environment:
+      POSTGRES_USER: quack
+      POSTGRES_PASSWORD: ${QUACK_QA_DB_PASSWORD}
+      POSTGRES_DB: quack
+    volumes:
+      - quack-qa-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quack -d quack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  default:
+  llm_default:
+    external: true
+
+volumes:
+  quack-qa-workspace:
+  quack-qa-pg:
