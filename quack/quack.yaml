@@ -170,7 +170,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
-    context_window: 65536        # reviewer-like footprint
+    context_window: 131072       # measured 65-100k live; 65536 under-reserved and 3 nodes overran the pool
     judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
