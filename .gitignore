@@ -36,3 +36,6 @@ langfuse/data/
 
 # .* above hides .github/ too; templates and workflows must be tracked.
 !.github/
+
+# Machine-specific notes and overrides (AGENTS.md.local, *.env.local)
+*.local
