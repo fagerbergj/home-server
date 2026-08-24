@@ -110,7 +110,12 @@ session:
 observability:
   otel:
     enabled: ${QUACK_OTEL_ENABLED}             # unset => true
-    otlp_endpoint: ${QUACK_OTEL_OTLP_ENDPOINT} # http://otel-collector:4318
+    # One entry per OTLP destination; the signal path (/v1/traces etc) is
+    # appended automatically. Add a second entry to send traces to Langfuse
+    # while metrics keep going to the collector (quack#1045).
+    exporters:
+      - endpoint: ${QUACK_OTEL_OTLP_ENDPOINT}  # http://otel-collector:4318
+        signals: [traces, metrics]
   recording:
     store: default_ledger                      # enabled follows otel.enabled
     retention_days: 30
