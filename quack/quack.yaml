@@ -258,10 +258,14 @@ gates:
     provider: default
     model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
     max_rounds: 2           # default for any agent without its own judge_rounds (a per-agent value OVERRIDES this, it is not a ceiling - serve.go's perAgentGate)
-    threshold: 0.7          # PER-CRITERION pass bar: every rubric criterion must clear it.
-                            # On the rubric's 0-10 scale this is 7/10 ("met, with only
-                            # minor gaps"); the verdict score is the lowest criterion
-                            # (weakest-link gating, no averaging, no caps).
+    threshold: 0.6          # PER-CRITERION pass bar: every rubric criterion must clear it.
+                            # On the rubric's 0-3 scale (3=pass clean, 2=pass with
+                            # issues, 1=deny small issues, 0=deny major issues), 2/3
+                            # normalises to 0.667 - this threshold must sit strictly
+                            # below that so "pass with issues" clears it with margin,
+                            # not exactly on the float boundary. The verdict score is
+                            # the lowest criterion (weakest-link gating, no averaging,
+                            # no caps).
     max_iterations: 6       # safety cap on the judge's model turns per round
 
 # DAG execution policy.
