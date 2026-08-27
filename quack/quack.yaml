@@ -273,6 +273,9 @@ dag:
   # PER-RUN node ceiling only. Real GPU concurrency comes from the model's
   # limits.sessions/kv_tokens above (#1007 admission), which is global.
   max_active_nodes: 8
+  # Live runs server-wide. Not a GPU knob (limits.sessions is) - this is what
+  # bounds how many chats sit in the sidebar showing as running at once.
+  max_active_runs: 2
 
 server:
   addr: ":8080"
