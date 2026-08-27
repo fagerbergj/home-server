@@ -35,7 +35,6 @@ models:
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
     env:
-      - "GPU_MAX_HW_QUEUES=1"
     # --no-mmap: page-fault-serialized mmap reads take 30+min on 65GB+ models;
     # direct reads load in under a minute (costs full-model peak RSS at load).
     # --split-mode layer, NOT tensor: no XGMI between the two cards, so tensor
@@ -65,11 +64,12 @@ models:
       --port 9999
       --metrics
 
-  # Dense 27B hybrid, native vision. ALONE on GPU1 (ROCR_VISIBLE_DEVICES=1): decodes
+  # Dense 27B hybrid, native vision. ALONE on the second card (GGML_VK_VISIBLE_DEVICES=0): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
-  # 17-38 t/s. KV stays q4_0: on q5_1 an 8.8k-prompt request ran with 14 cores
-  # pegged and the GPU at 3%; reverting the cache type alone restored GPU execution.
+  # 17-38 t/s. KV f16 (8GB at 131072): quantized KV had no fast FA path at head_dim
+  # 256 (q4_0 at 52k decoded 8 t/s/slot). Vulkan, single request at 90k: 40.2 t/s
+  # decode / 623 prefill vs HIP 32.5 / 376. Layer-split over both cards: 12-16 t/s.
   # --parallel 2 --kv-unified: slots share the whole 262144 pool rather than
   # splitting it, so one long node can still use it all. 2 not 4: at 30k prompts
   # 2 concurrent requests measured 151.9s vs 123.7s run serially (0.81x).
@@ -78,12 +78,13 @@ models:
   # reasoning_effort low + a 4096 thinking budget: at medium/unbounded a single
   # step burned 8.8-18k reasoning tokens. The budget MESSAGE matters - the old
   # 512 test thrashed (105 tool calls vs 48) because it cut thinking off silently.
+  # Thinking is ~95% of review decode (28k vs 1.4k output over 53 turns, ~530/turn):
+  # the lever is turn count, not budget.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     ttl: 1800
     env:
-      - "GPU_MAX_HW_QUEUES=1"
-      - "ROCR_VISIBLE_DEVICES=1"
+      - "GGML_VK_VISIBLE_DEVICES=0"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q5_K_XL.gguf
@@ -102,15 +103,15 @@ models:
       --no-mmap
       -fit off
       -ngl 999
-      -c 262144
+      -c 131072
       --image-min-tokens 2048
       --image-max-tokens 8192
       --parallel 2
       --kv-unified
       -ub 512
       -b 2048
-      --cache-type-k q4_0
-      --cache-type-v q4_0
+      --cache-type-k f16
+      --cache-type-v f16
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --port 9993
@@ -146,7 +147,6 @@ models:
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
     env:
-      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
@@ -175,7 +175,7 @@ models:
       --port 9999
       --metrics
 
-  # 4B Q8 on GPU0 with gemma (ROCR_VISIBLE_DEVICES=0). Measured 15-64ms/req GPU vs
+  # 4B Q8 pinned to GPU0 (GGML_VK_VISIBLE_DEVICES=1). Measured 15-64ms/req GPU vs
   # 0.8-4s on CPU under load. 2560-dim vectors: switching embed models means dropping
   # the Qdrant memory collections (dimension is fixed at creation).
   "qwen3-embed":
@@ -185,7 +185,7 @@ models:
     # Still relevant on CPU (avoids ever hitting a cold-load in the hot path).
     ttl: 0
     env:
-      - "ROCR_VISIBLE_DEVICES=0"
+      - "GGML_VK_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
@@ -206,7 +206,6 @@ models:
     proxy: "http://127.0.0.1:9996"
     ttl: 600
     env:
-      - "GPU_MAX_HW_QUEUES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q4_K_XL.gguf
@@ -228,15 +227,14 @@ models:
       --port 9996
       --metrics
 
-  # 26B-A4B MoE, ~17GB, on GPU0 with the embedder (ROCR_VISIBLE_DEVICES=0), 11GB
-  # headroom. Decodes ~48 t/s with a card to itself. -ncmoe 8 kept from the shared
-  # era; retest lower against a busy worker before changing (it used to SIGABRT).
+  # 26B-A4B MoE, ~17GB, on the first card with the embedder, 11GB headroom. -ncmoe 8
+  # kept from the shared era; retest lower before changing (it used to SIGABRT).
+  # -ub 512: 2048 needs 1.3GB scratch, which OOMed next to a busy worker.
   "gemma4-26b-a4b":
     proxy: "http://127.0.0.1:9994"
     ttl: 3600   # 2x the workers: called once per gated node, so 1800 expired between calls and every round re-prefilled cold (0 cached vs ~29K prompts)
     env:
-      - "GPU_MAX_HW_QUEUES=1"
-      - "ROCR_VISIBLE_DEVICES=0"
+      - "GGML_VK_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-26B-A4B-it-GGUF/snapshots/3bb10d594514ef4edb7f3a65d41a7e4eb8c5767a/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
@@ -250,7 +248,7 @@ models:
       -ncmoe 8
       -fa on
       -c 131072
-      -ub 2048
+      -ub 512
       -b 2048
       --parallel 2
       --kv-unified
