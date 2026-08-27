@@ -67,14 +67,15 @@ models:
   # Dense 27B hybrid, native vision. ALONE on the second card (GGML_VK_VISIBLE_DEVICES=0): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
   # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
-  # 17-38 t/s. KV f16 (8GB at 131072): quantized KV had no fast FA path at head_dim
-  # 256 (q4_0 at 52k decoded 8 t/s/slot). Vulkan, single request at 90k: 40.2 t/s
-  # decode / 623 prefill vs HIP 32.5 / 376. Layer-split over both cards: 12-16 t/s.
+  # 17-38 t/s. KV q8_0 (8.7GB at 262144): f16 would be 16GB and not fit; q4_0 on HIP
+  # had no fast FA path at head_dim 256 (8 t/s/slot at 52k). Vulkan, one request at
+  # 90k: Q4+q8_0@262k 36.3 decode / 488 prefill; Q5+f16@131k 40.2/623; HIP Q5 32.5/376.
   # --parallel 2 --kv-unified: slots share the whole 262144 pool rather than
   # splitting it, so one long node can still use it all. 2 not 4: at 30k prompts
   # 2 concurrent requests measured 151.9s vs 123.7s run serially (0.81x).
   # draft-mtp: n-max 2 beats 3.
-  # UD-Q5_K_XL: unsloth's dynamic quant; ggml-org Q4_K_M has no MTP head.
+  # UD-Q4_K_XL: unsloth's dynamic quant (Q5 is +3GB for ~7% slower decode at 262k);
+  # ggml-org Q4_K_M has no MTP head.
   # reasoning_effort low + a 4096 thinking budget: at medium/unbounded a single
   # step burned 8.8-18k reasoning tokens. The budget MESSAGE matters - the old
   # 512 test thrashed (105 tool calls vs 48) because it cut thinking off silently.
@@ -87,7 +88,7 @@ models:
       - "GGML_VK_VISIBLE_DEVICES=0"
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/direct/Qwen3.8-27B-UD-Q5_K_XL.gguf
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-27B-GGUF/snapshots/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q4_K_XL.gguf
       --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
       --jinja
       --reasoning-format deepseek
@@ -103,15 +104,15 @@ models:
       --no-mmap
       -fit off
       -ngl 999
-      -c 131072
+      -c 262144
       --image-min-tokens 2048
       --image-max-tokens 8192
       --parallel 2
       --kv-unified
       -ub 512
       -b 2048
-      --cache-type-k f16
-      --cache-type-v f16
+      --cache-type-k q8_0
+      --cache-type-v q8_0
       --spec-type draft-mtp
       --spec-draft-n-max 2
       --port 9993
