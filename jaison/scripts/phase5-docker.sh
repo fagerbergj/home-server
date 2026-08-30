@@ -6,7 +6,7 @@ echo "=== Phase 5: Docker ==="
 echo ""
 
 # --- Docker ---
-sudo apt install -y ca-certificates curl gnupg
+sudo apt install -y ca-certificates curl gnupg make
 
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
