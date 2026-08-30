@@ -3,7 +3,7 @@
 # The llama.cpp containers bundle their own userspace; the host needs the
 # in-tree amdgpu driver (already in 26.04's kernel), rocm-smi, and the groups.
 set -euo pipefail
-sudo apt install -y rocm-smi-lib rocminfo vulkan-tools
+sudo apt install -y rocm-smi rocminfo vulkan-tools
 sudo usermod -aG render,video "$USER"
 
 # An idle R9700 runtime-suspends; a monitoring poll then resumes it every 30 s
