@@ -38,7 +38,8 @@ home-server/
 ├── plex/             # Plex Media Server
 ├── games/            # Next.js games launcher (Kings Corner)
 ├── photos/           # Immich photo storage
-├── llm/              # llm-swap (llama.cpp) + Open WebUI
+├── llm/              # llm-swap (llama.cpp) + Open WebUI — runs on the AI box (jaison)
+├── jaison/           # AI box: hardware, setup phases, scripts
 ├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf
 ├── updater/          # Watchtower (auto-updates) + Diun (update notifications)
