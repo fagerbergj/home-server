@@ -14,7 +14,7 @@ this router for every model listed here, so clients never talk to jaison directl
 | `llm-swap.Dockerfile` | `docker:cli` + bash/python3 + the llama-swap binary. No GPU libraries; those live in the runtime images. |
 | `llm-swap.yaml` | Model table, groups, and the per-model `cmd` / `cmdStop`. Bind-mount paths inside cmds are **host** paths because the daemon resolves them. |
 | `run-jaison.sh` | vLLM launcher for the 27B (a copy of zzpanic's `startup-qwen3.8-27b-vllm.sh` with Docker instead of podman, `TP`, and the visibility fix). Reads `GPU`, `TP`, `MAXLEN`, `MAXSEQS`, `PORT`, `MODEL_DIR`, `DRAFT_DIR`, `CACHE_DIR`, `REASONING_EFFORT` from the model's `env:`. |
-| `launchers/` | Pinned submodule of that upstream repo; the launcher runs from inside it for the Triton tile table and the radiance overlay under `patches/`. |
+| `vllm-patches/` | Three files the launcher bind-mounts over the vLLM image (tuned Triton kernel, two patched vLLM sources for the DFlash2 draft and KV sizing), copied from the upstream launcher repo. See its README. |
 | `mtp/` | Dockerfile + patch for `llama-mtp:gfx1201`: llama.cpp (unsloth tree @ bea3b12d) with the Flash-Next MTP draft head, HIP build. Frozen until llama.cpp PR 27836 merges; Watchtower never touches it. |
 | `Makefile` | `make up` pulls the runtime images, builds the MTP image, and (re)builds/starts the router. `make down` stops the router and any runtime it left running. |
 

@@ -87,12 +87,11 @@ Or re-download: `llm/download-models.sh`.
 
 ## Phase 7 — llm-swap
 
-One `llm-swap` container (`jaison/llm/llm-swap.Dockerfile`: llama-swap + the Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns both cards and its groups swap the resident 27B (vLLM, TP=2, one id + `qwen3.8-27b-judge` alias) against Flash-Next (whole box, llama.cpp MTP fork built from `jaison/llm/mtp`) and the on-demand extras (Vulkan llama.cpp). Bind-mount paths in the cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher (`jaison/llm/run-jaison.sh` + the pinned `jaison/llm/launchers` submodule).
+One `llm-swap` container (`jaison/llm/llm-swap.Dockerfile`: llama-swap + the Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns both cards and its groups swap the resident 27B (vLLM, TP=2, one id + `qwen3.8-27b-judge` alias) against Flash-Next (whole box, llama.cpp MTP fork built from `jaison/llm/mtp`) and the on-demand extras (Vulkan llama.cpp). Bind-mount paths in the cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher (`jaison/llm/run-jaison.sh`, which bind-mounts `jaison/llm/vllm-patches/` over the image).
 
 vLLM checkpoints live in `/mnt/cache/vllm/` (`qwen3.8-27b-autoround`, `qwen3.8-27b-dflash2-int4`, `cache/` for the compile cache).
 
 ```bash
-cd ~/workspace/home-server && git submodule update --init jaison/llm/launchers
 cd jaison/llm && set -a && . ../../.env && set +a
 make up          # pulls runtime images, builds llama-mtp:gfx1201, starts the router
 curl -s http://localhost:11436/v1/models | jq '.data[].id'

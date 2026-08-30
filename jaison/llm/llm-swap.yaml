@@ -56,8 +56,8 @@ models:
       - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
       - "CACHE_DIR=/mnt/cache/vllm/cache"
       - "REASONING_EFFORT=medium"
-    cmd: >
-      bash -c "cd ${llm_dir}/launchers && exec ${llm_dir}/run-jaison.sh"
+      - "PATCH_DIR=${llm_dir}/vllm-patches"
+    cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop qwen38-27b-vllm
 
   # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table, UD-Q3_K_XL, on the MTP fork image
