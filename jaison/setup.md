@@ -18,11 +18,19 @@ service stacks don't apply here. Everything after Phase 1 runs over SSH.
 
 ### Network
 
-- Router: DHCP reservation for this box's MAC (wired port; the 10GbE/2.5GbE
-  ports on the SAGE A, not Wi-Fi). Same subnet as the media box.
-- AdGuard (on the media box): DNS rewrite `jaison` → that IP, so nothing has to
-  carry the address.
-- Verify from the media box: `ping jaison`.
+- Router: DHCP reservation for this box's MAC at `192.168.50.202` (currently the
+  Wi-Fi interface `wlp145s0`; if it moves to a wired port, reserve that MAC instead).
+- AdGuard Home (media box UI): **Filters → DNS rewrites → Add**: `jaison` →
+  `192.168.50.202`, and `jason-server` → `192.168.50.186`. Every config that
+  crosses the boxes (Traefik route, `QUACK_LLM_ENDPOINT`, llama-swap `peers`)
+  uses those names, so an address change is one rewrite, not three files.
+  Only clients that use AdGuard as DNS see them; containers on the media box
+  resolve through the host, so the host's resolver must point at AdGuard (check
+  `resolvectl status` there) or those configs need the IP.
+- Verify: `ping jaison` from the media box, `ping jason-server` from here.
+- Tailscale (optional, for SSH from off-LAN): `curl -fsSL https://tailscale.com/install.sh | sh`,
+  `sudo tailscale up --ssh`, `sudo ufw allow in on tailscale0`. Not an exit node
+  or subnet router; the media box already is.
 
 ### Update, firewall, reboot
 
