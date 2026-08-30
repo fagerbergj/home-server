@@ -1,5 +1,7 @@
 # Hardware
 
+Two boxes since 2026-08-30: this file is `jason-server` (media/storage, the public gateway). The AI box `jaison` (Threadripper 7960X, 2× R9700) is described in [`jaison/README.md`](jaison/README.md).
+
 ## Current Hardware
 
 | Component | Status | Notes |
