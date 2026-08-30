@@ -87,7 +87,9 @@ services:
       - HF_HUB_OFFLINE=1
     volumes:
       - ./llm-swap-media.yaml:/app/config.yaml:ro
-      - /mnt/cache/huggingface:/root/.cache/huggingface
+      # The two local models live on the OS NVMe (same HF layout); the full cache is
+      # archived on the pool at /mnt/media/models/huggingface and the SATA SSD is retired.
+      - /home/jason-server/models/huggingface:/root/.cache/huggingface
     networks:
       default:
         aliases: [llm-swap]   # quack/open-webui keep talking to http://llm-swap:11436
