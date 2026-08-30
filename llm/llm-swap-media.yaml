@@ -27,7 +27,8 @@ models:
       --port 9998
       --metrics
 
-  # Small chat/utility model; fits beside the embedder on the 3090 (~7 GB at 32k).
+  # Small chat/utility model + quack's compaction fallback (its input caps at ~30k tokens,
+  # so 64k leaves margin); fits beside the embedder on the 3090 (~7.5 GB at 64k).
   "qwen3.5-9b":
     proxy: "http://127.0.0.1:9999"
     ttl: 0   # always resident beside the embedder (11 GB of the 24); also quack's compaction model
@@ -41,7 +42,7 @@ models:
       --min-p 0
       --presence-penalty 1.5
       -ngl 999
-      -c 32768
+      -c 65536
       --cache-type-k q8_0
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
