@@ -13,6 +13,7 @@ services:
       - ./llm-swap.yaml:/app/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/jason/workspace/home-server/jaison/llm:/home/jason/workspace/home-server/jaison/llm:ro
+      - /mnt/cache:/mnt/cache:ro   # the launcher checks model dirs before docker run
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
