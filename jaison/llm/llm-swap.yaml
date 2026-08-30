@@ -35,6 +35,7 @@ models:
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
+    useModelName: qwen3.8-27b-vllm   # what the launcher registers with vLLM
     ttl: 0
     env:
       - "GPU=0,1"
