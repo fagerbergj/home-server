@@ -1,7 +1,8 @@
 # Notes — Setup
 
-reMarkable cloud replacement. Uploaded notes are forwarded to document-pipeline
-for OCR + classification + embedding (handled in the api/ stack, not here).
+reMarkable cloud replacement. quack's `remarkable` extension logs into this
+rmfakecloud with its own account (see `quack/docker-compose.yml`) and handles
+uploaded notes from there; nothing else consumes them.
 
 ## 1. Generate secrets
 
@@ -42,23 +43,15 @@ In Nginx Proxy Manager, add a proxy host:
 3. Visit `https://remarkable.jasonfagerberg.duckdns.org` — log in and generate a one-time code
 4. On the tablet, enter the code to register
 
-## 6. Configure the webhook integration
+## 6. Give quack access
 
-In the rmfakecloud web UI, add a webhook integration pointing to document-pipeline:
-
-- URL: `http://document-pipeline:8000/webhook`
-- Type: Webhook
-
-On the tablet, tap the **Share** icon on any notebook — the integration will appear as a send target. Tapping it sends the note image to document-pipeline, which runs it through OCR (via llm-swap), classification, and embedding stages.
-
-## 7. Query your notes
-
-document-pipeline writes embedded chunks to Qdrant. Use the document-pipeline UI
-at `http://localhost:8000` to search, or attach the Qdrant collection to an
-Open WebUI knowledge base for RAG-style chat across your notes.
+Create a second rmfakecloud user for quack and put its credentials in
+`quack/.env` (the `extensions.remarkable` block in `quack/quack.yaml` reads
+them). quack polls the cloud itself; no webhook integration is needed.
 
 ## Monitoring
 
 ```bash
-docker logs document-pipeline -f
+docker logs rmfakecloud -f
+docker logs quack -f | grep remarkable
 ```

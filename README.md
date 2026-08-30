@@ -51,10 +51,6 @@ home-server/
 └── README.md
 ```
 
-`api/` (document-pipeline + shared-postgres + opensearch) and `audio/`
-(faster-whisper) are stopped — their compose files and data volumes are kept
-until document-pipeline's data is ported into quack.
-
 ## Media Storage
 
 Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each service's compose file.

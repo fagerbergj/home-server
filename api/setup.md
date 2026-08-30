@@ -307,7 +307,7 @@ Other useful endpoints: `/scrape` (structured elements), `/pdf`, `/screenshot`.
 - **SSRF — the important one.** Browserless fetches whatever URL it's handed,
   server-side, and it sits on the `api_gateway`/`default` networks, so a
   malicious or redirected URL can reach internal services
-  (`http://opensearch:9200`, `http://searxng:8080`, `shared-postgres`, the cloud
+  (`http://searxng:8080`, `qdrant:6333`, the cloud
   metadata IP `169.254.169.254`, etc.). **The caller must allowlist/deny before
   calling**: reject non-`http(s)` schemes, and resolve+block private/link-local
   ranges (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `::1`,

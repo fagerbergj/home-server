@@ -35,7 +35,6 @@ Public routes (e.g., `/api/v1/<service>/openapi.json`) omit the `authentik@file`
 
 | Path prefix | Service | Container |
 |-------------|---------|-----------|
-| `/api/v1/documents` | document-pipeline | `document-pipeline` |
 | `/docs` | Swagger UI | `swagger-ui` |
 
 ## Internal Backends
@@ -48,8 +47,6 @@ router points at them).
 
 | Container | Internal address | Purpose |
 |-----------|------------------|---------|
-| `opensearch` | `http://opensearch:9200` | full-text index (document-pipeline) |
-| `shared-postgres` | `shared-postgres:5432` | shared Postgres (per-service schemas) |
 | `searxng` | `http://searxng:8080` | keyless metasearch — JSON web-search backend |
 | `browserless` | `http://browserless:3000` | keyless headless Chromium — JS page render |
 
