@@ -41,7 +41,7 @@ rocm-smi --showuse
 Open `http://192.168.50.186:3000` in your browser.
 
 1. Create your admin account (first account gets admin)
-2. The model dropdown should list the keys from `llm-swap.yaml` (gpt-oss-120b, qwen3.6-35b, etc.). If empty, llm-swap isn't reachable — check `docker logs open-webui`.
+2. The model dropdown should list the keys from `llm-swap.yaml` (qwen3.8-27b, gemma4-26b-a4b, etc.). If empty, llm-swap isn't reachable — check `docker logs open-webui`.
 3. Set the default model in **Admin Panel > Settings > Interface**.
 4. For each family/friend: **Admin Panel > Users > Add User**
    - Set their name, email, and a temporary password

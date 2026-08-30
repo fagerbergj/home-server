@@ -56,6 +56,5 @@ peers:
     models:
       - qwen3.8-27b
       - gemma4-26b-a4b
-      - gpt-oss-120b
       - qwen3-omni-30b
       - muse-glimmer-30b

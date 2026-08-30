@@ -23,7 +23,6 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 | Key in `llm-swap.yaml` | GGUF | Notes |
 |---|---|---|
 | `qwen3.8-27b` | `unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL` | Primary worker (quack orchestrator/researcher/coder). Dense 27 B hybrid Gated-DeltaNet/Attention with native vision. MTP self-speculative decoding (`--spec-type draft-mtp`) roughly doubles decode. 256 K context. |
-| `gpt-oss-120b` | `ggml-org/gpt-oss-120b-GGUF` (MXFP4 native) | Heavy reasoner fallback. Modern tool-call template, ~5 B active of 120 B total. 128 K native. |
 | `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL` | Previous primary chat model, kept as an A/B compare partner. |
 | `gemma4-26b-a4b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL` | Live quack judge (26 B MoE, ~4 B active). `-ncmoe 8` keeps it ~15 GB so it co-resides with a worker. |
 | `qwen3.5-9b` | `unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL` | Small/fast model for cheap requests and eval baselines. |
@@ -48,7 +47,7 @@ GGUFs land in `/mnt/cache/huggingface/`. Re-runs are cheap (HF cache dedupes).
 # Chat (streaming or not)
 curl http://192.168.50.186:11436/v1/chat/completions \
   -H 'content-type: application/json' \
-  -d '{"model": "gpt-oss-120b", "messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{"model": "qwen3.8-27b", "messages": [{"role": "user", "content": "Hello!"}]}'
 
 # Embeddings
 curl http://192.168.50.186:11436/v1/embeddings \

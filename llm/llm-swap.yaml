@@ -1,4 +1,4 @@
-healthCheckTimeout: 1200  # gpt-oss-120b + 256K KV cache models take time to init
+healthCheckTimeout: 1200  # 256K KV cache models take time to init
 logLevel: debug
 
 matrix:
@@ -8,8 +8,6 @@ matrix:
     g38: "qwen3.8-27b"       # chat / research / code / vision - the default worker
     # Live Quack judge (GPU)
     j:   "gemma4-26b-a4b"
-    # Large GPU fallback
-    p:   "gpt-oss-120b"      # heavy reasoner
   # The embedder and qwen3.5-9b run on the media box's 3090 (llm-swap-media.yaml),
   # which peers here for these models.
 
@@ -19,44 +17,10 @@ matrix:
   sets:
     workers:  "(g38 | q) & j"
     judge:    "j"
-    # No judge - a 59GB model has room for neither.
-    fallback: "p"
 
 models:
   # All entries load via -m (direct path), not -hf: HF_HUB_OFFLINE=1 + an
   # inconsistent HF cache makes -hf resolution exit 1 before load.
-  "gpt-oss-120b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 1800
-    env:
-    # --no-mmap: page-fault-serialized mmap reads take 30+min on 65GB+ models;
-    # direct reads load in under a minute (costs full-model peak RSS at load).
-    # --split-mode layer, NOT tensor: no XGMI between the two cards, so tensor
-    # parallelism's per-token AllReduce crosses PCIe - measured 30% slower.
-    # (-ts/--tensor-split is a RATIO, a separate flag, and is unaffected.)
-    # MXFP4 is gpt-oss's native trained precision (not a lesser quant) - the f16
-    # upcast is ~6GB larger for no quality gain; that headroom funds native -c 131072.
-    # --reasoning-format auto: without it, harmony's analysis channel leaks into content.
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/direct/gpt-oss-120b-MXFP4.gguf
-      --jinja
-      --reasoning-format auto
-      --temp 1.0
-      --top-p 1.0
-      --top-k 0
-      --no-mmap
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -ncmoe 4
-      -c 131072
-      -fa on
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      --parallel 1
-      --port 9999
-      --metrics
 
   # Dense 27B hybrid, native vision. ALONE on the second card (GGML_VK_VISIBLE_DEVICES=0): decodes
   # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
