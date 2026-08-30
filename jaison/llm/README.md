@@ -18,7 +18,7 @@ One `llm-swap` container (llama-swap) owns both R9700s. It does not run any mode
 
 | Model id | Image | Cards | Notes |
 |---|---|---|---|
-| `qwen3.8-27b` (alias `qwen3.8-27b-2`) | `stilldeadcode/vllm-radiance:0.9.3` | both, TP=2 | int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 sequences. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
+| `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | both, TP=2 | int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 sequences. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
 | `qwen3.8-flash-next` | `llama-mtp:gfx1201` | both + CPU experts | UD-Q3_K_XL, `-ncmoe 8`, n-gram table pinned to CPU, MTP n3. Loading it drains and unloads the 27B. |
 | `qwen3-omni-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Audio-capable media reader, on demand. |
 | `muse-glimmer-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Untested candidate, on demand. |

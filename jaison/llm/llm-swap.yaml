@@ -31,9 +31,8 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # vLLM TP=2, one id for worker and judge; 2.7x llama.cpp decode at 90k. ttl 0: resident; Flash-Next swaps it out.
+  # vLLM TP=2, one id for worker and judge (2 sequences); 2.7x llama.cpp decode at 90k. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
-    aliases: ["qwen3.8-27b-2"]
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
     ttl: 0

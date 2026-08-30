@@ -41,16 +41,6 @@ models:
     cost:
       input_per_mtok: 0.60
       output_per_mtok: 3.60
-  qwen3.8-27b-2:              # alias of qwen3.8-27b (same vLLM instance): judge + consolidation
-    provider: default
-    role: judge
-    context_window: 262144
-    limits:
-      sessions: 1
-      kv_tokens: 262144
-    cost:
-      input_per_mtok: 0.60
-      output_per_mtok: 3.60
   qwen3.5-9b:                 # media box 3090, always resident: compaction fallback (context summaries)
     provider: default
     role: worker
