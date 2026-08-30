@@ -1,0 +1,39 @@
+version: 7
+daemon:
+  log_level: info
+  admin_group: sudo
+  disable_clocks_cleanup: false
+apply_settings_timer: 5
+gpus:
+  1002:7551-1849:5413-0000:23:00.0:
+    fan_control_enabled: true
+    fan_control_settings:
+      mode: curve
+      static_speed: 0.9
+      temperature_key: edge
+      interval_ms: 500
+      curve:
+        35: 0.35
+        70: 0.5
+        80: 0.7
+        90: 0.9
+        95: 1.0
+    max_memory_clock: 1359
+    voltage_offset: -125
+  1002:7551-1849:5413-0000:c3:00.0:
+    fan_control_enabled: true
+    fan_control_settings:
+      mode: curve
+      static_speed: 0.9
+      temperature_key: edge
+      interval_ms: 500
+      curve:
+        35: 0.35
+        70: 0.5
+        80: 0.7
+        90: 0.9
+        95: 1.0
+    max_memory_clock: 1359
+    voltage_offset: -125
+current_profile: null
+auto_switch_profiles: false
