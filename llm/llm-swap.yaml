@@ -9,9 +9,9 @@ matrix:
     # Live Quack judge (GPU)
     j:   "gemma4-26b-a4b"
   # The embedder and qwen3.5-9b run on the media box's 3090 (llm-swap-media.yaml),
-  # which peers here for these models.
-    # Opt-in: needs both cards, evicts everything else.
-    f:   "qwen3.8-flash-next"
+  # which peers here for these models. qwen3.8-flash-next runs in the sibling ROCm
+  # container on this box (llm-swap-rocm.yaml, :11437) - it needs both cards and
+  # the two containers can't evict each other, so it only loads when this one is idle.
 
   costs:
     j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
@@ -19,7 +19,6 @@ matrix:
   sets:
     workers:  "(g38 | q) & j"
     judge:    "j"
-    flash:    "f"
 
 models:
   # All entries load via -m (direct path), not -hf: HF_HUB_OFFLINE=1 + an
@@ -34,7 +33,10 @@ models:
   # --parallel 2 --kv-unified: slots share the whole 262144 pool rather than
   # splitting it, so one long node can still use it all. 2 not 4: at 30k prompts
   # 2 concurrent requests measured 151.9s vs 123.7s run serially (0.81x).
-  # draft-mtp: n-max 2 beats 3.
+  # DFlash2 draft (incoai, 1.1 GB Q4_K_M) beats the built-in MTP head on jaison:
+  # 56/50/39 t/s (short code / short prose / 90k) vs 50/48/37 at n-max 4; n-max 7
+  # over-drafts and loses on prose (34) and at 90k (30). ROCm was slower for this
+  # model in every combination (best 47/44/36 with f16 KV @131k), so it stays on Vulkan.
   # UD-Q4_K_XL: unsloth's dynamic quant (Q5 is +3GB for ~7% slower decode at 262k);
   # ggml-org Q4_K_M has no MTP head.
   # reasoning_effort low + a 4096 thinking budget: at medium/unbounded a single
@@ -74,8 +76,9 @@ models:
       -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
+      -md /root/.cache/huggingface/hub/models--incoai--Qwen3.8-27B-DFlash2-GGUF/snapshots/51962825493a48b846b40126d35c799ac4093ad0/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
+      --spec-type draft-dflash
+      --spec-draft-n-max 4
       --port 9993
       --metrics
 
@@ -175,39 +178,4 @@ models:
       --cache-type-v q8_0
       --chat-template-kwargs '{"enable_thinking": false}'
       --port 9994
-      --metrics
-
-  # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table (arch qwen4exp, Q4_K_XL, 111 GB).
-  # Fit on 2x32 GB + 128 GB RAM, measured 2026-08-30 on this box: -ncmoe 24 puts the
-  # first 24 layers' experts in RAM (~33 GB) and the n-gram table is pinned to CPU via
-  # -ot (a pure lookup, ~27 GB, served by page cache); -ts must lean on the first
-  # card because -ncmoe offloads the FIRST N layers and the layer split is contiguous.
-  # 20 t/s decode / 184 prefill on Vulkan (ROCm: 20 / 344) - each CPU-resident layer
-  # costs ~1 ms of host round trip per token, so this only gets fast with a third
-  # card (all experts on GPU). Kept as an opt-in candidate, not a worker. -np 1:
-  # -np 2 was still crashing on the upstream PR at merge time.
-  "qwen3.8-flash-next":
-    proxy: "http://127.0.0.1:9992"
-    ttl: 1800
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/178b998806b7b406c311a3e6174aa99cf6304eaf/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
-      --mmproj /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/178b998806b7b406c311a3e6174aa99cf6304eaf/mmproj-BF16.gguf
-      --jinja
-      --reasoning-format deepseek
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      -fa on
-      --split-mode layer
-      -ts 0.70,0.30
-      -ngl 999
-      -ncmoe 24
-      -ot "per_layer_token_embd=CPU"
-      -c 262144
-      --parallel 1
-      -ub 512
-      -b 2048
-      --port 9992
       --metrics

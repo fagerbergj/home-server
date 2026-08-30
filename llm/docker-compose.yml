@@ -1,5 +1,5 @@
 # Two boxes, one file, selected by profile:
-#   jaison (AI box):   make swap-up   -> llm-swap (profile `swap`): the big models on 2x R9700
+#   jaison (AI box):   make swap-up   -> llm-swap (Vulkan) + llm-swap-rocm (profile `swap`): the big models on 2x R9700
 #   jason-server:      make media-up  -> llm-swap-media + qdrant + open-webui (profile `media`)
 # llm-swap-media (RTX 3090) is the single endpoint everything on the media box
 # uses (network alias `llm-swap`); it serves the embedder + 9B itself and peers
@@ -33,11 +33,40 @@ services:
       - /dev/dri
     group_add:
       - video
-      - "993"
+      - "993"   # render on the old media box
+      - "991"   # render on jaison
     restart: unless-stopped
     # Override base image's healthcheck (curls :8080); llama-swap listens on 11436
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
+      interval: 300s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Sibling on jaison: ROCm image for the models that are faster on HIP (Flash-Next).
+  llm-swap-rocm:
+    profiles: ["swap"]
+    build:
+      context: .
+      dockerfile: llm-swap-rocm.Dockerfile
+    container_name: llm-swap-rocm
+    ports:
+      - "11437:11437"
+    environment:
+      - HF_HUB_OFFLINE=1
+    volumes:
+      - ./llm-swap-rocm.yaml:/app/config.yaml:ro
+      - /mnt/cache/huggingface:/root/.cache/huggingface
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - "991"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11437/v1/models"]
       interval: 300s
       timeout: 5s
       retries: 3

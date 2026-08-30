@@ -85,6 +85,6 @@ docker compose up -d
 
 ## Resource notes
 
-- Two llama-swaps: `llm-swap-media` on the media server's RTX 3090 (`make media-up`; embedder + 9B local, `peers:` to jaison for the rest, `llm-swap-media.yaml`) is the endpoint everything uses; `llm-swap` on `jaison` (2× R9700, `make swap-up`, `llm-swap.yaml`) serves the big models. Traefik's public `/openai` route is `api/traefik/dynamic/llm.yml`. The 27B lives alone on one card; gemma (judge) and the embedder share the other. Layer-splitting a dense model across both cards measured 12-16 t/s vs 32-40 on one card (PCIe hop per token), so it isn't done.
+- Three llama-swaps: `llm-swap-media` on the media server's RTX 3090 (`make media-up`; embedder + 9B local, `peers:` to jaison for the rest, `llm-swap-media.yaml`) is the endpoint everything uses; on `jaison` (2× R9700, `make swap-up`) `llm-swap` (Vulkan, `llm-swap.yaml`: 27B with DFlash2, gemma, omni, muse) and `llm-swap-rocm` (:11437, `llm-swap-rocm.yaml`: Flash-Next, which prefills 2× faster on HIP). Traefik's public `/openai` route is `api/traefik/dynamic/llm.yml`. The 27B lives alone on one card; gemma (judge) and the embedder share the other. Layer-splitting a dense model across both cards measured 12-16 t/s vs 32-40 on one card (PCIe hop per token), so it isn't done.
 - Vulkan (RADV) image, not ROCm: at 90k context the 27B decodes 40 vs 32 t/s and prefills 623 vs 376 on the same card. Device pins use `GGML_VK_VISIBLE_DEVICES`, whose card order is the reverse of HIP's.
 - HuggingFace cache lives on `/mnt/cache/huggingface/` (SATA SSD, ~500 GB).

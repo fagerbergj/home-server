@@ -1,0 +1,52 @@
+# jaison's second llama-swap, on the ROCm image (llm-swap-rocm.Dockerfile), :11437.
+# Flash-Next decodes the same on both backends (~24 t/s) but prefills 2x faster on HIP
+# (786 vs ~400 t/s at 4.7k), while the 27B is 20-30% faster on Vulkan, so each model
+# gets its backend and the media box peers to both containers. Both cards are shared
+# with the Vulkan llm-swap; llama-swap can't evict across containers, so Flash-Next
+# loads only when the Vulkan side is idle (its TTL 1800 handles that in practice).
+healthCheckTimeout: 1200
+logLevel: info
+
+models:
+  # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table (arch qwen4exp). UD-Q3_K_XL (90 GB):
+  # its compute set fits with only the first 8 layers' experts in RAM (-ncmoe 8), vs 24
+  # for Q4, and each CPU-resident layer costs ~1 ms per token. The n-gram table is a
+  # pure lookup pinned to CPU via -ot (served by page cache; 128 GB box). -ts leans on
+  # the first card because -ncmoe offloads the FIRST N layers and the layer split is
+  # contiguous. Measured 2026-08-30 on this box: 24.4 t/s decode, 786 t/s prefill at
+  # 4.7k with -ub 1024 (Q4 -ncmoe 24 was 20 / 300; -sm row is unsupported on HIP and
+  # -sm tensor is slower; -t 4 loses ~2 t/s; -ub 2048 needs ~7 GB of scratch per card
+  # and OOMs beside the mmproj). ngram-mod drafting is free on prose and pays on code
+  # review (quoting diffs). -c 131072: 262k fits but leaves ~2 GB on the second card.
+  # -np 1: -np 2 was still crashing on the upstream PR at merge.
+  "qwen3.8-flash-next":
+    proxy: "http://127.0.0.1:9992"
+    ttl: 1800
+    env:
+      - "GPU_MAX_HW_QUEUES=1"
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/8bdc666649440e9bdc97e16f3f75782c98478ff5/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf
+      --mmproj /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/178b998806b7b406c311a3e6174aa99cf6304eaf/mmproj-BF16.gguf
+      --jinja
+      --reasoning-format deepseek
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0
+      -fa on
+      --split-mode layer
+      -ts 0.58,0.42
+      -ngl 999
+      -ncmoe 8
+      -ot "per_layer_token_embd=CPU"
+      -c 131072
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --parallel 1
+      -t 12
+      -ub 1024
+      -b 2048
+      --spec-type ngram-mod
+      --port 9992
+      --metrics

@@ -87,11 +87,14 @@ Or re-download: `llm/download-models.sh`.
 
 ## Phase 7 — llm-swap
 
+Two containers, one per backend: `llm-swap` (Vulkan image, :11436, `llm-swap.yaml`: the 27B with its DFlash2 draft, gemma, omni, muse) and `llm-swap-rocm` (ROCm image, :11437, `llm-swap-rocm.yaml`: Flash-Next, GLM later). Measured here: the 27B is 20-30% faster on Vulkan, Flash-Next prefills 2× faster on HIP. The two can't evict each other, so Flash-Next (both cards) loads only when the Vulkan side is idle.
+
 ```bash
 cd ~/workspace/home-server/llm
 set -a && . ../.env && set +a
 make swap-up
 curl -s http://localhost:11436/v1/models | jq '.data[].id'
+curl -s http://localhost:11437/v1/models | jq '.data[].id'
 ```
 
 Check card placement matches `llm-swap.yaml`'s `GGML_VK_VISIBLE_DEVICES` pins (`vulkaninfo --summary` device order vs `rocm-smi`; they're reversed).

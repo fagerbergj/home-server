@@ -58,4 +58,7 @@ peers:
       - gemma4-26b-a4b
       - qwen3-omni-30b
       - muse-glimmer-30b
-      - qwen3.8-flash-next   # opt-in: evicts the 27B + judge on jaison while loaded
+  jaison-rocm:
+    proxy: http://192.168.50.202:11437
+    models:
+      - qwen3.8-flash-next   # needs both cards: loads only while the Vulkan side is idle
