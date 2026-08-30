@@ -48,8 +48,8 @@ models:
       - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
       - "CACHE_DIR=/mnt/cache/vllm/cache"
       - "REASONING_EFFORT=medium"
-      - "PATCH_DIR=${llm_dir}/vllm-patches"
-    cmd: bash -c "${llm_dir}/run-jaison.sh 2>>/tmp/launcher.err"
+      - "PATCH_DIR=/home/jason/workspace/home-server/jaison/llm/vllm-patches"   # macros do not expand in env
+    cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop qwen38-27b-vllm
 
   # Whole box: 125B+51B n-gram table on MTP fork. Drains/unloads the 27B when loaded.
