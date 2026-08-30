@@ -10,10 +10,10 @@ service stacks don't apply here. Everything after Phase 1 runs over SSH.
    DDR5-5600 kit runs at 5600 rather than the 5200 JEDEC default.
 2. Install Ubuntu Server: target the 1 TB NVMe, use the entire disk, **untick
    "set up this disk as an LVM group"** (a single ext4 root; nothing here needs
-   LVM), enable SSH, user `jaison`.
+   LVM), enable SSH, user `jason`.
 3. Remove the USB, boot, then from your PC:
    ```bash
-   ssh-copy-id jaison@<ip>
+   ssh-copy-id jason@<ip>
    ```
 
 ### Network
@@ -28,16 +28,24 @@ service stacks don't apply here. Everything after Phase 1 runs over SSH.
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-scripts/phase1-firewall.sh      # 22 from anywhere, 11436 from the media box only
+scripts/phase1-firewall.sh      # 22 from the LAN, 11436 from the media box only
+# the wired 10GbE/2.5GbE ports have no link until they're cabled; don't let boot wait on them
+sudo systemctl mask systemd-networkd-wait-online.service
 sudo reboot
 ```
 
+Wi-Fi is configured by the installer (netplan + wpa_supplicant). If the installer
+crashes on its network screen with `NetlinkDumpInterrupted`, that's the Wi-Fi scan
+racing; just retry the installer, it's timing-dependent.
+
 ## Phase 2 — GitHub
 
+The repo is public, so cloning needs no key; pushing from this box does.
+
 ```bash
+git clone https://github.com/fagerbergj/home-server.git ~/workspace/home-server
 ssh-keygen -t ed25519 -C "jaison"
-cat ~/.ssh/id_ed25519.pub   # add as a deploy key or to your GitHub account
-git clone git@github.com:fagerbergj/home-server.git ~/workspace/home-server
+cat ~/.ssh/id_ed25519.pub   # add to GitHub if this box should push; then switch the remote to git@github.com:fagerbergj/home-server.git
 ```
 
 The `llm/` stack reads `LLM_API_KEY` and `HF_TOKEN` from the environment;
