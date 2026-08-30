@@ -12,15 +12,15 @@
 #   - The result: loading a large GGUF from /mnt/cache (ext4) hammers
 #     swap because the kernel can't reclaim ARC fast enough.
 #
-# 8 GB, lowered from 16: the resident llama-server set now dominates RAM
-# (--no-mmap keeps each model fully resident - ~16 GB for the 27B worker,
-# ~8 GB for the judge, plus the CPU-only embedder). At 16 GB, ARC plus
-# models exhausted RAM and the kernel swapped out model pages, which with
-# --no-mmap are hot - decode fell to ~2 tok/s, i.e. disk speed. Media
-# workloads (Plex/torrents) are network-bound and don't need the cache.
+# 24 GB: since 2026-08-30 the big models run on jaison, so this box's RAM
+# only hosts the 3090's llama-swap (embedder + 9B, ~12 GB in VRAM, little
+# host RAM), Plex, immich and the rest. The old 8 GB cap existed because
+# --no-mmap llama-server processes here competed with ARC and swapped model
+# pages out (decode fell to disk speed); that pressure is gone. Leave ~30 GB
+# for containers and page cache on the 64 GB box.
 set -euo pipefail
 
-ARC_MAX_BYTES=$((8 * 1024 * 1024 * 1024))
+ARC_MAX_BYTES=$((24 * 1024 * 1024 * 1024))
 SWAPPINESS=10
 
 echo "=== Phase 4: Memory tuning ==="
