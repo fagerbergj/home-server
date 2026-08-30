@@ -1,6 +1,4 @@
-# jaison's router: llama-swap alone, driving the per-model runtimes as sibling
-# containers over the Docker socket (llama.cpp Vulkan/ROCm, the MTP fork, vLLM).
-# One instance owns both cards, so groups can swap the 27B against Flash-Next.
+# jaison's router: llama-swap alone, driving the per-model runtimes as sibling containers over the Docker socket (llama.cpp Vulkan/ROCm, the MTP fork, vLLM). One instance owns both cards, so groups can swap the 27B against Flash-Next.
 FROM docker:cli
 
 ARG TARGETARCH=amd64

@@ -87,7 +87,7 @@ Or re-download: `llm/download-models.sh`.
 
 ## Phase 7 — llm-swap
 
-One `llm-swap` container (`jaison/llm/llm-swap.Dockerfile`: llama-swap + the Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns both cards and its groups swap the resident 27B (vLLM, TP=2, one id + `qwen3.8-27b-judge` alias) against Flash-Next (whole box, llama.cpp MTP fork built from `jaison/llm/mtp`) and the on-demand extras (Vulkan llama.cpp). Bind-mount paths in the cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher (`jaison/llm/run-jaison.sh`, which bind-mounts `jaison/llm/vllm-patches/` over the image).
+One `llm-swap` container (llama-swap + Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns both cards and its groups swap the resident 27B (vLLM, TP=2, one id + `qwen3.8-27b-2` alias) against Flash-Next (whole box, llama.cpp MTP fork from `jaison/llm/mtp`) and on-demand extras (Vulkan llama.cpp). Bind-mount paths in cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher, which bind-mounts `jaison/llm/vllm-patches/` over the image.
 
 vLLM checkpoints live in `/mnt/cache/vllm/` (`qwen3.8-27b-autoround`, `qwen3.8-27b-dflash2-int4`, `cache/` for the compile cache).
 
@@ -98,7 +98,7 @@ curl -s http://localhost:11436/v1/models | jq '.data[].id'
 docker ps             # runtimes appear as qwen38-27b-vllm / flash-next / omni / muse while loaded
 ```
 
-The 27B uses both cards (`GPU=0,1`, HIP order); Flash-Next's `-ts` leans on card 0 because `-ncmoe` offloads the first N layers. Vulkan enumerates cards in the reverse order of HIP if you ever pin the extras.
+The 27B uses both cards (GPU=0,1, HIP order); Flash-Next's `-ts` leans on card 0 because `-ncmoe` offloads the first N layers.
 
 ## Phase 8 — Monitoring
 

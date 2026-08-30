@@ -1,7 +1,5 @@
-# jaison: one llama-swap for both R9700s. Every model is a `docker run` of its own
-# runtime image; llama-swap starts/stops those containers like processes. Bind-mount
-# paths in the cmds are HOST paths (the daemon resolves them), so this container
-# mounts this dir at its host path and runs the vLLM launcher from there.
+# jaison: one llama-swap for both R9700s; each model is a `docker run` it starts and stops.
+# Bind-mount paths in cmds are HOST paths (the daemon resolves them).
 healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
 logLevel: info
 
@@ -33,14 +31,9 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # Dense 27B on vLLM, TP=2 across both cards, one id for worker and judge (alias).
-  # int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 concurrent sequences.
-  # Measured 2026-08-30: 90k prompt 2455 prefill / 106 decode t/s (llama.cpp DFlash2
-  # on one card: ~650 / 39); two concurrent 90k streams 74 + 62 t/s. Boot ~3 min warm.
-  # ttl 0: stays resident; Flash-Next requests swap it out, and the next 27B call
-  # pays the boot.
+  # vLLM TP=2, one id for worker and judge; 2.7x llama.cpp decode at 90k. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
-    aliases: ["qwen3.8-27b-judge"]
+    aliases: ["qwen3.8-27b-2"]
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
     ttl: 0
@@ -60,10 +53,7 @@ models:
     cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop qwen38-27b-vllm
 
-  # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table, UD-Q3_K_XL, on the MTP fork image
-  # (llm/mtp, `make mtp-image`; PR 27836 not merged). MTP n3 p0.75: 28/28/21.6 t/s
-  # (prose/code/5k) vs 23/23/20 with ngram-mod. -ncmoe 8 + -ot pin the n-gram table
-  # to CPU; -ts leans on card 0 because -ncmoe offloads the FIRST N layers.
+  # Whole box: 125B+51B n-gram table on MTP fork. Drains/unloads the 27B when loaded.
   "qwen3.8-flash-next":
     proxy: "http://127.0.0.1:9992"
     ttl: 3600
@@ -82,7 +72,7 @@ models:
       --port 9992
     cmdStop: docker stop flash-next
 
-  # Audio-capable media reader (the 27B has vision, not audio). Vulkan llama.cpp.
+  # Audio-capable media reader. Vulkan llama.cpp.
   "qwen3-omni-30b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800

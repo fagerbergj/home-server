@@ -1,10 +1,6 @@
-# jaison (AI box): the llama-swap router. Runtimes are sibling containers it
-# launches over the Docker socket (llm-swap.yaml). `make up` here.
+# jaison (AI box): the llama-swap router. Runtimes are sibling containers it launches over the Docker socket (llm-swap.yaml). `make up` here.
 services:
-  # jaison router: llama-swap only. Model runtimes are sibling containers it starts
-  # over the Docker socket (llm-swap.yaml), so it needs host networking to reach
-  # their 127.0.0.1 ports and this dir at its HOST path for the vLLM
-  # launcher's bind mounts.
+  # jaison router: llama-swap only. Model runtimes are sibling containers it starts over the Docker socket (llm-swap.yaml), so it needs host networking to reach their 127.0.0.1 ports and this dir at its HOST path for the vLLM launcher's bind mounts.
   llm-swap:
     build:
       context: .

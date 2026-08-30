@@ -36,7 +36,7 @@ services:
       QUACK_ORCH_MODEL: qwen3.8-27b
       QUACK_RESEARCHER_MODEL: qwen3.8-27b
       QUACK_CODER_MODEL: qwen3.8-27b
-      QUACK_JUDGE_MODEL: qwen3.8-27b-judge   # second 27B instance on jaison's other card
+      QUACK_JUDGE_MODEL: qwen3.8-27b-2   # alias of qwen3.8-27b; distinct id so the registry can give it its own role/limits
       QUACK_IMAGE_MODEL: qwen3.8-27b
       QUACK_MEDIA_MODEL: qwen3-omni-30b
       QUACK_COMPACTION_ENABLED: "true"

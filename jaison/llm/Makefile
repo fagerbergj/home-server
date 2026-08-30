@@ -11,6 +11,6 @@ images: mtp-image
 	docker pull ghcr.io/ggml-org/llama.cpp:server-vulkan
 	docker pull docker.io/stilldeadcode/vllm-radiance:0.9.3
 
-# Flash-Next MTP fork (mtp/); rebuild only when the Dockerfile/patch change.
+# Flash-Next MTP fork; rebuild only when Dockerfile/patch change.
 mtp-image:
 	docker build -t llama-mtp:gfx1201 mtp
