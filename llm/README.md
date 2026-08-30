@@ -86,6 +86,6 @@ docker compose up -d
 
 ## Resource notes
 
-- This stack runs on the AI box (2× R9700 = 64 GB VRAM), not the media server. The 27B lives alone on one card; gemma (judge) and the embedder share the other. Layer-splitting a dense model across both cards measured 12-16 t/s vs 32-40 on one card (PCIe hop per token), so it isn't done.
+- `llm-swap` runs on the AI box `jaison` (2× R9700 = 64 GB VRAM, `make swap-up`); qdrant and Open WebUI stay on the media server (`make media-up`). Traefik's public `/openai` route is `api/traefik/dynamic/llm.yml`. The 27B lives alone on one card; gemma (judge) and the embedder share the other. Layer-splitting a dense model across both cards measured 12-16 t/s vs 32-40 on one card (PCIe hop per token), so it isn't done.
 - Vulkan (RADV) image, not ROCm: at 90k context the 27B decodes 40 vs 32 t/s and prefills 623 vs 376 on the same card. Device pins use `GGML_VK_VISIBLE_DEVICES`, whose card order is the reverse of HIP's.
 - HuggingFace cache lives on `/mnt/cache/huggingface/` (SATA SSD, ~500 GB).

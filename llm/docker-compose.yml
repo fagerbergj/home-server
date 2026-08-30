@@ -1,7 +1,13 @@
+# Two boxes, one file, selected by profile:
+#   jaison (AI box):   make swap-up   -> llm-swap only (profile `swap`)
+#   jason-server:      make media-up  -> qdrant + open-webui (profile `media`)
+# The media box reaches llm-swap at http://192.168.50.202:11436 (DHCP-reserved);
+# Traefik's public /openai route lives in api/traefik/dynamic/llm.yml.
 services:
   # Primary LLM runtime — OpenAI-compatible API on port 11436 backed by
   # llama-swap + llama.cpp. Model routing is in llm-swap.yaml.
   llm-swap:
+    profiles: ["swap"]
     build:
       context: .
       dockerfile: llm-swap.Dockerfile
@@ -26,9 +32,6 @@ services:
     group_add:
       - video
       - "993"
-    networks:
-      - default
-      - api_gateway
     restart: unless-stopped
     # Override base image's healthcheck (curls :8080); llama-swap listens on 11436
     healthcheck:
@@ -37,26 +40,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.llm-swap.loadbalancer.server.port=11436"
-      # Public base URL is .../openai/v1 ; strip /openai so llama-swap sees /v1/*
-      - "traefik.http.routers.llm-swap.rule=Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/openai`)"
-      - "traefik.http.routers.llm-swap.entrypoints=api"
-      - "traefik.http.routers.llm-swap.service=llm-swap"
-      - "traefik.http.routers.llm-swap.middlewares=llm-apikey,llm-strip"
-      - "traefik.http.middlewares.llm-strip.stripprefix.prefixes=/openai"
-      # Middleware defined here (not in the file provider) so compose expands
-      # ${LLM_API_KEY} from .env — Traefik's file provider does NOT expand env vars.
-      # NOTE: deploy with LLM_API_KEY in the environment (interactive shell, or
-      # `set -a && . ../.env`); compose does not source the export-style root .env.
-      # Standard OpenAI auth: Authorization: Bearer <key>. The plugin is either/or —
-      # bearerToken mode parses "Bearer <key>" out of headerName, so headerName=Authorization.
-      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.headerName=Authorization"
-      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.bearerToken=true"
-      - "traefik.http.middlewares.llm-apikey.plugin.traefik-api-key-auth.keys[0]=${LLM_API_KEY}"
 
   qdrant:
+    profiles: ["media"]
     image: qdrant/qdrant:latest
     container_name: qdrant
     volumes:
@@ -64,12 +50,13 @@ services:
     restart: unless-stopped
 
   open-webui:
+    profiles: ["media"]
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
     ports:
       - "3000:8080"
     environment:
-      - OPENAI_API_BASE_URL=http://llm-swap:11436/v1
+      - OPENAI_API_BASE_URL=http://192.168.50.202:11436/v1
       - OPENAI_API_KEY=unused
       - ENABLE_API_KEYS=true
       - USER_PERMISSIONS_FEATURES_API_KEYS=true
@@ -80,10 +67,6 @@ services:
     depends_on:
       - qdrant
     restart: unless-stopped
-
-networks:
-  api_gateway:
-    external: true
 
 volumes:
   qdrant-data:

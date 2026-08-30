@@ -1,0 +1,31 @@
+# Public LLM API: api.jasonfagerberg.duckdns.org/openai/v1/* -> llm-swap on jaison.
+# llm-swap runs on the AI box, so Traefik can't discover it via Docker labels;
+# this file-provider route replaces the labels the container used to carry.
+# The key comes from the traefik container's environment (api/docker-compose.yml
+# passes LLM_API_KEY through) via the file provider's Go templating.
+http:
+  routers:
+    llm-swap:
+      rule: "Host(`api.jasonfagerberg.duckdns.org`) && PathPrefix(`/openai`)"
+      entryPoints: [api]
+      middlewares: [llm-apikey, llm-strip]
+      service: llm-swap
+  services:
+    llm-swap:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.50.202:11436"
+  middlewares:
+    # Public base URL is .../openai/v1 ; strip /openai so llama-swap sees /v1/*
+    llm-strip:
+      stripPrefix:
+        prefixes: ["/openai"]
+    # Standard OpenAI auth: Authorization: Bearer <key>. bearerToken mode parses
+    # "Bearer <key>" out of headerName, so headerName=Authorization.
+    llm-apikey:
+      plugin:
+        traefik-api-key-auth:
+          headerName: Authorization
+          bearerToken: true
+          keys:
+            - "{{ env "LLM_API_KEY" }}"

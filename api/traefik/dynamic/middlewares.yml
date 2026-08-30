@@ -54,5 +54,5 @@ http:
         average: 100
         burst: 50
 
-    # LLM API key auth is defined on the llm-swap container labels, not here —
-    # the file provider does not expand ${LLM_API_KEY}, so compose expansion is used.
+    # LLM API key auth lives in llm.yml (file provider Go template reads
+    # LLM_API_KEY from the traefik container's environment).

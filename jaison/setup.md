@@ -123,12 +123,18 @@ Check card placement matches `llm-swap.yaml`'s `GGML_VK_VISIBLE_DEVICES` pins
 
 ## Phase 8 — Wire the media box
 
-On `jason-server`:
+Configs use the reserved IP `192.168.50.202` rather than the AdGuard name: the
+media box's host resolver (and therefore Docker's embedded DNS) points at
+1.1.1.1, not AdGuard, so LAN names don't resolve inside containers there.
 
-1. Traefik file-provider route for `/openai` → `http://jaison:11436` (see
-   `api/traefik/dynamic/`), keeping the `llm-apikey` + `llm-strip` middlewares.
-2. `quack/docker-compose.yml`: `QUACK_LLM_ENDPOINT=http://jaison:11436/v1`,
-   then `docker compose up -d quack`.
-3. Optional: run a `server-cuda` llama-swap on the 3090 for `qwen3-embed` and
+On `jason-server` (`set -a && . .env && set +a` first for the LLM key):
+
+1. `api/traefik/dynamic/llm.yml` routes `/openai` → `http://192.168.50.202:11436`
+   with the API-key + strip-prefix middlewares; `docker compose up -d traefik`
+   in `api/` so the container gets `LLM_API_KEY` in its environment.
+2. `llm/`: `make media-up` (qdrant + open-webui; open-webui points at jaison).
+3. `quack/`: `QUACK_LLM_ENDPOINT=http://192.168.50.202:11436/v1` is in the compose;
+   `docker compose up -d quack`.
+4. Optional: run a `server-cuda` llama-swap on the 3090 for `qwen3-embed` and
    add it as a `peers:` entry in this box's `llm-swap.yaml`.
-4. Smoke test: `/review` on a PR and watch `docker logs quack`.
+5. Smoke test: `/review` on a PR and watch `docker logs quack`.
