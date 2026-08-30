@@ -51,6 +51,16 @@ models:
 
 # jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
 # local model has the name; keep this list in sync with jaison's llm-swap.yaml.
+# Both residents on the 3090 at once; without a group llama-swap swaps one out for the other.
+groups:
+  resident:
+    swap: false
+    exclusive: false
+    persistent: true
+    members:
+      - qwen3-embed
+      - qwen3.5-9b
+
 peers:
   jaison:
     proxy: http://192.168.50.202:11436
