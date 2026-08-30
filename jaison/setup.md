@@ -120,3 +120,11 @@ On `jason-server` (`set -a && . .env && set +a` first for the LLM key):
 2. `api/`: `docker compose up -d traefik` (the file route `api/traefik/dynamic/llm.yml` reads `LLM_API_KEY` from the container env).
 3. `quack/`: `docker compose up -d quack`.
 4. Smoke test: `curl http://localhost:11436/v1/models` on the media box lists local + peer models; then `/review` on a PR and watch `docker logs quack`.
+
+## CPU EPP
+
+amd-pstate EPP is set to `performance` (default `balance_performance`); re-apply after reboot:
+
+```bash
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference >/dev/null
+```
