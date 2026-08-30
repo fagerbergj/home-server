@@ -58,7 +58,7 @@ models:
     proxy: "http://127.0.0.1:9992"
     ttl: 3600
     cmd: >
-      bash -c "docker rm -f flash-next >/dev/null 2>&1; exec docker run --rm --init --name flash-next ${gpu}
+      bash -c 'docker rm -f flash-next >/dev/null 2>&1; exec docker run --rm --init --name flash-next ${gpu}
       -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 -e LLAMA_ATTN_ROT_DISABLE=1
       -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9992:9992
       llama-mtp:gfx1201
@@ -69,7 +69,7 @@ models:
       -c 131072 --parallel 1 -t 12 -ub 1024 -b 2048
       -md /root/.cache/huggingface/hub/models--dzannotti--Qwen3.8-Flash-Next-MTP-GGUF/snapshots/0b2551d191548168d3254ddea4ab943a5ef4f809/Qwen3.8-Flash-Next-MTP-Q4_K_M.gguf
       --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.75
-      --port 9992"
+      --port 9992'
     cmdStop: docker stop flash-next
 
   # Audio-capable media reader. Vulkan llama.cpp.
@@ -77,7 +77,7 @@ models:
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
     cmd: >
-      bash -c "docker rm -f omni >/dev/null 2>&1; exec docker run --rm --init --name omni ${gpu}
+      bash -c 'docker rm -f omni >/dev/null 2>&1; exec docker run --rm --init --name omni ${gpu}
       -e HF_HUB_OFFLINE=1
       -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9999:9999
       ghcr.io/ggml-org/llama.cpp:server-vulkan
@@ -87,7 +87,7 @@ models:
       --reasoning-budget 512 --presence-penalty 1.5 --temp 0.6
       --split-mode layer -c 32768 --parallel 1 -ub 2048 -b 2048
       --image-min-tokens 2048 --image-max-tokens 8192
-      --port 9999"
+      --port 9999'
     cmdStop: docker stop omni
 
   # Untested agentic candidate; kept loadable.
@@ -95,7 +95,7 @@ models:
     proxy: "http://127.0.0.1:9996"
     ttl: 600
     cmd: >
-      bash -c "docker rm -f muse >/dev/null 2>&1; exec docker run --rm --init --name muse ${gpu}
+      bash -c 'docker rm -f muse >/dev/null 2>&1; exec docker run --rm --init --name muse ${gpu}
       -e HF_HUB_OFFLINE=1
       -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9996:9996
       ghcr.io/ggml-org/llama.cpp:server-vulkan
@@ -103,5 +103,5 @@ models:
       --mmproj /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-Q8_0.gguf
       ${llama_common}
       --top-k 64 -c 131072 --parallel 1 -ub 2048 -b 2048
-      --port 9996"
+      --port 9996'
     cmdStop: docker stop muse
