@@ -44,7 +44,11 @@ sudo reboot
 
 Wi-Fi is configured by the installer (netplan + wpa_supplicant). If the installer
 crashes on its network screen with `NetlinkDumpInterrupted`, that's the Wi-Fi scan
-racing; just retry the installer, it's timing-dependent.
+racing; just retry the installer, it's timing-dependent. Pick the **5 GHz** SSID:
+the 2.4 GHz one links at ~230 Mbit (7-10 MB/s real), the 5 GHz one at 160 MHz /
+~1.9 Gbit (~85 MB/s real). To switch after the fact:
+`sudo sed -i 's/<2GHz SSID>:/<5GHz SSID>:/' /etc/netplan/*.yaml && sudo netplan apply`,
+then `iw dev wlp145s0 link` (`sudo apt install iw`) shows `freq: 5xxx`.
 
 ## Phase 2 — GitHub
 
