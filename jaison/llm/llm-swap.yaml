@@ -59,7 +59,7 @@ models:
     ttl: 3600
     cmd: >
       docker run --rm --init --name flash-next ${gpu}
-      -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1
+      -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 -e LLAMA_ATTN_ROT_DISABLE=1
       -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9992:9992
       llama-mtp:gfx1201
       -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/8bdc666649440e9bdc97e16f3f75782c98478ff5/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf
