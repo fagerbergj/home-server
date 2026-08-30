@@ -18,7 +18,7 @@ Two independent flows. They do **not** need to be co-resident (they may swap).
   flow** — internally a planning *facet* + an implementing *facet* (whether one
   model serves both or we split is TBD, §6). Concurrency: typically 1.
 - **Flow B — Chat + pipeline:** all chat incl. interactive (OpenWebUI) + the
-  document-pipeline agentic loops. **Must handle 2–4 concurrent** conversations
+  quack agentic loops. **Must handle 2–4 concurrent** conversations
   / loops.
 
 ### Speed priority (fastest needed → slowest tolerated)

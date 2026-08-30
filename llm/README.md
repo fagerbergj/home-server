@@ -86,7 +86,6 @@ docker compose up -d
 
 ## Resource notes
 
-- 2× R9700 = 64 GB VRAM. Models span both cards with `--split-mode layer`, not tensor — there's no XGMI link, so tensor parallelism's per-token AllReduce crosses PCIe and measured ~30% slower.
-- The steady-state resident set is one worker + the gemma judge + the embedder. `qwen3.8-27b` at 256 K with MTP plus the judge measured ~59 GB of the 63.7 GB usable, which is why the embedder runs on CPU.
-- Plex transcoding uses VAAPI on `/dev/dri` — separate from llama.cpp's ROCm compute on `/dev/kfd`. No contention.
+- This stack runs on the AI box (2× R9700 = 64 GB VRAM), not the media server. The 27B lives alone on one card; gemma (judge) and the embedder share the other. Layer-splitting a dense model across both cards measured 12-16 t/s vs 32-40 on one card (PCIe hop per token), so it isn't done.
+- Vulkan (RADV) image, not ROCm: at 90k context the 27B decodes 40 vs 32 t/s and prefills 623 vs 376 on the same card. Device pins use `GGML_VK_VISIBLE_DEVICES`, whose card order is the reverse of HIP's.
 - HuggingFace cache lives on `/mnt/cache/huggingface/` (SATA SSD, ~500 GB).

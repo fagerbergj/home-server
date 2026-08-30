@@ -41,16 +41,16 @@ Open `http://192.168.50.186:2283` and create your admin account on first visit.
    ```
    You should see face detection and CLIP encoding jobs run against the upload
 
-## 5. Enable VAAPI hardware transcoding
+## 5. Enable NVENC hardware transcoding
 
-The `immich-server` container has GPU access via `/dev/dri` for video transcoding. Enable it in the UI:
+The `immich-server` container runs under the nvidia runtime for video transcoding. Enable it in the UI:
 
 1. Open **Administration → Settings → Video Transcoding**
-2. Under **Hardware Acceleration**, set **Accelerator API** to `VAAPI`
+2. Under **Hardware Acceleration**, set **Accelerator API** to `NVENC`
 3. Save
 
 Verify during video playback:
 ```bash
-rocm-smi
+nvidia-smi
 ```
-GPU% should spike while a video is being transcoded.
+The encoder should show activity while a video is being transcoded.

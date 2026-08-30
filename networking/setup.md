@@ -207,8 +207,7 @@ Install the Tailscale app on phone/laptop/tablet, sign in with the same identity
 Do not change ingress for these — they are intentionally public via NPM + Authentik:
 
 - `auth.jasonfagerberg.duckdns.org` (Authentik UI)
-- `api.jasonfagerberg.duckdns.org` (Traefik gateway, document-pipeline, swagger-ui)
-- `documents.jasonfagerberg.duckdns.org`
+- `api.jasonfagerberg.duckdns.org` (Traefik gateway, swagger-ui, llm-swap `/openai`)
 - `photos.`, `plex.`, `books.`, `passwords.`, `remarkable.`, `llm.` — anything you'd hand to a non-tailnet device.
 
 The `80/443/25565` port-forwards on the router stay as-is.

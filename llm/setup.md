@@ -32,8 +32,8 @@ curl http://192.168.50.186:11436/v1/chat/completions \
   -H 'content-type: application/json' \
   -d '{"model": "qwen3.5-9b", "messages": [{"role": "user", "content": "say hello"}], "max_tokens": 10}'
 
-# Confirm GPU usage during a request
-rocm-smi
+# Confirm GPU usage during a request (on the AI box)
+rocm-smi --showuse
 ```
 
 ## 4. Set up Open WebUI

@@ -26,7 +26,7 @@ Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configura
 
 ## OS
 
-**Ubuntu Server 26.04 LTS** — chosen for strong GPU driver support (ROCm for AMD) and Docker compatibility.
+**Ubuntu Server 26.04 LTS** — current kernel for the hardware, NVIDIA driver in the archive, and Docker compatibility.
 
 ## Architecture
 
@@ -63,7 +63,7 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 
 1. OS Install + [Router & Firewall](networking/setup.md) (DHCP reservation, port forwarding, ufw)
 2. GitHub (clone repo, create .env)
-3. AMD GPU Drivers (ROCm)
+3. NVIDIA GPU Driver
 4. Mount Drives + Alerts
 5. Docker
 6. [Nginx Proxy Manager](networking/setup.md) (proxy hosts, SSL)

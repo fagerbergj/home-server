@@ -129,30 +129,27 @@ source ~/workspace/home-server/.env
 
 ---
 
-## Phase 3 — AMD GPU Drivers (ROCm)
+## Phase 3 — NVIDIA GPU Driver
 
-The in-tree `amdgpu` driver supports RDNA 4 (gfx1201 / R9700) — no out-of-tree DKMS module. ROCm ships in the Ubuntu archive.
+This box carries an RTX 3090 for Plex NVENC and immich ML. (The LLM stack and
+its two R9700s live on the separate AI box, documented in `hardware_plan.md.local`
+until that box has its own setup doc.)
 
-### Install ROCm
+### Install the driver
 
 ```bash
-# Host-side ROCm userspace (rocm-smi, rocminfo). The llama.cpp containers bundle
-# their own ROCm, so the host only strictly needs the in-tree kernel driver.
-sudo apt install -y rocm
-
-# Add your user to the render and video groups for GPU access
-sudo usermod -aG render,video "$USER"
+# Long-lived server branch; `ubuntu-drivers devices` lists what the archive offers.
+sudo apt install -y nvidia-driver-580-server
+sudo reboot
 ```
 
 ### Verify
 
 ```bash
-ls /dev/kfd /dev/dri/renderD*   # compute + render nodes, one renderD per card
-rocm-smi
-nvtop
+nvidia-smi
 ```
 
-You should see both R9700s listed with temperature, VRAM, and clock info.
+You should see the 3090 with driver version, VRAM, and temperature.
 
 ---
 
@@ -381,15 +378,24 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-ROCm containers use device passthrough — no extra toolkit needed. The GPU is exposed via `/dev/kfd` (compute) and `/dev/dri` (video), which are passed in each service's `docker-compose.yml`.
+NVIDIA containers need the container toolkit; services opt in with `runtime: nvidia`
+plus `NVIDIA_VISIBLE_DEVICES` in their `docker-compose.yml`.
+
+```bash
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+  | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#' \
+  | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt update && sudo apt install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
 
 </details>
 
 Verify GPU is accessible from Docker:
 ```bash
-docker run --rm --device=/dev/kfd --device=/dev/dri \
-  --group-add video --group-add render \
-  rocm/rocm-terminal rocm-smi
+docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
 ```
 
 ---

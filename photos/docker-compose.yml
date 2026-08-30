@@ -14,11 +14,9 @@ services:
       # entirely (server's config.repository.ts) — those are dead once this is set.
       - DB_URL=${DB_URL}
       - REDIS_HOSTNAME=${REDIS_HOSTNAME}
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"    # video
-      - "993"   # render
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    runtime: nvidia
     volumes:
       - /mnt/personal/photos:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
