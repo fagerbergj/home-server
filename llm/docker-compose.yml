@@ -1,36 +1,10 @@
-# Two boxes, one file, selected by profile:
-#   jaison (AI box):   make swap-up   -> llm-swap router (profile `swap`); model runtimes are sibling containers
-#   jason-server:      make media-up  -> llm-swap-media + qdrant + open-webui (profile `media`)
+# Media box (jason-server): llm-swap-media + qdrant + open-webui. The AI box's router
+# lives in jaison/llm/.
 # llm-swap-media (RTX 3090) is the single endpoint everything on the media box
 # uses (network alias `llm-swap`); it serves the embedder + 9B itself and peers
 # to jaison for the rest (llm-swap-media.yaml). Traefik's public /openai route
 # (api/traefik/dynamic/llm.yml) points at it too.
 services:
-  # jaison router: llama-swap only. Model runtimes are sibling containers it starts
-  # over the Docker socket (llm-swap.yaml), so it needs host networking to reach
-  # their 127.0.0.1 ports and the repo's llm/ dir at its HOST path for the vLLM
-  # launcher's bind mounts.
-  llm-swap:
-    profiles: ["swap"]
-    build:
-      context: .
-      dockerfile: llm-swap.Dockerfile
-    container_name: llm-swap
-    network_mode: host
-    environment:
-      - LLM_API_KEY=${LLM_API_KEY:-}
-    volumes:
-      - ./llm-swap.yaml:/app/config.yaml:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /home/jason/workspace/home-server/llm:/home/jason/workspace/home-server/llm:ro
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
-      interval: 300s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
   llm-swap-media:
     profiles: ["media"]
     build:

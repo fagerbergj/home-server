@@ -18,6 +18,6 @@ Setup: [`setup.md`](setup.md). Scripts: [`scripts/`](scripts/).
 
 ## How the two boxes fit together
 
-- `llm/docker-compose.yml` runs here (`make swap-up` from `llm/`), models on the local NVMe. Long-term model storage is the `media/models` ZFS dataset on the media box; copy to NVMe before serving, never run a model over NFS.
+- `jaison/llm/docker-compose.yml` runs here (`make up` from `jaison/llm/`), models on the local NVMe. Long-term model storage is the `media/models` ZFS dataset on the media box; copy to NVMe before serving, never run a model over NFS.
 - The media box's Traefik forwards `api.jasonfagerberg.duckdns.org/openai` to `http://jaison:11436` (file-provider route), quack points `QUACK_LLM_ENDPOINT` at the same address, and this box's `llm-swap.yaml` can declare the media box's 3090 as a llama-swap `peer` for the embedder.
 - Firewall: only 22 and 11436, and 11436 only from the media box.

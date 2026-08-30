@@ -1,13 +1,13 @@
 # jaison: one llama-swap for both R9700s. Every model is a `docker run` of its own
 # runtime image; llama-swap starts/stops those containers like processes. Bind-mount
 # paths in the cmds are HOST paths (the daemon resolves them), so this container
-# mounts the repo's llm/ dir at its host path and runs the vLLM launcher from there.
+# mounts this dir at its host path and runs the vLLM launcher from there.
 healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
 logLevel: info
 
 macros:
   hf: /mnt/cache/huggingface
-  llm_dir: /home/jason/workspace/home-server/llm
+  llm_dir: /home/jason/workspace/home-server/jaison/llm
   gpu: >
     --device /dev/kfd --device /dev/dri --group-add video --group-add 991
   llama_common: >
@@ -57,7 +57,7 @@ models:
       - "CACHE_DIR=/mnt/cache/vllm/cache"
       - "REASONING_EFFORT=medium"
     cmd: >
-      bash -c "cd ${llm_dir}/vllm/launchers && exec ${llm_dir}/vllm/run-jaison.sh"
+      bash -c "cd ${llm_dir}/launchers && exec ${llm_dir}/run-jaison.sh"
     cmdStop: docker stop qwen38-27b-vllm
 
   # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table, UD-Q3_K_XL, on the MTP fork image
