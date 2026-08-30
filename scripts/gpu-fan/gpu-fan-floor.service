@@ -3,7 +3,8 @@ Description=3090 fan floor (fixed speed via nvidia-settings)
 After=nvidia-persistenced.service
 
 [Service]
-Type=oneshot
+Restart=always
+RestartSec=10
 ExecStart=/usr/local/sbin/gpu-fan-floor.sh 25
 
 [Install]
