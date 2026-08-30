@@ -232,13 +232,13 @@
       },
       "targets": [
         {
-          "expr": "gpu_gfx_activity{gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0",
+          "expr": "nvidia_smi_utilization_gpu_ratio * 100",
+          "legendFormat": "RTX 3090 core",
           "refId": "A"
         },
         {
-          "expr": "gpu_gfx_activity{gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1",
+          "expr": "nvidia_smi_utilization_memory_ratio * 100",
+          "legendFormat": "RTX 3090 memory bus",
           "refId": "B"
         }
       ]
@@ -303,14 +303,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_used_vram{gpu_id=\"0\"} / gpu_total_vram{gpu_id=\"0\"} * 100",
-          "legendFormat": "R9700 #0",
+          "expr": "nvidia_smi_memory_used_bytes / nvidia_smi_memory_total_bytes * 100",
+          "legendFormat": "RTX 3090",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_used_vram{gpu_id=\"1\"} / gpu_total_vram{gpu_id=\"1\"} * 100",
-          "legendFormat": "R9700 #1",
-          "refId": "B"
         }
       ]
     },
@@ -425,24 +420,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_edge_temperature{gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0 edge",
+          "expr": "nvidia_smi_temperature_gpu",
+          "legendFormat": "RTX 3090",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_junction_temperature{gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0 junction",
-          "refId": "B"
-        },
-        {
-          "expr": "gpu_edge_temperature{gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1 edge",
-          "refId": "C"
-        },
-        {
-          "expr": "gpu_junction_temperature{gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1 junction",
-          "refId": "D"
         }
       ]
     },
@@ -506,14 +486,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_average_package_power{gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0",
+          "expr": "nvidia_smi_power_draw_watts",
+          "legendFormat": "RTX 3090",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_average_package_power{gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1",
-          "refId": "B"
         }
       ]
     },
