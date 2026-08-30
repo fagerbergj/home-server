@@ -6,5 +6,7 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow from 192.168.50.0/24 to any port 22 proto tcp
 sudo ufw allow from "$MEDIA_BOX" to any port 11436 proto tcp   # llm-swap
+sudo ufw allow from "$MEDIA_BOX" to any port 9100,9836,8082 proto tcp   # node/GPU/cadvisor exporters for Prometheus
+sudo ufw allow in on tailscale0
 sudo ufw enable
 sudo ufw status verbose

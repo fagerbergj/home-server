@@ -96,7 +96,15 @@ curl -s http://localhost:11436/v1/models | jq '.data[].id'
 
 Check card placement matches `llm-swap.yaml`'s `GGML_VK_VISIBLE_DEVICES` pins (`vulkaninfo --summary` device order vs `rocm-smi`; they're reversed).
 
-## Phase 8 — Wire the media box
+## Phase 8 — Monitoring
+
+```bash
+cd ~/workspace/home-server/jaison && docker compose up -d   # node-exporter, amd-exporter, cadvisor
+```
+
+The media box's Prometheus scrapes them (`monitoring/prometheus/config.yaml`, jobs `jaison_*`) and Grafana shows the `jaison (AI box)` dashboard (`monitoring/grafana-dashboards/jaison.json`). The exporter ports are opened to the media box by `scripts/phase1-firewall.sh`.
+
+## Phase 9 — Wire the media box
 
 Configs use the reserved IP `192.168.50.202` rather than the AdGuard name: the media box's host resolver (and therefore Docker's embedded DNS) points at 1.1.1.1, not AdGuard, so LAN names don't resolve inside containers there.
 

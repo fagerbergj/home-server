@@ -1,0 +1,54 @@
+# Exporters scraped by the media box's Prometheus (monitoring/prometheus/config.yaml);
+# Grafana dashboard `jaison` lives there too. Ports 9100/9836/8082 must be open
+# to 192.168.50.186 (scripts/phase1-firewall.sh).
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    pid: host
+    network_mode: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    restart: unless-stopped
+
+  # ROCm device metrics for the two R9700s (gpu_* series). Its 30 s polls are safe
+  # only because phase3-gpu.sh pins the cards' power/control=on; polling a
+  # runtime-suspended R9700 is what hung the media box on 2026-08-29.
+  amd-exporter:
+    image: rocm/device-metrics-exporter:v1.5.1
+    container_name: amd-exporter
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - render
+    volumes:
+      - /sys:/sys:ro
+    ports:
+      - "9836:5000"
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - --housekeeping_interval=10s
+      - --docker_only=true
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
