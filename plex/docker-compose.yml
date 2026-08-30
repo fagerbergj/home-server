@@ -8,12 +8,11 @@ services:
       - PGID=1002 # run: getent group plex-ro
       - TZ=America/Chicago
       - VERSION=docker
-      - DOCKER_MODS=jefflessard/plex-vaapi-amdgpu-mod  # AMD VAAPI: injects recent mesa/libdrm, overrides Plex's stale bundled stack
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"    # video
-      - "993"   # render
+      # RTX 3090 NVENC/NVDEC via the nvidia container runtime (needs
+      # nvidia-container-toolkit on the host). Plex picks the GPU up automatically.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    runtime: nvidia
     volumes:
       - ./config:/config
       - /mnt/media:/mnt/media

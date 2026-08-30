@@ -7,16 +7,16 @@
 | CPU | AMD Ryzen Threadripper 1950X (Whitehaven, 16c/32t, 3.4GHz base / 4.0GHz XFR, 180W) | ✅ 64 PCIe 3.0 lanes — chosen for the lane budget over per-core perf |
 | Motherboard | ASUS ROG Strix X399-E Gaming (X399, sTR4) | ✅ 3× PCIe 3.0 x16 slots from CPU lanes; sensors via `asus_wmi_sensors` |
 | RAM | 64GB DDR4-3000 (8× 8GB, true symmetric quad-channel, 1.35 V) | ✅ Matched pair per channel: 2× Crucial Ballistix 3000 CL16 + 2× Corsair LPX 3200 CL16 + 2× Corsair LPX 3000 CL15 + 2× Crucial Ballistix 3000 CL15 |
-| CPU Cooler | DeepCool LT720 360mm AIO (sTR4 mount) | ✅ |
+| CPU Cooler | sTR4 air cooler | ✅ Swapped from the LT720 AIO at the Define R5 move (2026-08-29) |
 | OS Drive | 500GB NVMe (M.2) | ✅ Ubuntu + Docker images/overlay2; bind-mount service configs |
 | Cache Drive | 480GB ADATA SU650 SATA SSD | ✅ Repurposed ex-OS drive at `/mnt/cache` — HuggingFace GGUF cache + scratch tier |
 | HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; runs at PCIe 3.0 x8 on Threadripper (~7.9 GB/s ceiling, far above what the drives can produce) |
 | Media Pool | 4× 26TB Seagate Exos `ST26000NM000C` (mfr-recert, 5yr warranty) | ✅ ZFS RAIDZ2, ~46 TiB usable |
 | Personal Pool | 2× 8TB Dell `J7W80` (Seagate Exos rebadge, new) | ✅ ZFS 2-way mirror, ~7.3 TiB usable; 2 bays free for future expansion |
-| GPU | 2× AMD Radeon AI Pro R9700 (RDNA 4 / Navi 48, 32 GB VRAM each — 64 GB total) | ✅ ROCm 7.x; #1 in PCIEX16_3 (x16), #2 in PCIEX16_1 (x16), PCIEX16_2 empty for airflow gap |
-| PSU | 1200W | ✅ |
+| GPU | NVIDIA RTX 3090 (Ampere, 24 GB) | ✅ PCIEX16_1; NVENC for Plex, CUDA for immich ML. The 2× R9700 moved to the AI box (see `hardware_plan.md.local` until that box is documented) |
+| PSU | 1300W | ✅ |
 | Network | Intel GbE LAN (onboard) + WIFI6 | ✅ Gigabit |
-| Case | Fractal Design Define 7 XL (E-ATX Full Tower) | ✅ 6× 3.5" in use; expandable to 18× 3.5" via multibracket kits |
+| Case | Fractal Design Define R5 (ATX) | ✅ 6× 3.5" in use across both drive cages (8 bays); the Define 7 XL now houses the AI box |
 
 ---
 

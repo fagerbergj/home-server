@@ -28,21 +28,17 @@ services:
     restart: unless-stopped
 
   immich-machine-learning:
-    # Pinned to v2.4.1 — release-rocm uses MIGraphXExecutionProvider which crashes on all
-    # recent RDNA generations (gfx1030–gfx1201). v2.4.1 uses ROCMExecutionProvider instead.
-    # Do not upgrade until https://github.com/immich-app/immich/issues/27387 is resolved.
-    image: ghcr.io/immich-app/immich-machine-learning:v2.4.1-rocm
+    # CUDA build on the RTX 3090; tracks immich-server's `release` tag.
+    image: ghcr.io/immich-app/immich-machine-learning:release-cuda
     container_name: immich-machine-learning
     networks:
       - backend
     # No env_file: immich_ml/config.py reads only MACHINE_LEARNING_*/IMMICH_HOST/
     # PORT/LOG_LEVEL vars, none of which this stack sets anywhere — defaults apply.
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - "44"    # video
-      - "993"   # render
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
       - ./ml-cache:/cache
     restart: unless-stopped

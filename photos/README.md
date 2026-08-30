@@ -19,7 +19,7 @@ External: `https://photos.jasonfagerberg.duckdns.org`
 
 ## GPU Acceleration (ML)
 
-The machine learning container (`immich-machine-learning:release-rocm`) uses the R9700 for face detection and image classification via ROCm (MIGraphX execution provider). This runs automatically — no extra config needed beyond the `/dev/kfd` + `/dev/dri` device mounts in `docker-compose.yml`.
+The machine learning container (`immich-machine-learning:release-cuda`) uses the RTX 3090 for face detection and image classification via CUDA. This runs automatically — no extra config needed beyond `runtime: nvidia` in `docker-compose.yml` (requires `nvidia-container-toolkit` on the host).
 
 GPU is only used during indexing (initial library scan and new photo processing), not during normal browsing.
 
