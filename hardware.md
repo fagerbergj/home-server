@@ -11,7 +11,7 @@ Two boxes since 2026-08-30: this file is `jason-server` (media/storage, the publ
 | RAM | 64GB DDR4-3000 (8× 8GB, true symmetric quad-channel, 1.35 V) | ✅ Matched pair per channel: 2× Crucial Ballistix 3000 CL16 + 2× Corsair LPX 3200 CL16 + 2× Corsair LPX 3000 CL15 + 2× Crucial Ballistix 3000 CL15 |
 | CPU Cooler | Noctua NH-U-series air cooler (sTR4) | ✅ Replaced the DeepCool LT720 AIO at the Define R5 move |
 | OS Drive | 500GB NVMe (M.2) | ✅ Ubuntu + Docker images/overlay2; bind-mount service configs |
-| Cache Drive | 480GB ADATA SU650 SATA SSD | ✅ Repurposed ex-OS drive at `/mnt/cache` — HuggingFace GGUF cache + scratch tier |
+| Cache Drive | 480GB ADATA SU650 SATA SSD | ⚠️ Retired 2026-08-30: the model archive moved to `/mnt/media/models/huggingface` and the two locally served models to `~/models` on the OS NVMe. Still mounted `nofail` at `/mnt/cache`; safe to pull (12 pending / 21 uncorrectable sectors) |
 | HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; runs at PCIe 3.0 x8 on Threadripper (~7.9 GB/s ceiling, far above what the drives can produce) |
 | Media Pool | 4× 26TB Seagate Exos `ST26000NM000C` (mfr-recert, 5yr warranty) | ✅ ZFS RAIDZ2, ~46 TiB usable |
 | Personal Pool | 2× 8TB Dell `J7W80` (Seagate Exos rebadge, new) | ✅ ZFS 2-way mirror, ~7.3 TiB usable; 2 bays free for future expansion |
@@ -27,7 +27,7 @@ Two boxes since 2026-08-30: this file is `jason-server` (media/storage, the publ
 | Mount Point | Pool / FS | Layout | Drives | Owner | Group | Access |
 |-------------|-----------|--------|--------|-------|-------|--------|
 | `/` | LVM ext4 | single | 500GB NVMe (M.2) — Ubuntu + Docker overlay2 + bind-mount configs | — | — | — |
-| `/mnt/cache` | ext4 | single | 480GB ADATA SU650 SATA SSD — HuggingFace GGUF cache, scratch | `jason-server` | — | scratch tier; data is reproducible/disposable |
+| `/mnt/cache` | ext4 | single | 480GB ADATA SU650 SATA SSD — retired; archive is on `/mnt/media/models` | `jason-server` | — | can be removed |
 | `/mnt/media` | `media` (ZFS) | RAIDZ2 | 4× 26TB Seagate Exos | `root` | `plex-rw` | `jason` (rw), `qbittorrent`/`sonarr`/`radarr` (rw), `plex`/`audiobookshelf` (ro) |
 | `/mnt/personal` | `personal` (ZFS) | 2-way mirror | 2× 8TB Dell J7W80 | `root` | `personal-rw` | `jason` (rw), `immich` (rw) |
 
