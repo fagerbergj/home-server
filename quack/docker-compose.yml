@@ -36,7 +36,7 @@ services:
       QUACK_ORCH_MODEL: qwen3.8-27b
       QUACK_RESEARCHER_MODEL: qwen3.8-27b
       QUACK_CODER_MODEL: qwen3.8-27b
-      QUACK_JUDGE_MODEL: gemma4-26b-a4b
+      QUACK_JUDGE_MODEL: qwen3.8-27b-judge   # second 27B instance on jaison's other card
       QUACK_IMAGE_MODEL: qwen3.8-27b
       QUACK_MEDIA_MODEL: qwen3-omni-30b
       QUACK_COMPACTION_ENABLED: "true"
@@ -45,7 +45,7 @@ services:
       # swap-free. Coder-as-compactor forced a 56GB coder load (evicting the workers)
       # on every 35b run that compacted — pure swap waste. (During a coder run gemma
       # swaps in, but it already does for judging; and the coder never loads just to compact.)
-      QUACK_COMPACTION_MODEL: gemma4-26b-a4b
+      QUACK_COMPACTION_MODEL: qwen3.5-9b       # always-resident on the media box's 3090
       QUACK_EMBED_MODEL: qwen3-embed
       # Semantic memory — reuse the existing qdrant (llm_default), gRPC port.
       QUACK_QDRANT_URL: qdrant:6334

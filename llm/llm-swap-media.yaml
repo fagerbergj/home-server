@@ -30,7 +30,7 @@ models:
   # Small chat/utility model; fits beside the embedder on the 3090 (~7 GB at 32k).
   "qwen3.5-9b":
     proxy: "http://127.0.0.1:9999"
-    ttl: 600
+    ttl: 0   # always resident beside the embedder (11 GB of the 24); also quack's compaction model
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.5-9B-GGUF/snapshots/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-UD-Q4_K_XL.gguf
@@ -55,7 +55,7 @@ peers:
     proxy: http://192.168.50.202:11436
     models:
       - qwen3.8-27b
-      - gemma4-26b-a4b
+      - qwen3.8-27b-judge
       - qwen3-omni-30b
       - muse-glimmer-30b
   jaison-rocm:

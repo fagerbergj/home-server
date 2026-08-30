@@ -6,8 +6,8 @@ matrix:
     # Quack GPU workers
     q:   "qwen3-omni-30b"    # media-reader: the only audio-capable model
     g38: "qwen3.8-27b"       # chat / research / code / vision - the default worker
-    # Live Quack judge (GPU)
-    j:   "gemma4-26b-a4b"
+    # Live Quack judge: a second 27B instance on the other card (gemma was a pushover).
+    j:   "qwen3.8-27b-judge"
   # The embedder and qwen3.5-9b run on the media box's 3090 (llm-swap-media.yaml),
   # which peers here for these models. qwen3.8-flash-next runs in the sibling ROCm
   # container on this box (llm-swap-rocm.yaml, :11437) - it needs both cards and
@@ -149,33 +149,43 @@ models:
       --port 9996
       --metrics
 
-  # 26B-A4B MoE, ~17GB, on the first card with the embedder, 11GB headroom. -ncmoe 8
-  # kept from the shared era; retest lower before changing (it used to SIGABRT).
-  # -ub 512: 2048 needs 1.3GB scratch, which OOMed next to a busy worker.
-  "gemma4-26b-a4b":
+  # Judge: the same 27B on the second card, its own process and KV pool, so worker and
+  # judge run concurrently on separate cards instead of swapping. Replaced gemma4-26b-a4b
+  # (2026-08-30), which scored every review 1.00 even when its tools failed.
+  "qwen3.8-27b-judge":
     proxy: "http://127.0.0.1:9994"
-    ttl: 3600   # 2x the workers: called once per gated node, so 1800 expired between calls and every round re-prefilled cold (0 cached vs ~29K prompts)
+    ttl: 3600   # 2x the worker: called once per gated node
     env:
       - "GGML_VK_VISIBLE_DEVICES=1"
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--gemma-4-26B-A4B-it-GGUF/snapshots/3bb10d594514ef4edb7f3a65d41a7e4eb8c5767a/gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
-      --alias gemma4-26b-a4b
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-27B-GGUF/snapshots/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q4_K_XL.gguf
+      --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
       --jinja
-      --temp 0.3
+      --reasoning-format deepseek
+      --chat-template-kwargs '{"reasoning_effort":"low"}'
+      --reasoning-budget 4096
+      --reasoning-budget-message 'Thinking budget reached. Stop analyzing and give your best answer or tool call now, based on what you already know.'
+      --temp 1.0
       --top-p 0.95
-      --top-k 64
+      --top-k 20
+      --min-p 0
+      --presence-penalty 0
+      -fa on
+      --no-mmap
       -fit off
       -ngl 999
-      -ncmoe 8
-      -fa on
-      -c 131072
-      -ub 512
-      -b 2048
+      -c 262144
+      --image-min-tokens 2048
+      --image-max-tokens 8192
       --parallel 2
       --kv-unified
+      -ub 512
+      -b 2048
       --cache-type-k q8_0
       --cache-type-v q8_0
-      --chat-template-kwargs '{"enable_thinking": false}'
+      -md /root/.cache/huggingface/hub/models--incoai--Qwen3.8-27B-DFlash2-GGUF/snapshots/51962825493a48b846b40126d35c799ac4093ad0/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
+      --spec-type draft-dflash
+      --spec-draft-n-max 4
       --port 9994
       --metrics
