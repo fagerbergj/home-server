@@ -27,9 +27,9 @@ services:
     devices:
       - /dev/kfd
       - /dev/dri
-    group_add:
-      - video
-      - render
+    group_add:            # numeric: the image's /etc/group has neither name (getent group render video)
+      - "44"    # video
+      - "991"   # render on jaison (993 on the media box)
     volumes:
       - /sys:/sys:ro
     ports:
