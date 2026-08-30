@@ -1,72 +1,31 @@
 # Two boxes, one file, selected by profile:
-#   jaison (AI box):   make swap-up   -> llm-swap (Vulkan) + llm-swap-rocm (profile `swap`): the big models on 2x R9700
+#   jaison (AI box):   make swap-up   -> llm-swap router (profile `swap`); model runtimes are sibling containers
 #   jason-server:      make media-up  -> llm-swap-media + qdrant + open-webui (profile `media`)
 # llm-swap-media (RTX 3090) is the single endpoint everything on the media box
 # uses (network alias `llm-swap`); it serves the embedder + 9B itself and peers
 # to jaison for the rest (llm-swap-media.yaml). Traefik's public /openai route
 # (api/traefik/dynamic/llm.yml) points at it too.
 services:
-  # Primary LLM runtime — OpenAI-compatible API on port 11436 backed by
-  # llama-swap + llama.cpp. Model routing is in llm-swap.yaml.
+  # jaison router: llama-swap only. Model runtimes are sibling containers it starts
+  # over the Docker socket (llm-swap.yaml), so it needs host networking to reach
+  # their 127.0.0.1 ports and the repo's llm/ dir at its HOST path for the vLLM
+  # launcher's bind mounts.
   llm-swap:
     profiles: ["swap"]
     build:
       context: .
       dockerfile: llm-swap.Dockerfile
     container_name: llm-swap
-    ports:
-      - "11436:11436"
+    network_mode: host
     environment:
-      - ROCBLAS_USE_HIPBLASLT=0
-      - HF_TOKEN=${HF_TOKEN:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
-      # Serve models from the local HF cache only — never phone home to resolve a
-      # commit at startup. A fully-downloaded model must not fail because HF is
-      # unreachable (that broke gpt-oss-120b's -hf load). Download models
-      # out-of-band (hf download); serving is offline.
-      - HF_HUB_OFFLINE=1
     volumes:
       - ./llm-swap.yaml:/app/config.yaml:ro
-      - /mnt/cache/huggingface:/root/.cache/huggingface
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-      - "993"   # render on the old media box
-      - "991"   # render on jaison
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/jason/workspace/home-server/llm:/home/jason/workspace/home-server/llm:ro
     restart: unless-stopped
-    # Override base image's healthcheck (curls :8080); llama-swap listens on 11436
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]
-      interval: 300s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  # Sibling on jaison: ROCm image for the models that are faster on HIP (Flash-Next).
-  llm-swap-rocm:
-    profiles: ["swap"]
-    build:
-      context: .
-      dockerfile: llm-swap-rocm.Dockerfile
-    container_name: llm-swap-rocm
-    ports:
-      - "11437:11437"
-    environment:
-      - HF_HUB_OFFLINE=1
-    volumes:
-      - ./llm-swap-rocm.yaml:/app/config.yaml:ro
-      - /mnt/cache/huggingface:/root/.cache/huggingface
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    group_add:
-      - video
-      - "991"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11437/v1/models"]
       interval: 300s
       timeout: 5s
       retries: 3

@@ -87,17 +87,19 @@ Or re-download: `llm/download-models.sh`.
 
 ## Phase 7 — llm-swap
 
-Two containers, one per backend: `llm-swap` (Vulkan image, :11436, `llm-swap.yaml`: the 27B with its DFlash2 draft, gemma, omni, muse) and `llm-swap-rocm` (ROCm image, :11437, `llm-swap-rocm.yaml`: Flash-Next, GLM later). Measured here: the 27B is 20-30% faster on Vulkan, Flash-Next prefills 2× faster on HIP. The two can't evict each other, so Flash-Next (both cards) loads only when the Vulkan side is idle.
+One `llm-swap` container (`llm-swap.Dockerfile`: llama-swap + the Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns both cards and its groups swap the resident 27B (vLLM, TP=2, one id + `qwen3.8-27b-judge` alias) against Flash-Next (whole box, llama.cpp MTP fork built from `llm/mtp`) and the on-demand extras (Vulkan llama.cpp). Bind-mount paths in the cmds are host paths; the repo's `llm/` dir is mounted at its host path for the vLLM launcher (`llm/vllm/run-jaison.sh` + the pinned `llm/vllm/launchers` submodule).
+
+vLLM checkpoints live in `/mnt/cache/vllm/` (`qwen3.8-27b-autoround`, `qwen3.8-27b-dflash2-int4`, `cache/` for the compile cache).
 
 ```bash
-cd ~/workspace/home-server/llm
-set -a && . ../.env && set +a
-make swap-up
+cd ~/workspace/home-server && git submodule update --init llm/vllm/launchers
+cd llm && set -a && . ../.env && set +a
+make swap-up          # pulls runtime images, builds llama-mtp:gfx1201, starts the router
 curl -s http://localhost:11436/v1/models | jq '.data[].id'
-curl -s http://localhost:11437/v1/models | jq '.data[].id'
+docker ps             # runtimes appear as qwen38-27b-vllm / flash-next / omni / muse while loaded
 ```
 
-Check card placement matches `llm-swap.yaml`'s `GGML_VK_VISIBLE_DEVICES` pins (`vulkaninfo --summary` device order vs `rocm-smi`; they're reversed).
+The 27B uses both cards (`GPU=0,1`, HIP order); Flash-Next's `-ts` leans on card 0 because `-ncmoe` offloads the first N layers. Vulkan enumerates cards in the reverse order of HIP if you ever pin the extras.
 
 ## Phase 8 — Monitoring
 

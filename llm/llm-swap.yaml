@@ -1,191 +1,117 @@
-healthCheckTimeout: 1200  # 256K KV cache models take time to init
-logLevel: debug
+# jaison: one llama-swap for both R9700s. Every model is a `docker run` of its own
+# runtime image; llama-swap starts/stops those containers like processes. Bind-mount
+# paths in the cmds are HOST paths (the daemon resolves them), so this container
+# mounts the repo's llm/ dir at its host path and runs the vLLM launcher from there.
+healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
+logLevel: info
 
-matrix:
-  vars:
-    # Quack GPU workers
-    q:   "qwen3-omni-30b"    # media-reader: the only audio-capable model
-    g38: "qwen3.8-27b"       # chat / research / code / vision - the default worker
-    # Live Quack judge: a second 27B instance on the other card (gemma was a pushover).
-    j:   "qwen3.8-27b-judge"
-  # The embedder and qwen3.5-9b run on the media box's 3090 (llm-swap-media.yaml),
-  # which peers here for these models. qwen3.8-flash-next runs in the sibling ROCm
-  # container on this box (llm-swap-rocm.yaml, :11437) - it needs both cards and
-  # the two containers can't evict each other, so it only loads when this one is idle.
+macros:
+  hf: /mnt/cache/huggingface
+  llm_dir: /home/jason/workspace/home-server/llm
+  gpu: >
+    --device /dev/kfd --device /dev/dri --group-add video --group-add 991
+  llama_common: >
+    --jinja --reasoning-format deepseek
+    --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0
+    -fa on -ngl 999 --cache-type-k q8_0 --cache-type-v q8_0 --metrics --host 0.0.0.0
 
-  costs:
-    j:   50    # keep the judge warm across worker switches (g→q evicts g at 1, not j)
-
-  sets:
-    workers:  "(g38 | q) & j"
-    judge:    "j"
+groups:
+  # Resident default. exclusive: loading it unloads everything else (Flash-Next).
+  "27b":
+    swap: false
+    exclusive: true
+    members: ["qwen3.8-27b"]
+  # Whole box: both cards + CPU experts. Loading it drains and unloads the 27B.
+  "flash-next":
+    swap: true
+    exclusive: true
+    members: ["qwen3.8-flash-next"]
+  # On-demand extras (Vulkan llama.cpp); they evict each other and the groups above.
+  "extras":
+    swap: true
+    exclusive: true
+    members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # All entries load via -m (direct path), not -hf: HF_HUB_OFFLINE=1 + an
-  # inconsistent HF cache makes -hf resolution exit 1 before load.
-
-  # Dense 27B hybrid, native vision. ALONE on the second card (GGML_VK_VISIBLE_DEVICES=0): decodes
-  # ~47-48 t/s on one R9700 and the 2-card layer split bought nothing but contention
-  # with gemma. -ub 512 (not 2048): FA scratch at large ubatch made short calls swing
-  # 17-38 t/s. KV q8_0 (8.7GB at 262144): f16 would be 16GB and not fit; q4_0 on HIP
-  # had no fast FA path at head_dim 256 (8 t/s/slot at 52k). Vulkan, one request at
-  # 90k: Q4+q8_0@262k 36.3 decode / 488 prefill; Q5+f16@131k 40.2/623; HIP Q5 32.5/376.
-  # --parallel 2 --kv-unified: slots share the whole 262144 pool rather than
-  # splitting it, so one long node can still use it all. 2 not 4: at 30k prompts
-  # 2 concurrent requests measured 151.9s vs 123.7s run serially (0.81x).
-  # DFlash2 draft (incoai, 1.1 GB Q4_K_M) beats the built-in MTP head on jaison:
-  # 56/50/39 t/s (short code / short prose / 90k) vs 50/48/37 at n-max 4; n-max 7
-  # over-drafts and loses on prose (34) and at 90k (30). ROCm was slower for this
-  # model in every combination (best 47/44/36 with f16 KV @131k), so it stays on Vulkan.
-  # UD-Q4_K_XL: unsloth's dynamic quant (Q5 is +3GB for ~7% slower decode at 262k);
-  # ggml-org Q4_K_M has no MTP head.
-  # reasoning_effort low + a 4096 thinking budget: at medium/unbounded a single
-  # step burned 8.8-18k reasoning tokens. The budget MESSAGE matters - the old
-  # 512 test thrashed (105 tool calls vs 48) because it cut thinking off silently.
-  # Thinking is ~95% of review decode (28k vs 1.4k output over 53 turns, ~530/turn):
-  # the lever is turn count, not budget.
+  # Dense 27B on vLLM, TP=2 across both cards, one id for worker and judge (alias).
+  # int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 concurrent sequences.
+  # Measured 2026-08-30: 90k prompt 2455 prefill / 106 decode t/s (llama.cpp DFlash2
+  # on one card: ~650 / 39); two concurrent 90k streams 74 + 62 t/s. Boot ~3 min warm.
+  # ttl 0: stays resident; Flash-Next requests swap it out, and the next 27B call
+  # pays the boot.
   "qwen3.8-27b":
+    aliases: ["qwen3.8-27b-judge"]
     proxy: "http://127.0.0.1:9993"
-    ttl: 1800
+    checkEndpoint: /health
+    ttl: 0
     env:
-      - "GGML_VK_VISIBLE_DEVICES=0"
+      - "GPU=0,1"
+      - "TP=2"
+      - "MAXLEN=262144"
+      - "MAXSEQS=2"
+      - "PORT=9993"
+      - "NAME=qwen38-27b-vllm"
+      - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
+      - "MODEL_DIR=/mnt/cache/vllm/qwen3.8-27b-autoround"
+      - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
+      - "CACHE_DIR=/mnt/cache/vllm/cache"
+      - "REASONING_EFFORT=medium"
     cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-27B-GGUF/snapshots/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q4_K_XL.gguf
-      --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
-      --jinja
-      --reasoning-format deepseek
-      --chat-template-kwargs '{"reasoning_effort":"low"}'
-      --reasoning-budget 4096
-      --reasoning-budget-message 'Thinking budget reached. Stop analyzing and give your best answer or tool call now, based on what you already know.'
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --presence-penalty 0
-      -fa on
-      --no-mmap
-      -fit off
-      -ngl 999
-      -c 262144
-      --image-min-tokens 2048
-      --image-max-tokens 8192
-      --parallel 2
-      --kv-unified
-      -ub 512
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -md /root/.cache/huggingface/hub/models--incoai--Qwen3.8-27B-DFlash2-GGUF/snapshots/51962825493a48b846b40126d35c799ac4093ad0/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
-      --spec-type draft-dflash
-      --spec-draft-n-max 4
-      --port 9993
-      --metrics
+      bash -c "cd ${llm_dir}/vllm/launchers && exec ${llm_dir}/vllm/run-jaison.sh"
+    cmdStop: docker stop qwen38-27b-vllm
 
+  # Qwen3.8-Flash-Next 125B-A6B + 51B n-gram table, UD-Q3_K_XL, on the MTP fork image
+  # (llm/mtp, `make mtp-image`; PR 27836 not merged). MTP n3 p0.75: 28/28/21.6 t/s
+  # (prose/code/5k) vs 23/23/20 with ngram-mod. -ncmoe 8 + -ot pin the n-gram table
+  # to CPU; -ts leans on card 0 because -ncmoe offloads the FIRST N layers.
+  "qwen3.8-flash-next":
+    proxy: "http://127.0.0.1:9992"
+    ttl: 3600
+    cmd: >
+      docker run --rm --init --name flash-next ${gpu}
+      -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1
+      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9992:9992
+      llama-mtp:gfx1201
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/8bdc666649440e9bdc97e16f3f75782c98478ff5/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf
+      --mmproj /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots/178b998806b7b406c311a3e6174aa99cf6304eaf/mmproj-BF16.gguf
+      ${llama_common}
+      --split-mode layer -ts 0.58,0.42 -ncmoe 8 -ot "per_layer_token_embd=CPU"
+      -c 131072 --parallel 1 -t 12 -ub 1024 -b 2048
+      -md /root/.cache/huggingface/hub/models--dzannotti--Qwen3.8-Flash-Next-MTP-GGUF/snapshots/0b2551d191548168d3254ddea4ab943a5ef4f809/Qwen3.8-Flash-Next-MTP-Q4_K_M.gguf
+      --spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-p-min 0.75
+      --port 9992
+    cmdStop: docker stop flash-next
 
-  # M4 media-reader, kept for AUDIO only - qwen3.8-27b covers text/image/video.
-  # MoE (3B active) co-resides with gemma4-26b-a4b (~15GB) comfortably in 64GB.
-  # reasoning-format deepseek: auto mis-routes Qwen3 tool-call XML into content.
-  # --no-mmap: 17+GB, cold mmap serializes on page faults.
-  # Audio ROCm support is recent - verify on first deploy; if it fails to load,
-  # drop the --mmproj arg and run image-only until a confirmed build ships with audio.
+  # Audio-capable media reader (the 27B has vision, not audio). Vulkan llama.cpp.
   "qwen3-omni-30b":
     proxy: "http://127.0.0.1:9999"
     ttl: 1800
-    env:
     cmd: >
-      /app/llama-server
+      docker run --rm --init --name omni ${gpu}
+      -e HF_HUB_OFFLINE=1
+      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9999:9999
+      ghcr.io/ggml-org/llama.cpp:server-vulkan
       -m /root/.cache/huggingface/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
       --mmproj /root/.cache/huggingface/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
-      --jinja
-      --reasoning-format deepseek
-      --reasoning-budget 512
-      --temp 0.6
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --presence-penalty 1.5
-      --no-mmap
-      --split-mode layer
-      -fit off
-      -ngl 999
-      -c 32768
-      --image-min-tokens 2048
-      --image-max-tokens 8192
-      --parallel 1
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -fa on
+      ${llama_common}
+      --reasoning-budget 512 --presence-penalty 1.5 --temp 0.6
+      --split-mode layer -c 32768 --parallel 1 -ub 2048 -b 2048
+      --image-min-tokens 2048 --image-max-tokens 8192
       --port 9999
-      --metrics
+    cmdStop: docker stop omni
 
-
-  # Dense 30B agentic candidate (~16GB Q4), no set membership until it passes eval.
-  # NEW arch, needs llama.cpp b10353+; if the mmproj aborts at load, run text-only.
+  # Untested agentic candidate; kept loadable.
   "muse-glimmer-30b":
     proxy: "http://127.0.0.1:9996"
     ttl: 600
-    env:
     cmd: >
-      /app/llama-server
+      docker run --rm --init --name muse ${gpu}
+      -e HF_HUB_OFFLINE=1
+      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9996:9996
+      ghcr.io/ggml-org/llama.cpp:server-vulkan
       -m /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q4_K_XL.gguf
       --mmproj /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-Q8_0.gguf
-      --alias muse-glimmer-30b
-      --jinja
-      --temp 1.0
-      --top-p 0.95
-      --top-k 64
-      --no-mmap
-      -ngl 999
-      -c 131072
-      --parallel 1
-      -ub 2048
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -fa on
+      ${llama_common}
+      --top-k 64 -c 131072 --parallel 1 -ub 2048 -b 2048
       --port 9996
-      --metrics
-
-  # Judge: the same 27B on the second card, its own process and KV pool, so worker and
-  # judge run concurrently on separate cards instead of swapping. Replaced gemma4-26b-a4b
-  # (2026-08-30), which scored every review 1.00 even when its tools failed.
-  "qwen3.8-27b-judge":
-    proxy: "http://127.0.0.1:9994"
-    ttl: 3600   # 2x the worker: called once per gated node
-    env:
-      - "GGML_VK_VISIBLE_DEVICES=1"
-    cmd: >
-      /app/llama-server
-      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.8-27B-GGUF/snapshots/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q4_K_XL.gguf
-      --mmproj /root/.cache/huggingface/direct/mmproj-Qwen3.8-27B-BF16.gguf
-      --jinja
-      --reasoning-format deepseek
-      --chat-template-kwargs '{"reasoning_effort":"low"}'
-      --reasoning-budget 4096
-      --reasoning-budget-message 'Thinking budget reached. Stop analyzing and give your best answer or tool call now, based on what you already know.'
-      --temp 1.0
-      --top-p 0.95
-      --top-k 20
-      --min-p 0
-      --presence-penalty 0
-      -fa on
-      --no-mmap
-      -fit off
-      -ngl 999
-      -c 262144
-      --image-min-tokens 2048
-      --image-max-tokens 8192
-      --parallel 2
-      --kv-unified
-      -ub 512
-      -b 2048
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-      -md /root/.cache/huggingface/hub/models--incoai--Qwen3.8-27B-DFlash2-GGUF/snapshots/51962825493a48b846b40126d35c799ac4093ad0/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
-      --spec-type draft-dflash
-      --spec-draft-n-max 4
-      --port 9994
-      --metrics
+    cmdStop: docker stop muse

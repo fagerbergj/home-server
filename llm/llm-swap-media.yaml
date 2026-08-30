@@ -66,10 +66,7 @@ peers:
     proxy: http://192.168.50.202:11436
     models:
       - qwen3.8-27b
-      - qwen3.8-27b-judge
+      - qwen3.8-27b-judge   # alias of qwen3.8-27b (same vLLM TP=2 instance)
+      - qwen3.8-flash-next
       - qwen3-omni-30b
       - muse-glimmer-30b
-  jaison-rocm:
-    proxy: http://192.168.50.202:11437
-    models:
-      - qwen3.8-flash-next   # needs both cards: loads only while the Vulkan side is idle

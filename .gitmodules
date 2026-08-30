@@ -1,0 +1,3 @@
+[submodule "llm/vllm/launchers"]
+	path = llm/vllm/launchers
+	url = https://github.com/zzpanic/qwen3.6-vllm-gfx1201-launchers
