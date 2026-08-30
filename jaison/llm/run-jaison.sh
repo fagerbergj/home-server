@@ -676,8 +676,8 @@ json.dump(t, open(p,'w'), ensure_ascii=False)
 fi
 
 mkdir -p "$CACHE_DIR"
-podman rm -f "$NAME" >/dev/null 2>&1 || true
-trap 'podman rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
+docker rm -f "$NAME" >/dev/null 2>&1 || true
+trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
 exec docker run --rm --name "$NAME" \
   --device /dev/kfd --device /dev/dri \
