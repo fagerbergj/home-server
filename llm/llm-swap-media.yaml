@@ -1,0 +1,61 @@
+# Media-box llama-swap (RTX 3090, CUDA image; see llm-swap-cuda.Dockerfile).
+# This is the endpoint quack, Open WebUI and Traefik's /openai route talk to.
+# Small always-on models run here; every larger model is served by jaison's
+# llama-swap and reached through the `peers` block below (llama-swap forwards by
+# model name, so callers never know which box answered).
+healthCheckTimeout: 600
+logLevel: info
+
+models:
+  # 4B Q8 embedder. Measured 15-64ms/req on GPU vs 0.8-4s on CPU under load.
+  # 2560-dim vectors: switching embed models means dropping the Qdrant memory
+  # collections (dimension is fixed at creation). ttl 0: at ttl 600 it idle-unloaded
+  # during long explore nodes, then cold-loaded on handoff - blowing quack's 60s budget.
+  "qwen3-embed":
+    proxy: "http://127.0.0.1:9998"
+    ttl: 0
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
+      --embedding
+      --pooling last
+      -ngl 999
+      -c 16384
+      --parallel 4
+      -ub 2048
+      -b 2048
+      --port 9998
+      --metrics
+
+  # Small chat/utility model; fits beside the embedder on the 3090 (~7 GB at 32k).
+  "qwen3.5-9b":
+    proxy: "http://127.0.0.1:9999"
+    ttl: 600
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/hub/models--unsloth--Qwen3.5-9B-GGUF/snapshots/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-UD-Q4_K_XL.gguf
+      --jinja
+      --temp 0.7
+      --top-p 0.8
+      --top-k 20
+      --min-p 0
+      --presence-penalty 1.5
+      -ngl 999
+      -c 32768
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+      --chat-template-kwargs '{"enable_thinking": false}'
+      --port 9999
+      --metrics
+
+# jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
+# local model has the name; keep this list in sync with jaison's llm-swap.yaml.
+peers:
+  jaison:
+    proxy: http://192.168.50.202:11436
+    models:
+      - qwen3.8-27b
+      - gemma4-26b-a4b
+      - gpt-oss-120b
+      - qwen3-omni-30b
+      - muse-glimmer-30b

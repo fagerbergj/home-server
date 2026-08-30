@@ -7,6 +7,6 @@ swap-up:
 swap-down:
 	docker compose --profile swap stop llm-swap
 
-# jason-server: qdrant + open-webui (llm-swap lives on jaison)
+# jason-server: llm-swap-media (3090: embed + 9B, peers to jaison) + qdrant + open-webui
 media-up:
-	docker compose --profile media up -d
+	docker compose --profile media up -d --build

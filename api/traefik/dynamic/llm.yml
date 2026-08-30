@@ -1,6 +1,5 @@
-# Public LLM API: api.jasonfagerberg.duckdns.org/openai/v1/* -> llm-swap on jaison.
-# llm-swap runs on the AI box, so Traefik can't discover it via Docker labels;
-# this file-provider route replaces the labels the container used to carry.
+# Public LLM API: api.jasonfagerberg.duckdns.org/openai/v1/* -> llm-swap-media
+# (the media box's llama-swap, which peers to jaison for the big models).
 # The key comes from the traefik container's environment (api/docker-compose.yml
 # passes LLM_API_KEY through) via the file provider's Go templating.
 http:
@@ -14,7 +13,7 @@ http:
     llm-swap:
       loadBalancer:
         servers:
-          - url: "http://192.168.50.202:11436"
+          - url: "http://llm-swap-media:11436"
   middlewares:
     # Public base URL is .../openai/v1 ; strip /openai so llama-swap sees /v1/*
     llm-strip:

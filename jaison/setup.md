@@ -100,10 +100,11 @@ Check card placement matches `llm-swap.yaml`'s `GGML_VK_VISIBLE_DEVICES` pins (`
 
 Configs use the reserved IP `192.168.50.202` rather than the AdGuard name: the media box's host resolver (and therefore Docker's embedded DNS) points at 1.1.1.1, not AdGuard, so LAN names don't resolve inside containers there.
 
+The media box keeps its own llama-swap (`llm-swap-media`, CUDA image on the 3090, network alias `llm-swap`): it serves `qwen3-embed` and `qwen3.5-9b` locally and forwards every other model name to this box through its `peers:` block (`llm/llm-swap-media.yaml`, proxy `http://192.168.50.202:11436`). quack, Open WebUI and Traefik's `/openai` route all talk to that local endpoint, so this box being down only takes the big models with it. Keep the peer's model list in sync with `llm-swap.yaml` here.
+
 On `jason-server` (`set -a && . .env && set +a` first for the LLM key):
 
-1. `api/traefik/dynamic/llm.yml` routes `/openai` → `http://192.168.50.202:11436` with the API-key + strip-prefix middlewares; `docker compose up -d traefik` in `api/` so the container gets `LLM_API_KEY` in its environment.
-2. `llm/`: `make media-up` (qdrant + open-webui; open-webui points at jaison).
-3. `quack/`: `QUACK_LLM_ENDPOINT=http://192.168.50.202:11436/v1` is in the compose; `docker compose up -d quack`.
-4. Optional: run a `server-cuda` llama-swap on the 3090 for `qwen3-embed` and add it as a `peers:` entry in this box's `llm-swap.yaml`.
-5. Smoke test: `/review` on a PR and watch `docker logs quack`.
+1. `llm/`: `make media-up` (builds `llm-swap-cuda.Dockerfile`, starts llm-swap-media + qdrant + open-webui).
+2. `api/`: `docker compose up -d traefik` (the file route `api/traefik/dynamic/llm.yml` reads `LLM_API_KEY` from the container env).
+3. `quack/`: `docker compose up -d quack`.
+4. Smoke test: `curl http://localhost:11436/v1/models` on the media box lists local + peer models; then `/review` on a PR and watch `docker logs quack`.

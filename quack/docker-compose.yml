@@ -26,8 +26,8 @@ services:
       QUACK_OTEL_ENABLED: "true"
       QUACK_OTEL_OTLP_ENDPOINT: http://otel-collector:4318
       QUACK_DATABASE_URL: postgres://quack:${QUACK_DB_PASSWORD}@quack-postgres:5432/quack?sslmode=disable
-      # LLM (llm-swap on the AI box over the LAN). Empty key — llm-swap doesn't auth.
-      QUACK_LLM_ENDPOINT: http://192.168.50.202:11436/v1   # llm-swap on jaison (DHCP-reserved)
+      # LLM (llm-swap-media on llm_default; peers to jaison). Empty key — llm-swap doesn't auth.
+      QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1   # llm-swap-media (3090 + peer to jaison)
       QUACK_LLM_API_KEY: ""
       # One model (qwen3.8-27b) for orchestrator/researcher/coder - dense hybrid
       # w/ MTP, beats qwen3.6-35b on GPQA/LiveCodeBench/SWE-bench-Pro despite
