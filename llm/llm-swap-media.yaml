@@ -58,3 +58,4 @@ peers:
       - gemma4-26b-a4b
       - qwen3-omni-30b
       - muse-glimmer-30b
+      - qwen3.8-flash-next   # opt-in: evicts the 27B + judge on jaison while loaded
