@@ -1,3 +1,5 @@
+version: 7
+daemon:
   log_level: info
   admin_group: sudo
   disable_clocks_cleanup: false
@@ -11,10 +13,10 @@ gpus:
       temperature_key: edge
       interval_ms: 500
       curve:
-        35: 0.35
-        70: 0.5
-        80: 0.7
-        90: 0.9
+        30: 0.2
+        60: 0.35
+        75: 0.55
+        85: 0.75
         95: 1.0
     power_cap: 300.0
     max_memory_clock: 1359
@@ -27,10 +29,10 @@ gpus:
       temperature_key: edge
       interval_ms: 500
       curve:
-        35: 0.35
-        70: 0.5
-        80: 0.7
-        90: 0.9
+        30: 0.2
+        60: 0.35
+        75: 0.55
+        85: 0.75
         95: 1.0
     power_cap: 300.0
     max_memory_clock: 1359
