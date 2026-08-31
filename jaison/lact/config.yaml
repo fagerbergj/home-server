@@ -6,7 +6,7 @@ daemon:
 apply_settings_timer: 5
 gpus:
   1002:7551-1849:5413-0000:23:00.0:
-    fan_control_enabled: true
+    fan_control_enabled: false
     fan_control_settings:
       mode: curve
       static_speed: 0.9
@@ -22,7 +22,7 @@ gpus:
     max_memory_clock: 1359
     voltage_offset: -125
   1002:7551-1849:5413-0000:c3:00.0:
-    fan_control_enabled: true
+    fan_control_enabled: false
     fan_control_settings:
       mode: curve
       static_speed: 0.9
