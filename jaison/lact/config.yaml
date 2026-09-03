@@ -18,9 +18,9 @@ gpus:
         75: 0.55
         85: 0.75
         95: 1.0
-    power_cap: 300.0
+    power_cap: 250.0
     max_memory_clock: 1259
-    voltage_offset: -125
+    voltage_offset: 0
   1002:7551-1849:5413-0000:c3:00.0:
     fan_control_enabled: false
     fan_control_settings:
@@ -34,8 +34,8 @@ gpus:
         75: 0.55
         85: 0.75
         95: 1.0
-    power_cap: 300.0
+    power_cap: 250.0
     max_memory_clock: 1259
-    voltage_offset: -125
+    voltage_offset: 0
 current_profile: null
 auto_switch_profiles: false
