@@ -49,6 +49,7 @@ models:
       - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
       - "CACHE_DIR=/mnt/cache/vllm/cache"
       - "REASONING_EFFORT=medium"
+      - "MAX_NEW_TOKENS=32768"   # 16k cut heavy plan-writing steps mid-think (empty outputs)
       - "PATCH_DIR=/home/jason/workspace/home-server/jaison/llm/vllm-patches"   # macros do not expand in env
     cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop qwen38-27b-vllm
