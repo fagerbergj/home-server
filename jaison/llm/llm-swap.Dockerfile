@@ -2,7 +2,7 @@
 FROM docker:cli
 
 ARG TARGETARCH=amd64
-ARG LS_VER=226
+ARG LS_VER=252
 
 RUN apk add --no-cache bash curl python3
 

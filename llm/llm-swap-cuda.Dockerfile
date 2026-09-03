@@ -4,7 +4,7 @@
 FROM ghcr.io/ggml-org/llama.cpp:server-cuda
 
 ARG TARGETARCH=amd64
-ARG LS_VER=226
+ARG LS_VER=252
 
 WORKDIR /app
 
