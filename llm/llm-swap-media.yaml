@@ -64,6 +64,8 @@ groups:
 peers:
   jaison:
     proxy: http://192.168.50.202:11436
+    timeouts:
+      responseHeader: 0   # v252 defaults 60s; non-stream calls >60s to first byte got 502 (killed plan runs)
     models:
       - qwen3.8-27b
       - qwen3.8-flash-next

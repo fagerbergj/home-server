@@ -1,6 +1,8 @@
 # jaison: one llama-swap for both R9700s; each model is a `docker run` it starts and stops.
 # Bind-mount paths in cmds are HOST paths (the daemon resolves them).
 healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
+timeouts:
+  responseHeader: 0   # never guillotine long first-byte waits
 logLevel: info
 
 macros:
