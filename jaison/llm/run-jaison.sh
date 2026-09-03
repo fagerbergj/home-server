@@ -612,7 +612,7 @@ fi
 
 # JSON must contain no spaces -- expanded unquoted below, same rule as SPEC_ARGS.
 if [[ "$GENCFG" == "1" ]]; then
-  GENCFG_ARG="--override-generation-config={\"temperature\":${GEN_TEMP},\"top_p\":${GEN_TOPP},\"top_k\":${GEN_TOPK},\"min_p\":${GEN_MINP},\"repetition_penalty\":${GEN_REPPEN}}"
+  GENCFG_ARG="--override-generation-config={\"max_new_tokens\":${MAX_NEW_TOKENS:-16384},\"temperature\":${GEN_TEMP},\"top_p\":${GEN_TOPP},\"top_k\":${GEN_TOPK},\"min_p\":${GEN_MINP},\"repetition_penalty\":${GEN_REPPEN}}"
   echo "[launcher] sampling override (server default only): temp=$GEN_TEMP top_p=$GEN_TOPP top_k=$GEN_TOPK min_p=$GEN_MINP rep_pen=$GEN_REPPEN" >&2
 else
   GENCFG_ARG=""
