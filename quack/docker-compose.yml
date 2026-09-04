@@ -86,7 +86,7 @@ services:
     # names for a few seconds (several times a day, each killing an in-flight run);
     # pin postgres by IP so quack never depends on that resolver.
     extra_hosts:
-      - "quack-postgres:172.23.0.2"
+      - "quack-postgres:172.23.0.100"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
@@ -126,7 +126,7 @@ services:
       - quack-pg:/var/lib/postgresql/data
     networks:
       default:
-        ipv4_address: 172.23.0.2   # matches quack's extra_hosts pin above
+        ipv4_address: 172.23.0.100   # matches quack's extra_hosts pin above
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quack -d quack"]
       interval: 10s
