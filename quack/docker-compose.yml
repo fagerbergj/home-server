@@ -82,6 +82,11 @@ services:
       - default
       - api_gateway
       - llm_default
+    # Docker's embedded DNS on this host intermittently fails to resolve container
+    # names for a few seconds (several times a day, each killing an in-flight run);
+    # pin postgres by IP so quack never depends on that resolver.
+    extra_hosts:
+      - "quack-postgres:172.23.0.2"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
@@ -119,6 +124,9 @@ services:
       POSTGRES_DB: quack
     volumes:
       - quack-pg:/var/lib/postgresql/data
+    networks:
+      default:
+        ipv4_address: 172.23.0.2   # matches quack's extra_hosts pin above
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quack -d quack"]
       interval: 10s
@@ -128,6 +136,9 @@ services:
 
 networks:
   default:
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16   # the subnet quack_default already has; fixed so the postgres pin is stable
   api_gateway:
     external: true
   llm_default:

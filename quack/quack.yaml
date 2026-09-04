@@ -75,8 +75,8 @@ models:
 # store may `extends` another to reuse its connection (child fields override).
 stores:
   default_ledger:
-    kind: filesystem
-    root: /workspace/recordings
+    kind: postgres                 # WAL + replay ledger in the DB; filesystem left WAL/recover/revision chaining inactive
+    url: ${QUACK_DATABASE_URL}
   default_postgres:
     kind: postgres
     url: ${QUACK_DATABASE_URL}
