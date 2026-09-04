@@ -111,7 +111,7 @@ services:
     restart: "no"
 
   quack-postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: quack-postgres
     environment:
       POSTGRES_USER: quack
