@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.51.2
+    image: ghcr.io/fagerbergj/quack:0.51.3
     container_name: quack
     command: ["server", "run"]
     # Values interpolate from quack/.env, which compose reads by default; only
