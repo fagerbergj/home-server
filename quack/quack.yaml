@@ -74,9 +74,6 @@ models:
 # how it vectorizes (embedder), its consolidation model, and recall defaults. A
 # store may `extends` another to reuse its connection (child fields override).
 stores:
-  default_ledger:
-    kind: postgres                 # WAL + replay ledger in the DB; filesystem left WAL/recover/revision chaining inactive
-    url: ${QUACK_DATABASE_URL}
   default_postgres:
     kind: postgres
     url: ${QUACK_DATABASE_URL}
@@ -117,7 +114,8 @@ observability:
       - endpoint: ${QUACK_OTEL_OTLP_ENDPOINT}  # http://otel-collector:4318
         signals: [traces, metrics]
   recording:
-    store: default_ledger                      # enabled follows otel.enabled
+    store: default_postgres                    # WAL + observation ledger share the DB (0.51.4: no separate ledger store)
+    observations: true                         # record gen_ai.* observations as typed ledger entries
     retention_days: 30
 
 orchestrator:
