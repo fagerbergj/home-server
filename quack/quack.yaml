@@ -98,8 +98,6 @@ session:
   compaction:
     enabled: ${QUACK_COMPACTION_ENABLED}  # unset ⇒ false
     provider: default
-    # adk 2.3 native compaction (quack#1224): real token counts, durable summary; dogfooded on qa 2026-09-07
-    engine: adk
     model: ${QUACK_COMPACTION_MODEL}      # required when enabled; the 9B on the media box is always resident
 
 # OTel emission (quack 0.6.7): traces+metrics -> the monitoring stack's
