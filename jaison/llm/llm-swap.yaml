@@ -55,7 +55,7 @@ models:
       - "MAX_NEW_TOKENS=32768"   # 16k cut heavy plan-writing steps mid-think (empty outputs)
       - "PATCH_DIR=/home/jason/workspace/home-server/jaison/llm/vllm-patches"   # macros do not expand in env
     cmd: ${llm_dir}/run-jaison.sh
-    cmdStop: docker stop qwen38-27b-vllm
+    cmdStop: docker stop -t 120 qwen38-27b-vllm   # hard kills of a TP vLLM wedge the GPU (MES/sdma reset); let it drain
 
   # Whole box: 125B+51B n-gram table on MTP fork. Drains/unloads the 27B when loaded.
   "qwen3.8-flash-next":
