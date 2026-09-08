@@ -33,17 +33,17 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # vLLM TP=2, one id for worker and judge (2 sequences); 2.7x llama.cpp decode at 90k. ttl 0: resident; Flash-Next swaps it out.
+  # vLLM TP=4 on all four cards: 90k 3372 prefill / 126 decode t/s (TTFT 27 s); MAXSEQS 3. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
     useModelName: qwen3.8-27b-vllm   # what the launcher registers with vLLM
     ttl: 0
     env:
-      - "GPU=0,1"
-      - "TP=2"
+      - "GPU=0,1,2,3"
+      - "TP=4"
       - "MAXLEN=262144"
-      - "MAXSEQS=2"
+      - "MAXSEQS=3"
       - "PORT=9993"
       - "NAME=qwen38-27b-vllm"
       - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
