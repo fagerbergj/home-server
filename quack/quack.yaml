@@ -87,7 +87,7 @@ stores:
       provider: default
       model: ${QUACK_JUDGE_MODEL}       # reuse the always-warm judge for extract/vet/consolidate
       schedule: "0 2 * * *"             # daily burst-dedupe sweep, 2am (never at boot)
-      retention_days: 0                 # keep invalidated points + memory_ops forever (explicit)
+      retention_days: 30                # hard-delete invalidated points + their memory_ops rows after 30 days (epic quack#1255 P3)
     top_k: 5
     min_score: 0.5                # drop recall hits below this cosine similarity (0 disables)
 
