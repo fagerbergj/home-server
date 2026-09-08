@@ -706,7 +706,7 @@ exec docker run --rm --name "$NAME" \
     /model \
     --served-model-name "$SERVED" \
     --quantization "$QUANT" \
-    --kv-cache-dtype fp8 \
+    --kv-cache-dtype "${KV_DTYPE:-fp8}" \
     --tensor-parallel-size "${TP:-1}" \
     --gpu-memory-utilization "$GPUUTIL" \
     ${LM_ARG} \
