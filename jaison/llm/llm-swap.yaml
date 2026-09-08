@@ -33,7 +33,7 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # vLLM TP=4 on all four cards: 90k 3372 prefill / 126 decode t/s (TTFT 27 s); MAXSEQS 3. ttl 0: resident; Flash-Next swaps it out.
+  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 3. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
@@ -47,7 +47,8 @@ models:
       - "PORT=9993"
       - "NAME=qwen38-27b-vllm"
       - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
-      - "MODEL_DIR=/mnt/cache/vllm/qwen3.8-27b-autoround"
+      - "MODEL_DIR=/mnt/cache/vllm/qwen3.8-27b-fp8"
+      - "QUANT=fp8"   # official Qwen block-fp8; launcher defaults to auto_gptq for AutoRound
       - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
       - "CACHE_DIR=/mnt/cache/vllm/cache"
       - "REASONING_EFFORT=medium"
