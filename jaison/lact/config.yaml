@@ -37,5 +37,11 @@ gpus:
     power_cap: 250.0
     max_memory_clock: 1259
     voltage_offset: 0
+  1002:7551-1849:5413-0000:03:00.0:
+    fan_control_enabled: false
+    power_cap: 250.0
+  1002:7551-1849:5413-0000:c6:00.0:
+    fan_control_enabled: false
+    power_cap: 250.0
 current_profile: null
 auto_switch_profiles: false
