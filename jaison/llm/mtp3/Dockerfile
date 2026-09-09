@@ -8,7 +8,7 @@ RUN git clone https://github.com/ggml-org/llama.cpp /src && cd /src \
     && git checkout -b combined origin/master && git merge --no-edit mtp && git merge --no-edit ple && git merge --no-edit allreduce && git merge --no-edit smtensor \
     && git log --oneline -3
 RUN cd /src && HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -G Ninja \
-      -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 -DGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Release \
+      -DGGML_HIP=ON -DGGML_HIP_RCCL=ON -DAMDGPU_TARGETS=gfx1201 -DGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Release \
       -DLLAMA_CURL=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
     && cmake --build build --target llama-server -j24
 FROM rocm/dev-ubuntu-24.04:7.2-complete
