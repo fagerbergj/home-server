@@ -121,7 +121,14 @@ orchestrator:
   provider: default
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
   skills: [plan-work, format-markdown, present-coding-plan, contribute, mermaid-authoring]
-  # tools: [commit_memory]        # bind commit_memory to enable user memory (recall + commit of personal facts)
+  tools: [commit_memory, recall_memory, load_artifacts]  # commit_memory: user memory; recall_memory: task memory (repo/role/user); load_artifacts: read artifacts saved to this chat's session
+  # End-of-turn memory hook: the orchestrator model won't reliably call commit_memory
+  # itself, so the embedded memory-agent bundle extracts durable user facts after a
+  # keyword pre-filter. One judge-model call per qualifying turn.
+  user_memory_hook:
+    enabled: true
+    provider: default
+    model: ${QUACK_JUDGE_MODEL}
 
 # Declarative agents. Each is an agent-card.json + prompt.md bundle on disk,
 # bound here to a model and a selection of built-in tools. Add an agent by
