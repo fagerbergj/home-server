@@ -717,6 +717,7 @@ exec docker run --rm --name "$NAME" \
     --max-num-batched-tokens "$BATCHTOK" \
     --attention-backend "$ATTN" \
     --enable-prefix-caching --mamba-cache-mode align \
+    --enable-prompt-tokens-details \
     ${SPEC_ARGS} \
     --reasoning-parser qwen3 \
     --tool-call-parser qwen3_xml --enable-auto-tool-choice \
