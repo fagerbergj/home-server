@@ -33,7 +33,7 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
-  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 3. ttl 0: resident; Flash-Next swaps it out.
+  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 6, bf16 KV. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
