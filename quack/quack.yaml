@@ -273,7 +273,7 @@ dag:
   max_active_nodes: 8
   # Live runs server-wide. Not a GPU knob (limits.sessions is) - this is what
   # bounds how many chats sit in the sidebar showing as running at once.
-  max_active_runs: 2
+  max_active_runs: 6                # owner 2026-09-09: the AI server can take 6 parallel nodes
 
 server:
   addr: ":8080"
