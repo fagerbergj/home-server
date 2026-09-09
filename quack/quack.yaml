@@ -36,7 +36,7 @@ models:
     role: worker
     context_window: 262144
     limits:
-      sessions: 2
+      sessions: 6   # vLLM MAXSEQS 6; aggregate ~148 t/s at 6 streams, KV pool 1.15M tokens
       kv_tokens: 262144
     cost:
       input_per_mtok: 0.60
