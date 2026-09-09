@@ -43,7 +43,8 @@ models:
       - "GPU=0,1,2,3"
       - "TP=4"
       - "MAXLEN=262144"
-      - "MAXSEQS=3"
+      - "MAXSEQS=6"   # bf16 KV pool ~1.15M tokens = 4 worst-case 262k seqs; vLLM queues beyond that, never OOMs
+      - "KV_DTYPE=bfloat16"   # ~1 pt quality over fp8 KV; no measured speed cost on gfx1201
       - "PORT=9993"
       - "NAME=qwen38-27b-vllm"
       - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
