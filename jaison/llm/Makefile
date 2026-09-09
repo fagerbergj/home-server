@@ -13,4 +13,4 @@ images: mtp-image
 
 # Flash-Next MTP fork; rebuild only when Dockerfile/patch change.
 mtp-image:
-	docker build -t llama-mtp2:gfx1201 mtp2
+	docker build -t llama-mtp3:gfx1201 mtp3
