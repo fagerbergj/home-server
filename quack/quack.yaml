@@ -284,6 +284,7 @@ dag:
 
 server:
   addr: ":8080"
+  public_url: ${QUACK_PUBLIC_URL}
   # topology: how the stores are provided. embedded (sqlite, no containers) and
   # external (you run Postgres/Qdrant and point the stores above at them) just
   # run the process — the default. managed makes `quack server` bring up
