@@ -37,7 +37,7 @@ models:
     context_window: 262144
     limits:
       sessions: 6   # vLLM MAXSEQS 6; aggregate ~148 t/s at 6 streams, KV pool 1.15M tokens
-      kv_tokens: 262144
+      kv_tokens: 1048576   # 4 full-length 262k nodes; the measured bf16 pool is ~1.15M, vLLM queues past it rather than OOMing
     cost:
       input_per_mtok: 0.60
       output_per_mtok: 3.60
@@ -152,7 +152,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
-    context_window: 262144            # the whole pool: an implementer runs alone by design
+    context_window: 262144            # the 27B's full slot
     judge_rounds: 2             # implementation is high-stakes, but past round 2 the revise grind rarely converges
     # ACP coder: pi behind the tools/pi-acp shim (0.42.0, quack#969). Same config
     # env contract as opencode; git push denied extension-side; skills via the
@@ -166,7 +166,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
-    context_window: 65536        # measured max 19.4k; headroom for large diffs
+    context_window: 262144       # the box serves the 27B at 256k; the ledger's pool below is sized for 4 of these
     judge_rounds: 2             # review is high-stakes; co-resident judge, no swap cost
     # External ACP reviewer, read_only: runs the change with its own tools, never
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
@@ -180,7 +180,7 @@ agents:
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
-    context_window: 131072       # measured 65-100k live; 65536 under-reserved and 3 nodes overran the pool
+    context_window: 262144       # the box serves the 27B at 256k
     judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
@@ -191,7 +191,7 @@ agents:
     tools: [check_mermaid]
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 131072       # measured: ~7.9k per upstream node, 47k for a 6-node fan-in
+    context_window: 262144       # the box serves the 27B at 256k
     judge_rounds: 2             # produces the FINAL delivered answer — its synthesis/framing/coherence is worth judging even though upstream nodes are already vetted
   media-reader:
     bundle: agents/media-reader
@@ -207,7 +207,7 @@ agents:
     skills: [format-markdown]
     provider: default
     model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
-    context_window: 65536       # on qwen3.8-27b's native vision now
+    context_window: 262144      # on qwen3.8-27b's native vision, same 256k slot
     tools: []
     inputs: [text, image]
     judge: false      # gemma (the judge) cannot open media — its verdict is noise
