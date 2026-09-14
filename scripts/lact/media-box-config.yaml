@@ -10,7 +10,7 @@ gpus:
     fan_control_settings:
       mode: curve
       static_speed: 0.5
-      temperature_key: edge
+      temperature_key: GPU
       interval_ms: 1000
       spindown_delay_ms: 8000
       change_threshold: 3
