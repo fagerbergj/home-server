@@ -11,12 +11,15 @@ gpus:
       mode: curve
       static_speed: 0.5
       temperature_key: edge
-      interval_ms: 500
+      interval_ms: 1000
+      spindown_delay_ms: 8000
+      change_threshold: 3
       curve:
         30: 0.45
-        60: 0.55
-        70: 0.7
-        80: 1.0
+        55: 0.5
+        65: 0.6
+        75: 0.75
+        85: 1.0
     power_cap: 250.0
 current_profile: null
 auto_switch_profiles: false
