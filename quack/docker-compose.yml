@@ -12,6 +12,7 @@ services:
   quack:
     image: ghcr.io/fagerbergj/quack:0.51.37
     container_name: quack
+    init: true
     command: ["server", "run"]
     # Values interpolate from quack/.env, which compose reads by default; only
     # what is named here reaches the container. The private-key PATH is for the
