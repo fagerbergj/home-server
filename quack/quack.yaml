@@ -259,7 +259,7 @@ gates:
   deterministic_checks:
     max_rounds: 4   # free citation/length checks; up to 4 cheap worker revise cycles
   judge:
-    max_output_tokens: 16384     # reasoning ate all 8192 on 2026-09-07 (#1235); verdicts stay small, this only bounds runaways
+    max_output_tokens: 32768     # thinking_level is only a prompt steer on Qwen3.8; 16k cut long reviews mid-think (7 empty rounds in 2 days). Matches the launcher's MAX_NEW_TOKENS.
     thinking_level: low          # reasoning must not eat the verdict budget (quack#1235); needs image >= 0.51.9
     provider: default
     model: ${QUACK_JUDGE_MODEL}   # empty ⇒ judge disabled
