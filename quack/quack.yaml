@@ -333,6 +333,18 @@ workflows:
 # .quack/plan-pr5-tool-schemas.md. Every field is optional; omitting this
 # section entirely still gets a working jail rooted at ./workspace with the
 # defaults below.
+# Skill plugins come from the git-backed registry (quack#1427): cloned under
+# /workspace/.quack/plugins at boot, refreshed from the Plugins page, rows in
+# postgres. dotagents tracks main so the page shows when it moved; ponytail
+# stays at the ref the image vendored. The usage entry is the extension's
+# manifest, a config-only local root.
+plugins:
+  store: default_postgres
+  seed:
+    - github:fagerbergj/dotagents
+    - github:DietrichGebert/ponytail@v4.9.0
+    - .agents/plugins/usage
+
 workspace:
   root: ${QUACK_WORKSPACE_ROOT}   # default ./workspace (compose: the volume mountpoint)
   max_read_kb: 256                # read_file per-call cap; oversized reads truncate, never error
