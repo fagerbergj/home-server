@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.51.39
+    image: ghcr.io/fagerbergj/quack:0.52.0
     container_name: quack
     init: true
     command: ["server", "run"]
@@ -26,6 +26,11 @@ services:
       # (otel-collector joins llm_default). Read path = Grafana / Tempo TraceQL.
       QUACK_OTEL_ENABLED: "true"
       QUACK_OTEL_OTLP_ENDPOINT: http://otel-collector:4318
+      # Langfuse prompt store: host port of langfuse-web (langfuse_default is not
+      # joined here); keys in .env, the pair the otel-collector already uses.
+      LANGFUSE_BASE_URL: http://192.168.50.186:3008
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       QUACK_DATABASE_URL: postgres://quack:${QUACK_DB_PASSWORD}@quack-postgres:5432/quack?sslmode=disable
       # LLM (llm-swap-media on llm_default; peers to jaison). Empty key — llm-swap doesn't auth.
       QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1   # llm-swap-media (3090 + peer to jaison)

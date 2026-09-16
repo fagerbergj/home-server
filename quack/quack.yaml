@@ -90,6 +90,21 @@ stores:
       retention_days: 30                # hard-delete invalidated points + their memory_ops rows after 30 days (epic quack#1255 P3)
     top_k: 5
     min_score: 0.5                # drop recall hits below this cosine similarity (0 disables)
+  # Langfuse prompt management (quack#1418). Same project key pair the
+  # otel-collector ingests traces with, so prompt versions link to generations.
+  langfuse:
+    kind: langfuse
+    url: ${LANGFUSE_BASE_URL}
+    public_key: ${LANGFUSE_PUBLIC_KEY}
+    secret_key: ${LANGFUSE_SECRET_KEY}
+
+# Prompts, rubrics and memory guidance resolve from Langfuse per round, with the
+# shipped files as fallback; first boot seeds every name (no production label,
+# so nothing changes until a version is edited). docs/configuration/prompts.md.
+prompts:
+  store: langfuse
+  cache_ttl: 60s
+  pin_label: production
 
 # ADK session + chat persistence (references a store) plus context compaction,
 # which operates over that session history.
