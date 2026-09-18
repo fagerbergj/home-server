@@ -163,7 +163,7 @@ agents:
     context_window: 262144      # the 27B's full slot, like web-researcher
     judge_rounds: 1
     optional: true
-    tools: [sleeper_roster, sleeper_matchup, sleeper_player, sleeper_schedule, sleeper_trends, current_date, ask_advisor]
+    tools: [sleeper_roster, sleeper_matchup, sleeper_player, sleeper_schedule, sleeper_trends, current_date]
   waiver-scout:
     bundle: agents/waiver-scout
     skills: [sleeper:waivers]
@@ -191,7 +191,7 @@ agents:
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # the 27B's full slot; runs reached 110k of the old 131k window, one compaction away
     judge_rounds: 2             # co-resident judge (gemma), no swap cost. Draft must cite inline (see prompt.md).
-    tools: [web_search, web_fetch, grep_artifacts, summarize, current_date, load_memory, stage_memory, ask_advisor,
+    tools: [web_search, web_fetch, grep_artifacts, summarize, current_date, load_memory, stage_memory,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
     bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
@@ -294,14 +294,8 @@ tools:
 #      drive cheap targeted revisions to drop fabricated citations up front.
 #   2. judge — an independent model scores the answer; the worker revises on fail.
 # Deterministic citation/length scores are always folded into the judge's verdict.
-# The advisor (agents/advisor) is NOT a gate stage — it's a tool (ask_advisor,
-# see agents' tools: lists) the worker calls at its own discretion. It reuses
-# the judge's provider/model and is only registered on worker bundles that list
-# it when the judge is enabled (see below): leave judge.model empty to disable
-# both the judge and ask_advisor; the cheaper deterministic_checks stage still
-# runs.
 gates:
-  constitution_path: config/constitution.md   # global principles, used for the advisor + judge
+  constitution_path: config/constitution.md   # global principles, used by the judge
   rubric_path: config/rubric.md               # default scoring guide (agents may override with rubric.md in their bundle)
   deterministic_checks:
     max_rounds: 4   # free citation/length checks; up to 4 cheap worker revise cycles
