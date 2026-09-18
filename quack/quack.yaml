@@ -37,7 +37,7 @@ models:
     context_window: 262144
     limits:
       sessions: 6   # vLLM MAXSEQS 6; aggregate ~148 t/s at 6 streams, KV pool 1.15M tokens
-      kv_tokens: 1048576   # 4 full-length 262k nodes; the measured bf16 pool is ~1.15M, vLLM queues past it rather than OOMing
+      kv_tokens: 1572864   # 6 x 262144: every slot the box serves. The measured bf16 pool is ~1.15M, so six WORST-CASE full contexts overflow it and vLLM queues/preempts (never OOMs); observed use is ~21% at 4 running, so six typical nodes fit. Watch vllm:num_preemptions_total.
     cost:
       input_per_mtok: 0.60
       output_per_mtok: 3.60
@@ -157,7 +157,7 @@ agents:
     memory:
       bucket: research   # shared-memory role bucket (see internal/memory/scope.go)
     model: ${QUACK_RESEARCHER_MODEL}
-    context_window: 131072       # measured p50 67k / max 108k
+    context_window: 262144       # the 27B's full slot; runs reached 110k of the old 131k window, one compaction away
     judge_rounds: 2             # co-resident judge (gemma), no swap cost. Draft must cite inline (see prompt.md).
     tools: [web_search, web_fetch, summarize, current_date, load_memory, stage_memory, ask_advisor,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
