@@ -36,8 +36,8 @@ models:
     role: worker
     context_window: 262144
     limits:
-      sessions: 6   # vLLM MAXSEQS 6; aggregate ~148 t/s at 6 streams, KV pool 1.15M tokens
-      kv_tokens: 1572864   # 6 x 262144: every slot the box serves. The measured bf16 pool is ~1.15M, so six WORST-CASE full contexts overflow it and vLLM queues/preempts (never OOMs); observed use is ~21% at 4 running, so six typical nodes fit. Watch vllm:num_preemptions_total.
+      sessions: 5   # vLLM MAXSEQS 6; five kept so the bf16 KV pool (~1.15M) is never oversubscribed by five full 262k contexts by much
+      kv_tokens: 1310720   # 5 x 262144. The measured bf16 pool is ~1.15M, so five WORST-CASE full contexts still overflow it slightly and vLLM queues/preempts (never OOMs); observed use is ~21% at 4 running. Watch vllm:num_preemptions_total.
     cost:
       input_per_mtok: 0.60
       output_per_mtok: 3.60
