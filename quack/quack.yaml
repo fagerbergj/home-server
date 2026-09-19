@@ -166,8 +166,7 @@ agents:
     tools: [web_search, web_fetch, grep_artifacts, summarize, current_date, load_memory, stage_memory,
             ]  # NO repo tools: reading source is code-explorer's job (see its card)  # read-only fs + clone, so research can pull a repo apart
   code-implementer:
-    bundle: agents/code-implementer   # card + prompt.md (ACP preamble) + rubric.md
-    provider: default
+    optional: true   # bundle, tools, skills come from .agents/plugins/github's code-implementer; disabled extension drops this, not boot
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}       # qwen3-coder-next
@@ -180,8 +179,7 @@ agents:
     acp:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
   code-reviewer:
-    bundle: agents/code-reviewer      # card + prompt.md (values + VERDICT/FINDINGS contract) + rubric.md
-    provider: default
+    optional: true   # bundle, tools, skills come from .agents/plugins/github's code-reviewer
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
@@ -194,8 +192,7 @@ agents:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
       read_only: true
   code-explorer:
-    bundle: agents/code-explorer      # card + prompt.md (read-only exploration) + rubric.md
-    provider: default
+    optional: true   # bundle, tools, skills come from .agents/plugins/github's code-explorer
     memory:
       bucket: coding   # gate-side recall + answer-mined commit (vetting memoryRecall / memory.Commit)
     model: ${QUACK_CODER_MODEL}
@@ -342,6 +339,7 @@ plugins:
     - github:DietrichGebert/ponytail@v4.9.0
     - .agents/plugins/usage
     - .agents/plugins/sleeper              # start-sit/waivers/injury-and-news skills + the sleeper module manifest
+    - .agents/plugins/github                # code-implementer/reviewer/explorer bundles; seed only once extensions.github is configured
 
 workspace:
   root: ${QUACK_WORKSPACE_ROOT}   # default ./workspace (compose: the volume mountpoint)
