@@ -511,7 +511,7 @@ workspace:
 # extensions.github ENABLED on the server (the .pem is mounted at the path below,
 # and QUACK_GITHUB_APP_CLIENT_ID / QUACK_GITHUB_APP_WEBHOOK_SECRET are set in .env).
 extensions:
-  # Sleeper fantasy football (quack-extensions sleeper/v0.1.2): read-only Sleeper API
+  # Sleeper fantasy football (quack-extensions sleeper/v0.2.0): read-only Sleeper API
   # tools for lineup-analyst/waiver-scout/trend-scout and the /sleeper/ page (nav rail).
   sleeper:
     enabled: true
