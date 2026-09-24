@@ -122,6 +122,7 @@ session:
 observability:
   otel:
     enabled: ${QUACK_OTEL_ENABLED}             # unset => true
+    capture_content: true                      # prompt/answer text on spans, so Langfuse evaluators can score it
     # One entry per OTLP destination; the signal path (/v1/traces etc) is
     # appended automatically. Add a second entry to send traces to Langfuse
     # while metrics keep going to the collector (quack#1045).
