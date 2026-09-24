@@ -14,3 +14,7 @@ images: mtp-image
 # Flash-Next MTP fork; rebuild only when Dockerfile/patch change.
 mtp-image:
 	docker build -t llama-mtp3:gfx1201 mtp3
+
+# Scratch MiMo-V2.6-Flash image: upstream master + RCCL, no patches.
+mimo-image:
+	docker build -t llama-mimo:gfx1201 mimo

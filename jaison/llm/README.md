@@ -9,6 +9,8 @@ One `llm-swap` container (llama-swap) owns both R9700s. It does not run any mode
 | `docker-compose.yml` | The router. Host networking (it proxies to the runtimes' `127.0.0.1` ports), `/var/run/docker.sock` (it launches them), and this directory mounted at its host path (the vLLM launcher bind-mounts files from it). |
 | `llm-swap.Dockerfile` | `docker:cli` + bash/python3 + the llama-swap binary. No GPU libraries; those live in the runtime images. |
 | `llm-swap.yaml` | Model table, groups, and the per-model `cmd` / `cmdStop`. Bind-mount paths inside cmds are **host** paths because the daemon resolves them. |
+| `run-mimo.sh` | MiMo-V2.6-Flash launcher (llama.cpp). Reads `PORT`, `NAME`, `NCMOE`, `CTX`, `PARALLEL`, `THREADS` from the model's `env:`. |
+| `mimo/` | Scratch image `llama-mimo:gfx1201`: upstream llama.cpp + `mimo2-dflash.patch` (layer-input hooks for the drafter, DFlash value scale, no tied lm_head). `make mimo-image`. |
 | `run-jaison.sh` | vLLM launcher for the 27B. Reads `GPU`, `TP`, `MAXLEN`, `MAXSEQS`, `PORT`, `MODEL_DIR`, `DRAFT_DIR`, `CACHE_DIR`, `REASONING_EFFORT` from the model's `env:`. |
 | `vllm-patches/` | Tuned Triton kernel and patched vLLM sources for DFlash2 and KV sizing, bind-mounted over the image. See its README. |
 | `mtp/` | Dockerfile + patch for `llama-mtp:gfx1201`: llama.cpp with Flash-Next MTP draft head, HIP build. Frozen until llama.cpp PR 27836 merges. |
@@ -20,10 +22,11 @@ One `llm-swap` container (llama-swap) owns both R9700s. It does not run any mode
 |---|---|---|---|
 | `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | both, TP=2 | int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 sequences. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
 | `qwen3.8-flash-next` | `llama-mtp3:gfx1201` | all four, tensor split | UD-Q3_K_XL, RCCL tensor parallel, unsloth MTP shared-Q8_0 n2 (38-44 t/s). Loading it drains and unloads the 27B. |
+| `mimo-v2.6-flash` | `llama-mimo:gfx1201` | all four + host RAM | MXFP4 (lossless, experts ship in MXFP4), 22 expert layers in RAM, DFlash drafter, 2 slots x 256k. ~42 t/s single, ~40 aggregate at 2 streams, ~600 t/s prefill. `run-mimo.sh` drops the page cache after boot (no-mmap load leaves it full and kswapd stalls decode). Text only. Loading it drains and unloads the 27B. |
 | `qwen3-omni-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Audio-capable media reader, on demand. |
 | `muse-glimmer-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Untested candidate, on demand. |
 
-Groups: `27b` is the resident default; `flash-next` and `extras` are exclusive, so a request for one of them swaps everything else out and the next 27B call pays the boot.
+Groups: `27b` is the resident default; `flash-next`, `mimo` and `extras` are exclusive, so a request for one of them swaps everything else out and the next 27B call pays the boot.
 
 ## Data on disk (jaison)
 

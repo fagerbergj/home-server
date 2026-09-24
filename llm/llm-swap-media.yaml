@@ -69,5 +69,6 @@ peers:
     models:
       - qwen3.8-27b
       - qwen3.8-flash-next
+      - mimo-v2.6-flash
       - qwen3-omni-30b
       - muse-glimmer-30b
