@@ -26,7 +26,7 @@ groups:
     swap: true
     exclusive: true
     members: ["qwen3.8-flash-next"]
-  # Whole box + host RAM: MXFP4 on four cards with 22 expert layers on the CPU. Drains/unloads the 27B.
+  # Whole box + host RAM: MXFP4 on four cards with 23 expert layers on the CPU. Drains/unloads the 27B.
   "mimo":
     swap: true
     exclusive: true
@@ -84,7 +84,7 @@ models:
       --port 9992
     cmdStop: docker stop flash-next
 
-  # MiMo-V2.6-Flash-RL 309B/A15B, llama.cpp (jaison/llm/mimo image: mimo2 DFlash hooks). MXFP4 lossless, DFlash drafter:
+  # MiMo-V2.6-Flash-RL 309B/A15B, llama.cpp (jaison/llm/mimo image: mimo2 DFlash hooks). MXFP4 lossless, DFlash drafter, vision/audio projector:
   # 1 stream 42 t/s, 2 streams ~40 aggregate (4 only reach ~46), prefill ~600 @11k. 2 slots x 256k from one 512k pool.
   # Weights read without mmap; launcher drops the page cache after boot.
   "mimo-v2.6-flash":
@@ -94,7 +94,7 @@ models:
     env:
       - "PORT=9994"
       - "NAME=mimo"
-      - "NCMOE=22"
+      - "NCMOE=23"
       - "CTX=524288"
       - "PARALLEL=2"
     cmd: ${llm_dir}/run-mimo.sh

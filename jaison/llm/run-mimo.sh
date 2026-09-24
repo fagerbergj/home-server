@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MiMo-V2.6-Flash launcher for llama-swap: llama.cpp (jaison/llm/mimo image), MXFP4 across all four
-# cards with the first N expert layers in host RAM, TrevorJS DFlash drafter, 2 slots x 256k.
+# cards with the first N expert layers in host RAM, TrevorJS DFlash drafter, vision/audio projector, 2 slots x 256k.
 # The weights are read without mmap (the 167 GB file cannot share 126 GB of RAM with 60 GB of resident
 # experts), which leaves the page cache full of the file; kswapd then stalls the CPU experts on every
 # token (14 vs 42 t/s measured), so a background job drops the cache once the server is healthy.
@@ -10,7 +10,7 @@ NAME="${NAME:-mimo}"
 PORT="${PORT:-9994}"
 IMAGE="${IMAGE:-llama-mimo:gfx1201}"
 HF="${HF:-/mnt/cache/huggingface}"
-NCMOE="${NCMOE:-22}"
+NCMOE="${NCMOE:-23}"   # 23rd CPU layer sits on card 0 and frees the room the projector needs
 CTX="${CTX:-524288}"
 PARALLEL="${PARALLEL:-2}"
 THREADS="${THREADS:-24}"
@@ -32,6 +32,7 @@ exec docker run --rm --init --name "$NAME" \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \
   "$IMAGE" \
   -m "$S/MiMo-V2.6-Flash-RL-MXFP4-00001-of-00002.gguf" --load-mode none \
+  --mmproj "$S/mmproj-MiMo-V2.6-Flash-RL-Q8_0.gguf" \
   -md "$D/MiMo-V2.6-Flash-RL-DFlash-Q8_0.gguf" --spec-type draft-dflash --spec-draft-n-max 5 --spec-draft-p-min 0.7 \
   --jinja --reasoning-format deepseek --temp 1.0 --top-p 0.95 \
   -fa on -ngl 999 --n-cpu-moe "$NCMOE" -ts 24,8,8,8 \
