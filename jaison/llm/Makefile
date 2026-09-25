@@ -1,4 +1,4 @@
-.PHONY: up down images mtp-image
+.PHONY: up down images mtp-image mimo-image glm-image
 
 up: images
 	docker compose up -d --build llm-swap
@@ -18,3 +18,7 @@ mtp-image:
 # Scratch MiMo-V2.6-Flash image: upstream master + RCCL, no patches.
 mimo-image:
 	docker build -t llama-mimo:gfx1201 mimo
+
+# Scratch GLM-5.3-Flash image: unsloth's PR 27754 branch.
+glm-image:
+	docker build -t llama-glm:gfx1201 glm
