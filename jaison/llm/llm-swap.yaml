@@ -85,7 +85,8 @@ models:
     cmdStop: docker stop flash-next
 
   # MiMo-V2.6-Flash-RL 309B/A15B, llama.cpp (jaison/llm/mimo image: mimo2 DFlash hooks). MXFP4 lossless, DFlash drafter, vision/audio projector:
-  # 1 stream 42 t/s, 2 streams ~40 aggregate (4 only reach ~46), prefill ~600 @11k. 2 slots x 256k from one 512k pool.
+  # 1 stream 42 t/s, 4 streams ~46 aggregate, prefill ~600 @11k. 4 slots x 128k from one 512k pool: past ~150k the ROCm
+  # flash-attention f16 accumulators lose MiMo's full-attention layers (recall verified correct to 139k).
   # Weights read without mmap; launcher drops the page cache after boot.
   "mimo-v2.6-flash":
     proxy: "http://127.0.0.1:9994"
@@ -96,7 +97,7 @@ models:
       - "NAME=mimo"
       - "NCMOE=23"
       - "CTX=524288"
-      - "PARALLEL=2"
+      - "PARALLEL=4"
     cmd: ${llm_dir}/run-mimo.sh
     cmdStop: docker stop mimo
 

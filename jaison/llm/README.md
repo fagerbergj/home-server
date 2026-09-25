@@ -22,7 +22,7 @@ One `llm-swap` container (llama-swap) owns both R9700s. It does not run any mode
 |---|---|---|---|
 | `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | both, TP=2 | int4 AutoRound + DFlash2 W4A16 draft, 262k context, 2 sequences. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
 | `qwen3.8-flash-next` | `llama-mtp3:gfx1201` | all four, tensor split | UD-Q3_K_XL, RCCL tensor parallel, unsloth MTP shared-Q8_0 n2 (38-44 t/s). Loading it drains and unloads the 27B. |
-| `mimo-v2.6-flash` | `llama-mimo:gfx1201` | all four + host RAM | MXFP4 (lossless, experts ship in MXFP4), 23 expert layers in RAM, DFlash drafter, Q8_0 vision/audio projector, 2 slots x 256k. ~42 t/s single, ~40 aggregate at 2 streams, ~600 t/s prefill. `run-mimo.sh` drops the page cache after boot (no-mmap load leaves it full and kswapd stalls decode). Loading it drains and unloads the 27B. |
+| `mimo-v2.6-flash` | `llama-mimo:gfx1201` | all four + host RAM | MXFP4 (lossless, experts ship in MXFP4), 23 expert layers in RAM, DFlash drafter, Q8_0 vision/audio projector, 4 slots x 128k (longer prompts lose recall on ROCm). ~42 t/s single, ~46 aggregate at 4 streams, ~600 t/s prefill. `run-mimo.sh` drops the page cache after boot (no-mmap load leaves it full and kswapd stalls decode). Loading it drains and unloads the 27B. |
 | `qwen3-omni-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Audio-capable media reader, on demand. |
 | `muse-glimmer-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Untested candidate, on demand. |
 

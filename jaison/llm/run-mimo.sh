@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MiMo-V2.6-Flash launcher for llama-swap: llama.cpp (jaison/llm/mimo image), MXFP4 across all four
-# cards with the first N expert layers in host RAM, TrevorJS DFlash drafter, vision/audio projector, 2 slots x 256k.
+# cards with the first N expert layers in host RAM, TrevorJS DFlash drafter, vision/audio projector, 4 slots x 128k.
 # The weights are read without mmap (the 167 GB file cannot share 126 GB of RAM with 60 GB of resident
 # experts), which leaves the page cache full of the file; kswapd then stalls the CPU experts on every
 # token (14 vs 42 t/s measured), so a background job drops the cache once the server is healthy.
@@ -12,7 +12,7 @@ IMAGE="${IMAGE:-llama-mimo:gfx1201}"
 HF="${HF:-/mnt/cache/huggingface}"
 NCMOE="${NCMOE:-23}"   # 23rd CPU layer sits on card 0 and frees the room the projector needs
 CTX="${CTX:-524288}"
-PARALLEL="${PARALLEL:-2}"
+PARALLEL="${PARALLEL:-4}"
 THREADS="${THREADS:-24}"
 
 S=/root/.cache/huggingface/hub/models--ggml-org--MiMo-V2.6-Flash-RL-GGUF/snapshots/9bf2e45b30eb518326536a7f9703bc1bc9b49d06
