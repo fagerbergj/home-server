@@ -11,9 +11,9 @@ images: mtp-image
 	docker pull ghcr.io/ggml-org/llama.cpp:server-vulkan
 	docker pull docker.io/stilldeadcode/vllm-radiance:0.9.3
 
-# Flash-Next MTP fork; rebuild only when Dockerfile/patch change.
+# Flash-Next image (master + MTP and tensor-split PRs); rebuild only when Dockerfile/diffs change.
 mtp-image:
-	docker build -t llama-mtp3:gfx1201 mtp3
+	docker build -t llama-mtp4:gfx1201 mtp4
 
 # Scratch MiMo-V2.6-Flash image: upstream master + RCCL, no patches.
 mimo-image:
