@@ -31,6 +31,11 @@ groups:
     swap: true
     exclusive: true
     members: ["mimo-v2.6-flash"]
+  # Whole box + host RAM: GLM IQ4_XS on four cards, ~70 GB of experts in RAM. Drains/unloads the 27B.
+  "glm":
+    swap: true
+    exclusive: true
+    members: ["glm-5.3-flash"]
   # On-demand extras (Vulkan llama.cpp); they evict each other and the groups above.
   "extras":
     swap: true
@@ -100,6 +105,19 @@ models:
       - "PARALLEL=4"
     cmd: ${llm_dir}/run-mimo.sh
     cmdStop: docker stop mimo
+
+  # GLM-5.3-Flash 320B/A18B, llama.cpp (jaison/llm/glm image, PR 27754 branch). UD-IQ4_XS, own MTP head n2, q8_0 KV:
+  # 1 stream ~21 t/s code / ~16 prose, 4 streams ~26 aggregate. Prefill falls with depth (168 t/s @30k, 93 @106k, 67 @170k:
+  # the sparse-attention indexer scores every prior key), so 4 x 256k slots rely on prompt-prefix reuse. See run-glm.sh.
+  "glm-5.3-flash":
+    proxy: "http://127.0.0.1:9998"
+    checkEndpoint: /health
+    ttl: 3600
+    env:
+      - "PORT=9998"
+      - "NAME=glm"
+    cmd: ${llm_dir}/run-glm.sh
+    cmdStop: docker stop glm
 
   # Audio-capable media reader. Vulkan llama.cpp.
   "qwen3-omni-30b":

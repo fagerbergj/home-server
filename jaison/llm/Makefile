@@ -5,7 +5,7 @@ up: images
 
 down:
 	docker compose stop llm-swap
-	-docker stop qwen38-27b-vllm flash-next mimo omni muse 2>/dev/null
+	-docker stop qwen38-27b-vllm flash-next mimo glm omni muse 2>/dev/null
 
 images: mtp-image
 	docker pull ghcr.io/ggml-org/llama.cpp:server-vulkan
