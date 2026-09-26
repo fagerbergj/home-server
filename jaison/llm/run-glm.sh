@@ -3,8 +3,9 @@
 # all four cards with the overflow experts in host RAM, speculating with GLM's own MTP head.
 # - --no-host: pinned host buffers make SDMA fault ("Memory access fault ... page not present") when a slot restores a
 #   prompt-cache entry or context checkpoint; plain RAM costs nothing at -ub 1024.
-# - -fitt: auto-fit cannot measure a draft model and the sparse-attention indexer grows its card-0 scratch with context,
-#   so reserve 6 GB there and 3 GB elsewhere. Smaller margins OOM.
+# - Placement: CPU experts for layers 3-25 (--n-cpu-moe 26), full layers 26-46 split 2/7/6/6 across HIP devices 0-3,
+#   leaving 4-6 GB free per card. Auto-fit (NCMOE= empty, -fitt margins) splits single layers' experts across CPU
+#   and GPU and decoded 5-10% slower. HIP device order differs from rocm-smi's; device 3 also holds the MTP context.
 # - MTP n2 beat DFlash2 (acceptance 0.8 vs 0.4-0.55 on this quant; DFlash2 slowed prose below no speculation).
 # - Weights are read without mmap (157 GB file vs 126 GB RAM); the page cache is dropped once healthy.
 set -euo pipefail
@@ -20,13 +21,19 @@ UB="${UB:-1024}"
 KV="${KV:-q8_0}"
 SPEC="${SPEC:-mtp}"   # mtp | dflash | none
 NMAX="${NMAX:-2}"
-FITT="${FITT:-6144,3072,3072,3072}"
+NCMOE="${NCMOE-26}"
+TS="${TS:-28,7,6,6}"
+FITT="${FITT:-6144,3072,3072,3072}"   # auto-fit margins, used only when NCMOE is empty
 MMPROJ="${MMPROJ:-0}"
 
 S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/*/UD-IQ4_XS | head -1)
 M=/root/.cache/huggingface${S#"$HF"}/$(ls "$S" | grep -- '-00001-of-' | head -1)
 
-ARGS=(-fitt "$FITT")
+if [ -n "$NCMOE" ]; then
+  ARGS=(-ngl 999 --n-cpu-moe "$NCMOE" -ts "$TS")
+else
+  ARGS=(-fitt "$FITT")
+fi
 case "$SPEC" in
   mtp)    ARGS+=(--spec-type draft-mtp --spec-draft-n-max "$NMAX") ;;
   dflash) DS=$(ls -d "$HF"/hub/models--Anbeeld--GLM-5.3-Flash-DFlash2-GGUF/snapshots/* | head -1)
