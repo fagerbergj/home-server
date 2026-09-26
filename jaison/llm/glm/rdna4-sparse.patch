@@ -1,0 +1,399 @@
+--- a/ggml/src/ggml-cuda/lightning-indexer.cu
++++ b/ggml/src/ggml-cuda/lightning-indexer.cu
+@@ -2,6 +2,7 @@
+ #include "lightning-indexer.cuh"
+ #include "fattn-common.cuh"
+ #include "convert.cuh"
++#include "mma.cuh"
+ 
+ #if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+ #if defined(TURING_MMA_AVAILABLE)
+@@ -236,6 +237,148 @@
+ #endif // defined(TURING_MMA_AVAILABLE)
+ #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+ 
++#if defined(GGML_USE_HIP)
++
++template <int WARPS_PER_BLOCK, int K_VECS_PER_BLOCK, int64_t N_EMBD, int64_t N_HEAD, ggml_type TYPE_K>
++static __global__ void lightning_indexer_kernel_mfma(
++        const float * Q, const char * K, const float * W, const half * M, float * dst,
++        int64_t n_stream, int64_t n_batch, int64_t n_kv,
++        size_t nb1, size_t nb2, size_t nb3,
++        size_t nbq1, size_t nbq2, size_t nbq3,
++        size_t nbk1, size_t nbk2, size_t nbk3,
++        size_t nbw1, size_t nbw2, size_t nbw3,
++        size_t nbm1, size_t nbm2, size_t nbm3,
++        int64_t nem3
++    ) {
++#if defined(AMD_MFMA_AVAILABLE) || (defined(AMD_WMMA_AVAILABLE) && !defined(RDNA3))
++    constexpr int MMA_DIM = 16;
++    constexpr int WAVE_SIZE = ggml_cuda_get_physical_warp_size();
++    constexpr int THREADS_PER_BLOCK = WARPS_PER_BLOCK * WAVE_SIZE;
++    constexpr int N_EMBD_PADDED = N_EMBD + 8;
++
++    static_assert(N_HEAD           % MMA_DIM == 0, "N_HEAD must be a multiple of 16");
++    static_assert(N_EMBD           % MMA_DIM == 0, "N_EMBD must be a multiple of 16");
++    static_assert(K_VECS_PER_BLOCK % MMA_DIM == 0, "K_VECS_PER_BLOCK must be a multiple of 16");
++
++    constexpr int N_HEAD_TILES = N_HEAD / MMA_DIM;
++    constexpr int N_KV_TILES   = K_VECS_PER_BLOCK / MMA_DIM;
++    constexpr int N_EMBD_TILES = N_EMBD / MMA_DIM;
++    constexpr int N_TILES      = N_HEAD_TILES * N_KV_TILES;
++
++    const int i_batch  = blockIdx.y;
++    const int i_stream = blockIdx.z;
++    const int i_warp   = threadIdx.y;
++    const int i_lane   = threadIdx.x;
++    const int tid      = i_warp * WAVE_SIZE + i_lane;
++
++    const int start_kv = blockIdx.x * K_VECS_PER_BLOCK;
++
++    const char  * q_base = (const char  *)                 Q + i_batch*nbq2 + i_stream*nbq3;
++    const float * w_base = (const float *) ((const char *) W + i_batch*nbw1 + i_stream*nbw3);
++
++    __shared__ float w_shared[N_HEAD];
++    __shared__ half  q_shared[N_HEAD][N_EMBD_PADDED];
++    __shared__ half  k_shared[K_VECS_PER_BLOCK][N_EMBD_PADDED];
++    __shared__ float qk_shared[N_HEAD][K_VECS_PER_BLOCK];
++
++    for (int i = tid; i < N_HEAD; i += THREADS_PER_BLOCK) {
++        w_shared[i] = w_base[i];
++    }
++
++    constexpr int N_Q_VEC = N_HEAD * (N_EMBD / 4);
++    for (int i = tid; i < N_Q_VEC; i += THREADS_PER_BLOCK) {
++        const int i_head  = i / (N_EMBD / 4);
++        const int i_embd4 = i % (N_EMBD / 4);
++        const float4 q = *(const float4 *) (q_base + i_head*nbq1 + i_embd4*sizeof(float4));
++        q_shared[i_head][i_embd4*4 + 0] = (half) q.x;
++        q_shared[i_head][i_embd4*4 + 1] = (half) q.y;
++        q_shared[i_head][i_embd4*4 + 2] = (half) q.z;
++        q_shared[i_head][i_embd4*4 + 3] = (half) q.w;
++    }
++
++    constexpr int N_K_VEC = K_VECS_PER_BLOCK * (N_EMBD / 4);
++    if constexpr (TYPE_K == GGML_TYPE_F16) {
++        for (int i = tid; i < N_K_VEC; i += THREADS_PER_BLOCK) {
++            const int i_k_vec = i / (N_EMBD / 4);
++            const int i_embd4 = i % (N_EMBD / 4);
++            const int i_kv    = start_kv + i_k_vec;
++            if (i_kv < n_kv) {
++                const int2 * k_ptr = (const int2 *) ((const char *) K + i_kv*nbk2 + i_stream*nbk3);
++                *(int2 *) &k_shared[i_k_vec][i_embd4*4] = k_ptr[i_embd4];
++            } else {
++                *(int2 *) &k_shared[i_k_vec][i_embd4*4] = make_int2(0, 0);
++            }
++        }
++    } else {
++        constexpr dequantize_V_t dequantize_k = get_dequantize_V<TYPE_K, half, 4>();
++        for (int i = tid; i < N_K_VEC; i += THREADS_PER_BLOCK) {
++            const int i_k_vec = i / (N_EMBD / 4);
++            const int i_embd4 = i % (N_EMBD / 4);
++            const int i_kv    = start_kv + i_k_vec;
++            if (i_kv < n_kv) {
++                const void * k_ptr = (const void *) ((const char *) K + i_kv*nbk2 + i_stream*nbk3);
++                dequantize_k(k_ptr, &k_shared[i_k_vec][i_embd4*4], i_embd4*4);
++            } else {
++                *(int2 *) &k_shared[i_k_vec][i_embd4*4] = make_int2(0, 0);
++            }
++        }
++    }
++
++    __syncthreads();
++
++    for (int tile_idx = i_warp; tile_idx < N_TILES; tile_idx += WARPS_PER_BLOCK) {
++        const int ht = tile_idx / N_KV_TILES;
++        const int kt = tile_idx % N_KV_TILES;
++
++        ggml_cuda_mma::tile<MMA_DIM, MMA_DIM, float> Dqk;
++
++#pragma unroll
++        for (int et = 0; et < N_EMBD_TILES; ++et) {
++            ggml_cuda_mma::tile<MMA_DIM, MMA_DIM/2, half2> Aq;
++            ggml_cuda_mma::tile<MMA_DIM, MMA_DIM/2, half2> Bk;
++            ggml_cuda_mma::load_generic(Aq, (const half2 *) &q_shared[ht*MMA_DIM][et*MMA_DIM], N_EMBD_PADDED/2);
++            ggml_cuda_mma::load_generic(Bk, (const half2 *) &k_shared[kt*MMA_DIM][et*MMA_DIM], N_EMBD_PADDED/2);
++            ggml_cuda_mma::mma(Dqk, Aq, Bk);
++        }
++
++#pragma unroll
++        for (int l = 0; l < Dqk.ne; ++l) {
++            const int head = ht*MMA_DIM + Dqk.get_j(l);
++            const int kv   = kt*MMA_DIM + Dqk.get_i(l);
++            qk_shared[head][kv] = Dqk.x[l];
++        }
++    }
++
++    __syncthreads();
++
++    for (int i_kv_local = tid; i_kv_local < K_VECS_PER_BLOCK; i_kv_local += THREADS_PER_BLOCK) {
++        const int i_kv = start_kv + i_kv_local;
++        if (i_kv < n_kv) {
++            float score = 0.0f;
++#pragma unroll
++            for (int h = 0; h < N_HEAD; ++h) {
++                const float qk = qk_shared[h][i_kv_local];
++                score += (qk > 0.0f ? qk : 0.0f) * w_shared[h];
++            }
++            const half  * m_base   = (const half *) ((const char *) M + i_batch*nbm1 + (i_stream%nem3)*nbm3);
++            float       * dst_base = (float *) ((char *) dst + i_batch*nb1 + i_stream*nb3);
++            dst_base[i_kv] = score + __half2float(m_base[i_kv]);
++        }
++    }
++#else
++    GGML_UNUSED_VARS(Q, K, W, M, dst,
++        n_stream, n_batch, n_kv,
++        nb1, nb2, nb3,
++        nbq1, nbq2, nbq3,
++        nbk1, nbk2, nbk3,
++        nbw1, nbw2, nbw3,
++        nbm1, nbm2, nbm3,
++        nem3);
++    NO_DEVICE_CODE;
++#endif // defined(AMD_MFMA_AVAILABLE) || (defined(AMD_WMMA_AVAILABLE) && !defined(RDNA3))
++}
++#endif // defined(GGML_USE_HIP)
++
+ // TODO there is one ugly assumption used in this kernel - that WARP_SIZE is equal to 32
+ // thanks to that one warp operating on float4 processes whole indexer K/Q vectors
+ // 32 * 4 = 128 (N_EMBD)
+@@ -465,6 +608,24 @@
+             LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_wmma, 128, 64, k, GGML_TYPE_Q8_0)
+             GGML_ABORT("fatal error");
+         } else {
++#elif defined(GGML_USE_HIP)
++        static const bool indexer_no_mfma = getenv("GGML_INDEXER_NO_MFMA") != nullptr;
++        if ((amd_mfma_available(cc) || (amd_wmma_available(cc) && !GGML_CUDA_CC_IS_RDNA3(cc))) && !indexer_no_mfma && k->type != GGML_TYPE_F32 && k->type != GGML_TYPE_BF16) {
++            constexpr int K_VECS_PER_BLOCK = 32;
++            constexpr int WARPS_PER_BLOCK  = 4;
++
++            dim3 block(ggml_cuda_info().devices[device].warp_size, WARPS_PER_BLOCK);
++            int num_kv_blocks = (n_kv + (K_VECS_PER_BLOCK) - 1) / (K_VECS_PER_BLOCK);
++            dim3 grid(num_kv_blocks, n_batch, n_stream);
++
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_F16)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_Q4_0)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_Q4_1)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_Q5_0)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_Q5_1)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 64, k, GGML_TYPE_Q8_0)
++            GGML_ABORT("fatal error");
++        } else {
+ #else // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+         {
+ #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+@@ -506,6 +667,24 @@
+             LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_wmma, 128, 32, k, GGML_TYPE_Q8_0)
+             GGML_ABORT("fatal error");
+         } else {
++#elif defined(GGML_USE_HIP)
++        static const bool indexer_no_mfma32 = getenv("GGML_INDEXER_NO_MFMA") != nullptr;
++        if ((amd_mfma_available(cc) || (amd_wmma_available(cc) && !GGML_CUDA_CC_IS_RDNA3(cc))) && !indexer_no_mfma32 && k->type != GGML_TYPE_F32 && k->type != GGML_TYPE_BF16) {
++            constexpr int K_VECS_PER_BLOCK = 32;
++            constexpr int WARPS_PER_BLOCK  = 4;
++
++            dim3 block(ggml_cuda_info().devices[device].warp_size, WARPS_PER_BLOCK);
++            int num_kv_blocks = (n_kv + (K_VECS_PER_BLOCK) - 1) / (K_VECS_PER_BLOCK);
++            dim3 grid(num_kv_blocks, n_batch, n_stream);
++
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_F16)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_Q4_0)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_Q4_1)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_Q5_0)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_Q5_1)
++            LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_mfma, 128, 32, k, GGML_TYPE_Q8_0)
++            GGML_ABORT("fatal error");
++        } else {
+ #else // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+         {
+ #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+--- a/ggml/src/ggml-cuda/fattn.cu
++++ b/ggml/src/ggml-cuda/fattn.cu
+@@ -5,7 +5,7 @@
+ #include "fattn-vec.cuh"
+ #include "fattn.cuh"
+ 
+-#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#if !defined(GGML_USE_MUSA)
+ __launch_bounds__(256, 1)
+ static __global__ void flash_attn_mask_to_sparse_indices(
+         const half * mask_ptr, int32_t * indices_ptr, const int ne30, const int n_kv_max,
+@@ -38,7 +38,11 @@
+         for (int item = 0; item < values_per_lane; ++item) {
+             const int i = i0 + (warp*values_per_lane + item)*WARP_SIZE + lane;
+             const bool selected = i < ne30 && isfinite(__half2float(mask[i]));
++#if defined(GGML_USE_HIP)
++            selected_warp[item] = (uint32_t) __ballot(selected);
++#else
+             selected_warp[item] = __ballot_sync(0xFFFFFFFF, selected);
++#endif // defined(GGML_USE_HIP)
+             warp_count += __popc(selected_warp[item]);
+         }
+ 
+@@ -87,13 +91,13 @@
+     // the dependent grid reads indices, signal once the row is complete
+     ggml_cuda_pdl_lc();
+ }
+-#endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#endif // !defined(GGML_USE_MUSA)
+ 
+ void ggml_cuda_flash_attn_ext_compact_mask(
+         const ggml_tensor * mask, int32_t * indices, int32_t n_kv_max, cudaStream_t stream) {
+-#if defined(GGML_USE_HIP) || defined(GGML_USE_MUSA)
++#if defined(GGML_USE_MUSA)
+     GGML_UNUSED_VARS(mask, indices, n_kv_max, stream);
+-    GGML_ABORT("sparse flash attention is only supported on NVIDIA CUDA");
++    GGML_ABORT("sparse flash attention is not supported on MUSA");
+ #else
+     const int64_t s31 = mask->nb[1] / sizeof(half);
+     const int64_t s33 = mask->nb[3] / sizeof(half);
+@@ -103,11 +107,36 @@
+     ggml_cuda_kernel_launch(flash_attn_mask_to_sparse_indices, launch_params,
+         (const half *) mask->data, indices, int(mask->ne[0]), n_kv_max, s31, s33);
+     CUDA_CHECK(cudaGetLastError());
+-#endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#endif // defined(GGML_USE_MUSA)
++}
++
++// RDNA4 gathers only the selected keys for absorbed MLA (512/512 GLM-5.3, 576/512 DeepSeek); dense stays on the tile kernel.
++static bool ggml_cuda_fattn_sparse_ok_hip(const int cc, const ggml_tensor * dst) {
++#if defined(GGML_USE_HIP)
++    const ggml_tensor * Q    = dst->src[0];
++    const ggml_tensor * K    = dst->src[1];
++    const ggml_tensor * V    = dst->src[2];
++    const ggml_tensor * mask = dst->src[3];
++    float max_bias = 0.0f;
++    float logit_softcap = 0.0f;
++    memcpy(&max_bias,      (const float *) dst->op_params + 1, sizeof(float));
++    memcpy(&logit_softcap, (const float *) dst->op_params + 2, sizeof(float));
++    const int32_t n_kv_max = ggml_get_op_params_i32(dst, 4);
++    return amd_wmma_available(cc) && !GGML_CUDA_CC_IS_RDNA3(cc) &&
++        (Q->ne[0] == 576 || Q->ne[0] == 512) && V->ne[0] == 512 && (Q->ne[2] / K->ne[2]) % 16 == 0 &&
++        mask != nullptr && n_kv_max > 0 && max_bias == 0.0f && logit_softcap == 0.0f &&
++        mask->ne[0] == K->ne[1] && mask->ne[1] >= Q->ne[1] && mask->ne[2] == 1 &&
++        K->ne[1] >= std::max<int64_t>(4096, 2LL*n_kv_max);
++#else
++    GGML_UNUSED_VARS(cc, dst);
++    return false;
++#endif // defined(GGML_USE_HIP)
+ }
+ 
+ bool ggml_cuda_flash_attn_ext_mma_f16_shall_use_sparse(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+-#if defined(GGML_USE_HIP) || defined(GGML_USE_MUSA)
++#if defined(GGML_USE_HIP)
++    return ggml_cuda_fattn_sparse_ok_hip(ggml_cuda_info().devices[ctx.device].cc, dst);
++#elif defined(GGML_USE_MUSA)
+     GGML_UNUSED_VARS(ctx, dst);
+     return false;
+ #else
+@@ -134,14 +163,14 @@
+     const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+     const ggml_tensor * Q = dst->src[0];
+ 
+-#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#if !defined(GGML_USE_MUSA)
+     if constexpr (ggml_cuda_flash_attn_ext_mma_f16_may_use_sparse(DKQ, DV, 1, ncols2)) {
+         if (ggml_cuda_flash_attn_ext_mma_f16_shall_use_sparse(ctx, dst)) {
+             ggml_cuda_flash_attn_ext_mma_f16_case<DKQ, DV, 1, ncols2>(ctx, dst);
+             return;
+         }
+     }
+-#endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#endif // !defined(GGML_USE_MUSA)
+ 
+     if constexpr (ncols2 <= 8) {
+         if (turing_mma_available(cc) && Q->ne[1] <= 8/ncols2) {
+@@ -223,6 +252,14 @@
+ 
+     // On RDNA it is preferable to minimize wasted compute vs. duplicate I/O for the mask.
+     if (amd_wmma_available(cc)) {
++        // WMMA tiles are 16 columns wide, so sparse 512/512 needs ncols2 16 rather than the CUDA 8.
++        if constexpr (DKQ == 512 && DV == 512) {
++            if (ggml_cuda_fattn_sparse_ok_hip(cc, dst)) {
++                ggml_cuda_flash_attn_ext_mma_f16_case<DKQ, DV, 1, 16>(ctx, dst);
++                return;
++            }
++        }
++
+         if (use_gqa_opt && gqa_ratio % 8 == 0) {
+             ggml_cuda_flash_attn_ext_mma_f16_switch_ncols1<DKQ, DV, 8>(ctx, dst);
+             return;
+@@ -664,6 +701,10 @@
+         }
+     }
+ 
++    if (ggml_cuda_fattn_sparse_ok_hip(cc, dst)) {
++        return BEST_FATTN_KERNEL_MMA_F16;
++    }
++
+     // AMD WMMA is faster than the tile kernel if the wide tiles with high arithmetic intensity can be utilized.
+     if ((amd_wmma_available(cc) && gqa_opt_applies && Q->ne[0] <= 256) && Q->ne[0] != 40 && Q->ne[0] != 72 &&
+             Q->ne[1] * gqa_ratio_eff > (Q->ne[0] <= 128 ? 8 : 16)) {
+--- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
++++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+@@ -1759,7 +1759,7 @@
+ 
+ static constexpr __host__ __device__ bool ggml_cuda_flash_attn_ext_mma_f16_may_use_sparse(
+         const int DKQ, const int DV, const int ncols1, const int ncols2) {
+-    return (DKQ == 512 && DV == 512 && ncols1 == 1 && ncols2 == 8) ||
++    return (DKQ == 512 && DV == 512 && ncols1 == 1 && (ncols2 == 8 || ncols2 == 16)) ||
+            (DKQ == 576 && DV == 512 && ncols1 == 1 && ncols2 == 16);
+ }
+ 
+@@ -1828,7 +1828,8 @@
+ #endif // __CUDA_ARCH__ == GGML_CUDA_CC_TURING
+ 
+ #if defined(AMD_WMMA_AVAILABLE)
+-    if (ncols1*ncols2 < 16 || ncols2 == 1 || DKQ > 256) {
++    // RDNA runs 512/576 MLA here only as sparse attention; the dense path stays on the tile kernel.
++    if (ncols1*ncols2 < 16 || ncols2 == 1 || (DKQ > 256 && !use_sparse)) {
+         NO_DEVICE_CODE;
+         return;
+     }
+@@ -2014,7 +2015,7 @@
+     bool use_sparse = false;
+     if (logit_softcap == 0.0f) {
+         constexpr bool use_logit_softcap = false;
+-#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#if !defined(GGML_USE_MUSA)
+         if constexpr (ggml_cuda_flash_attn_ext_mma_f16_may_use_sparse(DKQ, DV, ncols1, ncols2)) {
+             if (ggml_cuda_flash_attn_ext_mma_f16_shall_use_sparse(ctx, dst)) {
+                 constexpr bool use_sparse_kernel = true;
+@@ -2037,7 +2038,7 @@
+                 }
+             }
+         } else
+-#endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
++#endif // !defined(GGML_USE_MUSA)
+         {
+             constexpr bool use_sparse_kernel = false;
+             fattn_kernel = flash_attn_ext_f16<DKQ, DV, ncols1, ncols2, use_logit_softcap, V_is_K_view, use_sparse_kernel>;
+@@ -2120,6 +2121,7 @@
+ extern DECL_FATTN_MMA_F16_CASE(512, 512,  2,  8);
+ extern DECL_FATTN_MMA_F16_CASE(512, 512,  4,  8);
+ extern DECL_FATTN_MMA_F16_CASE(512, 512,  8,  8);
++extern DECL_FATTN_MMA_F16_CASE(512, 512,  1, 16);
+ 
+ // The number of viable configurations for Deepseek is very limited:
+ extern DECL_FATTN_MMA_F16_CASE(576, 512, 1, 16);
+--- a/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu
++++ b/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu
+@@ -4,3 +4,4 @@
+ 
+ DECL_FATTN_MMA_F16_CASE(192, 128, 1, 16);
+ DECL_FATTN_MMA_F16_CASE(576, 512, 1, 16);
++DECL_FATTN_MMA_F16_CASE(512, 512, 1, 16);
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -3762,7 +3762,10 @@
+     ggml_tensor * k = mctx_cur->get_k(ctx0, il);
+     ggml_tensor * v = ggml_view_4d(ctx0, k, v_cur->ne[0], k->ne[1], k->ne[2], k->ne[3], k->nb[1], k->nb[2], k->nb[3], 0);
+ 
+-    ggml_tensor * cur = build_attn_mha(q, k, v, kq_b, mask_top_k, sinks, v_mla, 0, kq_scale, il);
++    // unmasked keys per row: the top-k cells plus at most kpool-1 cells of the still-open tail pool
++    const int64_t n_kv_max = top_k->ne[0] + hparams.indexer_kpool - 1;
++
++    ggml_tensor * cur = build_attn_mha(q, k, v, kq_b, mask_top_k, sinks, v_mla, n_kv_max, kq_scale, il);
+     cb(cur, "kqv_out", il);
+ 
+     if (wo) {
