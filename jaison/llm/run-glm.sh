@@ -14,6 +14,7 @@ NAME="${NAME:-glm}"
 PORT="${PORT:-9998}"
 IMAGE="${IMAGE:-llama-glm:gfx1201}"
 HF="${HF:-/mnt/cache/huggingface}"
+QUANT="${QUANT:-UD-IQ4_XS}"
 CTX="${CTX:-1048576}"
 PARALLEL="${PARALLEL:-4}"
 THREADS="${THREADS:-24}"
@@ -26,7 +27,7 @@ TS="${TS:-28,7,6,6}"
 FITT="${FITT:-6144,3072,3072,3072}"   # auto-fit margins, used only when NCMOE is empty
 MMPROJ="${MMPROJ:-0}"
 
-S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/*/UD-IQ4_XS | head -1)
+S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/*/"$QUANT" | head -1)
 M=/root/.cache/huggingface${S#"$HF"}/$(ls "$S" | grep -- '-00001-of-' | head -1)
 
 if [ -n "$NCMOE" ]; then

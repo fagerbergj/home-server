@@ -10,7 +10,7 @@ One `llm-swap` container (llama-swap) owns both R9700s. It does not run any mode
 | `llm-swap.Dockerfile` | `docker:cli` + bash/python3 + the llama-swap binary. No GPU libraries; those live in the runtime images. |
 | `llm-swap.yaml` | Model table, groups, and the per-model `cmd` / `cmdStop`. Bind-mount paths inside cmds are **host** paths because the daemon resolves them. |
 | `run-flashnext.sh` | Qwen3.8-Flash-Next launcher (llama.cpp, tensor split). Knobs: `QUANT`, `SM`, `KV`, `CTX`, `PARALLEL`, `THREADS`, `UB`, `NMAX`, `MMPROJ`, `LOAD`. |
-| `run-glm.sh` | GLM-5.3-Flash launcher (llama.cpp). Knobs: `SPEC` (mtp/dflash/none), `NMAX`, `KV`, `CTX`, `PARALLEL`, `NCMOE`/`TS` (placement; empty `NCMOE` = auto-fit with `FITT` margins), `MMPROJ`. |
+| `run-glm.sh` | GLM-5.3-Flash launcher (llama.cpp). Knobs: `QUANT`, `SPEC` (mtp/dflash/none), `NMAX`, `KV`, `CTX`, `PARALLEL`, `NCMOE`/`TS` (placement; empty `NCMOE` = auto-fit with `FITT` margins), `MMPROJ`. |
 | `run-mimo.sh` | MiMo-V2.6-Flash launcher (llama.cpp). Reads `PORT`, `NAME`, `NCMOE`, `CTX`, `PARALLEL`, `THREADS` from the model's `env:`. |
 | `mimo/` | Scratch image `llama-mimo:gfx1201`: upstream llama.cpp + `mimo2-dflash.patch` (layer-input hooks for the drafter, DFlash value scale, no tied lm_head). `make mimo-image`. |
 | `run-jaison.sh` | vLLM launcher for the 27B. Reads `GPU`, `TP`, `MAXLEN`, `MAXSEQS`, `PORT`, `MODEL_DIR`, `DRAFT_DIR`, `CACHE_DIR`, `REASONING_EFFORT` from the model's `env:`. |
