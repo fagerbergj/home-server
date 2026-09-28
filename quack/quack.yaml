@@ -151,7 +151,7 @@ orchestrator:
 # bound here to a model and a selection of built-in tools. Add an agent by
 # dropping a bundle directory and adding an entry — no recompile.
 agents:
-  # Plugin-seeded Sleeper agents (.agents/plugins/sleeper): only the deployment's slot is set here
+  # Plugin-seeded Sleeper agents (quack-extensions sleeper/plugin): only the deployment's slot is set here
   lineup-analyst: {context_window: 262144}
   waiver-scout: {context_window: 262144}
   trend-scout: {context_window: 262144}
@@ -350,7 +350,7 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - .agents/plugins/usage
-    - .agents/plugins/sleeper              # start-sit/waivers/injury-and-news skills + the sleeper module manifest
+    - github:fagerbergj/quack-extensions@sleeper/v0.8.0#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
     - .agents/plugins/github                # code-implementer/reviewer/explorer bundles; seed only once extensions.github is configured
 
 workspace:
