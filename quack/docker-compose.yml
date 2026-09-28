@@ -10,7 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
-    image: ghcr.io/fagerbergj/quack:0.55.4
+    image: ghcr.io/fagerbergj/quack:0.56.0
     container_name: quack
     init: true
     command: ["server", "run"]
@@ -41,6 +41,7 @@ services:
       # full 262144 context - see llm-swap.yaml's qwen3.8-27b comment.
       QUACK_ORCH_MODEL: qwen3.8-27b
       QUACK_PUBLIC_URL: https://quack.jasonfagerberg.duckdns.org
+      QUACK_TIMEZONE: America/Chicago
       QUACK_RESEARCHER_MODEL: qwen3.8-27b
       QUACK_CODER_MODEL: qwen3.8-27b
       QUACK_JUDGE_MODEL: qwen3.8-27b   # same id as the workers; vLLM serves 2 sequences
