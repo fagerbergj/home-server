@@ -213,7 +213,7 @@ agents:
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
-    tools: [check_mermaid]
+    tools: [check_mermaid, write_code_review]   # write_code_review: review fan-out's structured verdict (v0.58.9 gates write tools on config)
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # the box serves the 27B at 256k
@@ -244,7 +244,7 @@ agents:
 tools:
   web_search:
     kind: exa                     # searxng (needs url) | exa. exa used here because searxng is being bot-walled.
-    url: ${QUACK_SEARXNG_URL}           # SearXNG JSON API, e.g. http://searxng:8080; unused by kind: exa
+    url: ${QUACK_SEARXNG_URL}           # SearXNG JSON API; with kind: exa it's the last fallback when set (unset here)
     # exa is keyless via Exa's hosted MCP by default (the no-docker path). With an
     # api_key it uses Exa's REST API instead (structured JSON, more robust, no
     # keyless-MCP rate-limiting):
