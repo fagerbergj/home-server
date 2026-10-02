@@ -141,6 +141,11 @@ decisions:
     "ext:github/finding.severity": { enabled: true, handler: clef, mode: observe }
     "ext:github/finding.blocking": { enabled: true, handler: clef, mode: observe }
     "ext:github/review.verdict":   { enabled: true, handler: clef, mode: observe }
+    # Sleeper weekly points (sleeper ext >= v0.9.1): asked after lineup/waivers/trade runs end done.
+    "ext:sleeper/lineup_change":   { enabled: true, handler: clef, mode: observe }
+    "ext:sleeper/waiver_pickup":   { enabled: true, handler: clef, mode: observe }
+    "ext:sleeper/waiver_priority": { enabled: true, handler: clef, mode: observe }
+    "ext:sleeper/trade_accept":    { enabled: true, handler: clef, mode: observe }
 
 orchestrator:
   provider: default
@@ -359,7 +364,7 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - .agents/plugins/usage
-    - github:fagerbergj/quack-extensions@sleeper/v0.8.0#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
+    - github:fagerbergj/quack-extensions@sleeper/v0.9.1#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
     - .agents/plugins/github                # code-implementer/reviewer/explorer bundles; seed only once extensions.github is configured
 
 workspace:
