@@ -130,7 +130,7 @@ decisions:
     clef:
       url: http://llm-swap:11436/upstream/clef
       model: clef
-      timeout: 5s
+      timeout: 10s   # verdict states are ~2-4k tokens; 5 s timed out under 8 concurrent reviews
   points:
     plan.accept:
       enabled: true
