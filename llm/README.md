@@ -25,7 +25,6 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 | `qwen3.8-27b` | `unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL` | Primary worker (quack orchestrator/researcher/coder). Dense 27 B hybrid Gated-DeltaNet/Attention with native vision. MTP self-speculative decoding (`--spec-type draft-mtp`) roughly doubles decode. 256 K context. |
 | `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL` | Previous primary chat model, kept as an A/B compare partner. |
 | `gemma4-26b-a4b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL` | Live quack judge (26 B MoE, ~4 B active). `-ncmoe 8` keeps it ~15 GB so it co-resides with a worker. |
-| `qwen3.5-9b` | `unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL` | Small/fast model for cheap requests and eval baselines. |
 | `qwen3-vl-32b` | `unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL` | Dense-OCR / handwriting vision model (mmproj-F32 via --mmproj-url). |
 | `qwen3-omni-30b` | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Q4_K_M` | Media reader — native image + audio. |
 | `muse-glimmer-30b` | `unsloth/Muse-Glimmer-30B-GGUF:UD-Q4_K_XL` | Dense 30 B candidate, no set membership until it passes eval. |
@@ -85,6 +84,6 @@ docker compose up -d
 
 ## Resource notes
 
-- Two llama-swaps: `llm-swap-media` on the media server's RTX 3090 (`make media-up`; embedder + 9B resident, `peers:` to jaison for the rest, `llm-swap-media.yaml`) is the endpoint everything uses; Traefik's public `/openai` route is `api/traefik/dynamic/llm.yml`. On `jaison` (2× R9700, `jaison/llm`, `make up`) a single `llm-swap` router launches each model as a sibling container over the Docker socket (`jaison/llm/llm-swap.yaml`): the 27B on vLLM (TP=2 across both cards, int4 AutoRound + DFlash2 draft, 262k context, one id for worker and judge, resident), Flash-Next on the llama.cpp MTP fork (`jaison/llm/mtp`, whole box, swaps the 27B out and back), omni and muse on upstream Vulkan llama.cpp.
+- Two llama-swaps: `llm-swap-media` on the media server's RTX 3090 (`make media-up`; embedder + Clef resident, Clef as the sibling `clef` service, `peers:` to jaison for the rest, `llm-swap-media.yaml`) is the endpoint everything uses; Traefik's public `/openai` route is `api/traefik/dynamic/llm.yml`. On `jaison` (2× R9700, `jaison/llm`, `make up`) a single `llm-swap` router launches each model as a sibling container over the Docker socket (`jaison/llm/llm-swap.yaml`): the 27B on vLLM (TP=2 across both cards, int4 AutoRound + DFlash2 draft, 262k context, one id for worker and judge, resident), Flash-Next on the llama.cpp MTP fork (`jaison/llm/mtp`, whole box, swaps the 27B out and back), omni and muse on upstream Vulkan llama.cpp.
 - Why vLLM for the 27B: at a 90k prompt it prefills 2455 t/s and decodes 106 t/s on TP=2 (two concurrent streams 74 + 62), against 650 / 39 for llama.cpp with DFlash2 on one card. Layer-splitting the dense model in llama.cpp measured 12-16 t/s, so TP only pays under vLLM.
 - HuggingFace cache lives on `/mnt/cache/huggingface/` on jaison's NVMe (working set); the archive is the media pool's `/mnt/media/models/huggingface`.
