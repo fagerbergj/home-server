@@ -7,3 +7,12 @@ services:
     ports:
       - "3006:3000"
     restart: unless-stopped
+
+  # Multiplayer blackjack authority (games PR #35). nginx-proxy-manager's games host
+  # needs a custom location /ws -> http://192.168.50.186:3007 with websockets on.
+  game-server:
+    image: ghcr.io/fagerbergj/game-server:latest
+    container_name: game-server
+    ports:
+      - "3007:3001"
+    restart: unless-stopped
