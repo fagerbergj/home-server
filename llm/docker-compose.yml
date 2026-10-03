@@ -1,9 +1,8 @@
 # Media box (jason-server): llm-swap-media + qdrant + open-webui. The AI box's router
 # lives in jaison/llm/.
 # llm-swap-media (RTX 3090) is the single endpoint everything on the media box
-# uses (network alias `llm-swap`); it serves the embedder itself, proxies
-# `clef` to the sibling service below, and peers to jaison for the rest
-# (llm-swap-media.yaml). Traefik's public /openai route (api/traefik/dynamic/llm.yml)
+# uses (network alias `llm-swap`); it serves Clef itself and peers to jaison for
+# the rest, the embedder included (llm-swap-media.yaml). Traefik's public /openai route (api/traefik/dynamic/llm.yml)
 # points at it too.
 services:
   llm-swap-media:
@@ -21,8 +20,7 @@ services:
       - HF_HUB_OFFLINE=1
     volumes:
       - ./llm-swap-media.yaml:/app/config.yaml:ro
-      # The embedder is always resident (ttl 0), so it loads once from the model
-      # archive on the ZFS pool and never touches disk again.
+      # Clef is always resident (ttl 0), so it loads once from the model archive on the ZFS pool.
       - /mnt/media/models/huggingface:/root/.cache/huggingface
     networks:
       default:
@@ -35,25 +33,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-
-  # Clef 27B decision server on the 3090 (clef/); llm-swap-media proxies the `clef` model id here.
-  # Always on: each start quantizes the bf16 checkpoint to int4 (~6-7 min).
-  clef:
-    profiles: ["media"]
-    build: ./clef
-    image: clef-serve
-    container_name: clef
-    runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    command: >
-      --model /hf/hub/models--Cloudflare--clef/snapshots/2f3de3dd85f379784083b0814d997ab627200f0c
-      --host 0.0.0.0 --port 8013
-    volumes:
-      - /mnt/media/models/huggingface:/hf:ro
-      - clef-cache:/cache   # inductor/Triton kernels, so restarts skip most compilation
-    restart: unless-stopped
 
   qdrant:
     profiles: ["media"]
@@ -88,4 +67,3 @@ networks:
 
 volumes:
   qdrant-data:
-  clef-cache:

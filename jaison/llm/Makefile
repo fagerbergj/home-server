@@ -5,10 +5,11 @@ up: images
 
 down:
 	docker compose stop llm-swap
-	-docker stop qwen38-27b-vllm flash-next mimo glm omni muse 2>/dev/null
+	-docker stop qwen38-27b-vllm flash-next mimo glm omni muse embed 2>/dev/null
 
 images: mtp-image
 	docker pull ghcr.io/ggml-org/llama.cpp:server-vulkan
+	docker pull ghcr.io/ggml-org/llama.cpp:server-b11371
 	docker pull docker.io/stilldeadcode/vllm-radiance:0.9.3
 
 # Flash-Next image (master + MTP and tensor-split PRs); rebuild only when Dockerfile/diffs change.

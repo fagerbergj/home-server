@@ -4,6 +4,9 @@ healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
 timeouts:
   responseHeader: 0   # never guillotine long first-byte waits
 logLevel: info
+hooks:
+  on_startup:
+    preload: ["qwen3-embed"]
 
 macros:
   hf: /mnt/cache/huggingface
@@ -16,6 +19,12 @@ macros:
     -fa on -ngl 999 --cache-type-k q8_0 --cache-type-v q8_0 --metrics --host 0.0.0.0
 
 groups:
+  # The embedder sits outside every exclusive group: persistent, so no swap ever unloads it.
+  "embed":
+    swap: false
+    exclusive: false
+    persistent: true
+    members: ["qwen3-embed"]
   # Resident default. exclusive: loading it unloads everything else (Flash-Next).
   "27b":
     swap: false
@@ -43,6 +52,21 @@ groups:
     members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
+  # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
+  # 2560-dim: switching embed models means dropping quack's Qdrant collections. 17-token query ~62 ms, 674-token doc ~2.0 s at -t 24.
+  "qwen3-embed":
+    proxy: "http://127.0.0.1:9995"
+    ttl: 0
+    cmd: >
+      docker run --rm --init --name embed
+      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9995:9995
+      ghcr.io/ggml-org/llama.cpp:server-b11371
+      -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
+      --embedding --pooling last -ngl 0 -t 24
+      -c 16384 --parallel 4 -ub 2048 -b 2048
+      --host 0.0.0.0 --port 9995 --metrics
+    cmdStop: docker stop embed
+
   # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 6, bf16 KV. ttl 0: resident; Flash-Next swaps it out.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"

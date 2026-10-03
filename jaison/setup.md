@@ -112,7 +112,7 @@ The media box's Prometheus scrapes them (`monitoring/prometheus/config.yaml`, jo
 
 Configs use the reserved IP `192.168.50.202` rather than the AdGuard name: the media box's host resolver (and therefore Docker's embedded DNS) points at 1.1.1.1, not AdGuard, so LAN names don't resolve inside containers there.
 
-The media box keeps its own llama-swap (`llm-swap-media`, CUDA image on the 3090, network alias `llm-swap`): it serves `qwen3-embed` and `clef` locally and forwards every other model name to this box through its `peers:` block (`llm/llm-swap-media.yaml`, proxy `http://192.168.50.202:11436`). quack, Open WebUI and Traefik's `/openai` route all talk to that local endpoint, so this box being down only takes the big models with it. Keep the peer's model list in sync with `llm-swap.yaml` here.
+The media box keeps its own llama-swap (`llm-swap-media`, CUDA image on the 3090, network alias `llm-swap`): it serves `clef` locally and forwards every other model name, `qwen3-embed` included, to this box through its `peers:` block (`llm/llm-swap-media.yaml`, proxy `http://192.168.50.202:11436`). quack, Open WebUI and Traefik's `/openai` route all talk to that local endpoint, so this box being down only takes the big models with it. Keep the peer's model list in sync with `llm-swap.yaml` here.
 
 On `jason-server` (`set -a && . .env && set +a` first for the LLM key):
 

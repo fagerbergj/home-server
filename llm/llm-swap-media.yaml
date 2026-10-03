@@ -1,58 +1,48 @@
 # Media-box llama-swap (RTX 3090, CUDA image; see llm-swap-cuda.Dockerfile).
 # This is the endpoint quack, Open WebUI and Traefik's /openai route talk to.
-# Small always-on models run here; every larger model is served by jaison's
+# Clef runs here; every other model (the embedder included) is served by jaison's
 # llama-swap and reached through the `peers` block below (llama-swap forwards by
 # model name, so callers never know which box answered).
-healthCheckTimeout: 900   # clef quantizes its bf16 checkpoint at every start (~7 min warm page cache; disk-cold unmeasured)
+healthCheckTimeout: 900   # clef loads in ~47 s from page cache; disk-cold from the ZFS pool unmeasured
 logLevel: info
+hooks:
+  on_startup:
+    preload: ["clef"]   # quack's decision timeout is shorter than a cold load
 
 models:
-  # 4B Q8 embedder. Measured 15-64ms/req on GPU vs 0.8-4s on CPU under load.
-  # 2560-dim vectors: switching embed models means dropping the Qdrant memory
-  # collections (dimension is fixed at creation). ttl 0: at ttl 600 it idle-unloaded
-  # during long explore nodes, then cold-loaded on handoff - blowing quack's 60s budget.
-  "qwen3-embed":
-    proxy: "http://127.0.0.1:9998"
+  # Clef 27B decisions (/upstream/clef/v1/systemone): llama.cpp Q4_K_M, all 65 layers on the 3090 (~19 GB).
+  # -ub is the hard input cap (the whole prompt is one ubatch); clef never batches across requests, so one slot.
+  # -ngl 999 fails the load instead of letting --fit stream layers from host RAM (~1.4x slower per request).
+  # The embedder (qwen3-embed) now runs on jaison's CPU and resolves through the peers list below.
+  "clef":
+    proxy: "http://127.0.0.1:9997"
+    checkEndpoint: /health
     ttl: 0
     cmd: >
       /app/llama-server
-      -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
-      --embedding
-      --pooling last
+      -m /root/.cache/huggingface/hub/models--ggml-org--Clef-GGUF/snapshots/5f70656b6670c65eb85ad07a11efe211b5f211bd/Clef-Q4_K_M.gguf
+      -c 4096 -b 4096 -ub 4096 -np 1
       -ngl 999
-      -c 16384
-      --parallel 4
-      -ub 2048
-      -b 2048
-      --port 9998
+      --port 9997
       --metrics
 
-  # Clef 27B decisions (/upstream/clef/v1/systemone), served by the always-on compose service `clef`;
-  # llama-swap only proxies and health-gates it, so cmd just holds the slot.
-  "clef":
-    proxy: "http://clef:8013"
-    checkEndpoint: /health
-    ttl: 0
-    cmd: sleep infinity
-
-# jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
-# local model has the name; keep this list in sync with jaison's llm-swap.yaml.
-# Both residents on the 3090 at once; without a group llama-swap swaps one out for the other.
 groups:
   resident:
     swap: false
     exclusive: false
     persistent: true
     members:
-      - qwen3-embed
       - clef
 
+# jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
+# local model has the name; keep this list in sync with jaison's llm-swap.yaml.
 peers:
   jaison:
     proxy: http://192.168.50.202:11436
     timeouts:
       responseHeader: 0   # v252 defaults 60s; non-stream calls >60s to first byte got 502 (killed plan runs)
     models:
+      - qwen3-embed
       - qwen3.8-27b
       - qwen3.8-flash-next
       - mimo-v2.6-flash
