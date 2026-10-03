@@ -130,7 +130,8 @@ decisions:
     clef:
       url: http://llm-swap:11436/upstream/clef
       model: clef
-      timeout: 10s   # verdict states are ~2-4k tokens; 5 s timed out under 8 concurrent reviews
+      timeout: 20s          # llama.cpp serves clef requests one at a time; bursts queue
+      max_input_tokens: 4096   # must match the clef entry's -ub in llm-swap-media.yaml
   points:
     plan.accept:
       enabled: true
