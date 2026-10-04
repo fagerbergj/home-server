@@ -10,7 +10,7 @@ hooks:
     preload: ["clef"]   # quack's decision timeout is shorter than a cold load
 
 models:
-  # Clef 27B decisions (/upstream/clef/v1/systemone): llama.cpp Q4_K_M, all 65 layers on the 3090 (~19 GB).
+  # Clef 27B decisions (/upstream/clef/v1/systemone): llama.cpp Q4_K_M, all 65 layers on the 3090 (~20 GB at ub 8192).
   # -ub is the hard input cap (the whole prompt is one ubatch); clef never batches across requests, so one slot.
   # -ngl 999 fails the load instead of letting --fit stream layers from host RAM (~1.4x slower per request).
   # The embedder (qwen3-embed) now runs on jaison's CPU and resolves through the peers list below.
@@ -21,7 +21,7 @@ models:
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--ggml-org--Clef-GGUF/snapshots/5f70656b6670c65eb85ad07a11efe211b5f211bd/Clef-Q4_K_M.gguf
-      -c 4096 -b 4096 -ub 4096 -np 1
+      -c 8192 -b 8192 -ub 8192 -np 1
       -ngl 999
       --port 9997
       --metrics
