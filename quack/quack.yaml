@@ -147,6 +147,12 @@ decisions:
     "ext:sleeper/waiver_pickup":   { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/waiver_priority": { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/trade_accept":    { enabled: true, handler: clef, mode: observe }
+    memory.extract:  { enabled: true, handler: clef, mode: observe }   # needs orchestrator.user_memory_hook
+    answer.accept:   { enabled: true, handler: clef, mode: observe }
+    research.source: { enabled: true, handler: clef, mode: observe }   # one lane across researcher nodes
+    # GitHub intent per free-text mention; ci.flaky per failing check on the fix paths (github ext >= v0.19.0).
+    "ext:github/intent":   { enabled: true, handler: clef, mode: observe }
+    "ext:github/ci.flaky": { enabled: true, handler: clef, mode: observe }
 
 orchestrator:
   provider: default
@@ -365,7 +371,7 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - .agents/plugins/usage
-    - github:fagerbergj/quack-extensions@sleeper/v0.9.1#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
+    - github:fagerbergj/quack-extensions@sleeper/v0.9.2#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
     - .agents/plugins/github                # code-implementer/reviewer/explorer bundles; seed only once extensions.github is configured
 
 workspace:
