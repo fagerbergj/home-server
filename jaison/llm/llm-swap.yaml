@@ -58,7 +58,7 @@ models:
     proxy: "http://127.0.0.1:9995"
     ttl: 0
     cmd: >
-      docker run --rm --init --name embed
+      docker run --rm --init --name embed --no-healthcheck
       -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9995:9995
       ghcr.io/ggml-org/llama.cpp:server-b11371
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
