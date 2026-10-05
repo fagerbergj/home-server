@@ -371,7 +371,7 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - .agents/plugins/usage
-    - github:fagerbergj/quack-extensions@sleeper/v0.9.2#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
+    - github:fagerbergj/quack-extensions@sleeper/v0.10.0#sleeper/plugin   # pinned with quack's go.mod sleeper; bump both per release
     - .agents/plugins/github                # code-implementer/reviewer/explorer bundles; seed only once extensions.github is configured
 
 workspace:
