@@ -136,8 +136,10 @@ decisions:
     plan.accept:
       enabled: true
       handler: clef
-      mode: observe
+      mode: decide       # a confident accept skips the plan judge; anything else runs it
       act_at: 0.9
+      timeout: 8s        # decide waits on Clef before the judge
+      audit_rate: 0.5    # first week: half of skipped plans still get a background judge verdict; then 0.1
     # GitHub extension review points (github ext >= v0.17.0): one call per finding + one per verdict.
     "ext:github/finding.severity": { enabled: true, handler: clef, mode: observe }
     "ext:github/finding.blocking": { enabled: true, handler: clef, mode: observe }
