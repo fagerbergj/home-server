@@ -148,8 +148,8 @@ decisions:
     "ext:sleeper/waiver_priority": { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/trade_accept":    { enabled: true, handler: clef, mode: observe }
     memory.extract:  { enabled: true, handler: clef, mode: observe }   # needs orchestrator.user_memory_hook
-    answer.accept:   { enabled: true, handler: clef, mode: observe }
-    research.source: { enabled: true, handler: clef, mode: observe }   # one lane across researcher nodes
+    answer.accept:   { enabled: false, handler: clef, mode: observe }   # off: research corpus 2026-10-06, Clef passed 3/4 bad rounds the judge caught
+    research.source: { enabled: false, handler: clef, mode: observe }   # off: thin signal (15/15 confident-irrelevant, 11 from one item); frees Clef's queue
     # GitHub intent per free-text mention; ci.flaky per failing check on the fix paths (github ext >= v0.19.0).
     "ext:github/intent":   { enabled: true, handler: clef, mode: observe }
     "ext:github/ci.flaky": { enabled: true, handler: clef, mode: observe }
