@@ -27,7 +27,8 @@ TS="${TS:-28,7,6,6}"
 FITT="${FITT:-6144,3072,3072,3072}"   # auto-fit margins, used only when NCMOE is empty
 MMPROJ="${MMPROJ:-0}"
 
-S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/*/"$QUANT" | head -1)
+# pinned: the glm5next-named shard 1; this image cannot read the Oct 5 glm5-next re-upload beside it
+S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/621d456e93e926e4b52f85cff5f634358c1828f9/"$QUANT" | head -1)
 M=/root/.cache/huggingface${S#"$HF"}/$(ls "$S" | grep -- '-00001-of-' | head -1)
 
 if [ -n "$NCMOE" ]; then
