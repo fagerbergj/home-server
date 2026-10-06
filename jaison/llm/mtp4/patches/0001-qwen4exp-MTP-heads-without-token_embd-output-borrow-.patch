@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Fagerberg <jf.fagerberg@gmail.com>
+Date: Tue, 6 Oct 2026 15:31:17 -0400
+Subject: [PATCH 1/2] qwen4exp: MTP heads without token_embd/output borrow the
+ target's; dense MTP layers get no indexer cache
+
+---
+ common/speculative.cpp  |  5 ++++-
+ src/llama-context.cpp   |  3 ++-
+ src/llama-model.cpp     |  5 ++++-
+ src/models/qwen4exp.cpp | 19 +++++++++++++++----
+ 4 files changed, 25 insertions(+), 7 deletions(-)
+
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index a7f095a12..e7ac00a9f 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -1478,7 +1478,10 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         llama_set_embeddings_nextn(ctx_tgt, true, /*masked*/ false);
+         llama_set_embeddings_nextn(ctx_dft, true, /*masked*/ true);
+ 
+-        is_mem_shared = llama_get_ctx_other(ctx_dft) == ctx_tgt;
++        // drafts that borrow target tensors also set ctx_other; only gemma4-assistant shares the target KV
++        char arch[64] = {0};
++        llama_model_meta_val_str(llama_get_model(ctx_dft), "general.architecture", arch, sizeof(arch));
++        is_mem_shared = llama_get_ctx_other(ctx_dft) == ctx_tgt && std::strcmp(arch, "gemma4-assistant") == 0;
+         chain_heads   = n_mtp_layers > 1 && !is_mem_shared;
+ 
+         if (chain_heads) {
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 07b4c6148..3c7166bbb 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -155,7 +155,8 @@ llama_context::llama_context(
+         cparams.ctx_other = params.ctx_other;
+     }
+ 
+-    if (model.arch == LLM_ARCH_EAGLE3 || model.arch == LLM_ARCH_DFLASH) {
++    // a qwen4exp MTP head without token_embd/output borrows the target's (unsloth *-shared-* heads)
++    if (model.arch == LLM_ARCH_EAGLE3 || model.arch == LLM_ARCH_DFLASH || model.arch == LLM_ARCH_QWEN4EXP) {
+         if (model.tok_embd == nullptr || model.output == nullptr) {
+             if (params.ctx_other == nullptr) {
+                 throw std::runtime_error(model.arch_name() + " requires ctx_other to be set (this warning is normal during memory fitting)");
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 97e0cee70..8c1c1cbad 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -2721,8 +2721,11 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                         if (arch == LLM_ARCH_QWEN4EXP && params.ctx_type == LLAMA_CONTEXT_TYPE_MTP) {
+                             filter_attn = [&](uint32_t il) { return il >= hparams.n_layer(); };
+                             filter_recr = [&](uint32_t)    { return false; };
+-                            if (filter_idx) {
++                            // a dense MTP layer (compress ratio 0, the *-shared-* heads) gets no indexer cache: graph_mtp then attends dense
++                            if (filter_idx && hparams.dsv4_compress_ratios[hparams.n_layer()] > 0) {
+                                 filter_idx = [&](uint32_t il) { return il >= hparams.n_layer(); };
++                            } else {
++                                filter_idx = nullptr;
+                             }
+                         }
+                     }
+diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
+index 250eb74da..f2f97439b 100644
+--- a/src/models/qwen4exp.cpp
++++ b/src/models/qwen4exp.cpp
+@@ -180,7 +180,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+     const int  trunk_flags = mtp_only ? TENSOR_NOT_REQUIRED : 0;
+     const int  mtp_flags   = ml.load_mtp ? 0 : TENSOR_SKIP;
+ 
+-    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, 0);
++    // a *-shared-* MTP head has neither token_embd nor output and borrows the target's (see graph_mtp)
++    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, trunk_flags);
+ 
+     // there is no output_norm: the final hyper-connection mixer carries it
+     // the gammas load as [n_embd, hc] so the grouped norm multiplies them without a graph reshape
+@@ -189,7 +190,7 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+     hc_head_up   = create_tensor(tn(LLM_TENSOR_HC_HEAD_UP,   "weight"), { hc_lr, hc_dim }, trunk_flags);
+ 
+     output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), { n_embd, n_vocab }, TENSOR_NOT_REQUIRED);
+-    if (output == NULL) {
++    if (output == NULL && tok_embd != NULL) {
+         output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, TENSOR_DUPLICATED);
+     }
+ 
+@@ -555,7 +556,17 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
+     ggml_set_input(inp->h);
+     ggml_set_name(inp->h, "mtp_h_input");
+ 
+-    ggml_tensor * tok_embd = ggml_get_rows(ctx0, model.tok_embd, inp->tokens);
++    // borrowed tensors come from the target via ctx_other, which llama_context sets when either is missing
++    const llama_model * tgt = cparams.ctx_other ? llama_get_model(cparams.ctx_other) : nullptr;
++    if ((!model.tok_embd || !model.output) &&
++            (!tgt || tgt->hparams.n_embd != hparams.n_embd || tgt->vocab.n_tokens() != model.vocab.n_tokens())) {
++        throw std::runtime_error("qwen4exp MTP: a head without token_embd/output must be loaded as a draft (-md) of a matching target");
++    }
++    ggml_tensor * tok_embd_w = model.tok_embd ? model.tok_embd : tgt->tok_embd;
++    ggml_tensor * output_w   = model.output   ? model.output   : tgt->output;
++    ggml_tensor * output_s   = model.output   ? model.output_s : tgt->output_s;
++
++    ggml_tensor * tok_embd = ggml_get_rows(ctx0, tok_embd_w, inp->tokens);
+     cb(tok_embd, "mtp_tok_embd", il);
+ 
+     ggml_tensor * h = inp->h;
+@@ -610,7 +621,7 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
+     cb(cur, "result_norm", -1);
+     res->t_embd = cur;
+ 
+-    cur = build_lora_mm(model.output, cur, model.output_s);
++    cur = build_lora_mm(output_w, cur, output_s);
+     cb(cur, "result_output", -1);
+     res->t_logits = cur;
+ 

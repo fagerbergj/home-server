@@ -8,7 +8,7 @@ set -euo pipefail
 
 NAME="${NAME:-mimo}"
 PORT="${PORT:-9994}"
-IMAGE="${IMAGE:-llama-mimo:gfx1201}"
+IMAGE="${IMAGE:-llama-mimo:b11429-p1}"  # b11429 + mimo/patches: a drafter without output uses the target's lm_head
 HF="${HF:-/mnt/cache/huggingface}"
 NCMOE="${NCMOE:-23}"   # 23rd CPU layer sits on card 0 and frees the room the projector needs
 CTX="${CTX:-524288}"
@@ -26,7 +26,7 @@ trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
   docker run --rm --privileged alpine sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
 ) &
 
-exec docker run --rm --init --name "$NAME" \
+exec docker run --rm --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri --group-add video --group-add 991 --ipc=host --shm-size 8g \
   -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \

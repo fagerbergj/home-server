@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jason Fagerberg <jf.fagerberg@gmail.com>
+Date: Tue, 6 Oct 2026 15:32:11 -0400
+Subject: [PATCH 1/2] glm5-next: NextN (MTP) draft graph, ported from PR 27754
+
+---
+ src/models/glm5-next.cpp | 114 ++++++++++++++++++++++++++++++++++++++-
+ src/models/models.h      |  10 ++++
+ 2 files changed, 123 insertions(+), 1 deletion(-)
+
+diff --git a/src/models/glm5-next.cpp b/src/models/glm5-next.cpp
+index 839f223d2..cc21d2e7b 100644
+--- a/src/models/glm5-next.cpp
++++ b/src/models/glm5-next.cpp
+@@ -187,7 +187,7 @@ void llama_model_glm5_next::load_arch_tensors(llama_model_loader & ml) {
+ 
+ std::unique_ptr<llm_graph_context> llama_model_glm5_next::build_arch_graph(const llm_graph_params & params) const {
+     if (params.gtype == LLM_GRAPH_TYPE_DECODER_MTP) {
+-        throw std::runtime_error("GLM5-Next NextN graph not implemented yet");
++        return std::make_unique<graph_mtp>(*this, params);
+     }
+     return std::make_unique<graph>(*this, params);
+ }
+@@ -1001,3 +1001,115 @@ ggml_tensor * llama_model_glm5_next::graph::build_dsa_layer(
+ 
+     return out;
+ }
++
++// ported from the glm5next MTP graph of llama.cpp PR 27754 (unslothai glm5next/upstream, d07e71ede)
++llama_model_glm5_next::graph_mtp::graph_mtp(const llama_model & model, const llm_graph_params & params) :
++    graph(model, params, no_build{}) {
++    GGML_ASSERT(hparams.n_layer_nextn == 1 && "GLM5-Next MTP has a single NextN block");
++
++    const int il = hparams.n_layer() + cparams.nextn_layer_offset;
++    GGML_ASSERT(cparams.nextn_layer_offset >= 0 && cparams.nextn_layer_offset < (int) hparams.n_layer_nextn);
++    const auto & layer = model.layers[il];
++
++    GGML_ASSERT(layer.nextn.eh_proj && layer.nextn.enorm && layer.nextn.hnorm &&
++            "GLM5-Next MTP block missing, load the model with MTP enabled");
++    GGML_ASSERT(!layer.hc_attn_fn && "the NextN block has no mHC mixer");
++
++    auto inp = std::make_unique<llm_graph_input_embd_h>(hparams.n_embd);
++
++    inp->tokens = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_tokens);
++    ggml_set_input(inp->tokens);
++
++    inp->embd = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, hparams.n_embd_inp(), n_tokens);
++    ggml_set_input(inp->embd);
++
++    ggml_tensor * tok_embd;
++    if (ubatch.token) {
++        tok_embd = ggml_get_rows(ctx0, layer.nextn.embed_tokens ? layer.nextn.embed_tokens : model.tok_embd, inp->tokens);
++    } else {
++        tok_embd = inp->embd;
++    }
++    cb(tok_embd, "mtp_tok_embd", il);
++
++    inp->h = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, hparams.n_embd, n_tokens);
++    ggml_set_input(inp->h);
++    ggml_set_name(inp->h, "mtp_h_input");
++
++    ggml_tensor * h_embd = inp->h;
++
++    res->add_input(std::move(inp));
++
++    ggml_tensor * inp_out_ids = build_inp_out_ids();
++
++    const auto * mctx_hyb = static_cast<const llama_memory_hybrid_idx_context *>(mctx);
++
++    auto * inp_hyb   = build_inp_mem_hybrid_k();
++    auto * inp_kpool = build_inp_kpool(mctx_hyb);
++
++    // the draft memory has no recurrent layer, but set_input still fills s_copy
++    ggml_build_forward_expand(gf, inp_hyb->get_recr()->s_copy);
++
++    ggml_tensor * h_norm = build_norm(h_embd, layer.nextn.hnorm, nullptr, LLM_NORM_RMS, il);
++    cb(h_norm, "mtp_hnorm", il);
++
++    ggml_tensor * e_norm = build_norm(tok_embd, layer.nextn.enorm, nullptr, LLM_NORM_RMS, il);
++    cb(e_norm, "mtp_enorm", il);
++
++    ggml_tensor * cur = build_lora_mm(layer.nextn.eh_proj, ggml_concat(ctx0, e_norm, h_norm, 0), layer.nextn.eh_proj_s);
++    cb(cur, "mtp_eh_proj", il);
++
++    ggml_tensor * residual = cur;
++
++    cur = build_norm(cur, layer.attn_norm, nullptr, LLM_NORM_RMS, il);
++    cb(cur, "mtp_attn_norm", il);
++    ggml_build_forward_expand(gf, cur);
++
++    ggml_tensor * prev_sel = nullptr;
++    cur = build_dsa_layer(cur, layer, mctx_hyb, inp_hyb->get_attn(), inp_kpool, &prev_sel, il);
++
++    ggml_tensor * ffn_inp = ggml_add(ctx0, cur, residual);
++    cb(ffn_inp, "mtp_ffn_inp", il);
++
++    cur = build_norm(ffn_inp, layer.ffn_norm, nullptr, LLM_NORM_RMS, il);
++    cb(cur, "mtp_ffn_norm", il);
++
++    ggml_tensor * moe_out = build_moe_ffn(cur,
++            layer.ffn_gate_inp,
++            layer.ffn_up_exps,
++            layer.ffn_gate_exps,
++            layer.ffn_down_exps,
++            layer.ffn_exp_probs_b,
++            n_expert, n_expert_used,
++            LLM_FFN_SILU, hparams.expert_weights_norm,
++            hparams.expert_weights_scale,
++            (llama_expert_gating_func_type) hparams.expert_gating_func,
++            il);
++    cb(moe_out, "mtp_ffn_moe_out", il);
++
++    ggml_tensor * ffn_shexp = build_ffn(cur,
++            layer.ffn_up_shexp,   nullptr, nullptr,
++            layer.ffn_gate_shexp, nullptr, nullptr,
++            layer.ffn_down_shexp, nullptr, nullptr,
++            nullptr, LLM_FFN_SILU, LLM_FFN_PAR, il);
++    cb(ffn_shexp, "mtp_ffn_shexp", il);
++
++    cur = ggml_add(ctx0, ggml_add(ctx0, moe_out, ffn_shexp), ffn_inp);
++    cb(cur, "mtp_post_ffn", il);
++
++    // the post-norm hidden state seeds the next draft step
++    cur = build_norm(cur, layer.nextn.shared_head_norm ? layer.nextn.shared_head_norm : model.output_norm, nullptr, LLM_NORM_RMS, -1);
++    cb(cur, "h_nextn", -1);
++    res->t_h_nextn = cur;
++
++    if (inp_out_ids) {
++        cur = ggml_get_rows(ctx0, cur, inp_out_ids);
++    }
++
++    ggml_tensor * head_w = layer.nextn.shared_head_head ? layer.nextn.shared_head_head   : model.output;
++    ggml_tensor * head_s = layer.nextn.shared_head_head ? layer.nextn.shared_head_head_s : model.output_s;
++    cur = build_lora_mm(head_w, cur, head_s);
++    cb(cur, "result_output", -1);
++    res->t_logits = cur;
++
++    ggml_build_forward_expand(gf, cur);
++}
+diff --git a/src/models/models.h b/src/models/models.h
+index 387a4adcb..8cc6a2c7b 100644
+--- a/src/models/models.h
++++ b/src/models/models.h
+@@ -2724,6 +2724,11 @@ struct llama_model_glm5_next : public llama_model_base {
+     struct graph : public llm_build_delta_net_base {
+         graph(const llama_model & model, const llm_graph_params & params);
+ 
++        // the helpers alone, graph_mtp builds its own body
++        struct no_build {};
++        graph(const llama_model & model, const llm_graph_params & params, no_build) :
++            llm_build_delta_net_base(params), model(model) {}
++
+         // collapse the hc streams with per-stream weights
+         ggml_tensor * build_hc_pre(
+                 ggml_tensor * x,
+@@ -2772,6 +2777,11 @@ struct llama_model_glm5_next : public llama_model_base {
+ 
+     };
+ 
++    // NextN draft head: one DSA block with a plain residual, no mHC
++    struct graph_mtp : public graph {
++        graph_mtp(const llama_model & model, const llm_graph_params & params);
++    };
++
+     std::unique_ptr<llm_graph_context> build_arch_graph(const llm_graph_params & params) const override;
+ };
+ 

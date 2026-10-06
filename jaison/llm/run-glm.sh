@@ -12,7 +12,7 @@ set -euo pipefail
 
 NAME="${NAME:-glm}"
 PORT="${PORT:-9998}"
-IMAGE="${IMAGE:-llama-glm:gfx1201}"
+IMAGE="${IMAGE:-llama-glm:b11429-p1}"  # b11429 + glm/patches: NextN MTP graph (PR 27754) and RDNA4 sparse FA
 HF="${HF:-/mnt/cache/huggingface}"
 QUANT="${QUANT:-UD-IQ4_XS}"
 CTX="${CTX:-1048576}"
@@ -27,8 +27,8 @@ TS="${TS:-28,7,6,6}"
 FITT="${FITT:-6144,3072,3072,3072}"   # auto-fit margins, used only when NCMOE is empty
 MMPROJ="${MMPROJ:-0}"
 
-# pinned: the glm5next-named shard 1; this image cannot read the Oct 5 glm5-next re-upload beside it
-S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/621d456e93e926e4b52f85cff5f634358c1828f9/"$QUANT" | head -1)
+# pinned: the Oct 5 snapshot whose shard 1 uses upstream's glm5-next arch name (shards 2-5 link the old blobs)
+S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/a38483c8cd5df544f53d70fb281afe97369d5ab6/"$QUANT" | head -1)
 M=/root/.cache/huggingface${S#"$HF"}/$(ls "$S" | grep -- '-00001-of-' | head -1)
 
 if [ -n "$NCMOE" ]; then
@@ -58,7 +58,7 @@ trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
   docker run --rm --privileged alpine sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
 ) &
 
-exec docker run --rm --init --name "$NAME" \
+exec docker run --rm --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri --group-add video --group-add 991 --ipc=host --shm-size 8g \
   -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \
