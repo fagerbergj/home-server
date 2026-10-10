@@ -6,7 +6,7 @@
 #      not an interactive session — a HITL prompt has no one to answer, so it stalls
 #      and kills the node. Agents proceed on best judgment instead.)
 #   4. (0.6.0) code agents are external ACP subprocesses (acp: blocks below) — no
-#      native coding tools, so the old guard-tier edits are moot; guards is empty.
+#      native coding tools (the guard ladder is gone).
 #   5. context_window sized per agent from measured Langfuse usage (#1007);
 #      only code-implementer keeps the full 256K.
 # If the source config changes, re-copy it and re-apply these edits.
@@ -520,16 +520,6 @@ workspace:
   #     username: x-access-token       # default; GitHub PATs use this
   #     token: ${QUACK_GITHUB_TOKEN}
 
-  # Guard ladder (§4b): tool name -> none (default, unlisted) | judge |
-  # confirm | judge+confirm. Tier-0 always applies regardless of guard tier: the
-  # path jail for the fs/git TOOLS, the sandbox + rlimits for their CHILD
-  # PROCESSES, no force-push/push-to-main. ("No shell" is NOT a wall and is not
-  # Tier 0: a sandboxed run_command takes a real shell command line. The judge
-  # tier is what decides what a command may DO.)
-  # guards: no default entries — the native fs/git/run_command tools are gone in
-  # 0.6.0 (code agents are external ACP subprocesses); the ladder mechanism stays
-  # available for any remaining tool.
-  guards: {}
 
 # Bundled integrations (inbound + outbound). Optional; each is off unless its
 # sub-section is present. Commented out here because dev/local runs typically
@@ -579,8 +569,6 @@ extensions:
     base_url: http://rmfakecloud:3000
     email: ${RMFAKECLOUD_EMAIL}
     password: ${RMFAKECLOUD_PASSWORD}
-    poll_interval: 2m
-    folder_filter: ""              # all folders; set e.g. "Inbox" to scope
 
   # In-app token/cost dashboard (Usage in the nav rail). Charts gen_ai.client.*
   # metrics via a narrow GET-only proxy. prometheus/tempo are host-published;
