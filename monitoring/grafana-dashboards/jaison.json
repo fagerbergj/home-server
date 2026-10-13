@@ -378,14 +378,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_gfx_activity{job=\"jaison_gpu\",gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0",
+          "expr": "gpu_gfx_activity{job=\"jaison_gpu\"}",
+          "legendFormat": "R9700 #{{gpu_id}}",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_gfx_activity{job=\"jaison_gpu\",gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1",
-          "refId": "B"
         }
       ]
     },
@@ -450,14 +445,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_used_vram{job=\"jaison_gpu\",gpu_id=\"0\"} / gpu_total_vram{job=\"jaison_gpu\",gpu_id=\"0\"} * 100",
-          "legendFormat": "R9700 #0",
+          "expr": "gpu_used_vram{job=\"jaison_gpu\"} / gpu_total_vram{job=\"jaison_gpu\"} * 100",
+          "legendFormat": "R9700 #{{gpu_id}}",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_used_vram{job=\"jaison_gpu\",gpu_id=\"1\"} / gpu_total_vram{job=\"jaison_gpu\",gpu_id=\"1\"} * 100",
-          "legendFormat": "R9700 #1",
-          "refId": "B"
         }
       ]
     },
@@ -521,24 +511,14 @@
       },
       "targets": [
         {
-          "expr": "gpu_edge_temperature{job=\"jaison_gpu\",gpu_id=\"0\"}",
-          "legendFormat": "#0 edge",
+          "expr": "gpu_edge_temperature{job=\"jaison_gpu\"}",
+          "legendFormat": "#{{gpu_id}} edge",
           "refId": "A"
         },
         {
-          "expr": "gpu_junction_temperature{job=\"jaison_gpu\",gpu_id=\"0\"}",
-          "legendFormat": "#0 junction",
+          "expr": "gpu_junction_temperature{job=\"jaison_gpu\"}",
+          "legendFormat": "#{{gpu_id}} junction",
           "refId": "B"
-        },
-        {
-          "expr": "gpu_edge_temperature{job=\"jaison_gpu\",gpu_id=\"1\"}",
-          "legendFormat": "#1 edge",
-          "refId": "C"
-        },
-        {
-          "expr": "gpu_junction_temperature{job=\"jaison_gpu\",gpu_id=\"1\"}",
-          "legendFormat": "#1 junction",
-          "refId": "D"
         }
       ]
     },
@@ -602,14 +582,9 @@
       },
       "targets": [
         {
-          "expr": "gpu_average_package_power{job=\"jaison_gpu\",gpu_id=\"0\"}",
-          "legendFormat": "R9700 #0",
+          "expr": "gpu_average_package_power{job=\"jaison_gpu\"}",
+          "legendFormat": "R9700 #{{gpu_id}}",
           "refId": "A"
-        },
-        {
-          "expr": "gpu_average_package_power{job=\"jaison_gpu\",gpu_id=\"1\"}",
-          "legendFormat": "R9700 #1",
-          "refId": "B"
         }
       ]
     },

@@ -13,7 +13,7 @@
 #     swap because the kernel can't reclaim ARC fast enough.
 #
 # 24 GB: since 2026-08-30 the big models run on jaison, so this box's RAM
-# only hosts the 3090's llama-swap (embedder + 9B, ~12 GB in VRAM, little
+# only hosts the 3090's llama-swap (Clef 27B, ~20 GB in VRAM, little
 # host RAM), Plex, immich and the rest. The old 8 GB cap existed because
 # --no-mmap llama-server processes here competed with ARC and swapped model
 # pages out (decode fell to disk speed); that pressure is gone. Leave ~30 GB

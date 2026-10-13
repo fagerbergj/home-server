@@ -1,4 +1,4 @@
-# jaison: one llama-swap for both R9700s; each model is a `docker run` it starts and stops.
+# jaison: one llama-swap for all four R9700s; each model is a `docker run` it starts and stops.
 # Bind-mount paths in cmds are HOST paths (the daemon resolves them).
 healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
 timeouts:
@@ -30,7 +30,7 @@ groups:
     swap: false
     exclusive: true
     members: ["qwen3.8-27b"]
-  # Whole box: both cards + CPU experts. Loading it drains and unloads the 27B.
+  # Whole box: tensor parallel across all four cards. Loading it drains and unloads the 27B.
   "flash-next":
     swap: true
     exclusive: true

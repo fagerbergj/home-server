@@ -15,7 +15,7 @@ Two boxes since 2026-08-30: this file is `jason-server` (media/storage, the publ
 | HBA | LSI 9300-16i (SAS3008, IT mode) | ✅ Single controller for all 6 HDDs; runs at PCIe 3.0 x8 on Threadripper (~7.9 GB/s ceiling, far above what the drives can produce) |
 | Media Pool | 4× 26TB Seagate Exos `ST26000NM000C` (mfr-recert, 5yr warranty) | ✅ ZFS RAIDZ2, ~46 TiB usable |
 | Personal Pool | 2× 8TB Dell `J7W80` (Seagate Exos rebadge, new) | ✅ ZFS 2-way mirror, ~7.3 TiB usable; 2 bays free for future expansion |
-| GPU | NVIDIA RTX 3090 (Ampere, 24 GB) | ✅ PCIEX16_1; NVENC for Plex, CUDA for immich ML. The 2× R9700 moved to the AI box (see `hardware_plan.md.local` until that box is documented) |
+| GPU | NVIDIA RTX 3090 (Ampere, 24 GB) | ✅ PCIEX16_1; NVENC for Plex, CUDA for immich ML. The R9700s moved to the AI box, now 4× (`jaison/README.md`) |
 | PSU | 1300W | ✅ |
 | Network | Intel GbE LAN (onboard) + WIFI6 | ✅ Gigabit |
 | Case | Fractal Design Define R5 (ATX) | ✅ 6× 3.5" in use across both drive cages (8 bays); the Define 7 XL now houses the AI box |

@@ -131,9 +131,8 @@ source ~/workspace/home-server/.env
 
 ## Phase 3 — NVIDIA GPU Driver
 
-This box carries an RTX 3090 for Plex NVENC and immich ML. (The LLM stack and
-its two R9700s live on the separate AI box, documented in `hardware_plan.md.local`
-until that box has its own setup doc.)
+This box carries one RTX 3090 for Plex NVENC, immich ML and the Clef llama-swap
+(`llm-swap-media`). The big models and the four R9700s live on the AI box (`jaison/`).
 
 ### Install the driver
 
