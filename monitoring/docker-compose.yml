@@ -68,14 +68,9 @@ services:
       - apparmor:unconfined
     volumes:
       - /dev:/dev
+    # Auto-scan with stable /dev/disk/by-id names; sdX letters shift whenever a drive is added or moved.
     command:
-      - --smartctl.device=/dev/sda
-      - --smartctl.device=/dev/sdb
-      - --smartctl.device=/dev/sdc
-      - --smartctl.device=/dev/sdd
-      - --smartctl.device=/dev/sde
-      - --smartctl.device=/dev/sdf
-      - --smartctl.device=/dev/nvme0n1
+      - --smartctl.scan-device-type=by-id
     ports:
       - "9633:9633"
     restart: unless-stopped
