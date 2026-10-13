@@ -98,6 +98,13 @@ else
     echo "Disk usage cron job already exists — skipping."
 fi
 
+# Pool usage for Grafana (node-exporter textfile collector), every 5 minutes.
+ZFS_METRICS="$(realpath "$(dirname "$0")/../zfs-metrics.sh")"
+if ! { crontab -l 2>/dev/null || true; } | grep -q "zfs-metrics.sh"; then
+    ({ crontab -l 2>/dev/null || true; }; echo "*/5 * * * * $ZFS_METRICS") | crontab -
+    "$ZFS_METRICS"
+fi
+
 # ---------------------------------------------------------------------------
 # Smoke test
 # ---------------------------------------------------------------------------

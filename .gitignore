@@ -19,6 +19,7 @@ monitoring/grafana/
 monitoring/cache/
 monitoring/lib/
 monitoring/prometheus/data/
+monitoring/node-textfile/
 monitoring/uptime-kuma/
 networking/data/
 networking/letsencrypt/

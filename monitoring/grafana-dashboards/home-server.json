@@ -790,21 +790,21 @@
       },
       "targets": [
         {
-          "expr": "node_filesystem_size_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"}",
+          "expr": "node_filesystem_size_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs|zfs\",mountpoint!=\"/boot\"} or (zfs_pool_used_bytes{job=\"node\"} + zfs_pool_avail_bytes{job=\"node\"})",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "node_filesystem_avail_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"}",
+          "expr": "node_filesystem_avail_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs|zfs\",mountpoint!=\"/boot\"} or zfs_pool_avail_bytes{job=\"node\"}",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "node_filesystem_avail_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"} / node_filesystem_size_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs\",mountpoint!~\"/boot|/mnt/personal/.+\"} * 100",
+          "expr": "(node_filesystem_avail_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs|zfs\",mountpoint!=\"/boot\"} or zfs_pool_avail_bytes{job=\"node\"}) / (node_filesystem_size_bytes{job=\"node\",fstype!~\"tmpfs|devtmpfs|overlay|squashfs|zfs\",mountpoint!=\"/boot\"} or (zfs_pool_used_bytes{job=\"node\"} + zfs_pool_avail_bytes{job=\"node\"})) * 100",
           "refId": "C",
           "instant": true,
           "format": "table",
@@ -1174,21 +1174,21 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_temperature{temperature_type=\"current\", device!~\"nvme.*\"}",
+          "expr": "smartctl_device_temperature{temperature_type=\"current\", device!~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Reallocated_Sector_Ct\", attribute_value_type=\"raw\", device!~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\", device!~\"nvme.*\"}",
+          "expr": "smartctl_device_attribute{attribute_name=\"Current_Pending_Sector\", attribute_value_type=\"raw\", device!~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "C",
           "instant": true,
           "format": "table",
@@ -1200,7 +1200,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "pattern": "^(device|Value.*)$"
+              "pattern": "^(model_name|serial_number|Value.*)$"
             }
           }
         },
@@ -1212,10 +1212,15 @@
           "id": "organize",
           "options": {
             "renameByName": {
-              "device": "Drive",
               "Value #A": "Temp (\u00b0C)",
               "Value #B": "Reallocated Sectors",
-              "Value #C": "Pending Sectors"
+              "Value #C": "Pending Sectors",
+              "model_name": "Model",
+              "serial_number": "Serial"
+            },
+            "indexByName": {
+              "model_name": 0,
+              "serial_number": 1
             }
           }
         }
@@ -1434,28 +1439,28 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_temperature{temperature_type=\"current\", device=~\"nvme.*\"}",
+          "expr": "smartctl_device_temperature{temperature_type=\"current\", device=~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "A",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_media_errors{device=~\"nvme.*\"}",
+          "expr": "smartctl_device_media_errors{device=~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "B",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_available_spare{device=~\"nvme.*\"}",
+          "expr": "smartctl_device_available_spare{device=~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "C",
           "instant": true,
           "format": "table",
           "legendFormat": ""
         },
         {
-          "expr": "smartctl_device_percentage_used{device=~\"nvme.*\"}",
+          "expr": "smartctl_device_percentage_used{device=~\"nvme.*\"} * on(device) group_left(model_name, serial_number) smartctl_device",
           "refId": "D",
           "instant": true,
           "format": "table",
@@ -1467,7 +1472,7 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "pattern": "^(device|Value.*)$"
+              "pattern": "^(model_name|serial_number|Value.*)$"
             }
           }
         },
@@ -1479,11 +1484,16 @@
           "id": "organize",
           "options": {
             "renameByName": {
-              "device": "Drive",
               "Value #A": "Temp (\u00b0C)",
               "Value #B": "Media Errors",
               "Value #C": "Available Spare %",
-              "Value #D": "Life Used %"
+              "Value #D": "Life Used %",
+              "model_name": "Model",
+              "serial_number": "Serial"
+            },
+            "indexByName": {
+              "model_name": 0,
+              "serial_number": 1
             }
           }
         }
