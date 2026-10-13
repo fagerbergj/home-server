@@ -55,8 +55,12 @@ user           $EMAIL
 password       $PASSWORD
 
 account default : gmail
+aliases        /etc/aliases
 EOF
 chmod 600 ~/.msmtprc
+# smartd and cron mail "root"; Gmail rejects that recipient (553), so map local names to the real address.
+grep -q '^root:' /etc/aliases 2>/dev/null \
+    || printf 'root: %s\ndefault: %s\n' "$EMAIL" "$EMAIL" | sudo tee -a /etc/aliases >/dev/null
 echo "msmtp configured."
 
 # ---------------------------------------------------------------------------

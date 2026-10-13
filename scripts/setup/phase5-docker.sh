@@ -35,6 +35,13 @@ echo "Verifying GPU is accessible from Docker..."
 docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all \
   nvidia/cuda:12.8.1-base-ubuntu24.04 nvidia-smi
 
+# Weekly prune (Sun 04:00): build cache older than a week and dangling images only.
+# Never `image prune -a`: llm-swap's on-demand runtime images have no container until requested.
+PRUNE='docker builder prune -f --filter until=168h >/dev/null && docker image prune -f >/dev/null'
+if ! { crontab -l 2>/dev/null || true; } | grep -qF "docker builder prune"; then
+    ({ crontab -l 2>/dev/null || true; }; echo "0 4 * * 0 $PRUNE") | crontab -
+fi
+
 echo ""
 echo "=== Phase 5 complete ==="
 echo "NOTE: Log out and back in (or run 'newgrp docker') for Docker group membership to take effect."
