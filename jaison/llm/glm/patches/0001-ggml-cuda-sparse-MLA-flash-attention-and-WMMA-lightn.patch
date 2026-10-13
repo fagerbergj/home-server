@@ -1,18 +1,18 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jason Fagerberg <jf.fagerberg@gmail.com>
 Date: Tue, 6 Oct 2026 15:33:56 -0400
-Subject: [PATCH 2/2] ggml-cuda: sparse MLA flash attention and WMMA lightning
+Subject: [PATCH] ggml-cuda: sparse MLA flash attention and WMMA lightning
  indexer on RDNA4 (HIP)
 
 ---
- ggml/src/ggml-cuda/fattn-mma-f16.cuh          |  10 +-
- ggml/src/ggml-cuda/fattn.cu                   |  60 +++++-
- ggml/src/ggml-cuda/lightning-indexer.cu       | 179 ++++++++++++++++++
- ...ttn-mma-f16-instance-ncols1_1-ncols2_16.cu |   1 +
+ ggml/src/ggml-cuda/fattn-mma-f16.cuh               |  10 +-
+ ggml/src/ggml-cuda/fattn.cu                        |  60 +++++--
+ ggml/src/ggml-cuda/lightning-indexer.cu            | 179 +++++++++++++++++++++
+ .../fattn-mma-f16-instance-ncols1_1-ncols2_16.cu   |   1 +
  4 files changed, 237 insertions(+), 13 deletions(-)
 
 diff --git a/ggml/src/ggml-cuda/fattn-mma-f16.cuh b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
-index 7f0f6abfd..5be82a42a 100644
+index 296aa2b..eaf4f7a 100644
 --- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
 +++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
 @@ -1787,7 +1787,7 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
@@ -61,7 +61,7 @@ index 7f0f6abfd..5be82a42a 100644
  // The number of viable configurations for Deepseek is very limited:
  extern DECL_FATTN_MMA_F16_CASE(576, 512, 1, 16);
 diff --git a/ggml/src/ggml-cuda/fattn.cu b/ggml/src/ggml-cuda/fattn.cu
-index bb34e01f3..e10869564 100644
+index bb34e01..e108695 100644
 --- a/ggml/src/ggml-cuda/fattn.cu
 +++ b/ggml/src/ggml-cuda/fattn.cu
 @@ -5,7 +5,7 @@
@@ -196,7 +196,7 @@ index bb34e01f3..e10869564 100644
      if ((amd_wmma_available(cc) && gqa_opt_applies && Q->ne[0] <= 256) && Q->ne[0] != 40 && Q->ne[0] != 72 &&
              Q->ne[1] * gqa_ratio_eff > (Q->ne[0] <= 128 ? 8 : 16)) {
 diff --git a/ggml/src/ggml-cuda/lightning-indexer.cu b/ggml/src/ggml-cuda/lightning-indexer.cu
-index 57cb1c1dc..5e0cb868b 100644
+index 429d2e2..366ccab 100644
 --- a/ggml/src/ggml-cuda/lightning-indexer.cu
 +++ b/ggml/src/ggml-cuda/lightning-indexer.cu
 @@ -2,6 +2,7 @@
@@ -207,9 +207,9 @@ index 57cb1c1dc..5e0cb868b 100644
  
  #if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
  #if defined(TURING_MMA_AVAILABLE)
-@@ -239,6 +240,148 @@ static __global__ void lightning_indexer_kernel_wmma(
- // tokens scored per block by the tile kernel
- #define LIGHTNING_INDEXER_TILE_TOKENS 8
+@@ -247,6 +248,148 @@ static __global__ void lightning_indexer_kernel_wmma(
+ #define LIGHTNING_INDEXER_TILE_HEADS_PER_PASS 4
+ #endif
  
 +#if defined(GGML_USE_HIP)
 +
@@ -356,7 +356,7 @@ index 57cb1c1dc..5e0cb868b 100644
  // TODO there is one ugly assumption used in this kernel - that WARP_SIZE is equal to 32
  // thanks to that one warp operating on float4 processes whole indexer K/Q vectors
  // 32 * 4 = 128 (N_EMBD)
-@@ -614,6 +757,24 @@ void ggml_cuda_lightning_indexer(ggml_backend_cuda_context & ctx, ggml_tensor *
+@@ -634,6 +777,24 @@ void ggml_cuda_lightning_indexer(ggml_backend_cuda_context & ctx, ggml_tensor *
              LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_wmma, 128, 64, k, GGML_TYPE_Q8_0)
              GGML_ABORT("fatal error");
          } else {
@@ -381,7 +381,7 @@ index 57cb1c1dc..5e0cb868b 100644
  #else // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
          {
  #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
-@@ -655,6 +816,24 @@ void ggml_cuda_lightning_indexer(ggml_backend_cuda_context & ctx, ggml_tensor *
+@@ -675,6 +836,24 @@ void ggml_cuda_lightning_indexer(ggml_backend_cuda_context & ctx, ggml_tensor *
              LIGHTNING_INDEXER_CASE(lightning_indexer_kernel_wmma, 128, 32, k, GGML_TYPE_Q8_0)
              GGML_ABORT("fatal error");
          } else {
@@ -407,7 +407,7 @@ index 57cb1c1dc..5e0cb868b 100644
          {
  #endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
 diff --git a/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu b/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu
-index b2661b931..77ec2b055 100644
+index b2661b9..77ec2b0 100644
 --- a/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu
 +++ b/ggml/src/ggml-cuda/template-instances/fattn-mma-f16-instance-ncols1_1-ncols2_16.cu
 @@ -4,3 +4,4 @@
@@ -415,3 +415,6 @@ index b2661b931..77ec2b055 100644
  DECL_FATTN_MMA_F16_CASE(192, 128, 1, 16);
  DECL_FATTN_MMA_F16_CASE(576, 512, 1, 16);
 +DECL_FATTN_MMA_F16_CASE(512, 512, 1, 16);
+-- 
+2.43.0
+

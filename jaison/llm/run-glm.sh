@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GLM-5.3-Flash launcher for llama-swap: llama.cpp (jaison/llm/glm image, PR 27754 branch), unsloth UD-IQ4_XS across
+# GLM-5.3-Flash launcher for llama-swap: llama.cpp + glm/patches, unsloth UD-IQ4_XS across
 # all four cards with the overflow experts in host RAM, speculating with GLM's own MTP head.
 # - --no-host: pinned host buffers make SDMA fault ("Memory access fault ... page not present") when a slot restores a
 #   prompt-cache entry or context checkpoint; plain RAM costs nothing at -ub 1024.
@@ -12,7 +12,7 @@ set -euo pipefail
 
 NAME="${NAME:-glm}"
 PORT="${PORT:-9998}"
-IMAGE="${IMAGE:-llama-glm:b11429-p1}"  # b11429 + glm/patches: NextN MTP graph (PR 27754) and RDNA4 sparse FA
+IMAGE="${IMAGE:-llama-glm:b11580-p1}"  # b11580 + glm/patches: RDNA4 sparse FA (upstream sparse FA is CUDA-only)
 HF="${HF:-/mnt/cache/huggingface}"
 QUANT="${QUANT:-UD-IQ4_XS}"
 CTX="${CTX:-1048576}"

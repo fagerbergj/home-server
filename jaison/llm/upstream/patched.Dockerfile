@@ -1,10 +1,10 @@
-# llama.cpp b11429 (d8123504) + one model's patch series, HIP gfx1201 + RCCL, llama-server only.
-# Context is jaison/llm: docker build -f upstream/patched.Dockerfile --build-arg PATCHES=mtp4/patches --build-arg NPATCH=1 .
+# llama.cpp b11580 (4413a192) + one model's patch series, HIP gfx1201 + RCCL, llama-server only.
+# Context is jaison/llm: docker build -f upstream/patched.Dockerfile --build-arg PATCHES=mtp4/patches --build-arg NPATCH=1 -t llama-mtp4:b11580-port .
 # NPATCH applies the first N patches of the series (mtp4: 1 = port, 2 = dense). The `test` target runs the CPU-only tests.
 ARG BASE=docker.io/rocm/dev-ubuntu-24.04:7.2.1-complete@sha256:3db551c4e1229aac1857ac44fcb6141bb749f41348eb572452f11279153c13c3
 
 FROM ${BASE} AS build
-ARG LLAMA_COMMIT=d81235049384534c167caea52b85a694f6103d14
+ARG LLAMA_COMMIT=4413a192410fad1f054e9216114087a3e01527a0
 ARG PATCHES
 ARG NPATCH=99
 ENV CCACHE_DIR=/root/.cache/ccache
@@ -25,12 +25,12 @@ FROM build AS test
 RUN --mount=type=cache,target=/root/.cache/ccache cd /src && cmake --build build -j24 \
       --target test-tokenizer-0 test-llama-archs test-sampling
 RUN cd /src/build/bin && ./test-tokenizer-0 /src/models/ggml-vocab-qwen35.gguf && ./test-tokenizer-0 /src/models/ggml-vocab-llama-bpe.gguf \
-    && ./test-sampling && ./test-llama-archs -a 'qwen4exp|glm5-next|mimo2'
+    && ./test-sampling && ./test-llama-archs -a 'qwen4exp|glm5-next'
 
 FROM ${BASE}
-ARG LLAMA_COMMIT=d81235049384534c167caea52b85a694f6103d14
+ARG LLAMA_COMMIT=4413a192410fad1f054e9216114087a3e01527a0
 ARG PATCH_SHA=none
-LABEL org.opencontainers.image.revision=${LLAMA_COMMIT} org.opencontainers.image.version=b11429 llama.patches=${PATCH_SHA}
+LABEL org.opencontainers.image.revision=${LLAMA_COMMIT} org.opencontainers.image.version=b11580 llama.patches=${PATCH_SHA}
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /src/build/bin/ /app/
 ENV LD_LIBRARY_PATH=/app:/opt/rocm/lib

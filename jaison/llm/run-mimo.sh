@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MiMo-V2.6-Flash launcher for llama-swap: llama.cpp (jaison/llm/mimo image), MXFP4 across all four
+# MiMo-V2.6-Flash launcher for llama-swap: stock llama.cpp ROCm image, MXFP4 across all four
 # cards with the first N expert layers in host RAM, TrevorJS DFlash drafter, vision/audio projector, 4 slots x 128k.
 # The weights are read without mmap (the 167 GB file cannot share 126 GB of RAM with 60 GB of resident
 # experts), which leaves the page cache full of the file; kswapd then stalls the CPU experts on every
@@ -8,7 +8,7 @@ set -euo pipefail
 
 NAME="${NAME:-mimo}"
 PORT="${PORT:-9994}"
-IMAGE="${IMAGE:-llama-mimo:b11429-p1}"  # b11429 + mimo/patches: a drafter without output uses the target's lm_head
+IMAGE="${IMAGE:-ghcr.io/ggml-org/llama.cpp:server-rocm-b11580}"  # stock: the target-head DFlash fix is upstream (#30111)
 HF="${HF:-/mnt/cache/huggingface}"
 NCMOE="${NCMOE:-23}"   # 23rd CPU layer sits on card 0 and frees the room the projector needs
 CTX="${CTX:-524288}"

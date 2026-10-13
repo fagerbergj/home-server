@@ -12,7 +12,7 @@ Subject: [PATCH 1/2] qwen4exp: MTP heads without token_embd/output borrow the
  4 files changed, 25 insertions(+), 7 deletions(-)
 
 diff --git a/common/speculative.cpp b/common/speculative.cpp
-index a7f095a12..e7ac00a9f 100644
+index c5043a4..81332f8 100644
 --- a/common/speculative.cpp
 +++ b/common/speculative.cpp
 @@ -1478,7 +1478,10 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
@@ -28,10 +28,10 @@ index a7f095a12..e7ac00a9f 100644
  
          if (chain_heads) {
 diff --git a/src/llama-context.cpp b/src/llama-context.cpp
-index 07b4c6148..3c7166bbb 100644
+index 231b34d..2b9b421 100644
 --- a/src/llama-context.cpp
 +++ b/src/llama-context.cpp
-@@ -155,7 +155,8 @@ llama_context::llama_context(
+@@ -239,7 +239,8 @@ llama_context::llama_context(
          cparams.ctx_other = params.ctx_other;
      }
  
@@ -42,10 +42,10 @@ index 07b4c6148..3c7166bbb 100644
              if (params.ctx_other == nullptr) {
                  throw std::runtime_error(model.arch_name() + " requires ctx_other to be set (this warning is normal during memory fitting)");
 diff --git a/src/llama-model.cpp b/src/llama-model.cpp
-index 97e0cee70..8c1c1cbad 100644
+index 6872589..d36ddf0 100644
 --- a/src/llama-model.cpp
 +++ b/src/llama-model.cpp
-@@ -2721,8 +2721,11 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+@@ -3123,8 +3123,11 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
                          if (arch == LLM_ARCH_QWEN4EXP && params.ctx_type == LLAMA_CONTEXT_TYPE_MTP) {
                              filter_attn = [&](uint32_t il) { return il >= hparams.n_layer(); };
                              filter_recr = [&](uint32_t)    { return false; };
@@ -59,12 +59,12 @@ index 97e0cee70..8c1c1cbad 100644
                          }
                      }
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index 250eb74da..f2f97439b 100644
+index c1771fc..8337aa5 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
-@@ -180,7 +180,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
-     const int  trunk_flags = mtp_only ? TENSOR_NOT_REQUIRED : 0;
-     const int  mtp_flags   = ml.load_mtp ? 0 : TENSOR_SKIP;
+@@ -179,7 +179,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+     const int trunk_flags = nf.trunk;
+     const int mtp_flags   = nf.mtp;
  
 -    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, 0);
 +    // a *-shared-* MTP head has neither token_embd nor output and borrows the target's (see graph_mtp)
@@ -72,7 +72,7 @@ index 250eb74da..f2f97439b 100644
  
      // there is no output_norm: the final hyper-connection mixer carries it
      // the gammas load as [n_embd, hc] so the grouped norm multiplies them without a graph reshape
-@@ -189,7 +190,7 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -188,7 +189,7 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
      hc_head_up   = create_tensor(tn(LLM_TENSOR_HC_HEAD_UP,   "weight"), { hc_lr, hc_dim }, trunk_flags);
  
      output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), { n_embd, n_vocab }, TENSOR_NOT_REQUIRED);
@@ -81,11 +81,10 @@ index 250eb74da..f2f97439b 100644
          output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, TENSOR_DUPLICATED);
      }
  
-@@ -555,7 +556,17 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
+@@ -552,9 +553,19 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
      ggml_set_input(inp->h);
      ggml_set_name(inp->h, "mtp_h_input");
  
--    ggml_tensor * tok_embd = ggml_get_rows(ctx0, model.tok_embd, inp->tokens);
 +    // borrowed tensors come from the target via ctx_other, which llama_context sets when either is missing
 +    const llama_model * tgt = cparams.ctx_other ? llama_get_model(cparams.ctx_other) : nullptr;
 +    if ((!model.tok_embd || !model.output) &&
@@ -96,11 +95,14 @@ index 250eb74da..f2f97439b 100644
 +    ggml_tensor * output_w   = model.output   ? model.output   : tgt->output;
 +    ggml_tensor * output_s   = model.output   ? model.output_s : tgt->output_s;
 +
-+    ggml_tensor * tok_embd = ggml_get_rows(ctx0, tok_embd_w, inp->tokens);
-     cb(tok_embd, "mtp_tok_embd", il);
- 
-     ggml_tensor * h = inp->h;
-@@ -610,7 +621,7 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
+     ggml_tensor * tok_embd;
+     if (ubatch.token) {
+-        tok_embd = ggml_get_rows(ctx0, model.tok_embd, inp->tokens);
++        tok_embd = ggml_get_rows(ctx0, tok_embd_w, inp->tokens);
+     } else {
+         tok_embd = inp->embd;
+     }
+@@ -612,7 +623,7 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
      cb(cur, "result_norm", -1);
      res->t_embd = cur;
  
@@ -109,3 +111,6 @@ index 250eb74da..f2f97439b 100644
      cb(cur, "result_output", -1);
      res->t_logits = cur;
  
+-- 
+2.43.0
+

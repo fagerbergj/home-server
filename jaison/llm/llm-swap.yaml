@@ -92,7 +92,7 @@ models:
     cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop -t 120 qwen38-27b-vllm   # hard kills of a TP vLLM wedge the GPU (MES/sdma reset); let it drain
 
-  # Whole box, tensor parallel: UD-Q4_K_XL + MTP n2, 1 x 262k, llama.cpp b11429 + mtp4/patches. ~73 t/s code / ~54 prose;
+  # Whole box, tensor parallel: UD-Q4_K_XL + MTP n2, 1 x 262k, llama.cpp b11580 + mtp4/patches. ~73 t/s code / ~54 prose;
   # prefill 1,523 t/s @32k, 1,188 @116k, 849 @250k; decode 60 / 40 / 30 t/s at those depths.
   # Drains/unloads the 27B when loaded. See run-flashnext.sh.
   "qwen3.8-flash-next":
@@ -105,7 +105,7 @@ models:
     cmd: ${llm_dir}/run-flashnext.sh
     cmdStop: docker stop flash-next
 
-  # MiMo-V2.6-Flash-RL 309B/A15B, llama.cpp b11429 + mimo/patches. MXFP4 lossless, TrevorJS DFlash drafter, vision/audio projector:
+  # MiMo-V2.6-Flash-RL 309B/A15B, stock llama.cpp b11580 (ROCm). MXFP4 lossless, TrevorJS DFlash drafter, vision/audio projector:
   # 1 stream ~39 t/s code, prefill ~430 @10k / 360 @126k (1 slot), 4 streams ~46 aggregate. 4 slots x 128k from one 512k pool: past ~150k the ROCm
   # flash-attention f16 accumulators lose MiMo's full-attention layers (recall verified correct to 139k).
   # Weights read without mmap; launcher drops the page cache after boot.
@@ -122,7 +122,7 @@ models:
     cmd: ${llm_dir}/run-mimo.sh
     cmdStop: docker stop mimo
 
-  # GLM-5.3-Flash 320B/A18B, llama.cpp b11429 + glm/patches (NextN MTP, RDNA4 sparse FA). UD-IQ4_XS, own MTP head n2, q8_0 KV:
+  # GLM-5.3-Flash 320B/A18B, llama.cpp b11580 + glm/patches (RDNA4 sparse FA). UD-IQ4_XS, own MTP head n2, q8_0 KV:
   # 1 stream ~21 t/s code / ~20 prose, 4 streams ~26 aggregate. Prefill 294 t/s @30k, 268 @106k, 246 @170k;
   # 4 x 256k slots still lean on prompt-prefix reuse. See run-glm.sh.
   "glm-5.3-flash":

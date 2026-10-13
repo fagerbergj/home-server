@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Qwen3.8-Flash-Next launcher for llama-swap: llama.cpp b11429 + jaison/llm/mtp4/patches (the shared MTP head borrows the
+# Qwen3.8-Flash-Next launcher for llama-swap: llama.cpp b11580 + jaison/llm/mtp4/patches (the shared MTP head borrows the
 # target's embeddings and runs dense, as in PR 28243)
 # and tensor parallel across all four cards (PR 28569; RCCL all-reduce needs --ipc=host). Tensor mode requires
 # unquantized KV and ignores -ot, so the 28.8 GB n-gram table stays in VRAM. Q4_K_XL at 1 x 262k sits at ~30 GB/card and
@@ -9,7 +9,7 @@ set -euo pipefail
 
 NAME="${NAME:-flash-next}"
 PORT="${PORT:-9992}"
-IMAGE="${IMAGE:-llama-mtp4:b11429-port}"
+IMAGE="${IMAGE:-llama-mtp4:b11580-port}"
 HF="${HF:-/mnt/cache/huggingface}"
 QUANT="${QUANT:-UD-Q4_K_XL}"
 SM="${SM:-tensor}"
