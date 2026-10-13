@@ -535,6 +535,7 @@ extensions:
     client_id: ${QUACK_GITHUB_APP_CLIENT_ID}
     private_key_path: /run/secrets/quack-app.pem      # mounted from QUACK_GITHUB_APP_PRIVATE_KEY_PATH
     webhook_secret: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
+    exec: /quack-ext-github   # 0.90: github runs as a supervised child process; remove to run in-process
     mention: "/quack"            # matched only at the START of a line (#656) - "@quack" also pings other bots/users, and a quoted "> /quack …" reply stays inert
     allowed_users: [fagerbergj]   # (#357) only these logins can invoke quack; empty = deny-all
     # 4h: the ~30 tok/s local coder with judge+revise rounds needs more than the
