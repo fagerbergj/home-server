@@ -1,7 +1,7 @@
 # Media-box llama-swap on the RTX 3090 (CUDA): serves Clef locally and peers to
 # jaison's llama-swap for everything else (llm-swap-media.yaml).
 # Pinned: clef needs build >= 11371 (#29831), and server-cuda floats.
-FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b11371@sha256:f90b9de8baf5244c2c43f9594d7522424470f0d472323fe10405eceae714405b
+FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b11429@sha256:883915ea20a4b350e98f7284098f4d400c21e9b366e248d397cd42d90602a84c
 
 ARG TARGETARCH=amd64
 ARG LS_VER=252

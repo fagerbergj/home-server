@@ -223,6 +223,7 @@ agents:
     acp:
       command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
       read_only: true
+      env: {PI_ACP_ENGINE: pig}   # PIG trial on code-reviewer; remove to return to pi
   code-explorer:
     optional: true   # bundle, tools, skills come from the github plugin's code-explorer
     memory:
