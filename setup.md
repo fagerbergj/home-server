@@ -6,7 +6,7 @@ End-to-end setup for the home server. Follow phases in order.
 
 This guide assumes the target hardware in `hardware.md`:
 
-- **500GB NVMe (M.2)** → OS drive (`nvme0n1`) — Ubuntu Server 26.04 LTS + Docker
+- **1TB WD_BLACK SN7100 NVMe (M.2)** → OS drive (`nvme0n1`) — Ubuntu Server 26.04 LTS + Docker
 - **4× 26TB Seagate Exos `ST26000NM000C`** → `media` ZFS pool (RAIDZ2) at `/mnt/media`
 - **2× 8TB Dell `J7W80`** → `personal` ZFS pool (2-way mirror) at `/mnt/personal`
 - **LSI 9300-16i HBA (IT mode)** → all six HDDs hang off this card, in PCIEX1_4

@@ -19,6 +19,7 @@ Offsite is opt-in — set `RESTIC_REPOSITORY` + `RESTIC_PASSWORD` (and provider 
 | Immich Postgres | `pg_dump` via docker | ✓ | ✓ |
 | Immich photos | `/mnt/personal/photos` | (already on ZFS mirror) | ✓ |
 | Authentik Postgres | `pg_dump` via docker | ✓ | ✓ |
+| quack Postgres | `pg_dump` via docker | ✓ | — |
 | Authentik media + certs | `api/data/authentik-{media,certs}` | ✓ | — |
 | Documents (reMarkable + vault) | `/mnt/personal/documents` | (already on ZFS mirror) | ✓ |
 | rmfakecloud (notes) | `notes/rmfakecloud-data/` | ✓ | ✓ |

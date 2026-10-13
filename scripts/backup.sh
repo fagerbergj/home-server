@@ -15,6 +15,7 @@
 #   - Prowlarr config               torrent/prowlarr/config/
 #   - qBittorrent config            torrent/config/
 #   - Authentik postgres DB         pg_dump via docker exec
+#   - quack postgres DB             pg_dump via docker exec
 #   - Authentik media/certs         api/data/authentik-media/ + api/data/authentik-certs/
 #   - env files                     root .env + every <stack>/.env (gpg-encrypted)
 #   - System config                 /etc/fstab, /etc/mdadm/mdadm.conf
@@ -129,6 +130,11 @@ rsync -a --delete "$REPO_ROOT/torrent/prowlarr/config/" "$DEST/prowlarr-config/"
 
 log "qBittorrent..."
 rsync -a --delete "$REPO_ROOT/torrent/config/" "$DEST/qbittorrent-config/"
+
+# ── quack ─────────────────────────────────────────────────────────────────
+
+log "quack postgres (pg_dump)..."
+docker exec quack-postgres pg_dump -U quack -d quack --format=custom > "$DEST/quack-postgres.dump"
 
 # ── Authentik ─────────────────────────────────────────────────────────────
 
