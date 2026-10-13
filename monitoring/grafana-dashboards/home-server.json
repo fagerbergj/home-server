@@ -994,7 +994,7 @@
         "uid": "Prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 57
@@ -1174,7 +1174,7 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_temperature{device!~\"nvme.*\"}",
+          "expr": "smartctl_device_temperature{temperature_type=\"current\", device!~\"nvme.*\"}",
           "refId": "A",
           "instant": true,
           "format": "table",
@@ -1230,7 +1230,7 @@
         "uid": "Prometheus"
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 57
@@ -1434,7 +1434,7 @@
       },
       "targets": [
         {
-          "expr": "smartctl_device_temperature{device=~\"nvme.*\"}",
+          "expr": "smartctl_device_temperature{temperature_type=\"current\", device=~\"nvme.*\"}",
           "refId": "A",
           "instant": true,
           "format": "table",
