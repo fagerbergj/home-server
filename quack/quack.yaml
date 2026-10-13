@@ -528,6 +528,7 @@ extensions:
     default_user: jffagerberg
     default_league: "1356407594683482112"
     snapshots: daily                   # fetches only, never dispatches; feeds trend-scout's diffing
+    exec: /quack-ext-sleeper   # 0.88.0: sleeper runs as a supervised child process; remove to run in-process
     timezone: ${QUACK_TIMEZONE}        # IANA zone the tools' *_local kickoff/fetch times render in
   github:
     client_id: ${QUACK_GITHUB_APP_CLIENT_ID}
