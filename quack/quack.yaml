@@ -358,9 +358,9 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - github:fagerbergj/quack@plugin/usage/v0.6.0#extensions/usage/plugin
-    - github:fagerbergj/quack@plugin/sleeper/v0.12.1#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
-    - github:fagerbergj/quack@plugin/github/v0.23.0#extensions/github/plugin   # code-implementer/reviewer/explorer bundles
-    - github:fagerbergj/quack@plugin/remarkable/v0.1.0#extensions/remarkable/plugin   # the document-ingest workflow extensions.remarkable dispatches into
+    - github:fagerbergj/quack@plugin/sleeper/v0.13.0#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
+    - github:fagerbergj/quack@plugin/github/v0.24.0#extensions/github/plugin   # code-implementer/reviewer/explorer bundles
+    - github:fagerbergj/quack@plugin/remarkable/v0.2.0#extensions/remarkable/plugin   # the document-ingest workflow extensions.remarkable dispatches into
 
 workspace:
   root: ${QUACK_WORKSPACE_ROOT}   # default ./workspace (compose: the volume mountpoint)
@@ -529,13 +529,13 @@ extensions:
     default_user: jffagerberg
     default_league: "1356407594683482112"
     snapshots: daily                   # fetches only, never dispatches; feeds trend-scout's diffing
-    exec: /quack-ext-sleeper   # 0.88.0: sleeper runs as a supervised child process; remove to run in-process
+    exec: release   # binary from the pinned plugin/sleeper release, SHA256SUMS-verified; /quack-ext-sleeper = image fallback
     timezone: ${QUACK_TIMEZONE}        # IANA zone the tools' *_local kickoff/fetch times render in
   github:
     client_id: ${QUACK_GITHUB_APP_CLIENT_ID}
     private_key_path: /run/secrets/quack-app.pem      # mounted from QUACK_GITHUB_APP_PRIVATE_KEY_PATH
     webhook_secret: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
-    exec: /quack-ext-github   # 0.90: github runs as a supervised child process; remove to run in-process
+    exec: release   # binary from the pinned plugin/github release, SHA256SUMS-verified; /quack-ext-github = image fallback
     mention: "/quack"            # matched only at the START of a line (#656) - "@quack" also pings other bots/users, and a quoted "> /quack …" reply stays inert
     allowed_users: [fagerbergj]   # (#357) only these logins can invoke quack; empty = deny-all
     # 4h: the ~30 tok/s local coder with judge+revise rounds needs more than the
@@ -557,7 +557,7 @@ extensions:
     base_url: http://rmfakecloud:3000
     email: ${RMFAKECLOUD_EMAIL}
     password: ${RMFAKECLOUD_PASSWORD}
-    exec: /quack-ext-remarkable   # 0.88: remarkable runs as a supervised child process; remove to run in-process
+    exec: release   # binary from the pinned plugin/remarkable release, SHA256SUMS-verified; /quack-ext-remarkable = image fallback
 
   # In-app token/cost dashboard (Usage in the nav rail). Charts gen_ai.client.*
   # metrics via a narrow GET-only proxy. prometheus/tempo are host-published;
