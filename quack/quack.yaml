@@ -161,7 +161,7 @@ orchestrator:
   model: ${QUACK_ORCH_MODEL}            # the thin dispatcher: routes requests to agents
   context_window: 262144                # the 27B's full slot; unset left compaction and the request trimmer inert
   skills: [plan-work, format-markdown, present-coding-plan, contribute, mermaid-authoring, a2ui-surfaces]
-  tools: [commit_memory, recall_memory, load_artifacts, render_ui]  # render_ui: quiz grading and surface edits as upserts
+  tools: [commit_memory, recall_memory, render_ui]  # render_ui: quiz grading and surface edits as upserts
   # End-of-turn memory hook: the orchestrator model won't reliably call commit_memory
   # itself, so the embedded memory-agent bundle extracts durable user facts after a
   # keyword pre-filter. One judge-model call per qualifying turn.
