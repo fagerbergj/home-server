@@ -185,7 +185,7 @@ agents:
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 131072      # a long diff is read in windows before one large render_ui call
     judge_rounds: 1             # a failed round re-renders the same surface_id; one revision is enough
-    tools: [web_fetch, grep_artifacts, check_mermaid, render_ui]
+    tools: [web_fetch, grep_artifacts, render_ui]
   web-researcher:
     bundle: agents/web-researcher
     skills: [format-markdown, research-git-repos, mermaid-authoring]
@@ -237,7 +237,7 @@ agents:
   synthesizer:
     bundle: agents/synthesizer
     skills: [format-markdown, present-coding-plan, pr-authoring, mermaid-authoring]
-    tools: [check_mermaid, write_code_review]   # write_code_review: review fan-out's structured verdict (v0.58.9 gates write tools on config)
+    tools: [write_code_review]   # write_code_review: review fan-out's structured verdict (v0.58.9 gates write tools on config)
     provider: default
     model: ${QUACK_RESEARCHER_MODEL}
     context_window: 262144       # the box serves the 27B at 256k
