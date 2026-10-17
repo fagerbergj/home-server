@@ -209,7 +209,7 @@ agents:
     # shim's settings wiring; per-call OTLP spans when OTEL_EXPORTER_OTLP_ENDPOINT
     # is in workspace.env below.
     acp:
-      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+      command: ["/usr/local/bin/quack-acp"]
   code-reviewer:
     optional: true   # bundle, tools, skills come from the github plugin's code-reviewer
     memory:
@@ -221,9 +221,8 @@ agents:
     # commits; the gate parses its VERDICT/FINDINGS tail into the posted review
     # (inline comments included) — vetting.augmentFromAnswer.
     acp:
-      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+      command: ["/usr/local/bin/quack-acp"]
       read_only: true
-      env: {PI_ACP_ENGINE: pig}   # PIG trial on code-reviewer; remove to return to pi
   code-explorer:
     optional: true   # bundle, tools, skills come from the github plugin's code-explorer
     memory:
@@ -232,7 +231,7 @@ agents:
     context_window: 262144       # the box serves the 27B at 256k
     judge_rounds: 2             # exploration grounds all downstream coding; co-resident judge, no swap cost
     acp:
-      command: ["node", "/usr/local/lib/pi-acp/pi-acp.mjs"]
+      command: ["/usr/local/bin/quack-acp"]
       read_only: true
   synthesizer:
     bundle: agents/synthesizer
