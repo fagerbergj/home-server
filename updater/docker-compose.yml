@@ -1,19 +1,22 @@
 services:
   watchtower:
-    image: containrrr/watchtower:latest
+    # Maintained fork; containrrr/watchtower was archived in 2025. Pinned to major 1: v2 drops the
+    # legacy email settings below, and the app password has spaces, so it can't go in a notification URL.
+    image: nickfedor/watchtower:1
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - DOCKER_API_VERSION=1.40
       - WATCHTOWER_SCHEDULE=0 0 8 * * *  # pull updates daily at 8am UTC (2-3am CT)
       - WATCHTOWER_CLEANUP=true        # clean up old images after update
       - WATCHTOWER_INCLUDE_STOPPED=false
-      # Torrent stack excluded: auto-updating gluetun cascades a restart to all
-      # netns-sharing dependents (qbittorrent, prowlarr, jackett, flaresolverr),
-      # which forces a 15-30 min peer-pool rebuild and qBit "firewalled" status
-      # during recovery. Update manually with `docker compose pull && up -d`.
-      - WATCHTOWER_DISABLE_CONTAINERS=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,nginx-proxy-manager,authentik-server,authentik-worker,authentik-postgres,authentik-redis,gluetun,qbittorrent,prowlarr,jackett,flaresolverr,llm-swap,llm-judge,games
+      # Excluded, update manually with `docker compose pull && up -d`:
+      # - gluetun and its netns-sharing dependents (qbittorrent, prowlarr, jackett, flaresolverr): a gluetun
+      #   restart cascades to all of them and forces a 15-30 min peer-pool rebuild. radarr/sonarr/configarr update.
+      # - databases and stateful stores (immich, authentik, quack, langfuse): restarted under live apps at 8am;
+      #   check release notes before updating.
+      # - locally built images (llm-swap-media, games), which have no registry to pull from.
+      - WATCHTOWER_DISABLE_CONTAINERS=immich-server,immich-machine-learning,immich-redis,immich-postgres,minecraft,nginx-proxy-manager,authentik-server,authentik-worker,authentik-postgres,authentik-redis,gluetun,qbittorrent,prowlarr,jackett,flaresolverr,llm-swap-media,games,quack-postgres,langfuse-postgres,langfuse-redis,langfuse-clickhouse,langfuse-minio
       - WATCHTOWER_NOTIFICATIONS=email
       - WATCHTOWER_NOTIFICATION_EMAIL_FROM=jf.fagerberg@gmail.com
       - WATCHTOWER_NOTIFICATION_EMAIL_TO=jf.fagerberg@gmail.com
