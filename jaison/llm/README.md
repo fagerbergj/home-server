@@ -22,13 +22,11 @@ One `llm-swap` container (llama-swap) owns all four R9700s. It does not run any 
 | Model id | Image | Cards | Notes |
 |---|---|---|---|
 | `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | all four, TP=4 | FP8 (Qwen block-fp8) + DFlash2 int4 draft, 262k context, 6 sequences, bf16 KV. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
-| `qwen3.8-flash-next` | `llama-mtp4:b11580-port` | all four, tensor split | UD-Q4_K_XL (n-gram table in VRAM; tensor mode ignores -ot), RCCL tensor parallel, MTP shared-Q8_0 n2, f16 KV, 1 slot x 262k (two slots run a card out of memory mid-prefill and hang the tensor-parallel all-reduce). ~67 t/s code, ~48 prose; prefill ~1,100 t/s at 30k and 560 at 252k (recall verified to 252k). Loading it drains and unloads the 27B. |
-| `mimo-v2.6-flash` | `ghcr.io/ggml-org/llama.cpp:server-rocm-b11580` | all four + host RAM | MXFP4 (lossless, experts ship in MXFP4), 23 expert layers in RAM, DFlash drafter, Q8_0 vision/audio projector, 4 slots x 128k (longer prompts lose recall on ROCm). ~42 t/s single, ~46 aggregate at 4 streams, ~600 t/s prefill. `run-mimo.sh` drops the page cache after boot (no-mmap load leaves it full and kswapd stalls decode). Loading it drains and unloads the 27B. |
 | `glm-5.3-flash` | `llama-glm:b11580-p1` | all four + host RAM | unsloth UD-IQ4_XS, experts of 23 layers (~76 GiB) in RAM, GLM's MTP head at depth 2, q8_0 KV, 4 slots x 256k. ~22 t/s code, ~17 prose, ~28 aggregate at 4 streams. Built with `glm/patches` so attention reads only the indexer's 2048 top-k keys: prefill 227 t/s at 30k, 196 at 106k, 174 at 170k (a cold 170k prompt takes ~16 min). `--no-host` is required: pinned host buffers fault the GPU when a slot restores cached state. Loading it drains and unloads the 27B. |
-| `qwen3-omni-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Audio-capable media reader, on demand. |
-| `muse-glimmer-30b` | `ghcr.io/ggml-org/llama.cpp:server-vulkan` | one | Untested candidate, on demand. |
 
-Groups: `27b` is the resident default; `flash-next`, `mimo`, `glm` and `extras` are exclusive, so a request for one of them swaps everything else out and the next 27B call pays the boot.
+Groups: `27b` is the resident default; `glm` is exclusive, so a request for it swaps the 27B out and the next 27B call pays the boot.
+
+Flash-Next and MiMo are in cold storage on the media box (`/mnt/media/models/huggingface`); `run-flashnext.sh`, `run-mimo.sh` and their git history bring them back. Omni moved to the media box's 3090 (`llm/llm-swap-media.yaml`).
 
 ## Data on disk (jaison)
 
@@ -42,7 +40,7 @@ cd ~/workspace/home-server/jaison/llm && set -a && . ../../.env && set +a
 make up
 curl -s localhost:11436/v1/models | jq '.data[].id'   # what the router offers
 curl -s localhost:11436/running                        # what is loaded right now
-docker ps                                              # runtimes: qwen38-27b-vllm / flash-next / omni / muse
+docker ps                                              # runtimes: qwen38-27b-vllm / glm
 docker logs -f qwen38-27b-vllm                         # a runtime's own log
 ```
 

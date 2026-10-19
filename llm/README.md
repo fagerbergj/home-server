@@ -26,8 +26,8 @@ To change which models are available, edit `llm-swap.yaml` and restart the conta
 | `qwen3.6-35b` | `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q5_K_XL` | Previous primary chat model, kept as an A/B compare partner. |
 | `gemma4-26b-a4b` | `unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL` | Live quack judge (26 B MoE, ~4 B active). `-ncmoe 8` keeps it ~15 GB so it co-resides with a worker. |
 | `qwen3-vl-32b` | `unsloth/Qwen3-VL-32B-Instruct-GGUF:UD-Q4_K_XL` | Dense-OCR / handwriting vision model (mmproj-F32 via --mmproj-url). |
-| `qwen3-omni-30b` | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Q4_K_M` | Media reader — native image + audio. |
-| `muse-glimmer-30b` | `unsloth/Muse-Glimmer-30B-GGUF:UD-Q4_K_XL` | Dense 30 B candidate, no set membership until it passes eval. |
+| `qwen3-omni-30b` | `ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF:Q4_K_M` | Media reader — native image + audio. Runs on the media box's 3090 (`llm-swap-media.yaml`), swapping with Clef. |
+| `muse-glimmer-30b` | `unsloth/Muse-Glimmer-30B-GGUF:UD-Q4_K_XL` | Dense 30 B candidate; in cold storage (`/mnt/media/models`), not served. |
 | `qwen3-embed` | `Qwen/Qwen3-Embedding-4B-GGUF:Q8_0` | Embeddings, on jaison's CPU (`jaison/llm/llm-swap.yaml`), always resident (`ttl: 0`, persistent group) so it never competes for VRAM. |
 
 ## Pre-pulling models

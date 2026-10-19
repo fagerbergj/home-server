@@ -25,31 +25,16 @@ groups:
     exclusive: false
     persistent: true
     members: ["qwen3-embed"]
-  # Resident default. exclusive: loading it unloads everything else (Flash-Next).
+  # Resident default. exclusive: loading it unloads everything else (GLM).
   "27b":
     swap: false
     exclusive: true
     members: ["qwen3.8-27b"]
-  # Whole box: tensor parallel across all four cards. Loading it drains and unloads the 27B.
-  "flash-next":
-    swap: true
-    exclusive: true
-    members: ["qwen3.8-flash-next"]
-  # Whole box + host RAM: MXFP4 on four cards with 23 expert layers on the CPU. Drains/unloads the 27B.
-  "mimo":
-    swap: true
-    exclusive: true
-    members: ["mimo-v2.6-flash"]
   # Whole box + host RAM: GLM IQ4_XS on four cards, ~70 GB of experts in RAM. Drains/unloads the 27B.
   "glm":
     swap: true
     exclusive: true
     members: ["glm-5.3-flash"]
-  # On-demand extras (Vulkan llama.cpp); they evict each other and the groups above.
-  "extras":
-    swap: true
-    exclusive: true
-    members: ["qwen3-omni-30b", "muse-glimmer-30b"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -67,7 +52,7 @@ models:
       --host 0.0.0.0 --port 9995 --metrics
     cmdStop: docker stop embed
 
-  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 6, bf16 KV. ttl 0: resident; Flash-Next swaps it out.
+  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 6, bf16 KV. ttl 0: resident; GLM swaps it out.
   "qwen3.8-27b":
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
@@ -92,36 +77,6 @@ models:
     cmd: ${llm_dir}/run-jaison.sh
     cmdStop: docker stop -t 120 qwen38-27b-vllm   # hard kills of a TP vLLM wedge the GPU (MES/sdma reset); let it drain
 
-  # Whole box, tensor parallel: UD-Q4_K_XL + MTP n2, 1 x 262k, llama.cpp b11580 + mtp4/patches. ~73 t/s code / ~54 prose;
-  # prefill 1,523 t/s @32k, 1,188 @116k, 849 @250k; decode 60 / 40 / 30 t/s at those depths.
-  # Drains/unloads the 27B when loaded. See run-flashnext.sh.
-  "qwen3.8-flash-next":
-    proxy: "http://127.0.0.1:9992"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9992"
-      - "NAME=flash-next"
-    cmd: ${llm_dir}/run-flashnext.sh
-    cmdStop: docker stop flash-next
-
-  # MiMo-V2.6-Flash-RL 309B/A15B, stock llama.cpp b11580 (ROCm). MXFP4 lossless, TrevorJS DFlash drafter, vision/audio projector:
-  # 1 stream ~39 t/s code, prefill ~430 @10k / 360 @126k (1 slot), 4 streams ~46 aggregate. 4 slots x 128k from one 512k pool: past ~150k the ROCm
-  # flash-attention f16 accumulators lose MiMo's full-attention layers (recall verified correct to 139k).
-  # Weights read without mmap; launcher drops the page cache after boot.
-  "mimo-v2.6-flash":
-    proxy: "http://127.0.0.1:9994"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9994"
-      - "NAME=mimo"
-      - "NCMOE=23"
-      - "CTX=524288"
-      - "PARALLEL=4"
-    cmd: ${llm_dir}/run-mimo.sh
-    cmdStop: docker stop mimo
-
   # GLM-5.3-Flash 320B/A18B, llama.cpp b11580 + glm/patches (RDNA4 sparse FA). UD-IQ4_XS, own MTP head n2, q8_0 KV:
   # 1 stream ~21 t/s code / ~20 prose, 4 streams ~26 aggregate. Prefill 294 t/s @30k, 268 @106k, 246 @170k;
   # 4 x 256k slots still lean on prompt-prefix reuse. See run-glm.sh.
@@ -134,37 +89,3 @@ models:
       - "NAME=glm"
     cmd: ${llm_dir}/run-glm.sh
     cmdStop: docker stop glm
-
-  # Audio-capable media reader. Vulkan llama.cpp.
-  "qwen3-omni-30b":
-    proxy: "http://127.0.0.1:9999"
-    ttl: 1800
-    cmd: >
-      docker run --rm --init --name omni ${gpu}
-      -e HF_HUB_OFFLINE=1
-      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9999:9999
-      ghcr.io/ggml-org/llama.cpp:server-vulkan
-      -m /root/.cache/huggingface/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
-      --mmproj /root/.cache/huggingface/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
-      ${llama_common}
-      --reasoning-budget 512 --presence-penalty 1.5 --temp 0.6
-      --split-mode layer -c 32768 --parallel 1 -ub 2048 -b 2048
-      --image-min-tokens 2048 --image-max-tokens 8192
-      --port 9999
-    cmdStop: docker stop omni
-
-  # Untested agentic candidate; kept loadable.
-  "muse-glimmer-30b":
-    proxy: "http://127.0.0.1:9996"
-    ttl: 600
-    cmd: >
-      docker run --rm --init --name muse ${gpu}
-      -e HF_HUB_OFFLINE=1
-      -v ${hf}:/root/.cache/huggingface:ro -p 127.0.0.1:9996:9996
-      ghcr.io/ggml-org/llama.cpp:server-vulkan
-      -m /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/Muse-Glimmer-30B-UD-Q4_K_XL.gguf
-      --mmproj /root/.cache/huggingface/hub/models--unsloth--Muse-Glimmer-30B-GGUF/snapshots/faa5b025c584459c13febfa5c59883516710ae39/mmproj-Muse-Glimmer-30B-Q8_0.gguf
-      ${llama_common}
-      --top-k 64 -c 131072 --parallel 1 -ub 2048 -b 2048
-      --port 9996
-    cmdStop: docker stop muse

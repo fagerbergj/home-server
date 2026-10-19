@@ -1,6 +1,6 @@
 # Media-box llama-swap (RTX 3090, CUDA image; see llm-swap-cuda.Dockerfile).
 # This is the endpoint quack, Open WebUI and Traefik's /openai route talk to.
-# Clef runs here; every other model (the embedder included) is served by jaison's
+# Clef and Omni run here; every other model (the embedder included) is served by jaison's
 # llama-swap and reached through the `peers` block below (llama-swap forwards by
 # model name, so callers never know which box answered).
 healthCheckTimeout: 900   # clef loads in ~47 s from page cache; disk-cold from the ZFS pool unmeasured
@@ -27,13 +27,31 @@ models:
       --port 9997
       --metrics
 
+  # quack's media-reader (image + audio). Shares the 3090 with Clef; no -ngl so --fit spills experts to RAM beside Plex/immich.
+  "qwen3-omni-30b":
+    proxy: "http://127.0.0.1:9999"
+    checkEndpoint: /health
+    ttl: 1800
+    cmd: >
+      /app/llama-server
+      -m /root/.cache/huggingface/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+      --mmproj /root/.cache/huggingface/mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
+      --jinja --reasoning-format deepseek --reasoning-budget 512
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 1.5
+      -fa on --cache-type-k q8_0 --cache-type-v q8_0
+      -c 32768 --parallel 1 -ub 2048 -b 2048
+      --image-min-tokens 2048 --image-max-tokens 8192
+      --port 9999
+      --metrics
+
 groups:
-  resident:
-    swap: false
+  # Clef and Omni don't fit the 3090 together: Omni evicts Clef, and Clef's next call cold-loads (~47 s, past quack's 20 s decision timeout).
+  "3090":
+    swap: true
     exclusive: false
-    persistent: true
     members:
       - clef
+      - qwen3-omni-30b
 
 # jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
 # local model has the name; keep this list in sync with jaison's llm-swap.yaml.
@@ -45,8 +63,4 @@ peers:
     models:
       - qwen3-embed
       - qwen3.8-27b
-      - qwen3.8-flash-next
-      - mimo-v2.6-flash
       - glm-5.3-flash
-      - qwen3-omni-30b
-      - muse-glimmer-30b
