@@ -5,39 +5,13 @@ daemon:
   disable_clocks_cleanup: false
 apply_settings_timer: 5
 gpus:
+  1002:7551-1849:5413-0000:03:00.0:
+    fan_control_enabled: false
+    power_cap: 250.0
   1002:7551-1849:5413-0000:23:00.0:
     fan_control_enabled: false
-    fan_control_settings:
-      mode: curve
-      static_speed: 0.9
-      temperature_key: edge
-      interval_ms: 500
-      curve:
-        30: 0.2
-        60: 0.35
-        75: 0.55
-        85: 0.75
-        95: 1.0
     power_cap: 250.0
-    max_memory_clock: 1259
-    voltage_offset: 0
   1002:7551-1849:5413-0000:c3:00.0:
-    fan_control_enabled: false
-    fan_control_settings:
-      mode: curve
-      static_speed: 0.9
-      temperature_key: edge
-      interval_ms: 500
-      curve:
-        30: 0.2
-        60: 0.35
-        75: 0.55
-        85: 0.75
-        95: 1.0
-    power_cap: 250.0
-    max_memory_clock: 1259
-    voltage_offset: 0
-  1002:7551-1849:5413-0000:03:00.0:
     fan_control_enabled: false
     power_cap: 250.0
   1002:7551-1849:5413-0000:c6:00.0:
