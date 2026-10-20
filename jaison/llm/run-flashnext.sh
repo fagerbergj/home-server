@@ -22,13 +22,16 @@ NMAX="${NMAX:-2}"
 MMPROJ="${MMPROJ:-1}"
 LOAD="${LOAD:---load-mode none}"   # images before Sep 2026 master only know --no-mmap
 
-R="$HF"/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots
+REPO="${REPO:-unsloth--Qwen3.8-Flash-Next-GGUF}"   # same arch: Ornith-1.5-122B runs here too, without the MTP file
+
+R="$HF"/hub/models--$REPO/snapshots
 C() { echo "/root/.cache/huggingface${1#"$HF"}"; }
 S=$(ls -d "$R"/*/"$QUANT" | head -1)
 M=$(C "$S")/$(ls "$S" | grep -- '-00001-of-' | head -1)
-D=$(C "$(ls "$R"/*/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf | head -1)")
+D=$(ls "$R"/*/MTP/mtp-*-shared-Q8_0.gguf 2>/dev/null | head -1 || true)
 
-ARGS=(-md "$D" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
+ARGS=()
+[ -n "$D" ] && ARGS+=(-md "$(C "$D")" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
 [ "$MMPROJ" = 1 ] && ARGS+=(--mmproj "$(C "$(ls "$R"/*/mmproj-BF16.gguf | head -1)")")
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)

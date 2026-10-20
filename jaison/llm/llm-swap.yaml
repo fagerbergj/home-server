@@ -35,6 +35,11 @@ groups:
     swap: true
     exclusive: true
     members: ["glm-5.3-flash"]
+  # Eval only: Ornith Q5 tensor-split over four cards. Drains/unloads the 27B.
+  "ornith":
+    swap: true
+    exclusive: true
+    members: ["ornith-1.5-122b"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -89,3 +94,18 @@ models:
       - "NAME=glm"
     cmd: ${llm_dir}/run-glm.sh
     cmdStop: docker stop glm
+
+  # Ornith-1.5-122B (Flash-Next fine-tune) UD-Q5_K_XL, ~95 GB, tensor split; no MTP file shipped, so no drafting.
+  "ornith-1.5-122b":
+    proxy: "http://127.0.0.1:9992"
+    checkEndpoint: /health
+    ttl: 3600
+    env:
+      - "PORT=9992"
+      - "NAME=ornith"
+      - "REPO=unsloth--Ornith-1.5-122B-GGUF"
+      - "QUANT=UD-Q5_K_XL"
+      - "PARALLEL=2"
+      - "CTX=524288"   # 2 x 262k; only every 4th layer keeps KV
+    cmd: ${llm_dir}/run-flashnext.sh
+    cmdStop: docker stop ornith
