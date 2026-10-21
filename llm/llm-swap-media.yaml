@@ -64,4 +64,3 @@ peers:
       - qwen3-embed
       - qwen3.8-27b
       - glm-5.3-flash
-      - ornith-1.5-122b
