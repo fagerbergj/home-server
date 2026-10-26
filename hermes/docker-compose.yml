@@ -1,6 +1,7 @@
 services:
   hermes:
-    image: nousresearch/hermes-agent:v0.22.5
+    # stable moves only on Hermes' release gate; Watchtower pulls it nightly
+    image: nousresearch/hermes-agent:stable
     container_name: hermes
     restart: unless-stopped
     # host network: reaches llm-swap-media on 127.0.0.1:11436 without a published port
@@ -8,6 +9,10 @@ services:
     environment:
       - HERMES_UID=1000
       - HERMES_GID=1000
+      - HERMES_DASHBOARD=1
+      # tailnet-only, like Tempo; Hermes also requires a login on any non-loopback bind
+      - HERMES_DASHBOARD_HOST=100.81.155.8
+    env_file: .env
     volumes:
       - ./data:/opt/data
       # a separate clone, read-only: tracked files only, so no service .env secrets reach the agent

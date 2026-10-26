@@ -6,6 +6,9 @@ assistant for home-server and network questions, with quack staying the code rev
 
 ## Access
 
+Dashboard (status, chat, sessions, logs): `http://jason-server:9119`, tailnet-only.
+Log in as `jason`; the password is `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD` in `.env`.
+
 From the media box:
 
 ```bash
@@ -36,6 +39,8 @@ router quack uses, so Hermes sessions share the 27B's six vLLM slots with prod.
 ```bash
 git clone ~/workspace/home-server ~/workspace/home-server-view
 mkdir -p data && cp config.yaml.example data/config.yaml
+printf 'HERMES_DASHBOARD_BASIC_AUTH_USERNAME=jason\nHERMES_DASHBOARD_BASIC_AUTH_PASSWORD=%s\nHERMES_DASHBOARD_BASIC_AUTH_SECRET=%s\n' \
+  "$(openssl rand -base64 18)" "$(openssl rand -base64 32)" > .env && chmod 600 .env
 docker compose up -d
 docker exec -it hermes hermes doctor
 ```
@@ -44,4 +49,5 @@ Refresh the repo view after pushing changes: `git -C ~/workspace/home-server-vie
 
 ## Updating
 
-Bump the image tag in `docker-compose.yml` (pinned to a release) and `docker compose up -d`.
+Watchtower pulls the `stable` tag nightly. Sessions, memory and skills live in `data/`,
+so an update keeps them.
