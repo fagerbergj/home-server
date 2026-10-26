@@ -1,0 +1,15 @@
+services:
+  hermes:
+    image: nousresearch/hermes-agent:v0.22.5
+    container_name: hermes
+    restart: unless-stopped
+    # host network: reaches llm-swap-media on 127.0.0.1:11436 without a published port
+    network_mode: host
+    environment:
+      - HERMES_UID=1000
+      - HERMES_GID=1000
+    volumes:
+      - ./data:/opt/data
+      # a separate clone, read-only: tracked files only, so no service .env secrets reach the agent
+      - ${HOME}/workspace/home-server-view:/workspace/home-server:ro
+    command: ["gateway", "run"]

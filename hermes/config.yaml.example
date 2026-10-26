@@ -1,0 +1,19 @@
+# Hermes config for the home-server trial. Copied to data/config.yaml on first setup;
+# Hermes edits that copy itself (e.g. "Always Approve"), so the copy is not tracked.
+model:
+  default: "jaison/qwen3.8-27b"
+  provider: "custom"
+  base_url: "http://127.0.0.1:11436/v1"
+  # llm-swap does not report a context window; this matches the 27B's vLLM MAXLEN
+  context_length: 262144
+
+terminal:
+  # commands run inside the Hermes container only: no host shell, no Docker socket
+  backend: "local"
+  cwd: "/workspace/home-server"
+
+approvals:
+  mode: manual
+  cron_mode: deny
+  single_query_mode: deny
+  unattended_mode: deny
