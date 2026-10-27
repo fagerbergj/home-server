@@ -1,0 +1,22 @@
+services:
+  headscale:
+    image: headscale/headscale:0.29.6
+    container_name: headscale
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/run/headscale
+    volumes:
+      - ./config.yaml:/etc/headscale/config.yaml:ro
+      - ./data:/var/lib/headscale
+    healthcheck:
+      test: ["CMD", "headscale", "health"]
+      interval: 60s
+    command: serve
+    # NPM reaches it as http://headscale:8080; no host port is published
+    networks:
+      - networking_default
+
+networks:
+  networking_default:
+    external: true

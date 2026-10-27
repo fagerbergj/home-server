@@ -23,6 +23,7 @@ monitoring/node-textfile/
 monitoring/uptime-kuma/
 networking/data/
 hermes/data/
+headscale/data/
 networking/letsencrypt/
 passwords/data/
 torrent/config/
