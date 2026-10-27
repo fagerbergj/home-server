@@ -250,15 +250,6 @@ agents:
     tools: []
     inputs: [text, image, audio]
     judge: false      # gemma (the judge) cannot open media — its verdict is noise
-  image-reader:
-    bundle: agents/image-reader
-    skills: [format-markdown]
-    provider: default
-    model: ${QUACK_IMAGE_MODEL}       # Qwen3-VL-32B (vision llm-swap group); specialist for hard image reading
-    context_window: 262144      # on qwen3.8-27b's native vision, same 256k slot
-    tools: []
-    inputs: [text, image]
-    judge: false      # gemma (the judge) cannot open media — its verdict is noise
 
 # Built-in tools. A tool with a dedicated external service sets kind + url. A
 # store-backed tool references a stores[] entry (the store supplies the adapter +
