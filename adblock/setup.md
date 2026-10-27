@@ -28,11 +28,18 @@ After the wizard completes the web UI is accessible at `http://jason-server:3003
 
 ## 4. Point router DNS at the server
 
-In the router UI: **Advanced Settings > LAN > DHCP Server**
+Both settings are needed: DHCP decides what devices ask, and WAN decides where the router itself forwards (devices are also handed the router's IPv4 and IPv6 addresses as DNS).
 
-Set **DNS Server 1** to `192.168.50.186`.
+- **Advanced Settings > LAN > DHCP Server:** DNS Server 1 `192.168.50.186`, DNS Server 2 blank. Any public second server lets blocked domains through, because clients spread queries across every server they're given.
+- **Advanced Settings > WAN > Internet Connection:** DNS Server → Assign → **Manual Setting**, DNS Server1 `192.168.50.186`, DNS Server2 blank; **DNS Privacy Protocol** None (DNS-over-TLS bypasses the list). Applying restarts the router.
 
-Leave DNS Server 2 as `1.1.1.1` as a fallback in case AdGuard goes down.
+AdGuard's upstream servers must not include `192.168.50.1`, or the router and AdGuard forward to each other in a loop. Tailnet clients already use AdGuard through Headscale's `override_local_dns`.
+
+Trade-off: with no fallback, DNS is down for the whole LAN while AdGuard or the media box is down.
+
+### Blocklists
+
+Use **HaGeZi's Pro Blocklist**. Avoid **1Hosts (Xtra)**, which blocks legitimate sites outright (`opencode.ai`, `v0.dev`, `shadcn.com`), and **HaGeZi's URL Shortener Blocklist**.
 
 ## 5. Verify
 
