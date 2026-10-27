@@ -73,7 +73,7 @@ services:
   # user 101:101 matches the upstream image's clickhouse user - the bind-mounted
   # /mnt/media dirs are chmod 777 so this (and any UID) can write.
   clickhouse:
-    image: docker.io/clickhouse/clickhouse-server:25.12
+    image: docker.io/clickhouse/clickhouse-server:26.8
     container_name: langfuse-clickhouse
     restart: unless-stopped
     user: "101:101"
