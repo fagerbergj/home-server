@@ -1,6 +1,6 @@
 {
-	# loopback only: Headscale's userspace client forwards 100.64.0.1:443 here, so nothing else reaches it
-	default_bind 127.0.0.1
+	# jaison's tailnet IP only: off Headscale, nothing reaches it
+	default_bind 100.64.0.1
 	admin off
 }
 

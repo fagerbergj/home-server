@@ -53,21 +53,6 @@ services:
       - "8082:8080"
     restart: unless-stopped
 
-  # Headscale trial: a second Tailscale client beside the host's tailscaled. Userspace mode adds no kernel
-  # routes, so the two never fight over routing; inbound tailnet connections reach this host's loopback.
-  headscale-client:
-    image: tailscale/tailscale:stable
-    container_name: headscale-client
-    network_mode: host
-    environment:
-      - TS_HOSTNAME=jaison
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=true
-      - TS_EXTRA_ARGS=--login-server=https://headscale.jasonfagerberg.duckdns.org
-      - TS_TAILSCALED_EXTRA_ARGS=--port=41642   # the host tailscaled owns 41641
-    volumes:
-      - headscale-client:/var/lib/tailscale
-    restart: unless-stopped
 
   # HTTPS front for Collie (phone UI for herdr); Headscale DNS points collie.jasonfagerberg.duckdns.org at jaison
   collie-proxy:
@@ -80,5 +65,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  headscale-client:
   collie-proxy:
