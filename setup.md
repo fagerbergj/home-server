@@ -407,9 +407,9 @@ See [`networking/setup.md`](networking/setup.md) — Phase 6 section for full de
 
 ---
 
-## Phase 7 — Tailscale
+## Phase 7 — Tailnet (Headscale)
 
-Mesh VPN for remote access to LAN-only admin UIs and ad-blocking on the go.
+Self-hosted Tailscale control server plus the open-source client on every device: remote access to LAN-only admin UIs and ad-blocking on the go.
 
 See [`networking/setup.md`](networking/setup.md) — Phase 7 section.
 

@@ -560,7 +560,7 @@ extensions:
 
   # In-app token/cost dashboard (Usage in the nav rail). Charts gen_ai.client.*
   # metrics via a narrow GET-only proxy. prometheus/tempo are host-published;
-  # the container reaches them over the Tailscale IP.
+  # the container reaches them over the tailnet IP.
   usage:
     exec: release   # 0.93: binary from the pinned plugin/usage release, SHA256SUMS-verified; /quack-ext-usage = image fallback
     prometheus_url: http://100.64.0.6:9090

@@ -113,31 +113,30 @@ Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do n
 
 ---
 
-## Phase 7 — Tailscale
+## Phase 7 — Tailnet (Headscale)
 
-Tailscale gives every device in the tailnet a stable `100.x.x.x` IP and a `*.ts.net` hostname, so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) become reachable from any enrolled client without touching the router. NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
+Every device runs the open-source Tailscale client logged in to our own control server, [Headscale](../headscale/) at `https://headscale.jasonfagerberg.duckdns.org`. Each gets a stable `100.64.x.x` IP and a `<host>.hs.internal` MagicDNS name (short names like `jason-server` resolve too), so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) are reachable from any enrolled device without touching the router. NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
 
 ### Install on the Server
 
+Mint a single-use key on the server (`docker exec headscale headscale preauthkeys create --user 1 --expiration 30m`), then:
+
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up \
-  --ssh \
-  --advertise-routes=192.168.50.0/24 \
-  --advertise-exit-node \
-  --accept-dns=false
+sudo tailscale login --login-server=https://headscale.jasonfagerberg.duckdns.org --auth-key=<key> \
+  --hostname=jason-server --advertise-routes=192.168.50.0/24 --accept-dns=false
+sudo tailscale set --operator=$USER
+docker exec headscale headscale nodes approve-routes --identifier <id> --routes 192.168.50.0/24
 ```
 
-- `--ssh` lets you SSH to the host over the tailnet (no port 22 forwarding needed).
-- `--advertise-routes` exposes the LAN so tailnet clients can reach the router and other LAN devices through the server.
-- `--advertise-exit-node` lets phones/laptops route all traffic through home (useful on hostile Wi-Fi).
-- `--accept-dns=false` keeps the server's own resolver pointed at AdGuard locally; only clients use MagicDNS.
-
-Open the printed login URL once and authenticate with your identity provider.
+- `--advertise-routes` exposes the LAN so tailnet devices reach the router and other LAN devices through the server.
+- `--accept-dns=false` keeps the server's own resolver independent of tailscaled; only clients use MagicDNS.
+- SSH is plain `sshd` with keys over the tailnet IP; Tailscale SSH is not used.
+- Services that must stay tailnet-only bind the server's tailnet IP, `100.64.0.6`.
 
 ### Enable IP Forwarding (Required for Subnet Route + Exit Node)
 
-`tailscale up` will warn that IPv6 forwarding is disabled. Without this, advertised subnet routes and exit-node mode silently drop traffic.
+`tailscale` warns that IPv6 forwarding is disabled. Without this, advertised subnet routes and exit-node mode silently drop traffic.
 
 ```bash
 echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-tailscale.conf
@@ -173,33 +172,15 @@ Replace `enp5s0` with your primary NIC if different — find it with `ip -o rout
 
 ### Enroll Clients (Laptop / Phone)
 
-On every other device that should join the tailnet, install Tailscale and run plain `tailscale up` — **no advertise flags**, those are server-only. On Linux:
+- **Linux:** `sudo tailscale login --login-server=https://headscale.jasonfagerberg.duckdns.org --auth-key=<key> --hostname=<name>`, then `sudo tailscale set --operator=$USER --accept-routes`.
+- **Android / iOS:** in the Tailscale app, Accounts → Add account → ⋯ → Use custom coordination server, enter the URL above, then run the `headscale auth register …` command the app shows on the server with `--user jason`.
 
-```bash
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-```
+DNS is set in `headscale/config.yaml`: MagicDNS on `hs.internal`, AdGuard (`100.64.0.6`) as the global nameserver, and `extra_records` for names such as Collie's.
 
-On macOS / iOS / Android, install the official app and sign in with the same identity provider as the server.
+Once enrolled:
 
-### Approve in the Admin Console
-
-In [login.tailscale.com](https://login.tailscale.com):
-
-1. **Machines > server > Edit route settings**
-   - Enable the `192.168.50.0/24` subnet route.
-   - Enable **Use as exit node**.
-2. **Machines > server > Disable key expiry** — server should not need re-auth.
-3. **DNS > Nameservers** — add `192.168.50.186` (AdGuard) as a global nameserver, enable **Override local DNS**. Now every tailnet client uses AdGuard for ad blocking, anywhere.
-4. **DNS > MagicDNS** — enable. The server is reachable at `server.<tailnet>.ts.net`.
-
-### Enroll Clients
-
-Install the Tailscale app on phone/laptop/tablet, sign in with the same identity provider. Then:
-
-- Direct hits work immediately: `http://<server-tailnet-name>:81` for NPM admin, `:8091` for Traefik dashboard, `:3001` for Uptime Kuma, etc.
+- Direct hits work: `http://jason-server:81` for NPM admin, `:8091` for Traefik dashboard, `:3001` for Uptime Kuma, etc.
 - LAN passthrough works: `http://192.168.50.186:81` resolves over the tailnet via the subnet route.
-- Toggle the server as exit node from the client app when on untrusted networks.
 
 ### What Stays Public
 
@@ -229,9 +210,9 @@ The `dashboard.`, `status.`, and `llm-api.` proxy hosts that previously fronted 
 
 ### Updates
 
-The `tailscaled` package auto-updates via apt's unattended upgrades hook installed by the official script. Confirm with:
+The `tailscaled` package auto-updates via apt's unattended upgrades hook installed by the official script; Headscale's image is pinned in `headscale/docker-compose.yml`. Confirm with:
 
 ```bash
-sudo tailscale status
-sudo tailscale version
+tailscale status
+docker exec headscale headscale nodes list
 ```

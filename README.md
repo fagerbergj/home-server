@@ -12,7 +12,7 @@ Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configura
 | Diun | Watches excluded images and emails when updates are available |
 | Games | Next.js games launcher (Kings Corner and future browser games) |
 | Grafana + Prometheus | System and container metrics dashboard |
-| Headscale | Open-source Tailscale control server, on trial beside Tailscale |
+| Headscale | Self-hosted tailnet control server — remote access to LAN-only admin UIs, MagicDNS, AdGuard everywhere |
 | Hermes Agent | Trial general-purpose agent on the local 27B (home-server and network questions) |
 | Immich | Personal photo backup and browsing with ML-powered search |
 | Langfuse | LLM observability + eval datasets, fed by quack's OTLP traces |
@@ -21,7 +21,6 @@ Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configura
 | qBittorrent | Download torrents directly to server via web UI |
 | quack | GitHub PR-review bot — clones repos and posts inline reviews on `@quack` / PR-open |
 | rmfakecloud | Self-hosted reMarkable cloud — syncs tablet notes |
-| Tailscale | Mesh VPN — remote access to LAN-only admin UIs, exit node, MagicDNS |
 | Uptime Kuma | Service status page — shows each container up/down |
 | Vaultwarden | Self-hosted Bitwarden-compatible password manager |
 | Watchtower | Auto-updates containers daily, emails on update |
@@ -50,7 +49,7 @@ home-server/
 ├── adblock/          # AdGuard Home DNS ad blocker
 ├── notes/            # rmfakecloud (reMarkable cloud emulator)
 ├── langfuse/         # Langfuse (LLM observability + evals)
-├── headscale/        # Headscale (self-hosted Tailscale control server, trial)
+├── headscale/        # Headscale (self-hosted tailnet control server)
 ├── hermes/           # Hermes Agent trial (local 27B via llm-swap)
 ├── quack/            # GitHub PR-review bot (built from ~/workspace/agent-researcher)
 └── README.md
@@ -72,7 +71,7 @@ Media drives mounted at `/mnt/<drive-name>/` and referenced as volumes in each s
 4. Mount Drives + Alerts
 5. Docker
 6. [Nginx Proxy Manager](networking/setup.md) (proxy hosts, SSL)
-7. [Tailscale](networking/setup.md) (mesh VPN for tailnet-only admin UIs)
+7. [Headscale](networking/setup.md) (tailnet for admin-only UIs)
 8. Services — see each service's `setup.md`
 
 See [setup.md](setup.md) for the full step-by-step guide.

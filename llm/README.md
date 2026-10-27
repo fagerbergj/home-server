@@ -53,7 +53,7 @@ curl http://192.168.50.186:11436/v1/embeddings \
 curl http://192.168.50.186:11436/v1/models
 ```
 
-From outside the home network — connect via Tailscale, then any OpenAI-compatible client works against `http://jason-server:11436/v1`. llm-swap doesn't authenticate; tailnet membership is the access boundary.
+From outside the home network — connect to the tailnet (Headscale), then any OpenAI-compatible client works against `http://jason-server:11436/v1`. llm-swap doesn't authenticate; tailnet membership is the access boundary.
 
 ## Notes on the stack
 

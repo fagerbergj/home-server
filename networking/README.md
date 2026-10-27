@@ -3,7 +3,7 @@
 Two ingress paths:
 
 - **Public** — Nginx Proxy Manager (NPM) terminates TLS for services that need to be reachable from non-tailnet devices (the reMarkable tablet, family Plex clients, mobile apps with no Tailscale, etc.). Wildcard Let's Encrypt cert via DuckDNS DNS-01 challenge. DDNS via the DuckDNS updater container.
-- **Tailnet** — Tailscale gives every enrolled device a `100.x.x.x` IP and a MagicDNS hostname. Admin UIs and personal-only services live here, never on the public internet.
+- **Tailnet** — [Headscale](../headscale/) gives every enrolled device a `100.64.x.x` IP and a MagicDNS hostname. Admin UIs and personal-only services live here, never on the public internet.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ Internet
 
 Tailnet (100.64.0.0/10)
     │
-    └── tailscale ──► jason-server ──► :81    NPM admin
+    └── tailnet   ──► jason-server ──► :81    NPM admin
                                   ──► :8091  Traefik dashboard
                                   ──► :3003  AdGuard Home
                                   ──► :3004  Grafana

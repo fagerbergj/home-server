@@ -1,6 +1,6 @@
 # jaison — Setup
 
-Mirrors the media box's `setup.md` phases; ZFS, NPM, Tailscale and the service stacks don't apply here. Everything after Phase 1 runs over SSH.
+Mirrors the media box's `setup.md` phases; ZFS, NPM and the service stacks don't apply here. Everything after Phase 1 runs over SSH.
 
 ## Phase 1 — OS Install (Ubuntu Server 26.04.1 LTS)
 
@@ -16,7 +16,7 @@ Mirrors the media box's `setup.md` phases; ZFS, NPM, Tailscale and the service s
 - Router: DHCP reservation for this box's MAC at `192.168.50.202` (currently the Wi-Fi interface `wlp145s0`; if it moves to a wired port, reserve that MAC instead).
 - AdGuard Home (media box UI): **Filters → DNS rewrites → Add**: `jaison` → `192.168.50.202`, and `jason-server` → `192.168.50.186`. Every config that crosses the boxes (Traefik route, `QUACK_LLM_ENDPOINT`, llama-swap `peers`) uses those names, so an address change is one rewrite, not three files. Only clients that use AdGuard as DNS see them; containers on the media box resolve through the host, so the host's resolver must point at AdGuard (check `resolvectl status` there) or those configs need the IP.
 - Verify: `ping jaison` from the media box, `ping jason-server` from here.
-- Tailscale (optional, for SSH from off-LAN): `curl -fsSL https://tailscale.com/install.sh | sh`, `sudo tailscale up --ssh`, `sudo ufw allow in on tailscale0`. Not an exit node or subnet router; the media box already is.
+- Tailnet (Headscale; for SSH from off-LAN and Collie): install the Tailscale client, `sudo tailscale login --login-server=https://headscale.jasonfagerberg.duckdns.org --auth-key=<key> --hostname=jaison`, `sudo ufw allow in on tailscale0`. Not an exit node or subnet router; the media box already is.
 
 ### Update, firewall, reboot
 
