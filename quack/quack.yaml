@@ -563,8 +563,8 @@ extensions:
   # the container reaches them over the Tailscale IP.
   usage:
     exec: release   # 0.93: binary from the pinned plugin/usage release, SHA256SUMS-verified; /quack-ext-usage = image fallback
-    prometheus_url: http://100.81.155.8:9090
-    tempo_url: http://100.81.155.8:3200
+    prometheus_url: http://100.64.0.6:9090
+    tempo_url: http://100.64.0.6:3200
     default_range: 24h
 
 # Durable chat attachments (v0.29.0): uploaded/dispatched files persist as

@@ -39,8 +39,7 @@ dns:
   override_local_dns: true
   nameservers:
     global:
-      - 1.1.1.1
-      - 1.0.0.1
+      - 100.64.0.6   # AdGuard on the media box
   extra_records:
     - name: collie.jasonfagerberg.duckdns.org   # Collie on jaison, reachable only over Headscale
       type: A

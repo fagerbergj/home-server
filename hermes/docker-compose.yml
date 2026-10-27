@@ -11,7 +11,7 @@ services:
       - HERMES_GID=1000
       - HERMES_DASHBOARD=1
       # tailnet-only, like Tempo; Hermes also requires a login on any non-loopback bind
-      - HERMES_DASHBOARD_HOST=100.81.155.8
+      - HERMES_DASHBOARD_HOST=100.64.0.6
       # the only hostname accepted besides the bound IP (DNS-rebinding guard, exact match)
       - HERMES_DASHBOARD_PUBLIC_URL=http://jason-server:9119
     env_file: .env

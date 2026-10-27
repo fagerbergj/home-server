@@ -17,26 +17,6 @@ services:
     networks:
       - networking_default
 
-  # the media box's own Headscale node, beside the host's tailscaled; it also routes the LAN to Headscale
-  # devices, as the host's Tailscale subnet router does. Userspace mode adds no kernel routes.
-  headscale-client:
-    image: tailscale/tailscale:stable
-    container_name: headscale-client
-    network_mode: host
-    environment:
-      - TS_HOSTNAME=jason-server
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=true
-      - TS_ROUTES=192.168.50.0/24
-      - TS_EXTRA_ARGS=--login-server=https://headscale.jasonfagerberg.duckdns.org
-      - TS_TAILSCALED_EXTRA_ARGS=--port=41642   # the host tailscaled owns 41641
-    volumes:
-      - headscale-client:/var/lib/tailscale
-    restart: unless-stopped
-
-volumes:
-  headscale-client:
-
 networks:
   networking_default:
     external: true
