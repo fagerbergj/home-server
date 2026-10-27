@@ -348,7 +348,7 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - github:fagerbergj/quack@plugin/usage/v0.6.0#extensions/usage/plugin
-    - github:fagerbergj/quack@plugin/sleeper/v0.18.0#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
+    - github:fagerbergj/quack@plugin/sleeper/v0.19.0#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
     - github:fagerbergj/quack@plugin/github/v0.32.0#extensions/github/plugin   # code-implementer/reviewer/explorer bundles
     - github:fagerbergj/quack@plugin/remarkable/v0.2.0#extensions/remarkable/plugin   # the document-ingest workflow extensions.remarkable dispatches into
 
