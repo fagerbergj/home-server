@@ -69,5 +69,16 @@ services:
       - headscale-client:/var/lib/tailscale
     restart: unless-stopped
 
+  # HTTPS front for Collie (phone UI for herdr); Headscale DNS points collie.jasonfagerberg.duckdns.org at jaison
+  collie-proxy:
+    build: collie-proxy
+    container_name: collie-proxy
+    network_mode: host
+    env_file: collie-proxy/.env   # DUCKDNS_TOKEN, copied from networking/.env on the media box
+    volumes:
+      - collie-proxy:/data
+    restart: unless-stopped
+
 volumes:
   headscale-client:
+  collie-proxy:

@@ -1,0 +1,12 @@
+{
+	# loopback only: Headscale's userspace client forwards 100.64.0.1:443 here, so nothing else reaches it
+	default_bind 127.0.0.1
+	admin off
+}
+
+collie.jasonfagerberg.duckdns.org {
+	tls {
+		dns duckdns {env.DUCKDNS_TOKEN}
+	}
+	reverse_proxy 127.0.0.1:8787
+}
