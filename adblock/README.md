@@ -6,6 +6,6 @@ Admin UI at: `http://192.168.50.186:3003` (internal only)
 
 ## Notes
 
-- DNS runs on port 53 — router must point to server IP (`192.168.50.186`) as primary DNS
-- All devices on the network get ad blocking automatically
+- DNS runs on port 53. The router's DHCP and WAN DNS both point only at `192.168.50.186`, and Headscale makes it the tailnet's resolver, so every device on either network is filtered.
+- Blocklist: HaGeZi's Pro. 1Hosts (Xtra) broke legitimate sites.
 - Blocklists and query logs managed via the web UI

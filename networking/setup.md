@@ -48,12 +48,7 @@ DDNS is handled by the `duckdns-updater` container — no router config needed.
 
 ### DNS (AdGuard Home)
 
-Once AdGuard Home is running, point the router's DNS at the server so all devices get ad blocking:
-
-1. In the router UI: **Advanced Settings > LAN > DHCP Server**
-2. Set **DNS Server 1** to `192.168.50.186`
-3. Set **DNS Server 2** to `1.1.1.1` (fallback if AdGuard goes down)
-4. Click **Apply**
+Once AdGuard Home is running, point both the router's DHCP DNS and its WAN DNS at the server, with no fallback; see [adblock/setup.md](../adblock/setup.md#4-point-router-dns-at-the-server).
 
 ---
 
