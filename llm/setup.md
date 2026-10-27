@@ -6,7 +6,7 @@ Skips the multi-minute wait on the first request to a model.
 
 ```bash
 cd ~/workspace/home-server/llm
-./download-models.sh   # all models incl. the Selene judge
+./download-models.sh
 ```
 
 Requires `HF_TOKEN` in the environment for gated repos.
@@ -15,10 +15,10 @@ Requires `HF_TOKEN` in the environment for gated repos.
 
 ```bash
 docker compose up -d --build llm-swap
-docker compose up -d open-webui qdrant
+docker compose up -d qdrant
 ```
 
-llm-swap is built locally (`llm-swap.Dockerfile`); the build is fast after the first run because the base image is cached. The promptfoo judge (`selene`) is a model in `llm-swap.yaml` and loads on demand — nothing extra to start.
+llm-swap is built locally (`llm-swap.Dockerfile`); the build is fast after the first run because the base image is cached.
 
 ## 3. Verify llm-swap
 
@@ -36,18 +36,7 @@ curl http://192.168.50.186:11436/v1/chat/completions \
 rocm-smi --showuse
 ```
 
-## 4. Set up Open WebUI
-
-Open `http://192.168.50.186:3000` in your browser.
-
-1. Create your admin account (first account gets admin)
-2. The model dropdown should list the keys from `llm-swap.yaml` (qwen3.8-27b, gemma4-26b-a4b, etc.). If empty, llm-swap isn't reachable — check `docker logs open-webui`.
-3. Set the default model in **Admin Panel > Settings > Interface**.
-4. For each family/friend: **Admin Panel > Users > Add User**
-   - Set their name, email, and a temporary password
-   - Send them `https://llm.jasonfagerberg.duckdns.org` and their credentials
-
-## 5. Verify tailnet access
+## 4. Verify tailnet access
 
 From any tailnet-enrolled device:
 

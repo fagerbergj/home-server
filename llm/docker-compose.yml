@@ -1,4 +1,4 @@
-# Media box (jason-server): llm-swap-media + qdrant + open-webui. The AI box's router
+# Media box (jason-server): llm-swap-media + qdrant. The AI box's router
 # lives in jaison/llm/.
 # llm-swap-media (RTX 3090) is the single endpoint everything on the media box
 # uses (network alias `llm-swap`); it serves Clef itself and peers to jaison for
@@ -24,7 +24,7 @@ services:
       - /mnt/media/models/huggingface:/root/.cache/huggingface
     networks:
       default:
-        aliases: [llm-swap]   # quack/open-webui keep talking to http://llm-swap:11436
+        aliases: [llm-swap]   # quack keeps talking to http://llm-swap:11436
       api_gateway:
     restart: unless-stopped
     healthcheck:
@@ -40,25 +40,6 @@ services:
     container_name: qdrant
     volumes:
       - qdrant-data:/qdrant/storage
-    restart: unless-stopped
-
-  open-webui:
-    profiles: ["media"]
-    image: ghcr.io/open-webui/open-webui:latest
-    container_name: open-webui
-    ports:
-      - "3000:8080"
-    environment:
-      - OPENAI_API_BASE_URL=http://llm-swap:11436/v1
-      - OPENAI_API_KEY=unused
-      - ENABLE_API_KEYS=true
-      - USER_PERMISSIONS_FEATURES_API_KEYS=true
-      - VECTOR_DB=qdrant
-      - QDRANT_URI=http://qdrant:6333
-    volumes:
-      - ./open-webui:/app/backend/data
-    depends_on:
-      - qdrant
     restart: unless-stopped
 
 networks:

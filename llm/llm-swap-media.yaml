@@ -1,5 +1,5 @@
 # Media-box llama-swap (RTX 3090, CUDA image; see llm-swap-cuda.Dockerfile).
-# This is the endpoint quack, Open WebUI and Traefik's /openai route talk to.
+# This is the endpoint quack, Hermes and Traefik's /openai route talk to.
 # Clef and Omni run here; every other model (the embedder included) is served by jaison's
 # llama-swap and reached through the `peers` block below (llama-swap forwards by
 # model name, so callers never know which box answered).

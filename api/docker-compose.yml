@@ -163,9 +163,7 @@ services:
       - "traefik.http.services.swagger-ui.loadbalancer.server.port=8080"
       # Public — no auth middleware
 
-  # ── OpenSearch ────────────────────────────────────────────────────────────────
-  # Single-node full-text search index for document-pipeline Lucene queries.
-  # Other services can create their own indices on the same instance.
+  # ── SearXNG ───────────────────────────────────────────────────────────────────
   searxng:
     image: searxng/searxng:latest
     container_name: searxng

@@ -1,12 +1,8 @@
 # Local LLM (llm-swap + llama.cpp)
 
-OpenAI-compatible LLM gateway backed by [llama-swap](https://github.com/mostlygeek/llama-swap) routing to per-model [llama.cpp](https://github.com/ggml-org/llama.cpp) `llama-server` instances. ROCm-accelerated on 2× AMD Radeon AI Pro R9700 (64 GB VRAM total). [Open WebUI](https://github.com/open-webui/open-webui) provides the chat interface; document-pipeline and OpenCode talk to the API directly.
+OpenAI-compatible LLM gateway backed by [llama-swap](https://github.com/mostlygeek/llama-swap) routing to per-model [llama.cpp](https://github.com/ggml-org/llama.cpp) `llama-server` instances. ROCm-accelerated on 2× AMD Radeon AI Pro R9700 (64 GB VRAM total). quack, Hermes and OpenCode talk to the API directly.
 
 ## Access
-
-Open WebUI:
-- LAN: `http://192.168.50.186:3000`
-- Public: `https://llm.jasonfagerberg.duckdns.org`
 
 OpenAI-compatible API (tailnet-only — see [networking/setup.md](../networking/setup.md) Phase 7):
 - LAN: `http://192.168.50.186:11436/v1`
@@ -68,11 +64,9 @@ From outside the home network — connect via Tailscale, then any OpenAI-compati
 
 ## Evaluating models
 
-The promptfoo harness under [promptfoo/](promptfoo/) still exists but is dormant —
-its Selene judges were retired from `llm-swap.yaml`, so its suites won't run
-as-written. Evaluation is moving to [Langfuse](../langfuse/), which ingests
-quack's real OTLP traces and turns them into eval datasets; see
-`monitoring/otel-collector/config.yaml` for the trace fan-out.
+Evaluation runs on [Langfuse](../langfuse/), which ingests quack's real OTLP
+traces and turns them into eval datasets; see `monitoring/otel-collector/config.yaml`
+for the trace fan-out.
 
 ## Updating
 

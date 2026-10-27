@@ -15,7 +15,7 @@ Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configura
 | Hermes Agent | Trial general-purpose agent on the local 27B (home-server and network questions) |
 | Immich | Personal photo backup and browsing with ML-powered search |
 | Langfuse | LLM observability + eval datasets, fed by quack's OTLP traces |
-| llm-swap + Open WebUI | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
+| llm-swap | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
 | Plex Media Server | Stream movies/TV locally and remotely |
 | qBittorrent | Download torrents directly to server via web UI |
 | quack | GitHub PR-review bot — clones repos and posts inline reviews on `@quack` / PR-open |
@@ -39,7 +39,7 @@ home-server/
 ├── plex/             # Plex Media Server
 ├── games/            # Next.js games launcher (Kings Corner)
 ├── photos/           # Immich photo storage
-├── llm/              # llm-swap (llama.cpp) + Open WebUI — runs on the AI box (jaison)
+├── llm/              # llm-swap (llama.cpp) — runs on the AI box (jaison)
 ├── jaison/           # AI box: hardware, setup phases, scripts
 ├── torrent/          # qBittorrent behind Mullvad VPN
 ├── audiobooks/       # Audiobookshelf

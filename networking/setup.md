@@ -95,7 +95,6 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 | Authentik | `auth.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8090` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `books.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `13378` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Games | `games.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
-| Open WebUI | `llm.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `3000` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `passwords.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `8888` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Immich | `photos.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `2283` | Yes | `*.jasonfagerberg.duckdns.org` |
 | Plex | `plex.jasonfagerberg.duckdns.org` | `http` | `192.168.50.186` | `32400` | Yes | `*.jasonfagerberg.duckdns.org` |

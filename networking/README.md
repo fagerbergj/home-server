@@ -14,7 +14,6 @@ Internet
     │                      ──► auth.jasonfagerberg.duckdns.org        ──► Traefik        (8090) ──► Authentik (9000)
     │                      ──► books.jasonfagerberg.duckdns.org       ──► Audiobookshelf  (13378)
     │                      ──► games.jasonfagerberg.duckdns.org       ──► Games           (3006)
-    │                      ──► llm.jasonfagerberg.duckdns.org         ──► Open WebUI      (3000)
     │                      ──► passwords.jasonfagerberg.duckdns.org   ──► Vaultwarden     (8888)
     │                      ──► photos.jasonfagerberg.duckdns.org      ──► Immich          (2283)
     │                      ──► plex.jasonfagerberg.duckdns.org        ──► Plex            (32400)
@@ -53,7 +52,6 @@ Reachable from anywhere on the internet via NPM.
 | Authentik | `https://auth.jasonfagerberg.duckdns.org` |
 | Audiobookshelf | `https://books.jasonfagerberg.duckdns.org` |
 | Games | `https://games.jasonfagerberg.duckdns.org` |
-| Open WebUI | `https://llm.jasonfagerberg.duckdns.org` |
 | Vaultwarden | `https://passwords.jasonfagerberg.duckdns.org` |
 | Immich | `https://photos.jasonfagerberg.duckdns.org` |
 | Plex | `https://plex.jasonfagerberg.duckdns.org` |
