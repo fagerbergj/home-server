@@ -1,6 +1,6 @@
 # Local LLM (llm-swap + llama.cpp)
 
-OpenAI-compatible LLM gateway backed by [llama-swap](https://github.com/mostlygeek/llama-swap) routing to per-model [llama.cpp](https://github.com/ggml-org/llama.cpp) `llama-server` instances. ROCm-accelerated on 2× AMD Radeon AI Pro R9700 (64 GB VRAM total). quack, Hermes and OpenCode talk to the API directly.
+OpenAI-compatible LLM gateway backed by [llama-swap](https://github.com/mostlygeek/llama-swap) routing to per-model [llama.cpp](https://github.com/ggml-org/llama.cpp) `llama-server` instances. ROCm-accelerated on 2× AMD Radeon AI Pro R9700 (64 GB VRAM total). quack and OpenCode talk to the API directly.
 
 ## Access
 

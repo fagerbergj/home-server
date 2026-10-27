@@ -13,7 +13,6 @@ Personal home server running Ubuntu Server 26.04 LTS. This repo tracks configura
 | Games | Next.js games launcher (Kings Corner and future browser games) |
 | Grafana + Prometheus | System and container metrics dashboard |
 | Headscale | Self-hosted tailnet control server — remote access to LAN-only admin UIs, MagicDNS, AdGuard everywhere |
-| Hermes Agent | Trial general-purpose agent on the local 27B (home-server and network questions) |
 | Immich | Personal photo backup and browsing with ML-powered search |
 | Langfuse | LLM observability + eval datasets, fed by quack's OTLP traces |
 | llm-swap | Local LLM inference via GPU (llama.cpp behind an OpenAI-compatible router) |
@@ -50,7 +49,6 @@ home-server/
 ├── notes/            # rmfakecloud (reMarkable cloud emulator)
 ├── langfuse/         # Langfuse (LLM observability + evals)
 ├── headscale/        # Headscale (self-hosted tailnet control server)
-├── hermes/           # Hermes Agent trial (local 27B via llm-swap)
 ├── quack/            # GitHub PR-review bot (built from ~/workspace/agent-researcher)
 └── README.md
 ```
