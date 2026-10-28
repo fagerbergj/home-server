@@ -139,16 +139,22 @@ decisions:
       mode: decide       # a confident accept skips the plan judge; anything else runs it
       act_at: 0.9
       timeout: 8s        # decide waits on Clef before the judge
-      audit_rate: 0.5    # first week: half of skipped plans still get a background judge verdict; then 0.1
+      audit_rate: 0.1    # 99.5% audited agreement over 210 plans (2026-10-06..28); keep a 10% background judge check
     # GitHub extension review points (github ext >= v0.17.0): one call per finding + one per verdict.
     "ext:github/finding.severity": { enabled: true, handler: clef, mode: observe }
     "ext:github/finding.blocking": { enabled: true, handler: clef, mode: observe }
     "ext:github/review.verdict":   { enabled: true, handler: clef, mode: observe }
+    # Guard (github ext >= v0.33.0): before a review posts, a confident true raises a non-blocking finding to blocking.
+    "ext:github/finding.raise":     { enabled: true, handler: clef, mode: guard }
     # Sleeper weekly points (sleeper ext >= v0.9.1): asked after lineup/waivers/trade runs end done.
     "ext:sleeper/lineup_change":   { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/waiver_pickup":   { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/waiver_priority": { enabled: true, handler: clef, mode: observe }
     "ext:sleeper/trade_accept":    { enabled: true, handler: clef, mode: observe }
+    # sleeper_predict stat lines (sleeper ext >= v0.21.0): observe until a backtest beats Sleeper's projections.
+    "ext:sleeper/qb_line":         { enabled: true, handler: clef, mode: observe, timeout: 20s }
+    "ext:sleeper/rb_line":         { enabled: true, handler: clef, mode: observe, timeout: 20s }
+    "ext:sleeper/receiver_line":   { enabled: true, handler: clef, mode: observe, timeout: 20s }
     memory.extract:  { enabled: true, handler: clef, mode: observe }   # needs orchestrator.user_memory_hook
     answer.accept:   { enabled: false, handler: clef, mode: observe }   # off: research corpus 2026-10-06, Clef passed 3/4 bad rounds the judge caught
     research.source: { enabled: false, handler: clef, mode: observe }   # off: thin signal (15/15 confident-irrelevant, 11 from one item); frees Clef's queue
@@ -348,8 +354,8 @@ plugins:
     - github:fagerbergj/dotagents
     - github:DietrichGebert/ponytail@v4.9.0
     - github:fagerbergj/quack@plugin/usage/v0.6.0#extensions/usage/plugin
-    - github:fagerbergj/quack@plugin/sleeper/v0.20.0#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
-    - github:fagerbergj/quack@plugin/github/v0.32.0#extensions/github/plugin   # code-implementer/reviewer/explorer bundles
+    - github:fagerbergj/quack@plugin/sleeper/v0.21.0#extensions/sleeper/plugin   # tag only at a commit the running image carries (its agents name sleeper's Go tools)
+    - github:fagerbergj/quack@plugin/github/v0.33.0#extensions/github/plugin   # code-implementer/reviewer/explorer bundles
     - github:fagerbergj/quack@plugin/remarkable/v0.2.0#extensions/remarkable/plugin   # the document-ingest workflow extensions.remarkable dispatches into
 
 workspace:
