@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-61ba5f2e5c365718a0b6216cbda11152fbcb23d5
+    image: ghcr.io/fagerbergj/quack:v1-4284e8d6fd3ba92296be21082e7709a4ddd63405
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -148,7 +148,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-61ba5f2e5c365718a0b6216cbda11152fbcb23d5
+    image: ghcr.io/fagerbergj/quack:v1-4284e8d6fd3ba92296be21082e7709a4ddd63405
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
