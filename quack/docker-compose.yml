@@ -97,11 +97,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
-      # PUBLIC webhook — GitHub can't SSO; it HMAC-signs. The Path rule out-prioritises
-      # the Host-only router below, so this bypasses Authentik.
-      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/github/webhook`)"
-      - "traefik.http.routers.quack-webhook.entrypoints=api"
-      - "traefik.http.routers.quack-webhook.service=quack"
+      # The public /github/webhook route moved to quack-v1-github (D52).
       # Everything else (UI + API) behind Authentik SSO.
       - "traefik.http.routers.quack.rule=Host(`quack.jasonfagerberg.duckdns.org`)"
       - "traefik.http.routers.quack.entrypoints=api"
@@ -173,6 +169,12 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.quack-v1-github.loadbalancer.server.port=8090"
       - "traefik.http.middlewares.quack-v1-webhook.replacepath.path=/webhook"
+      # PUBLIC webhook — GitHub can't SSO; it HMAC-signs. The Path rule out-prioritises v0's Host-only router, so
+      # this bypasses Authentik.
+      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/github/webhook`)"
+      - "traefik.http.routers.quack-webhook.entrypoints=api"
+      - "traefik.http.routers.quack-webhook.service=quack-v1-github"
+      - "traefik.http.routers.quack-webhook.middlewares=quack-v1-webhook"
     restart: unless-stopped
 
   quack-v1-init:
