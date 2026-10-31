@@ -1,0 +1,6 @@
+{
+  "providers": {
+    "local": { "baseUrl": "http://llm-swap:11436/v1", "models": { "qwen3.8-27b": { "contextWindow": 131072, "maxTokens": 16384, "reasoning": true } } },
+    "clef": { "baseUrl": "http://llm-swap:11436/upstream/clef/v1", "api": "systemone", "models": { "clef": { "contextWindow": 8192 } } }
+  }
+}

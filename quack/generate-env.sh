@@ -35,6 +35,9 @@ set_secret QUACK_DB_PASSWORD "$(openssl rand -hex 24)"
 # the HMAC signatures match.
 set_secret QUACK_GITHUB_APP_WEBHOOK_SECRET "$(openssl rand -hex 32)"
 
+# quack v1: the shared secret its sessions present to its GitHub service.
+set_secret QUACK_V1_SERVICE_TOKEN "$(openssl rand -hex 32)"
+
 echo
 echo "Still set by hand in quack/.env (not auto-generated):"
 echo "  QUACK_GITHUB_APP_CLIENT_ID        — from the GitHub App (Iv23li...)"

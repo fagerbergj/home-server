@@ -122,6 +122,66 @@ services:
       - quack-workspace:/workspace
     restart: "no"
 
+  # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
+  # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
+  quack-v1:
+    image: ghcr.io/fagerbergj/quack:v1-61ba5f2e5c365718a0b6216cbda11152fbcb23d5
+    container_name: quack-v1
+    init: true
+    command: ["node", "packages/distributor/src/main.ts"]
+    environment:
+      QUACK_DATA_DIR: /data
+      QUACK_CONFIG: /config/deployment.json
+      QUACK_AGENT: /app/agents/reviewer/agent.json
+      QUACK_GH_SERVICE_URL: http://quack-v1-github:8090
+      QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      # llm-swap doesn't auth, but a provider needs a key set to be used.
+      QUACK_LOCAL_API_KEY: none
+      QUACK_CLEF_API_KEY: none
+    volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
+      - quack-v1-data:/data
+    depends_on:
+      quack-v1-init:
+        condition: service_completed_successfully
+    networks:
+      - default
+      - llm_default
+    # Sessions stop on SIGTERM and resume from their logs on boot.
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  quack-v1-github:
+    image: ghcr.io/fagerbergj/quack:v1-61ba5f2e5c365718a0b6216cbda11152fbcb23d5
+    container_name: quack-v1-github
+    init: true
+    # The uid v0 reads the App key as.
+    user: "65532:65532"
+    command: ["node", "packages/github/src/main.ts"]
+    environment:
+      QUACK_GH_APP_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
+      QUACK_GH_PRIVATE_KEY_FILE: /run/secrets/quack-app.pem
+      QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
+      QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
+    volumes:
+      - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
+    networks:
+      - default
+      - api_gateway
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.quack-v1-github.loadbalancer.server.port=8090"
+      - "traefik.http.middlewares.quack-v1-webhook.replacepath.path=/webhook"
+    restart: unless-stopped
+
+  quack-v1-init:
+    image: alpine
+    command: ["chown", "-R", "1000:1000", "/data"]
+    volumes:
+      - quack-v1-data:/data
+    restart: "no"
+
   quack-postgres:
     image: postgres:17-alpine
     container_name: quack-postgres
@@ -154,5 +214,6 @@ networks:
 volumes:
   quack-workspace:
   quack-pg:
+  quack-v1-data:
   quack-toolchains:
     external: true
