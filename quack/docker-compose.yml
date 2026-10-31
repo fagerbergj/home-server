@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-4284e8d6fd3ba92296be21082e7709a4ddd63405
+    image: ghcr.io/fagerbergj/quack:v1-874be763187ef831dcb134b4c15bc3b1c8b477c0
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -134,6 +134,10 @@ services:
       # llm-swap doesn't auth, but a provider needs a key set to be used.
       QUACK_LOCAL_API_KEY: none
       QUACK_CLEF_API_KEY: none
+      # Eval (packages/eval) keeps datasets and experiments in the Langfuse v0 uses.
+      LANGFUSE_BASE_URL: http://192.168.50.186:3008
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
     volumes:
       - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-data:/data
@@ -148,7 +152,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-4284e8d6fd3ba92296be21082e7709a4ddd63405
+    image: ghcr.io/fagerbergj/quack:v1-874be763187ef831dcb134b4c15bc3b1c8b477c0
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
