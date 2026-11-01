@@ -1,6 +1,6 @@
 services:
   rmfakecloud:
-    image: ddvk/rmfakecloud:v0.0.31
+    image: ddvk/rmfakecloud:0.0.32
     container_name: rmfakecloud
     ports:
       - "3005:3000"
