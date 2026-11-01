@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-078743a0a7aa8913c1f5bf95d493ccf49df8a437
+    image: ghcr.io/fagerbergj/quack:v1-fd9e255168e3f84b1016e66048345e0b20d89b8d
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -174,7 +174,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-078743a0a7aa8913c1f5bf95d493ccf49df8a437
+    image: ghcr.io/fagerbergj/quack:v1-fd9e255168e3f84b1016e66048345e0b20d89b8d
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
@@ -217,7 +217,7 @@ services:
 
   # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
   quack-v1-schedules:
-    image: ghcr.io/fagerbergj/quack:v1-078743a0a7aa8913c1f5bf95d493ccf49df8a437
+    image: ghcr.io/fagerbergj/quack:v1-fd9e255168e3f84b1016e66048345e0b20d89b8d
     container_name: quack-v1-schedules
     init: true
     command: ["node", "packages/schedules/src/main.ts"]
@@ -235,7 +235,7 @@ services:
 
   # v1 Sleeper service half: read-only Sleeper API, league snapshots, job schedules. Internal only.
   quack-v1-sleeper:
-    image: ghcr.io/fagerbergj/quack:v1-078743a0a7aa8913c1f5bf95d493ccf49df8a437
+    image: ghcr.io/fagerbergj/quack:v1-fd9e255168e3f84b1016e66048345e0b20d89b8d
     container_name: quack-v1-sleeper
     init: true
     command: ["node", "packages/sleeper/src/main.ts"]
