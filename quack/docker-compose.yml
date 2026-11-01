@@ -137,6 +137,8 @@ services:
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The researcher's web_search, the same Exa key v0 uses.
       QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
+      # The core index (A6): a derived, rebuildable view of session facts, in its own database on v0's Postgres.
+      QUACK_INDEX_DATABASE_URL: postgres://quack:${QUACK_DB_PASSWORD}@quack-postgres:5432/quack_v1_index
       # The Sleeper lineup workflow reads league data through the Sleeper service.
       QUACK_SLEEPER_URL: http://quack-v1-sleeper:8092
       QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
@@ -150,6 +152,9 @@ services:
     volumes:
       - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-data:/data
+    # Same pin as v0: Docker's embedded DNS intermittently fails to resolve container names on this host.
+    extra_hosts:
+      - "quack-postgres:172.23.0.100"
     depends_on:
       quack-v1-init:
         condition: service_completed_successfully
