@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-390c8622b0310857417dd0822a9b4d2fdbc51fe3
+    image: ghcr.io/fagerbergj/quack:v1-af1001a78df66d5c992301f643070ac81d43fd8d
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -129,8 +129,12 @@ services:
       QUACK_DATA_DIR: /data
       QUACK_CONFIG: /config/deployment.json
       QUACK_AGENT: /app/agents/reviewer/agent.json
+      # Agents a session can name with ?agent=; the reviewer stays the default for the GitHub service.
+      QUACK_AGENTS_DIR: /app/agents
       QUACK_GH_SERVICE_URL: http://quack-v1-github:8090
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      # The researcher's web_search, the same Exa key v0 uses.
+      QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
       # llm-swap doesn't auth, but a provider needs a key set to be used.
       QUACK_LOCAL_API_KEY: none
       QUACK_CLEF_API_KEY: none
@@ -152,7 +156,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-390c8622b0310857417dd0822a9b4d2fdbc51fe3
+    image: ghcr.io/fagerbergj/quack:v1-af1001a78df66d5c992301f643070ac81d43fd8d
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
