@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-179a59e043182a0ddd660f3fdee27f868c1ba84f
+    image: ghcr.io/fagerbergj/quack:v1-031d70797ef64fcf708076ef412a0022f2a0e756
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -137,6 +137,9 @@ services:
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The researcher's web_search, the same Exa key v0 uses.
       QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
+      # The Sleeper lineup workflow reads league data through the Sleeper service.
+      QUACK_SLEEPER_URL: http://quack-v1-sleeper:8092
+      QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # llm-swap doesn't auth, but a provider needs a key set to be used.
       QUACK_LOCAL_API_KEY: none
       QUACK_CLEF_API_KEY: none
@@ -171,7 +174,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-179a59e043182a0ddd660f3fdee27f868c1ba84f
+    image: ghcr.io/fagerbergj/quack:v1-031d70797ef64fcf708076ef412a0022f2a0e756
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
@@ -183,8 +186,11 @@ services:
       QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
+      # Webhook redelivery keeps its high-water mark here, so a restart doesn't re-scan or lose its place.
+      QUACK_DATA_DIR: /data
     volumes:
       - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
+      - quack-v1-github-data:/data
     networks:
       - default
       - api_gateway
@@ -202,10 +208,52 @@ services:
 
   quack-v1-init:
     image: alpine
-    command: ["chown", "-R", "1000:1000", "/data"]
+    command: ["sh", "-c", "chown -R 1000:1000 /data /services && chown -R 65532:65532 /github"]
     volumes:
       - quack-v1-data:/data
+      - quack-v1-services-data:/services
+      - quack-v1-github-data:/github
     restart: "no"
+
+  # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
+  quack-v1-schedules:
+    image: ghcr.io/fagerbergj/quack:v1-031d70797ef64fcf708076ef412a0022f2a0e756
+    container_name: quack-v1-schedules
+    init: true
+    command: ["node", "packages/schedules/src/main.ts"]
+    environment:
+      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
+      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      QUACK_SCHEDULES_DB: /data/schedules.db
+      QUACK_AGENTS_DIR: /app/agents
+    volumes:
+      - quack-v1-services-data:/data
+    depends_on:
+      quack-v1-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # v1 Sleeper service half: read-only Sleeper API, league snapshots, job schedules. Internal only.
+  quack-v1-sleeper:
+    image: ghcr.io/fagerbergj/quack:v1-031d70797ef64fcf708076ef412a0022f2a0e756
+    container_name: quack-v1-sleeper
+    init: true
+    command: ["node", "packages/sleeper/src/main.ts"]
+    environment:
+      QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      QUACK_SLEEPER_DB: /data/sleeper.db
+      # The same league and owner v0's sleeper extension uses (quack.yaml extensions.sleeper).
+      QUACK_SLEEPER_LEAGUE: "1356407594683482112"
+      QUACK_SLEEPER_OWNER: jffagerberg
+      QUACK_SCHEDULES_URL: http://quack-v1-schedules:8091
+      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
+    volumes:
+      - quack-v1-services-data:/data
+    depends_on:
+      quack-v1-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   quack-postgres:
     image: postgres:17-alpine
@@ -240,5 +288,7 @@ volumes:
   quack-workspace:
   quack-pg:
   quack-v1-data:
+  quack-v1-services-data:
+  quack-v1-github-data:
   quack-toolchains:
     external: true
