@@ -146,6 +146,8 @@ services:
       # Every session takes a model slot from quack-v1-slots before a generation; unreachable means no gate.
       QUACK_SLOTS_URL: http://quack-v1-slots:8092
       QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      # Enables DELETE /sessions/:key for the retention sweep in quack-v1-schedules (D24).
+      QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # llm-swap doesn't auth, but a provider needs a key set to be used.
       QUACK_LOCAL_API_KEY: none
       QUACK_CLEF_API_KEY: none
@@ -228,6 +230,9 @@ services:
     init: true
     command: ["node", "packages/schedules/src/main.ts"]
     environment:
+      # Daily sweep: deletes sessions idle longer than their agent's retention (reviewer 14 days, Sleeper 30).
+      QUACK_RETENTION_SWEEP: "1"
+      QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
       QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_SCHEDULES_DB: /data/schedules.db
