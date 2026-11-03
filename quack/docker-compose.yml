@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -144,7 +144,8 @@ services:
       QUACK_SLEEPER_URL: http://quack-v1-sleeper:8092
       QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The page reaches extension services through /apps/<name>/*; the distributor adds the token.
-      QUACK_APPS: '{"sleeper":{"url":"http://quack-v1-sleeper:8092","tokenEnv":"QUACK_SLEEPER_TOKEN"},"remarkable":{"url":"http://quack-v1-remarkable:8093","tokenEnv":"QUACK_REMARKABLE_TOKEN"}}'
+      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      QUACK_APPS: '{"sleeper":{"url":"http://quack-v1-sleeper:8092","tokenEnv":"QUACK_SLEEPER_TOKEN"},"remarkable":{"url":"http://quack-v1-remarkable:8093","tokenEnv":"QUACK_REMARKABLE_TOKEN"},"schedules":{"url":"http://quack-v1-schedules:8091","tokenEnv":"QUACK_SCHEDULES_TOKEN"},"github":{"url":"http://quack-v1-github:8090","tokenEnv":"QUACK_GH_SERVICE_TOKEN"}}'
       # Every session takes a model slot from quack-v1-slots before a generation; unreachable means no gate.
       QUACK_SLOTS_URL: http://quack-v1-slots:8092
       QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
@@ -184,7 +185,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
@@ -229,7 +230,7 @@ services:
 
   # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
   quack-v1-schedules:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1-schedules
     init: true
     command: ["node", "packages/schedules/src/main.ts"]
@@ -251,7 +252,7 @@ services:
   # v1 reMarkable service half: browses rmfakecloud and submits picked documents for ingest; nothing is
   # ingested automatically (RMK-1). Internal only; reaches rmfakecloud over api_gateway like v0 does.
   quack-v1-remarkable:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1-remarkable
     init: true
     command: ["node", "packages/remarkable/src/main.ts"]
@@ -274,7 +275,7 @@ services:
 
   # v1 Sleeper service half: read-only Sleeper API, league snapshots, job schedules. Internal only.
   quack-v1-sleeper:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1-sleeper
     init: true
     command: ["node", "packages/sleeper/src/main.ts"]
@@ -295,7 +296,7 @@ services:
     restart: unless-stopped
 
   quack-v1-slots:
-    image: ghcr.io/fagerbergj/quack:v1-e767e48715bc88ab18a371c33a83393c5fafbb20
+    image: ghcr.io/fagerbergj/quack:v1-0e5c538e0daa6759f22bb9689590ef55ed9f3132
     container_name: quack-v1-slots
     init: true
     command: ["node", "packages/slots/src/main.ts"]
