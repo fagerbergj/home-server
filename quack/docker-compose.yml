@@ -196,6 +196,8 @@ services:
       QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
+      # A trusted `/fix` comment runs this agent; it pushes only after a person approves.
+      QUACK_GH_IMPLEMENTER_AGENT: implementer
       # Webhook redelivery keeps its high-water mark here, so a restart doesn't re-scan or lose its place.
       QUACK_DATA_DIR: /data
     volumes:
