@@ -121,7 +121,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
   # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -133,21 +133,13 @@ services:
       QUACK_AGENT: /app/agents/reviewer/agent.json
       # Agents a session can name with ?agent=; the reviewer stays the default for the GitHub service.
       QUACK_AGENTS_DIR: /app/agents
-      QUACK_GH_SERVICE_URL: http://quack-v1-github:8090
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The researcher's web_search, the same Exa key v0 uses.
       QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
-      # The reMarkable ingest workflow reads documents and the topic list through the reMarkable service.
-      QUACK_REMARKABLE_URL: http://quack-v1-remarkable:8093
       QUACK_REMARKABLE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # The Sleeper lineup workflow reads league data through the Sleeper service.
-      QUACK_SLEEPER_URL: http://quack-v1-sleeper:8092
       QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The page reaches extension services through /apps/<name>/*; the distributor adds the token.
       QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_APPS: '{"sleeper":{"url":"http://quack-v1-sleeper:8092","tokenEnv":"QUACK_SLEEPER_TOKEN"},"remarkable":{"url":"http://quack-v1-remarkable:8093","tokenEnv":"QUACK_REMARKABLE_TOKEN"},"schedules":{"url":"http://quack-v1-schedules:8091","tokenEnv":"QUACK_SCHEDULES_TOKEN"},"github":{"url":"http://quack-v1-github:8090","tokenEnv":"QUACK_GH_SERVICE_TOKEN"}}'
-      # Every session takes a model slot from quack-v1-slots before a generation; unreachable means no gate.
-      QUACK_SLOTS_URL: http://quack-v1-slots:8092
       QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # Enables DELETE /sessions/:key for the retention sweep in quack-v1-schedules (D24).
       QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
@@ -185,7 +177,7 @@ services:
     restart: unless-stopped
 
   quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1-github
     init: true
     # The uid v0 reads the App key as.
@@ -197,11 +189,12 @@ services:
       QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
       QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
-      # A trusted `/fix` comment runs this agent; it pushes only after a person approves.
-      QUACK_GH_IMPLEMENTER_AGENT: implementer
+      # Service url, token name, store and settings come from services.<name> in the deployment file.
+      QUACK_CONFIG: /config/deployment.json
       # Webhook redelivery keeps its high-water mark here, so a restart doesn't re-scan or lose its place.
       QUACK_DATA_DIR: /data
     volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
       - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
       - quack-v1-github-data:/data
     networks:
@@ -230,19 +223,20 @@ services:
 
   # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
   quack-v1-schedules:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1-schedules
     init: true
     command: ["node", "packages/schedules/src/main.ts"]
     environment:
-      # Daily sweep: deletes sessions idle longer than their agent's retention (reviewer 14 days, Sleeper 30).
-      QUACK_RETENTION_SWEEP: "1"
       QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
       QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_SCHEDULES_DB: /data/schedules.db
+      # Service url, token name, store and settings come from services.<name> in the deployment file.
+      QUACK_CONFIG: /config/deployment.json
+      QUACK_DATA_DIR: /data
       QUACK_AGENTS_DIR: /app/agents
     volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-services-data:/data
     depends_on:
       quack-v1-init:
@@ -252,18 +246,21 @@ services:
   # v1 reMarkable service half: browses rmfakecloud and submits picked documents for ingest; nothing is
   # ingested automatically (RMK-1). Internal only; reaches rmfakecloud over api_gateway like v0 does.
   quack-v1-remarkable:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1-remarkable
     init: true
     command: ["node", "packages/remarkable/src/main.ts"]
     environment:
       QUACK_REMARKABLE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_REMARKABLE_DB: /data/remarkable.db
+      # Service url, token name, store and settings come from services.<name> in the deployment file.
+      QUACK_CONFIG: /config/deployment.json
+      QUACK_DATA_DIR: /data
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
       RMFAKECLOUD_URL: http://rmfakecloud:3000
       RMFAKECLOUD_EMAIL: ${RMFAKECLOUD_EMAIL}
       RMFAKECLOUD_PASSWORD: ${RMFAKECLOUD_PASSWORD}
     volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-services-data:/data
     networks:
       - default
@@ -275,20 +272,19 @@ services:
 
   # v1 Sleeper service half: read-only Sleeper API, league snapshots, job schedules. Internal only.
   quack-v1-sleeper:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1-sleeper
     init: true
     command: ["node", "packages/sleeper/src/main.ts"]
     environment:
       QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_SLEEPER_DB: /data/sleeper.db
-      # The same league and owner v0's sleeper extension uses (quack.yaml extensions.sleeper).
-      QUACK_SLEEPER_LEAGUE: "1356407594683482112"
-      QUACK_SLEEPER_OWNER: jffagerberg
-      QUACK_SCHEDULES_URL: http://quack-v1-schedules:8091
+      # Service url, token name, store and settings come from services.<name> in the deployment file.
+      QUACK_CONFIG: /config/deployment.json
+      QUACK_DATA_DIR: /data
       QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
     volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-services-data:/data
     depends_on:
       quack-v1-init:
@@ -296,16 +292,17 @@ services:
     restart: unless-stopped
 
   quack-v1-slots:
-    image: ghcr.io/fagerbergj/quack:v1-84b57e36a23fb95cfcddaba249d0e2df8b0418c9
+    image: ghcr.io/fagerbergj/quack:v1-46d2f02028a6cb3c5a38450515a53b6b108e7540
     container_name: quack-v1-slots
     init: true
     command: ["node", "packages/slots/src/main.ts"]
     environment:
       QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Runs at once per provider id in v1-deployment.json; the rest queue FIFO. 6 is llm-swap's stream width.
-      QUACK_SLOTS_LIMITS: '{"local":6}'
-      QUACK_SLOTS_DB: /data/slots.db
+      # Service url, token name, store and settings come from services.<name> in the deployment file.
+      QUACK_CONFIG: /config/deployment.json
+      QUACK_DATA_DIR: /data
     volumes:
+      - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-services-data:/data
     depends_on:
       quack-v1-init:
