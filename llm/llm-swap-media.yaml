@@ -11,7 +11,7 @@ hooks:
 
 models:
   # Clef 27B decisions (/upstream/clef/v1/systemone): llama.cpp Q4_K_M, all 65 layers on the 3090 (~20 GB at ub 8192).
-  # -ub is the hard input cap (the whole prompt is one ubatch); four slots of 8192 (-c is split across -np) so the judge can send a review's units at once (quack#2178).
+  # -ub is the hard input cap (the whole prompt is one ubatch). Four slots of 8192 (-c is split across -np) accept the judge's concurrent requests (quack#2178), but Clef still processes one at a time: 2026-11-04, four at once took as long as four in a row.
   # -ngl 999 fails the load instead of letting --fit stream layers from host RAM (~1.4x slower per request).
   # The embedder (qwen3-embed) now runs on jaison's CPU and resolves through the peers list below.
   "clef":
