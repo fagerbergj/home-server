@@ -4,11 +4,11 @@
     "clef": {"baseUrl": "http://llm-swap:11436/upstream/clef/v1", "api": "systemone", "models": {"clef": {"contextWindow": 8192, "price": {"input": 0.24}}}}
   },
   "defaultModel": "local/qwen3.8-27b",
-  "services": {
-    "github": {"url": "http://quack-v1-github:8090", "tokenEnv": "QUACK_GH_SERVICE_TOKEN", "settings": {"implementerAgent": "implementer"}},
-    "remarkable": {"url": "http://quack-v1-remarkable:8093", "tokenEnv": "QUACK_REMARKABLE_TOKEN"},
-    "sleeper": {"url": "http://quack-v1-sleeper:8092", "tokenEnv": "QUACK_SLEEPER_TOKEN", "settings": {"league": "1356407594683482112", "owner": "jffagerberg"}},
-    "schedules": {"url": "http://quack-v1-schedules:8091", "tokenEnv": "QUACK_SCHEDULES_TOKEN", "settings": {"retentionSweep": true}},
-    "slots": {"url": "http://quack-v1-slots:8092", "tokenEnv": "QUACK_SLOTS_TOKEN"}
+  "extensions": {
+    "github": {"settings": {"implementerAgent": "implementer"}},
+    "remarkable": {},
+    "sleeper": {"settings": {"league": "1356407594683482112", "owner": "jffagerberg"}},
+    "schedules": {"settings": {"retentionSweep": true}},
+    "slots": {}
   }
 }

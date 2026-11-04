@@ -97,7 +97,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
-      # The public /github/webhook route moved to quack-v1-github (D52).
+      # The public /github/webhook route moved to quack-v1 (D52, then #2177).
       # Everything else (UI + API) behind Authentik SSO.
       - "traefik.http.routers.quack.rule=Host(`quack.jasonfagerberg.duckdns.org`)"
       - "traefik.http.routers.quack.entrypoints=api"
@@ -133,16 +133,18 @@ services:
       QUACK_AGENT: /app/agents/reviewer/agent.json
       # Agents a session can name with ?agent=; the reviewer stays the default for the GitHub service.
       QUACK_AGENTS_DIR: /app/agents
-      QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The researcher's web_search, the same Exa key v0 uses.
       QUACK_EXA_API_KEY: ${QUACK_EXA_API_KEY}
-      QUACK_REMARKABLE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
       # The page reaches extension services through /apps/<name>/*; the distributor adds the token.
-      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Enables DELETE /sessions/:key for the retention sweep in quack-v1-schedules (D24).
+      # Enables DELETE /sessions/:key for the schedules extension's retention sweep (D24).
       QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
+      # Extensions run in-process (#2177): their secrets live here, their settings in the deployment file.
+      QUACK_GH_APP_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
+      QUACK_GH_PRIVATE_KEY_FILE: /run/secrets/quack-app.pem
+      QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
+      RMFAKECLOUD_URL: http://rmfakecloud:3000
+      RMFAKECLOUD_EMAIL: ${RMFAKECLOUD_EMAIL}
+      RMFAKECLOUD_PASSWORD: ${RMFAKECLOUD_PASSWORD}
       # llm-swap doesn't auth, but a provider needs a key set to be used.
       QUACK_LOCAL_API_KEY: none
       QUACK_CLEF_API_KEY: none
@@ -153,6 +155,7 @@ services:
     volumes:
       - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-data:/data
+      - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
     depends_on:
       quack-v1-init:
         condition: service_completed_successfully
@@ -172,143 +175,24 @@ services:
       - "traefik.http.middlewares.quack-v1-slash.redirectregex.regex=^(.*)/v1$$"
       - "traefik.http.middlewares.quack-v1-slash.redirectregex.replacement=$${1}/v1/"
       - "traefik.http.middlewares.quack-v1-strip.stripprefix.prefixes=/v1"
+      # PUBLIC webhook: GitHub cannot SSO; it HMAC-signs and the github app verifies it.
+      - "traefik.http.middlewares.quack-v1-webhook.replacepath.path=/apps/github/webhook"
+      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/github/webhook`)"
+      - "traefik.http.routers.quack-webhook.entrypoints=api"
+      - "traefik.http.routers.quack-webhook.service=quack-v1"
+      - "traefik.http.routers.quack-webhook.middlewares=quack-v1-webhook"
     # Sessions stop on SIGTERM and resume from their logs on boot.
     stop_grace_period: 30s
     restart: unless-stopped
 
-  quack-v1-github:
-    image: ghcr.io/fagerbergj/quack:v1-94b3fdd03a02969a05956a0c81488a1c2fde55ea
-    container_name: quack-v1-github
-    init: true
-    # The uid v0 reads the App key as.
-    user: "65532:65532"
-    command: ["node", "packages/github/src/main.ts"]
-    environment:
-      QUACK_GH_APP_ID: ${QUACK_GITHUB_APP_CLIENT_ID}
-      QUACK_GH_PRIVATE_KEY_FILE: /run/secrets/quack-app.pem
-      QUACK_GH_WEBHOOK_SECRET: ${QUACK_GITHUB_APP_WEBHOOK_SECRET}
-      QUACK_GH_SERVICE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
-      # Service url, token name, store and settings come from services.<name> in the deployment file.
-      QUACK_CONFIG: /config/deployment.json
-      # Webhook redelivery keeps its high-water mark here, so a restart doesn't re-scan or lose its place.
-      QUACK_DATA_DIR: /data
-    volumes:
-      - ./v1-deployment.json:/config/deployment.json:ro
-      - ${QUACK_GITHUB_APP_PRIVATE_KEY_PATH}:/run/secrets/quack-app.pem:ro
-      - quack-v1-github-data:/data
-    networks:
-      - default
-      - api_gateway
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.quack-v1-github.loadbalancer.server.port=8090"
-      - "traefik.http.middlewares.quack-v1-webhook.replacepath.path=/webhook"
-      # PUBLIC webhook — GitHub can't SSO; it HMAC-signs. The Path rule out-prioritises v0's Host-only router, so
-      # this bypasses Authentik.
-      - "traefik.http.routers.quack-webhook.rule=Host(`quack.jasonfagerberg.duckdns.org`) && Path(`/github/webhook`)"
-      - "traefik.http.routers.quack-webhook.entrypoints=api"
-      - "traefik.http.routers.quack-webhook.service=quack-v1-github"
-      - "traefik.http.routers.quack-webhook.middlewares=quack-v1-webhook"
-    restart: unless-stopped
-
   quack-v1-init:
     image: alpine
-    command: ["sh", "-c", "chown -R 1000:1000 /data /services && chown -R 65532:65532 /github"]
+    command: ["sh", "-c", "chown -R 1000:1000 /data"]
     volumes:
       - quack-v1-data:/data
-      - quack-v1-services-data:/services
-      - quack-v1-github-data:/github
     restart: "no"
 
   # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
-  quack-v1-schedules:
-    image: ghcr.io/fagerbergj/quack:v1-94b3fdd03a02969a05956a0c81488a1c2fde55ea
-    container_name: quack-v1-schedules
-    init: true
-    command: ["node", "packages/schedules/src/main.ts"]
-    environment:
-      QUACK_ADMIN_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
-      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Service url, token name, store and settings come from services.<name> in the deployment file.
-      QUACK_CONFIG: /config/deployment.json
-      QUACK_DATA_DIR: /data
-      QUACK_AGENTS_DIR: /app/agents
-    volumes:
-      - ./v1-deployment.json:/config/deployment.json:ro
-      - quack-v1-services-data:/data
-    depends_on:
-      quack-v1-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  # v1 reMarkable service half: browses rmfakecloud and submits picked documents for ingest; nothing is
-  # ingested automatically (RMK-1). Internal only; reaches rmfakecloud over api_gateway like v0 does.
-  quack-v1-remarkable:
-    image: ghcr.io/fagerbergj/quack:v1-94b3fdd03a02969a05956a0c81488a1c2fde55ea
-    container_name: quack-v1-remarkable
-    init: true
-    command: ["node", "packages/remarkable/src/main.ts"]
-    environment:
-      QUACK_REMARKABLE_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Service url, token name, store and settings come from services.<name> in the deployment file.
-      QUACK_CONFIG: /config/deployment.json
-      QUACK_DATA_DIR: /data
-      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
-      RMFAKECLOUD_URL: http://rmfakecloud:3000
-      RMFAKECLOUD_EMAIL: ${RMFAKECLOUD_EMAIL}
-      RMFAKECLOUD_PASSWORD: ${RMFAKECLOUD_PASSWORD}
-    volumes:
-      - ./v1-deployment.json:/config/deployment.json:ro
-      - quack-v1-services-data:/data
-    networks:
-      - default
-      - api_gateway
-    depends_on:
-      quack-v1-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  # v1 Sleeper service half: read-only Sleeper API, league snapshots, job schedules. Internal only.
-  quack-v1-sleeper:
-    image: ghcr.io/fagerbergj/quack:v1-94b3fdd03a02969a05956a0c81488a1c2fde55ea
-    container_name: quack-v1-sleeper
-    init: true
-    command: ["node", "packages/sleeper/src/main.ts"]
-    environment:
-      QUACK_SLEEPER_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Service url, token name, store and settings come from services.<name> in the deployment file.
-      QUACK_CONFIG: /config/deployment.json
-      QUACK_DATA_DIR: /data
-      QUACK_SCHEDULES_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      QUACK_DISTRIBUTOR_URL: http://quack-v1:8080
-    volumes:
-      - ./v1-deployment.json:/config/deployment.json:ro
-      - quack-v1-services-data:/data
-    depends_on:
-      quack-v1-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  quack-v1-slots:
-    image: ghcr.io/fagerbergj/quack:v1-94b3fdd03a02969a05956a0c81488a1c2fde55ea
-    container_name: quack-v1-slots
-    init: true
-    command: ["node", "packages/slots/src/main.ts"]
-    environment:
-      QUACK_SLOTS_TOKEN: ${QUACK_V1_SERVICE_TOKEN}
-      # Service url, token name, store and settings come from services.<name> in the deployment file.
-      QUACK_CONFIG: /config/deployment.json
-      QUACK_DATA_DIR: /data
-    volumes:
-      - ./v1-deployment.json:/config/deployment.json:ro
-      - quack-v1-services-data:/data
-    depends_on:
-      quack-v1-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
   quack-postgres:
     image: postgres:17-alpine
     container_name: quack-postgres
