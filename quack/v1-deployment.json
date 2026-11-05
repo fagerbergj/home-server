@@ -1,6 +1,6 @@
 {
   "providers": {
-    "local": {"baseUrl": "http://llm-swap:11436/v1", "slots": 6, "models": {"qwen3.8-27b": {"contextWindow": 131072, "maxTokens": 16384, "reasoning": true, "images": true, "price": {"input": 0.04, "output": 2.5, "cacheRead": 0.02}}, "qwen3-omni-30b": {"contextWindow": 32768, "maxTokens": 4096, "images": true}}},
+    "local": {"baseUrl": "http://llm-swap:11436/v1", "slots": 6, "models": {"qwen3.8-27b": {"contextWindow": 131072, "maxTokens": 32768, "reasoning": true, "images": true, "price": {"input": 0.04, "output": 2.5, "cacheRead": 0.02}}, "qwen3-omni-30b": {"contextWindow": 32768, "maxTokens": 4096, "images": true}}},
     "clef": {"baseUrl": "http://llm-swap:11436/upstream/clef/v1", "api": "systemone", "models": {"clef": {"contextWindow": 8192, "price": {"input": 0.24}}}}
   },
   "defaultModel": "local/qwen3.8-27b",
