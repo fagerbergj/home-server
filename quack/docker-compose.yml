@@ -172,7 +172,10 @@ services:
       - "traefik.http.routers.quack-v1.rule=Host(`quack.jasonfagerberg.duckdns.org`)"
       - "traefik.http.routers.quack-v1.entrypoints=api"
       - "traefik.http.routers.quack-v1.service=quack-v1"
-      - "traefik.http.routers.quack-v1.middlewares=authentik@file,quack-v1-slash,quack-v1-strip"
+      - "traefik.http.routers.quack-v1.middlewares=authentik@file,quack-v1-slash,quack-v1-strip,quack-v1-gzip"
+      # The app serves JSON and its bundle uncompressed; streams stay as they are.
+      - "traefik.http.middlewares.quack-v1-gzip.compress=true"
+      - "traefik.http.middlewares.quack-v1-gzip.compress.excludedcontenttypes=text/event-stream"
       # The bundle's URLs are page-relative, so /v1 must end in a slash before the prefix is stripped.
       - "traefik.http.middlewares.quack-v1-slash.redirectregex.regex=^(.*)/v1$$"
       - "traefik.http.middlewares.quack-v1-slash.redirectregex.replacement=$${1}/v1/"
@@ -189,7 +192,8 @@ services:
 
   quack-v1-init:
     image: alpine
-    command: ["sh", "-c", "chown -R 1000:1000 /data"]
+    # A full chown walks every session and held each deploy for minutes; the app writes as 1000, so an owned root means an owned tree.
+    command: ["sh", "-c", "[ \"$$(stat -c %u /data)\" = 1000 ] || chown -R 1000:1000 /data"]
     volumes:
       - quack-v1-data:/data
     restart: "no"
