@@ -10,6 +10,7 @@
 # `llm` compose via the external llm_default network. Brings its own postgres.
 services:
   quack:
+    profiles: ["v0"]   # retired 2026-11-05 (cutover to quack-v1); volumes and ~/backups/quack-v0-final-2026-11-05.dump kept
     image: ghcr.io/fagerbergj/quack:0.114.0
     container_name: quack
     init: true
@@ -95,7 +96,7 @@ services:
     extra_hosts:
       - "quack-postgres:172.23.0.100"
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.http.services.quack.loadbalancer.server.port=8080"
       # The public /github/webhook route moved to quack-v1 (D52, then #2177).
       # Everything else (UI + API) behind Authentik SSO.
@@ -112,14 +113,15 @@ services:
   # distroless nonroot uid 65532 and must write its clones/jail under /workspace.
   # chown it before quack starts. Idempotent; exits immediately on subsequent runs.
   quack-init:
+    profiles: ["v0"]
     image: alpine
     command: ["chown", "-R", "65532:65532", "/workspace"]
     volumes:
       - quack-workspace:/workspace
     restart: "no"
 
-  # quack v1 (fagerbergj/quack, v1/): the distributor runs each PR's session as a child process; the GitHub service
-  # below takes the webhook and hands sessions PR data and git credentials. Both reuse v0's App values from .env.
+  # quack v1 (fagerbergj/quack, v1/): the distributor runs each session as a child process and every extension
+  # (github, sleeper, remarkable, schedules, slots) in-process. It reuses v0's GitHub App values from .env.
   quack-v1:
     image: ghcr.io/fagerbergj/quack:v1-659acd704cc4071424a7c96ef032e9506cac3d35
     container_name: quack-v1
@@ -166,8 +168,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack-v1.loadbalancer.server.port=8080"
-      # The v1 UI and API at /v1 behind Authentik SSO until v0 retires; PathPrefix out-prioritises v0's Host-only router.
-      - "traefik.http.routers.quack-v1.rule=Host(`quack.jasonfagerberg.duckdns.org`) && PathPrefix(`/v1`)"
+      # The v1 UI and API behind Authentik SSO on the whole domain since the 2026-11-05 cutover; old /v1/... links still work through the strip.
+      - "traefik.http.routers.quack-v1.rule=Host(`quack.jasonfagerberg.duckdns.org`)"
       - "traefik.http.routers.quack-v1.entrypoints=api"
       - "traefik.http.routers.quack-v1.service=quack-v1"
       - "traefik.http.routers.quack-v1.middlewares=authentik@file,quack-v1-slash,quack-v1-strip"
@@ -192,8 +194,9 @@ services:
       - quack-v1-data:/data
     restart: "no"
 
-  # v1 schedules: durable timers that submit to session keys (SCH-1..4). Internal only.
+  # v0's database; v1 keeps its stores under quack-v1-data.
   quack-postgres:
+    profiles: ["v0"]
     image: postgres:17-alpine
     container_name: quack-postgres
     environment:
