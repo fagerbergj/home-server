@@ -5,7 +5,7 @@
   },
   "defaultModel": "local/qwen3.8-27b",
   "extensions": {
-    "github": {"settings": {"implementerAgent": "implementer"}},
+    "github": {"settings": {"implementerAgent": "implementer", "issueBase": "v1"}},
     "remarkable": {},
     "sleeper": {"settings": {"league": "1356407594683482112", "owner": "jffagerberg"}},
     "schedules": {"settings": {"retentionSweep": true}},
