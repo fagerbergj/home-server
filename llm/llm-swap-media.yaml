@@ -64,3 +64,5 @@ peers:
       - qwen3-embed
       - qwen3.8-27b
       - glm-5.3-flash
+      - deepseek-v4.1-flash
+      - qwen3.8-flash-next
