@@ -1,6 +1,6 @@
 # jaison: one llama-swap for all four R9700s; each model is a `docker run` it starts and stops.
 # Bind-mount paths in cmds are HOST paths (the daemon resolves them).
-healthCheckTimeout: 1200   # vLLM cold torch.compile; 256k KV pools
+healthCheckTimeout: 2400   # vLLM cold torch.compile; deepseek's cold mmap load + KV pools ran past 20 min once
 timeouts:
   responseHeader: 0   # never guillotine long first-byte waits
 logLevel: info
@@ -35,6 +35,16 @@ groups:
     swap: true
     exclusive: true
     members: ["glm-5.3-flash"]
+  # Whole box + host RAM, Engram table paged from NVMe. Drains/unloads the 27B.
+  "deepseek":
+    swap: true
+    exclusive: true
+    members: ["deepseek-v4.1-flash"]
+  # Whole box, tensor-split across all four cards. Drains/unloads the 27B.
+  "flash-next":
+    swap: true
+    exclusive: true
+    members: ["qwen3.8-flash-next"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -89,3 +99,28 @@ models:
       - "NAME=glm"
     cmd: ${llm_dir}/run-glm.sh
     cmdStop: docker stop glm
+
+  # DeepSeek-V4.1-Flash-1017, stock llama.cpp b11960. UD-IQ2_XXS, DSpark drafter n3, q8_0 KV, 4 x 128k slots.
+  # The 135 GB Engram table is read from disk on demand (mmap + lazy). See run-deepseek.sh.
+  "deepseek-v4.1-flash":
+    proxy: "http://127.0.0.1:9992"
+    checkEndpoint: /health
+    ttl: 3600
+    env:
+      - "PORT=9992"
+      - "NAME=deepseek"
+    cmd: ${llm_dir}/run-deepseek.sh
+    cmdStop: docker stop -t 60 deepseek   # let it drain: an abrupt multi-GPU stop once preceded a card dropping off the bus
+
+  # Qwen3.8-Flash-Next, llama.cpp b12110 + mtp4/patches (shared MTP head borrows the target's embeddings; PR 28243
+  # never landed upstream). UD-Q4_K_XL tensor-split over all four cards, shared head n2, f16 KV (tensor mode requires
+  # unquantized KV), 1 x 262k slot at ~30 GB/card. See run-flashnext.sh.
+  "qwen3.8-flash-next":
+    proxy: "http://127.0.0.1:9994"
+    checkEndpoint: /health
+    ttl: 3600
+    env:
+      - "PORT=9994"
+      - "NAME=flash-next"
+    cmd: ${llm_dir}/run-flashnext.sh
+    cmdStop: docker stop -t 60 flash-next   # drain like deepseek: RCCL multi-GPU + abrupt stop

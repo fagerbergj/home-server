@@ -1,7 +1,9 @@
-# Qwen3.8-Flash-Next patches on llama.cpp b11580 (4413a192)
+# Qwen3.8-Flash-Next patches on llama.cpp b12110 (cd959bae)
 
-Built by `upstream/patched.Dockerfile` with `PATCHES=mtp4/patches`: `NPATCH=1` gives `llama-mtp4:b11580-port`,
-`NPATCH=2` gives `llama-mtp4:b11580-dense`. PR 28569 (`-sm tensor` for qwen4exp) is upstream, so it is not carried.
+Built by `upstream/patched.Dockerfile` with `PATCHES=mtp4/patches`: `NPATCH=1` gives `llama-mtp4:b12110-port`
+(base pinned by MTP_COMMIT/MTP_BASE in the Makefile; dry-run the series on the new tree before bumping).
+0002 last applied at b11580 — it fails on b12110 (llama-model.cpp hunk) and stays unused; NPATCH=2 is not
+available on this base. PR 28569 (`-sm tensor` for qwen4exp) is upstream, so it is not carried.
 Upstream closed PR 28243 unmerged, so 0001 stays until a shared-head fix lands; the ggml-org self-contained head
 (`mtp-Qwen3.8-Flash-Next-Q8_0.gguf`) runs on stock llama.cpp. 0001 was rebased by hand onto #30397's `graph_mtp`.
 
