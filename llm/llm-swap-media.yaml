@@ -15,6 +15,7 @@ models:
   # -ngl 999 fails the load instead of letting --fit stream layers from host RAM (~1.4x slower per request).
   # The embedder (qwen3-embed) now runs on jaison's CPU and resolves through the peers list below.
   "clef":
+    concurrencyLimit: 1000   # backpressure is the engine's (llama.cpp queues past --parallel); the router never 429s
     proxy: "http://127.0.0.1:9997"
     checkEndpoint: /health
     ttl: 0
@@ -29,6 +30,7 @@ models:
 
   # quack's media-reader (image + audio). Shares the 3090 with Clef; no -ngl so --fit spills experts to RAM beside Plex/immich.
   "qwen3-omni-30b":
+    concurrencyLimit: 1000   # backpressure is the engine's (llama.cpp queues past --parallel); the router never 429s
     proxy: "http://127.0.0.1:9999"
     checkEndpoint: /health
     ttl: 1800
