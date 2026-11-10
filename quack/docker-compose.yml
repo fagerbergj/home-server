@@ -123,7 +123,7 @@ services:
   # quack v1 (fagerbergj/quack, v1/): the distributor runs each session as a child process and every extension
   # (github, sleeper, remarkable, schedules, slots) in-process. It reuses v0's GitHub App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-110411f3ba4c4678edda0b34715b6a9570595eee
+    image: ghcr.io/fagerbergj/quack:v1-a5c10521e22a9f3a88ff2af4ad52dea0ab8c6cfa
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
