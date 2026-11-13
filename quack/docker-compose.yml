@@ -8,6 +8,14 @@
 # api_gateway. The /github/webhook path is PUBLIC (GitHub HMAC-verifies);
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
+# quack-v1, the docker gate and the session image move together: a gate on another image refuses every create.
+x-quack-v1-image: &quack-v1-image ghcr.io/fagerbergj/quack:v1-abdc277c7ee09d46c9d0c2fa1f85bb28972f7b34
+x-session-containers: &session-containers
+  QUACK_SESSION_IMAGE: *quack-v1-image
+  QUACK_SESSION_RUNTIME: runsc
+  QUACK_SESSION_NETWORK: quack-sessions
+  QUACK_DATA_VOLUME: quack_quack-v1-data
+
 services:
   quack:
     profiles: ["v0"]   # retired 2026-11-05 (cutover to quack-v1); volumes and ~/backups/quack-v0-final-2026-11-05.dump kept
@@ -120,10 +128,10 @@ services:
       - quack-workspace:/workspace
     restart: "no"
 
-  # quack v1 (fagerbergj/quack, v1/): the distributor runs each session as a child process and every extension
-  # (github, sleeper, remarkable, schedules, slots) in-process. It reuses v0's GitHub App values from .env.
+  # quack v1 (fagerbergj/quack): the distributor runs each session in its own runsc container (docker driver) and every
+  # extension (github, sleeper, remarkable, schedules, slots) in-process. It reuses v0's GitHub App values from .env.
   quack-v1:
-    image: ghcr.io/fagerbergj/quack:v1-b929c13b699decc7448aa8bd8b4a4d01784cf5b0
+    image: *quack-v1-image
     container_name: quack-v1
     init: true
     command: ["node", "packages/distributor/src/main.ts"]
@@ -156,6 +164,13 @@ services:
       LANGFUSE_BASE_URL: http://192.168.50.186:3008
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      <<: *session-containers
+      # Sessions reach the distributor's session listener (PORT+1) and the egress proxy by IP: under runsc they have no DNS.
+      QUACK_SESSION_DRIVER: docker
+      QUACK_SESSION_DISTRIBUTOR_URL: http://10.213.0.2:8081
+      QUACK_SESSION_EGRESS_PROXY: http://10.213.0.3:3128
+      # No docker.sock here: the gate admits only session-container calls (#2308).
+      QUACK_DOCKER_HOST: tcp://quack-docker-gate:2375
     volumes:
       - ./v1-deployment.json:/config/deployment.json:ro
       - quack-v1-data:/data
@@ -163,10 +178,17 @@ services:
     depends_on:
       quack-v1-init:
         condition: service_completed_successfully
+      quack-egress:
+        condition: service_started
+      quack-docker-gate:
+        condition: service_started
     networks:
-      - default
-      - llm_default
-      - api_gateway
+      default: {}
+      llm_default: {}
+      api_gateway: {}
+      quack-docker: {}
+      quack-sessions:
+        ipv4_address: 10.213.0.2
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.quack-v1.loadbalancer.server.port=8080"
@@ -192,6 +214,37 @@ services:
       - "traefik.http.routers.quack-webhook.middlewares=quack-v1-webhook"
     # Sessions stop on SIGTERM and resume from their logs on boot.
     stop_grace_period: 30s
+    restart: unless-stopped
+
+  # The only container holding the docker socket; serves the driver's seven Engine calls for session containers and 403s the rest.
+  quack-docker-gate:
+    image: *quack-v1-image
+    container_name: quack-docker-gate
+    command: ["node", "packages/distributor/src/docker-gate.ts"]
+    user: node
+    group_add: ["984"]   # the docker socket's group on jason-server
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges]
+    environment: *session-containers
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # :ro does not limit API calls; the gate's policy does
+    networks: [quack-docker]
+    labels: ["traefik.enable=false"]
+    restart: unless-stopped
+
+  # Session containers' only way out: public hosts on 80/443 (squid.conf is quack's packages/distributor/egress/squid.conf).
+  quack-egress:
+    image: ubuntu/squid:6.6-24.04_edge@sha256:8a3baed477e2c282ab8aa5edad442f69873246964f225c5c2ae8364b6610963c
+    container_name: quack-egress
+    command: ["-NYC"]
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      quack-egress: {}
+      quack-sessions:
+        ipv4_address: 10.213.0.3
+    labels: ["traefik.enable=false"]
     restart: unless-stopped
 
   quack-v1-init:
@@ -232,6 +285,27 @@ networks:
     external: true
   llm_default:
     external: true
+  # Sessions: no route out and no bridge address on the host; the distributor refuses any other kind of network.
+  # Traefik must never join it. Subnets stay clear of Docker's default pools and adblock's 172.30.0.0/16.
+  quack-sessions:
+    name: quack-sessions
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config:
+        - subnet: 10.213.0.0/24
+  # quack-v1 <-> docker gate only.
+  quack-docker:
+    name: quack-docker
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.213.1.0/24
+  quack-egress:
+    ipam:
+      config:
+        - subnet: 10.213.2.0/24
 
 volumes:
   quack-workspace:
