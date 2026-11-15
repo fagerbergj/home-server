@@ -10,6 +10,7 @@
     "sleeper": {"settings": {"league": "1356407594683482112", "owner": "jffagerberg"}},
     "schedules": {"settings": {"retentionSweep": true}},
     "slots": {},
-    "contracts": {}
+    "contracts": {},
+    "home": {}
   }
 }
