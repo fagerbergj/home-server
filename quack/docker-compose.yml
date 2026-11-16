@@ -9,7 +9,7 @@
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
 # quack-v1, the docker gate and the session image move together: a gate on another image refuses every create.
-x-quack-v1-image: &quack-v1-image ghcr.io/fagerbergj/quack:v1-9495bb4f6394903e69ccdcc7af3030f1f91c0e6b
+x-quack-v1-image: &quack-v1-image ghcr.io/fagerbergj/quack:v1-cea01384b6b6c401e2dadb47a1121cf933a70f86
 x-session-containers: &session-containers
   QUACK_SESSION_IMAGE: *quack-v1-image
   QUACK_SESSION_RUNTIME: runsc
@@ -220,6 +220,7 @@ services:
   quack-docker-gate:
     image: *quack-v1-image
     container_name: quack-docker-gate
+    init: true   # backstop: the gate exits on SIGTERM itself since quack#2365
     command: ["node", "packages/distributor/src/docker-gate.ts"]
     user: node
     group_add: ["984"]   # the docker socket's group on jason-server
