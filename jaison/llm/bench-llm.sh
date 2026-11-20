@@ -195,7 +195,7 @@ bench_size() { # name prompt_tokens gen_tokens
   say "3/5 ${name}: prompt ~${pt} tok, gen ${n} tok"
   python3 - "$name" "$T_PORT" "$pt" "$n" "$TEMP" "$TOPP" "$RES" <<'PY'
 import json, sys, time, urllib.request
-name, port, pt, n, temp, topp = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], float(sys.argv[5]), float(sys.argv[6])
+name, port, pt, n, temp, topp = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6])
 # distinct prefix per session: identical prefixes make llama.cpp reuse the previous
 text = ((f"{name} session filler. " + "The quick brown fox jumps over the lazy dog. ") * pt)[: pt * 5]
 payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
@@ -203,7 +203,11 @@ payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
 req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
                              headers={"content-type": "application/json"})
 t0, first, toks, usage = time.time(), None, 0, {}
-with urllib.request.urlopen(req, timeout=7200) as r:
+try:
+    r = urllib.request.urlopen(req, timeout=7200)
+except urllib.error.HTTPError as e:
+    sys.exit(f"FATAL: HTTP {e.code} from :{port} — {e.read().decode()[:300]}")
+with r:
     for line in r:
         line = line.decode().strip()
         if not line.startswith("data:"): continue
@@ -240,7 +244,11 @@ def work(i, go):
                                  headers={"content-type": "application/json"})
     t0 = time.time(); go.wait()
     first, toks, usage = None, 0, {}
-    with urllib.request.urlopen(req, timeout=7200) as r:
+    try:
+        r = urllib.request.urlopen(req, timeout=7200)
+    except urllib.error.HTTPError as e:
+        return (pt, 0.0, 0.0, 0, f"HTTP {e.code}: {e.read().decode()[:200]}")
+    with r:
         for line in r:
             line = line.decode().strip()
             if not line.startswith("data:"): continue
@@ -252,7 +260,7 @@ def work(i, go):
             if d.get("usage"): usage = d["usage"]
     tend = time.time()
     gen = usage.get("completion_tokens") or toks
-    return (usage.get("prompt_tokens") or pt, (first - t0) if first else 0, tend - t0, gen)
+    return (usage.get("prompt_tokens") or pt, (first - t0) if first else 0, tend - t0, gen, None)
 go = threading.Event(); res = [None] * nn
 def runner(i): res[i] = work(i, go)
 ts = [threading.Thread(target=runner, args=(i,)) for i in range(nn)]
@@ -261,8 +269,11 @@ time.sleep(1.5)   # let the requests build up, then release them together
 go.set()
 [t.join() for t in ts]
 tot_gen = sum(r[3] for r in res); wall = max(r[2] for r in res)
+errs = [r[4] for r in res if r[4]]
 ttfbs = sorted(r[1] for r in res)
-agg = tot_gen / wall
+agg = tot_gen / wall if wall > 0 else 0.0
+if errs:
+    print(f"FATAL: concurrent request failed — {errs[0]}")
 with open(sys.argv[7], "a") as f:
     f.write(f"conc\t{nn}\t{res[0][0]}\t{tot_gen}\t{wall:.3f}\t{agg:.3f}\t{agg / nn:.3f}\t"
             f"{ttfbs[0]:.3f}\t{ttfbs[len(ttfbs) // 2]:.3f}\t{ttfbs[-1]:.3f}\n")
@@ -300,7 +311,11 @@ payload = json.dumps({"prompt": "Warmup. " * 32, "max_tokens": 8, "stream": Fals
                       "temperature": temp, "top_p": topp}).encode()
 req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
                              headers={"content-type": "application/json"})
-with urllib.request.urlopen(req, timeout=7200) as r:
+try:
+    r = urllib.request.urlopen(req, timeout=7200)
+except urllib.error.HTTPError as e:
+    sys.exit(f"FATAL: warmup HTTP {e.code} — {e.read().decode()[:300]}")
+with r:
     r.read()
 print("warmup done")
 PY
