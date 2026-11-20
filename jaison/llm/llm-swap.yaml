@@ -131,8 +131,10 @@ models:
     cmdStop: docker stop -t 60 flash-next   # drain like deepseek: RCCL multi-GPU + abrupt stop
 
   # Tencent Hy4-flash 220B/A11B, llama.cpp Hy4 PR #32517 build. AngelSlim Q4_K_M, 63.5 GB Engram table
-  # paged from NVMe on demand (mmap + lazy), mmproj for vision, no spec drafter yet (DFly2 unverified).
-  # Sampling per model card: temp 0.9, top_p 1.0, top_k off. See run-hy4.sh.
+  # paged from NVMe on demand (mmap + lazy). Text-only until the projector-type mismatch is fixed
+  # upstream (AngelSlim's mmproj says hy_v4_flash; this build registers hy_v4_vl) — NO_MM=1 below.
+  # No spec drafter in the GGUF (DFly2 layers dropped by the converter). Sampling per model card:
+  # temp 0.9, top_p 1.0, top_k off. See run-hy4.sh.
   "hy4-flash":
     proxy: "http://127.0.0.1:9991"
     checkEndpoint: /health
@@ -140,5 +142,6 @@ models:
     env:
       - "PORT=9991"
       - "NAME=hy4"
+      - "NO_MM=1"
     cmd: ${llm_dir}/run-hy4.sh
     cmdStop: docker stop -t 60 hy4   # drain like deepseek: RCCL multi-GPU + abrupt stop
