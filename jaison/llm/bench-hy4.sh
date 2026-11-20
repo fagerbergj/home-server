@@ -45,9 +45,12 @@ restore() {
       curl -s -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null | grep -q ok && break
       sleep 5
     done
-    curl -s -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null | head -c 60; echo
+    if curl -s -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null | grep -q ok; then
+      say "restore: 27B healthy on :${VLLM_PORT}"
+    else
+      echo "WARNING: 27B not healthy after 10 min — check docker logs ${VLLM}"
+    fi
   fi
-  say "restore: 27B back (or see warning above)"
 }
 trap restore EXIT
 
@@ -58,7 +61,7 @@ for i in $(seq 1 60); do
   [ "${busy:-1}" = "0" ] && break
   sleep 5
 done
-rocm-smi --showmeminfo vram 2>/dev/null | head -7
+rocm-smi --showmeminfo vram 2>/dev/null || true
 
 say "2/5 loading Hy4 via production launcher (168 GB page-in; first load takes minutes)"
 NAME=hy4 PORT="$HY4_PORT" bash "$LLM_DIR/run-hy4.sh" &
@@ -69,7 +72,7 @@ for i in $(seq 1 360); do
   sleep 5
 done
 say "server up; VRAM at load:"
-rocm-smi --showmeminfo vram 2>/dev/null | head -7
+rocm-smi --showmeminfo vram 2>/dev/null || true
 free -g | awk 'NR==2 {print "RAM: " $3 "G used / " $2 "G"}'
 
 bench_size() { # name prompt_tokens gen_tokens
