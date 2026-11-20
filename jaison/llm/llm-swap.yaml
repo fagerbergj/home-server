@@ -45,6 +45,11 @@ groups:
     swap: true
     exclusive: true
     members: ["qwen3.8-flash-next"]
+  # Whole box + host RAM, 63.5 GB Engram table paged from NVMe. Drains/unloads the 27B.
+  "hy4":
+    swap: true
+    exclusive: true
+    members: ["hy4-flash"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -124,3 +129,16 @@ models:
       - "NAME=flash-next"
     cmd: ${llm_dir}/run-flashnext.sh
     cmdStop: docker stop -t 60 flash-next   # drain like deepseek: RCCL multi-GPU + abrupt stop
+
+  # Tencent Hy4-flash 220B/A11B, llama.cpp Hy4 PR #32517 build. AngelSlim Q4_K_M, 63.5 GB Engram table
+  # paged from NVMe on demand (mmap + lazy), mmproj for vision, no spec drafter yet (DFly2 unverified).
+  # Sampling per model card: temp 0.9, top_p 1.0, top_k off. See run-hy4.sh.
+  "hy4-flash":
+    proxy: "http://127.0.0.1:9991"
+    checkEndpoint: /health
+    ttl: 3600
+    env:
+      - "PORT=9991"
+      - "NAME=hy4"
+    cmd: ${llm_dir}/run-hy4.sh
+    cmdStop: docker stop -t 60 hy4   # drain like deepseek: RCCL multi-GPU + abrupt stop
