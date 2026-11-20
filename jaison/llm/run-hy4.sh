@@ -22,7 +22,8 @@ FITT="${FITT:-4096,3072,3072,3072}"   # auto-fit margins, dev0 keeps slack for t
 # TENSOR_SPLIT=1,1,1,1 forces an even model split: auto-fit's layer-boundary placement left 82-90% VRAM skew
 TENSOR_SPLIT="${TENSOR_SPLIT:-}"
 # SPEC=ngram-cache (or ngram-simple/ngram-map-k) enables weight-free n-gram speculative
-# decoding: no drafter GGUF needed; helps most on self-similar output (code, structured text)
+# decoding: no drafter GGUF needed. Measured 2025-11: ~23% acceptance on synthetic text,
+# net -8..-13% decode at 8k/34k context (verification tax beats the gain) — keep off.
 SPEC="${SPEC:-}"
 
 R="$HF"/hub/models--AngelSlim--Hy4-flash-GGUF/snapshots
