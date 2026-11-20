@@ -19,6 +19,11 @@ THREADS="${THREADS:-24}"
 UB="${UB:-1024}"
 KV="${KV:-q8_0}"
 FITT="${FITT:-4096,3072,3072,3072}"   # auto-fit margins, dev0 keeps slack for the ViT/mmproj context
+# TENSOR_SPLIT=1,1,1,1 forces an even model split: auto-fit's layer-boundary placement left 82-90% VRAM skew
+TENSOR_SPLIT="${TENSOR_SPLIT:-}"
+# SPEC=ngram-cache (or ngram-simple/ngram-map-k) enables weight-free n-gram speculative
+# decoding: no drafter GGUF needed; helps most on self-similar output (code, structured text)
+SPEC="${SPEC:-}"
 
 R="$HF"/hub/models--AngelSlim--Hy4-flash-GGUF/snapshots
 S=$(ls -d "$R"/*/ | head -1)
@@ -31,6 +36,8 @@ MM="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '^mmproj-' | head -1)"
 # projector type (hy_v4_flash), so vision serving is broken until that is resolved.
 ARGS=()
 [ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
+[ -n "$TENSOR_SPLIT" ] && ARGS+=(--tensor-split "$TENSOR_SPLIT")
+[ -n "$SPEC" ] && ARGS+=(--spec-type "$SPEC")
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 

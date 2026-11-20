@@ -85,7 +85,8 @@ bench_size() { # name prompt_tokens gen_tokens
   python3 - "$name" "$HY4_PORT" "$pt" "$n" <<'PY'
 import json, sys, time, urllib.request
 name, port, pt, n = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
-text = ("The quick brown fox jumps over the lazy dog. " * pt)[: pt * 5]
+# distinct prefix per session: identical prefixes make llama.cpp reuse the previous
+text = ((f"{name} session filler. " + "The quick brown fox jumps over the lazy dog. ") * pt)[: pt * 5]
 payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
                       "temperature": 0.9, "top_p": 1.0}).encode()
 req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
