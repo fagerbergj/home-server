@@ -41,14 +41,14 @@ restore() {
       -H 'content-type: application/json' \
       -d "{\"model\":\"qwen3.8-27b\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}" \
       > /dev/null || echo "WARNING: trigger request failed; check the router"
-    for i in $(seq 1 120); do
-      curl -s -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null | grep -q ok && break
+    for i in $(seq 1 240); do
+      [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null)" = "200" ] && break
       sleep 5
     done
-    if curl -s -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null | grep -q ok; then
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${VLLM_PORT}/health" 2>/dev/null)" = "200" ]; then
       say "restore: 27B healthy on :${VLLM_PORT}"
     else
-      echo "WARNING: 27B not healthy after 10 min — check docker logs ${VLLM}"
+      echo "WARNING: 27B not healthy after 20 min — check docker logs ${VLLM}"
     fi
   fi
 }
