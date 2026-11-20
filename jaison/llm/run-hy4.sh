@@ -19,8 +19,10 @@ THREADS="${THREADS:-24}"
 UB="${UB:-1024}"
 KV="${KV:-q8_0}"
 FITT="${FITT:-4096,3072,3072,3072}"   # auto-fit margins, dev0 keeps slack for the ViT/mmproj context
-# TENSOR_SPLIT=1,1,1,1 forces an even model split: auto-fit's layer-boundary placement left 82-90% VRAM skew
-TENSOR_SPLIT="${TENSOR_SPLIT:-}"
+# Even per-card model split: measured +2-3% decode vs auto-fit's layer-boundary placement
+# (21.7/21.0/19.2 -> 22.2/21.7/19.8 tok/s). Note: with tensor_split set, -fit aborts and
+# the server falls back to no pipeline parallelism — that combination is the measured one.
+TENSOR_SPLIT="${TENSOR_SPLIT:-1,1,1,1}"
 # SPEC=ngram-cache (or ngram-simple/ngram-map-k) enables weight-free n-gram speculative
 # decoding: no drafter GGUF needed. Measured 2025-11: ~23% acceptance on synthetic text,
 # net -8..-13% decode at 8k/34k context (verification tax beats the gain) — keep off.
