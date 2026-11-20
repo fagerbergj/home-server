@@ -63,8 +63,8 @@ for i in $(seq 1 60); do
 done
 rocm-smi --showmeminfo vram 2>/dev/null || true
 
-say "2/5 loading Hy4 via production launcher (168 GB page-in; first load takes minutes)"
-NAME=hy4 PORT="$HY4_PORT" bash "$LLM_DIR/run-hy4.sh" &
+say "2/5 loading Hy4 via production launcher, text-only NO_MM (168 GB page-in; first load takes minutes)"
+NAME=hy4 PORT="$HY4_PORT" NO_MM=1 bash "$LLM_DIR/run-hy4.sh" &
 HY4_PID=$!
 for i in $(seq 1 360); do
   curl -s -m 2 "http://127.0.0.1:${HY4_PORT}/health" 2>/dev/null | grep -q ok && break

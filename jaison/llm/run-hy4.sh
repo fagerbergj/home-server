@@ -27,7 +27,10 @@ REL="${S#"$HF"/}"
 M="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '-00001-of-' | head -1)"
 MM="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '^mmproj-' | head -1)"
 
-ARGS=(--mmproj "$MM")
+# NO_MM=1 runs text-only: this PR build does not recognize AngelSlim's mmproj
+# projector type (hy_v4_flash), so vision serving is broken until that is resolved.
+ARGS=()
+[ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
