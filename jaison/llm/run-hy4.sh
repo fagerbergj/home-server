@@ -23,8 +23,9 @@ FITT="${FITT:-4096,3072,3072,3072}"   # auto-fit margins, dev0 keeps slack for t
 R="$HF"/hub/models--AngelSlim--Hy4-flash-GGUF/snapshots
 S=$(ls -d "$R"/*/ | head -1)
 # -m needs the container-side path (/root/.cache/huggingface = $HF mounted ro)
-M="/root/.cache/huggingface${S#\$HF}/$(ls "$S" | grep -- '-00001-of-' | head -1)"
-MM="/root/.cache/huggingface${S#\$HF}/$(ls "$S" | grep -- '^mmproj-' | head -1)"
+REL="${S#"$HF"/}"
+M="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '-00001-of-' | head -1)"
+MM="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '^mmproj-' | head -1)"
 
 ARGS=(--mmproj "$MM")
 # shellcheck disable=SC2206
