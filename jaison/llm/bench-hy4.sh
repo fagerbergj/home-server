@@ -25,6 +25,7 @@ die() { echo "FATAL: $*" >&2; exit 1; }
 
 say "0/5 sanity"
 docker ps -q --filter "name=^${VLLM}$" | grep -q . || die "$VLLM is not running"
+docker ps -q --filter "name=^hy4$" | grep -q . && die "an hy4 container already exists (loading or running) — wait for it or: docker stop hy4"
 curl -s -m 5 "http://127.0.0.1:${HY4_PORT}/health" 2>/dev/null | grep -q ok && die "hy4 already loaded on :${HY4_PORT}"
 rocm-smi --showmeminfo vram >/dev/null 2>&1 || die "rocm-smi unavailable"
 
@@ -56,11 +57,14 @@ trap restore EXIT
 
 say "1/5 stopping ${VLLM} and waiting for VRAM to drain"
 docker stop -t 60 "$VLLM"
+drained=0
 for i in $(seq 1 60); do
-  busy=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | awk -F, 'NR>1 && $3+0>1024 {c++} END {print c+0}')
-  [ "${busy:-1}" = "0" ] && break
+  # used VRAM per card, bytes; the driver baseline is ~60 MB, so require < 1 GB
+  busy=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | awk -F, 'NR>1 && $3+0>1073741824 {c++} END {print c+0}')
+  [ "${busy:-1}" = "0" ] && { drained=1; break; }
   sleep 5
 done
+[ "$drained" = "1" ] || die "GPU VRAM did not drain after stopping ${VLLM} — another process may hold the GPUs; check with rocm-smi"
 rocm-smi --showmeminfo vram 2>/dev/null || true
 
 say "2/5 loading Hy4 via production launcher, text-only NO_MM (168 GB page-in; first load takes minutes)"
@@ -78,9 +82,9 @@ free -g | awk 'NR==2 {print "RAM: " $3 "G used / " $2 "G"}'
 bench_size() { # name prompt_tokens gen_tokens
   local name="$1" pt="$2" n="$3"
   say "3/5 ${name}: prompt ~${pt} tok, gen ${n} tok"
-  python3 - "$HY4_PORT" "$pt" "$n" <<'PY'
+  python3 - "$name" "$HY4_PORT" "$pt" "$n" <<'PY'
 import json, sys, time, urllib.request
-port, pt, n = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+name, port, pt, n = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
 text = ("The quick brown fox jumps over the lazy dog. " * pt)[: pt * 5]
 payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
                       "temperature": 0.9, "top_p": 1.0}).encode()
