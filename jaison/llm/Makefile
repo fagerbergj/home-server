@@ -1,4 +1,4 @@
-.PHONY: up down images mtp-image glm-image
+.PHONY: up down images mtp-image glm-image inkling-image
 
 up: images
 	docker compose up -d --build llm-swap
@@ -18,10 +18,15 @@ images: mtp-image glm-image
 # where glm/patches was rebased.
 MTP_COMMIT ?= cd959bae99ff4bed22bef2604f45241c09bbb8c8
 MTP_BASE ?= b12110
+# Stock master at the Inkling 2 Mini merge (29b52d39, PR 32694); inkling2 + its mtmd vision.
+INKLING_COMMIT ?= 29b52d398b294509746ec0a3f28948a3107c0213
 # The llama.patches label records each patch's sha256 prefix, so `docker inspect` shows what an image carries.
 patch_sha = $(shell cd $(1) && for p in $$(ls *.patch | head -n $(or $(2),99)); do printf '%s=%s,' "$${p%%-*}" "$$(sha256sum $$p | cut -c1-12)"; done)
 mtp-image:
 	docker build -f upstream/patched.Dockerfile --build-arg LLAMA_COMMIT=$(MTP_COMMIT) --build-arg PATCHES=mtp4/patches --build-arg NPATCH=1 --build-arg PATCH_SHA=$(call patch_sha,mtp4/patches,1) -t llama-mtp4:$(MTP_BASE)-port .
+
+inkling-image:
+	docker build -f upstream/patched.Dockerfile --build-arg LLAMA_COMMIT=$(INKLING_COMMIT) --build-arg PATCHES=inkling/patches --build-arg NPATCH=0 --build-arg PATCH_SHA=none -t llama-inkling:29b52d39 .
 
 glm-image:
 	docker build -f upstream/patched.Dockerfile --build-arg PATCHES=glm/patches --build-arg PATCH_SHA=$(call patch_sha,glm/patches) -t llama-glm:b11580-p1 .
