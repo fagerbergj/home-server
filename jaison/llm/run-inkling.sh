@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Thinking Machines Inkling-2-Mini launcher for llama-swap: ggml-org GGUF on a single R9700
-# (card 0), looped MoE 26.4B/3.4B-active, vision on. Stock llama.cpp master (inkling2 merged
-# in 29b52d39) — no PR, no stubs. Q8_0 default (27.8 GB, 97.6% same top token as BF16 — the
-# fair 8-bit comparison vs the 27B's FP8); no 4-bit quants of this model are in play. No spec drafter in llama.cpp: the DSpark
+# Thinking Machines Inkling-2-Mini launcher — PARKED. Taste test vs qwen3.8-27b (2026-11-21):
+# decode parity single-card (31.4 tok/s vs ~35), prefill 11-12x slower (348-383 vs 4277-4732 tok/s),
+# 4-way split costs 42% decode for capacity only, long sessions (42k) don't fit single-card q8 KV.
+# Verdict: the 3.4B-active MoE is a fit for small machines, not for this box. Weights live on the
+# media box (/mnt/media/models/huggingface/, sha256 d57542f8aea5…f45da); the llama-inkling image
+# was rmi'd — rebuild from llama.cpp master 29b52d39 (inkling2 merge) if ever revisited. No spec drafter in llama.cpp: the DSpark
 # drafter (mtp.safetensors) only runs under vLLM/SGLang.
 set -euo pipefail
 

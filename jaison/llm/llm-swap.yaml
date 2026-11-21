@@ -50,11 +50,6 @@ groups:
     swap: true
     exclusive: true
     members: ["hy4-flash"]
-  # One card (dev0), Q8_0 27.8 GB + mmproj — the 8-bit comparison vs the 27B's FP8. Drains/unloads the 27B.
-  "inkling":
-    swap: true
-    exclusive: true
-    members: ["inkling-2-mini"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -150,16 +145,3 @@ models:
       - "NO_MM=1"
     cmd: ${llm_dir}/run-hy4.sh
     cmdStop: docker stop -t 60 hy4   # drain like deepseek: RCCL multi-GPU + abrupt stop
-
-  # Thinking Machines Inkling-2-Mini 26.4B/3.4B-active looped MoE, stock llama.cpp master GGUF
-  # (ggml-org), vision on (official mmproj), single card. Q8_0 — same 8-bit class as the 27B's
-  # FP8, so the switch question is answered at matched precision. See run-inkling.sh.
-  "inkling-2-mini":
-    proxy: "http://127.0.0.1:9990"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9990"
-      - "NAME=inkling"
-    cmd: ${llm_dir}/run-inkling.sh
-    cmdStop: docker stop -t 60 inkling
