@@ -320,9 +320,11 @@ with r:
 print("warmup done")
 PY
 
-bench_size short "$SHORT_P" "$SHORT_N"
-bench_size medium "$MED_P" "$MED_N"
-bench_size long  "$LONG_P"  "$LONG_N"
+# SESSIONS filters which sizes run (default all three) — single-card KV-pool capped legs
+# (e.g. SESSIONS=short,medium) skip the long session instead of 400-ing on ctx.
+case ",${SESSIONS:-short,medium,long}," in *",short,"*)  bench_size short "$SHORT_P" "$SHORT_N";; esac
+case ",${SESSIONS:-short,medium,long}," in *",medium,"*) bench_size medium "$MED_P" "$MED_N";; esac
+case ",${SESSIONS:-short,medium,long}," in *",long,"*)  bench_size long  "$LONG_P"  "$LONG_N";; esac
 [ "$CONC" -gt 0 ] && bench_conc "$CONC" "${CONC_P:-$MED_P}" "${CONC_N:-$MED_N}"
 
 print_table "$MODEL" "$T_PORT"
