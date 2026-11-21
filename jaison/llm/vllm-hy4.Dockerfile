@@ -1,0 +1,30 @@
+# vLLM ROCm nightly (2026-11-21, gfx1201 + PR #68296 Hy4-flash/DFly/Rust-VL) +
+# PR #68839 AMD overlay (vllm/models/hy_v4*/amd + rocm_aiter_mla_sparse patch).
+FROM vllm/vllm-openai-rocm:nightly
+
+ARG PR68839_SHA=93889130afe2c85c01b4d195150325a8e715d05b
+RUN python3 - <<'PY'
+import json, os, urllib.request, vllm
+from pathlib import Path
+
+sha = os.environ.get("PR68839_SHA", "93889130afe2c85c01b4d195150325a8e715d05b")
+vllm_root = Path(vllm.__file__).resolve().parent.parent
+
+api = "https://api.github.com/repos/vllm-project/vllm/pulls/68839/files?per_page=100"
+req = urllib.request.Request(api, headers={"User-Agent": "vllm-hy4-build/1"})
+files = json.loads(urllib.request.urlopen(req, timeout=60).read())
+
+applied = 0
+for f in files:
+    fn = f["filename"]
+    if not fn.startswith("vllm/"):
+        continue
+    url = f"https://raw.githubusercontent.com/vllm-project/vllm/{sha}/{fn}"
+    dst = vllm_root / fn
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    data = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "vllm-hy4-build/1"}), timeout=60).read()
+    dst.write_bytes(data)
+    applied += 1
+    print(f"overlaid {fn} ({len(data)} B)")
+assert applied >= 20, f"expected >=20 overlaid files, got {applied}"
+PY
