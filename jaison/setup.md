@@ -87,7 +87,11 @@ Or re-download: `llm/download-models.sh`.
 
 ## Phase 7 — llm-swap
 
-One `llm-swap` container (llama-swap + Docker CLI, host networking, `/var/run/docker.sock`). Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns all four cards and its groups swap the resident 27B (vLLM, TP=4, one id for worker and judge) against Flash-Next, MiMo and GLM (whole box, llama.cpp; Flash-Next and GLM carry small patch series, see `jaison/llm/README.md`) and on-demand extras (Vulkan llama.cpp). Bind-mount paths in cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher, which bind-mounts `jaison/llm/vllm-patches/` over the image.
+One `llm-swap` container (llama-swap + Docker CLI, host networking, `/var/run/docker.sock`).
+Every model in `llm-swap.yaml` is a `docker run` of its runtime image, stopped with `cmdStop: docker stop`, so one router owns all four cards.
+
+Its groups swap the resident 27B (vLLM, TP=4, one id for worker and judge) against Flash-Next, MiMo and GLM (whole box, llama.cpp; Flash-Next and GLM carry small patch series, see `jaison/llm/README.md`) and on-demand extras (Vulkan llama.cpp).
+Bind-mount paths in cmds are host paths; `jaison/llm` is mounted at its host path for the vLLM launcher, which bind-mounts `jaison/llm/vllm-patches/` over the image.
 
 vLLM checkpoints live in `/mnt/cache/vllm/` (`qwen3.8-27b-fp8`, `qwen3.8-27b-dflash2-int4`, `cache/` for the compile cache).
 

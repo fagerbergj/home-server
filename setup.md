@@ -131,8 +131,8 @@ source ~/workspace/home-server/.env
 
 ## Phase 3 — NVIDIA GPU Driver
 
-This box carries one RTX 3090 for Plex NVENC, immich ML and the Clef llama-swap
-(`llm-swap-media`). The big models and the four R9700s live on the AI box (`jaison/`).
+This box carries one RTX 3090 for Plex NVENC, immich ML and the Clef llama-swap (`llm-swap-media`).
+The big models and the four R9700s live on the AI box (`jaison/`).
 
 ### Install the driver
 
@@ -377,8 +377,7 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-NVIDIA containers need the container toolkit; services opt in with `runtime: nvidia`
-plus `NVIDIA_VISIBLE_DEVICES` in their `docker-compose.yml`.
+NVIDIA containers need the container toolkit; services opt in with `runtime: nvidia` plus `NVIDIA_VISIBLE_DEVICES` in their `docker-compose.yml`.
 
 ```bash
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
