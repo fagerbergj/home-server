@@ -21,10 +21,28 @@ One `llm-swap` container (llama-swap) owns all four R9700s. It does not run any 
 
 | Model id | Image | Cards | Notes |
 |---|---|---|---|
-| `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | all four, TP=4 | FP8 (Qwen block-fp8) + DFlash2 int4 draft, 262k context, 6 sequences, bf16 KV. Resident (`ttl: 0`). ~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`. |
-| `glm-5.3-flash` | `llama-glm:b11580-p1` | all four + host RAM | unsloth UD-IQ4_XS, experts of 23 layers (~76 GiB) in RAM, GLM's MTP head at depth 2, q8_0 KV, 4 slots x 256k. ~22 t/s code, ~17 prose, ~28 aggregate at 4 streams. Built with `glm/patches` so attention reads only the indexer's 2048 top-k keys: prefill 227 t/s at 30k, 196 at 106k, 174 at 170k (a cold 170k prompt takes ~16 min). `--no-host` is required: pinned host buffers fault the GPU when a slot restores cached state. Loading it drains and unloads the 27B. |
-| `deepseek-v4.1-flash` | `ghcr.io/ggml-org/llama.cpp:server-rocm-b12110` | all four + host RAM | stock image — DeepSeek-V4.1 and the DSpark drafter are upstream. unsloth UD-IQ2_XXS, DSpark n3, q8_0 KV, 4 x 128k slots, cold load ~12 min. The 135 GB Engram table (shard 6) stays on disk: `mmap` + `--lazy-mode` read its rows on demand, so the page cache must not be dropped after load. b12110's fitter can't measure the drafter ("fitting without it"), so `-fitt` margins reserve dev0's 2.5 GB for dspark — without them the drafter OOMs at load (see run-deepseek.sh; crash logs land in the router container's /tmp/deepseek-last.log). |
-| `qwen3.8-flash-next` | `llama-mtp4:b12110-port` | all four | llama.cpp b12110 + `mtp4/patches` (the shared MTP head borrows the target's embeddings; PR 28243 never landed upstream). unsloth UD-Q4_K_XL tensor-split across all four cards, shared head n2, f16 KV (tensor mode requires unquantized KV and ignores -ot; the 28.8 GB n-gram table stays in VRAM), 1 x 262k slot at ~30 GB/card. ~45 s load warm. |
+| `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | all four, TP=4 | vLLM, resident (`ttl: 0`), FP8 + DFlash2 draft |
+| `glm-5.3-flash` | `llama-glm:b11580-p1` | all four + host RAM | llama.cpp + `glm/patches`, experts in RAM |
+| `deepseek-v4.1-flash` | `ghcr.io/ggml-org/llama.cpp:server-rocm-b12110` | all four + host RAM | stock image + `run-deepseek.sh`, Engram table on disk |
+| `qwen3.8-flash-next` | `llama-mtp4:b12110-port` | all four | llama.cpp b12110 + `mtp4/patches`, tensor-split |
+
+Runtime details:
+
+`qwen3.8-27b` — FP8 (Qwen block-fp8) + DFlash2 int4 draft, 262k context, 6 sequences, bf16 KV.
+~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`.
+
+`glm-5.3-flash` — unsloth UD-IQ4_XS, experts of 23 layers (~76 GiB) in RAM, GLM's MTP head at depth 2, q8_0 KV, 4 slots x 256k.
+~22 t/s code, ~17 prose, ~28 aggregate at 4 streams.
+Built with `glm/patches` so attention reads only the indexer's 2048 top-k keys: prefill 227 t/s at 30k, 196 at 106k, 174 at 170k (a cold 170k prompt takes ~16 min).
+`--no-host` is required: pinned host buffers fault the GPU when a slot restores cached state.
+Loading it drains and unloads the 27B.
+
+`deepseek-v4.1-flash` — stock image (DeepSeek-V4.1 and the DSpark drafter are upstream), unsloth UD-IQ2_XXS, DSpark n3, q8_0 KV, 4 x 128k slots, cold load ~12 min.
+The 135 GB Engram table (shard 6) stays on disk: `mmap` + `--lazy-mode` read its rows on demand, so the page cache must not be dropped after load.
+b12110's fitter can't measure the drafter ("fitting without it"), so `-fitt` margins reserve dev0's 2.5 GB for dspark — without them the drafter OOMs at load (see `run-deepseek.sh`; crash logs land in the router container's /tmp/deepseek-last.log).
+
+`qwen3.8-flash-next` — the shared MTP head borrows the target's embeddings (PR 28243 never landed upstream), unsloth UD-Q4_K_XL tensor-split across all four cards, shared head n2, f16 KV (tensor mode requires unquantized KV and ignores -ot; the 28.8 GB n-gram table stays in VRAM), 1 x 262k slot at ~30 GB/card.
+~45 s load warm.
 
 Groups: `27b` is the resident default; `glm` is exclusive, so a request for it swaps the 27B out and the next 27B call pays the boot.
 

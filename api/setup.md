@@ -59,13 +59,9 @@ In Nginx Proxy Manager (`http://192.168.50.186:81`), add the following proxy hos
 
 ### Streaming / SSE settings
 
-NPM defaults (`proxy_read_timeout 60s`, `proxy_buffering on`) break long-lived
-SSE streams: tokens get buffered, and any silence longer than 60s drops the
-connection (504 on first request while a model loads, `NS_ERROR_NET_PARTIAL_TRANSFER`
-mid-stream when the agent is between tool calls).
+NPM defaults (`proxy_read_timeout 60s`, `proxy_buffering on`) break long-lived SSE streams: tokens get buffered, and any silence longer than 60s drops the connection (504 on first request while a model loads, `NS_ERROR_NET_PARTIAL_TRANSFER` mid-stream when the agent is between tool calls).
 
-For each proxy host that fronts a streaming service, edit it → **Advanced**
-tab → paste:
+For each proxy host that fronts a streaming service, edit it → **Advanced** tab → paste:
 
 ```nginx
 proxy_read_timeout 600s;
@@ -73,13 +69,9 @@ proxy_send_timeout 600s;
 proxy_buffering off;
 ```
 
-Keep it to these three directives. NPM's validator silently rejects the
-proxy host config if you also include `proxy_http_version`, `proxy_cache`,
-or `chunked_transfer_encoding` in the Advanced block — which causes the
-host to disappear from `/data/nginx/proxy_host/`, so requests fall through
-to NPM's default server and clients see `SSL_ERROR_UNRECOGNIZED_NAME_ALERT`.
-Those three directives are all NPM defaults already, so dropping them
-loses nothing.
+Keep it to these three directives.
+NPM's validator silently rejects the proxy host config if you also include `proxy_http_version`, `proxy_cache`, or `chunked_transfer_encoding` in the Advanced block — which causes the host to disappear from `/data/nginx/proxy_host/`, so requests fall through to NPM's default server and clients see `SSL_ERROR_UNRECOGNIZED_NAME_ALERT`.
+Those three directives are all NPM defaults already, so dropping them loses nothing.
 
 Save — NPM regenerates the config and reloads automatically. Verify with:
 
@@ -87,8 +79,7 @@ Save — NPM regenerates the config and reloads automatically. Verify with:
 docker exec nginx-proxy-manager sh -c 'grep -E "timeout|buffering" /data/nginx/proxy_host/*.conf'
 ```
 
-Traefik's defaults are streaming-friendly (no response-header timeout, no
-buffering), so no Traefik-side tweaks are needed.
+Traefik's defaults are streaming-friendly (no response-header timeout, no buffering), so no Traefik-side tweaks are needed.
 
 ---
 
@@ -191,8 +182,8 @@ Then: `docker compose -f api/docker-compose.yml up -d swagger-ui`
 ## SearXNG (internal search backend)
 
 Keyless metasearch backend that other services query over the internal network.
-No Traefik route, no NPM host — it is never exposed publicly. Config lives in
-`api/searxng/settings.yml` (JSON output enabled, limiter disabled).
+No Traefik route, no NPM host — it is never exposed publicly.
+Config lives in `api/searxng/settings.yml` (JSON output enabled, limiter disabled).
 
 ### 1. Add the secret to root `.env`
 
@@ -201,9 +192,7 @@ No Traefik route, no NPM host — it is never exposed publicly. Config lives in
 export SEARXNG_SECRET=    # openssl rand -hex 32
 ```
 
-SearXNG overrides `server.secret_key` from this env var at load time, so the
-committed `settings.yml` keeps only a placeholder — the real secret never
-enters git.
+SearXNG overrides `server.secret_key` from this env var at load time, so the committed `settings.yml` keeps only a placeholder — the real secret never enters git.
 
 ### 2. Start it
 
@@ -234,31 +223,18 @@ http://searxng:8080/search          # ?q=<query>&format=json
 
 ### Caveats for automated querying
 
-- **JSON is opt-in.** `?format=json` returns HTTP 403 unless `json` is in
-  `search.formats` (it is, in `settings.yml`). Removing it re-blocks the API.
-- **Limiter is off.** Required for server-to-server use — with it on, SearXNG's
-  bot detection rate-limits/403s non-browser clients. It stays off *because*
-  the instance is internal-only; do not add a public route without
-  reconsidering this (turning the limiter back on then needs a valkey/redis
-  sidecar via `valkey.url`).
-- **No SearXNG API key exists.** SearXNG has no native key/token auth on
-  `/search`; access control here is purely the network boundary. If the
-  consumer must present a credential, terminate it at a proxy in front of
-  SearXNG — don't expect SearXNG to check one.
-- **Upstream engines self-throttle.** Individual engines (Google, etc.) may
-  CAPTCHA or 429 under heavy automated load; SearXNG suspends a failing engine
-  briefly (`suspended_times`) and answers from the rest. For steady high volume,
-  prune `settings.yml` to a few resilient engines (e.g. duckduckgo, brave,
-  wikipedia, startpage).
+- **JSON is opt-in.** `?format=json` returns HTTP 403 unless `json` is in `search.formats` (it is, in `settings.yml`); removing it re-blocks the API.
+- **Limiter is off.** Required for server-to-server use — with it on, SearXNG's bot detection rate-limits/403s non-browser clients; it stays off *because* the instance is internal-only, so do not add a public route without reconsidering this (turning the limiter back on then needs a valkey/redis sidecar via `valkey.url`).
+- **No SearXNG API key exists.** SearXNG has no native key/token auth on `/search`; access control here is purely the network boundary, and if the consumer must present a credential, terminate it at a proxy in front of SearXNG — don't expect SearXNG to check one.
+- **Upstream engines self-throttle.** Individual engines (Google, etc.) may CAPTCHA or 429 under heavy automated load; SearXNG suspends a failing engine briefly (`suspended_times`) and answers from the rest, so for steady high volume prune `settings.yml` to a few resilient engines (e.g. duckduckgo, brave, wikipedia, startpage).
 
 ---
 
 ## Browserless (internal headless-Chromium render backend)
 
-Headless Chromium that renders a URL server-side and returns the resulting HTML,
-for pages a plain GET can't read (SPAs / client-rendered content). Keyless and
-internal-only — no Traefik route, no NPM host. No config file or secret: it is
-entirely env-driven (see the `browserless` service in `docker-compose.yml`).
+Headless Chromium that renders a URL server-side and returns the resulting HTML, for pages a plain GET can't read (SPAs / client-rendered content).
+Keyless and internal-only — no Traefik route, no NPM host.
+No config file or secret: it is entirely env-driven (see the `browserless` service in `docker-compose.yml`).
 
 ### 1. Start it
 
@@ -266,12 +242,10 @@ entirely env-driven (see the `browserless` service in `docker-compose.yml`).
 docker compose -f api/docker-compose.yml up -d browserless
 ```
 
-Keyless by default — `TOKEN` is unset, so every request is authorized
-(`src/token.ts`: `token === null` → allowed). **Optional:** set `BROWSERLESS_TOKEN`
-in root `.env` to require a token; callers then pass `?token=<value>` (e.g.
-`POST http://browserless:3000/content?token=...`). An empty value stays keyless.
-A token gates *who can drive a browser* but does **not** limit *which URLs are
-fetched* — SSRF guarding (below) is still required either way.
+Keyless by default — `TOKEN` is unset, so every request is authorized (`src/token.ts`: `token === null` → allowed).
+**Optional:** set `BROWSERLESS_TOKEN` in root `.env` to require a token; callers then pass `?token=<value>` (e.g. `POST http://browserless:3000/content?token=...`).
+An empty value stays keyless.
+A token gates *who can drive a browser* but does **not** limit *which URLs are fetched* — SSRF guarding (below) is still required either way.
 
 ### 2. Verify
 
@@ -298,31 +272,20 @@ Content-Type: application/json
 {"url": "<url>"}            # -> rendered HTML
 ```
 
-Tier it: try a plain HTTP GET + readability first, and only fall back to
-browserless when that returns an empty/JS shell — rendering is far heavier.
+Tier it: try a plain HTTP GET + readability first, and only fall back to browserless when that returns an empty/JS shell — rendering is far heavier.
 Other useful endpoints: `/scrape` (structured elements), `/pdf`, `/screenshot`.
 
 ### Caveats
 
-- **SSRF — the important one.** Browserless fetches whatever URL it's handed,
-  server-side, and it sits on the `api_gateway`/`default` networks, so a
-  malicious or redirected URL can reach internal services
-  (`http://searxng:8080`, `qdrant:6333`, the cloud
-  metadata IP `169.254.169.254`, etc.). **The caller must allowlist/deny before
-  calling**: reject non-`http(s)` schemes, and resolve+block private/link-local
-  ranges (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `::1`,
-  `fc00::/7`). Validate *after* DNS resolution and on each redirect hop. This
-  belongs in Quack's `fetch` tool — browserless has no built-in SSRF filter.
-- **Keyless is only safe because it's internal.** With no `TOKEN`, anyone who can
-  reach `:3000` can drive a browser. Setting `BROWSERLESS_TOKEN` closes that off
-  (defense-in-depth even internally). Never give it a Traefik route / NPM host
-  without a token set.
-- **Resource use.** Each render spawns a Chromium tab. `CONCURRENT` caps parallel
-  sessions, `QUEUED` caps the backlog, `TIMEOUT` (ms) bounds a single render.
-  `shm_size: 2gb` is required — Chromium crashes on Docker's default 64MB
-  `/dev/shm`. Tune `CONCURRENT` to the host's memory.
-- **Image is `:latest`.** Pin to a version tag if you want reproducible updates
-  (matches the deliberate-update note for Authentik above).
+- **SSRF — the important one.** Browserless fetches whatever URL it's handed, server-side, and it sits on the `api_gateway`/`default` networks, so a malicious or redirected URL can reach internal services (`http://searxng:8080`, `qdrant:6333`, the cloud metadata IP `169.254.169.254`, etc.).
+  **The caller must allowlist/deny before calling**: reject non-`http(s)` schemes, and resolve+block private/link-local ranges (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, `::1`, `fc00::/7`); validate *after* DNS resolution and on each redirect hop.
+  This belongs in Quack's `fetch` tool — browserless has no built-in SSRF filter.
+- **Keyless is only safe because it's internal.** With no `TOKEN`, anyone who can reach `:3000` can drive a browser.
+  Setting `BROWSERLESS_TOKEN` closes that off (defense-in-depth even internally).
+  Never give it a Traefik route / NPM host without a token set.
+- **Resource use.** Each render spawns a Chromium tab; `CONCURRENT` caps parallel sessions, `QUEUED` caps the backlog, and `TIMEOUT` (ms) bounds a single render.
+  `shm_size: 2gb` is required — Chromium crashes on Docker's default 64MB `/dev/shm` — and `CONCURRENT` should be tuned to the host's memory.
+- **Image is `:latest`.** Pin to a version tag if you want reproducible updates (matches the deliberate-update note for Authentik above).
 
 ---
 

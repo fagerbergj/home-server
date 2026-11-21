@@ -1,8 +1,7 @@
 # Notes — Setup
 
-reMarkable cloud replacement. quack's `remarkable` extension logs into this
-rmfakecloud with its own account (see `quack/docker-compose.yml`) and handles
-uploaded notes from there; nothing else consumes them.
+reMarkable cloud replacement.
+quack's `remarkable` extension logs into this rmfakecloud with its own account (see `quack/docker-compose.yml`) and handles uploaded notes from there; nothing else consumes them.
 
 ## 1. Generate secrets
 
@@ -45,9 +44,8 @@ In Nginx Proxy Manager, add a proxy host:
 
 ## 6. Give quack access
 
-Create a second rmfakecloud user for quack and put its credentials in
-`quack/.env` (the `extensions.remarkable` block in `quack/quack.yaml` reads
-them). quack polls the cloud itself; no webhook integration is needed.
+Create a second rmfakecloud user for quack and put its credentials in `quack/.env` (the `extensions.remarkable` block in `quack/quack.yaml` reads them).
+quack polls the cloud itself; no webhook integration is needed.
 
 ## Monitoring
 

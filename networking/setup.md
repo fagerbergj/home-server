@@ -98,11 +98,9 @@ For each service, go to **Proxy Hosts** and either edit an existing host or clic
 
 Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do not request a new cert per host.
 
-> **quack** routes through **Traefik** (like API Gateway / Authentik — forward to `:8090`), not a direct
-> container port. Traefik then splits it: `POST /api/v1/github/webhook` is **public** (GitHub delivers
-> there, HMAC-signed), while the UI + rest of the API sit behind **Authentik**. The GitHub App's webhook
-> URL must point at `https://quack.jasonfagerberg.duckdns.org/api/v1/github/webhook`, so this host must
-> stay public + Force-SSL (GitHub only delivers over HTTPS).
+> **quack** routes through **Traefik** (like API Gateway / Authentik — forward to `:8090`), not a direct container port.
+> Traefik then splits it: `POST /api/v1/github/webhook` is **public** (GitHub delivers there, HMAC-signed), while the UI + rest of the API sit behind **Authentik**.
+> The GitHub App's webhook URL must point at `https://quack.jasonfagerberg.duckdns.org/api/v1/github/webhook`, so this host must stay public + Force-SSL (GitHub only delivers over HTTPS).
 
 > Grafana, Uptime Kuma, and the LLM API used to live here. They were moved to tailnet-only access in Phase 7 — pure admin surfaces, no off-tailnet device needs them.
 
@@ -110,7 +108,9 @@ Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do n
 
 ## Phase 7 — Tailnet (Headscale)
 
-Every device runs the open-source Tailscale client logged in to our own control server, [Headscale](../headscale/) at `https://headscale.jasonfagerberg.duckdns.org`. Each gets a stable `100.64.x.x` IP and a `<host>.hs.internal` MagicDNS name (short names like `jason-server` resolve too), so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) are reachable from any enrolled device without touching the router. NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
+Every device runs the open-source Tailscale client logged in to our own control server, [Headscale](../headscale/) at `https://headscale.jasonfagerberg.duckdns.org`.
+Each gets a stable `100.64.x.x` IP and a `<host>.hs.internal` MagicDNS name (short names like `jason-server` resolve too), so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) are reachable from any enrolled device without touching the router.
+NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
 
 ### Install on the Server
 

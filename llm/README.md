@@ -64,9 +64,7 @@ From outside the home network — connect to the tailnet (Headscale), then any O
 
 ## Evaluating models
 
-Evaluation runs on [Langfuse](../langfuse/), which ingests quack's real OTLP
-traces and turns them into eval datasets; see `monitoring/otel-collector/config.yaml`
-for the trace fan-out.
+Evaluation runs on [Langfuse](../langfuse/), which ingests quack's real OTLP traces and turns them into eval datasets; see `monitoring/otel-collector/config.yaml` for the trace fan-out.
 
 ## Updating
 
