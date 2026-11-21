@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Thinking Machines Inkling-2-Mini launcher for llama-swap: ggml-org GGUF on a single R9700
 # (card 0), looped MoE 26.4B/3.4B-active, vision on. Stock llama.cpp master (inkling2 merged
-# in 29b52d39) — no PR, no stubs. IQ4_NL by default (17.6 GB, 95.5% same top token as BF16);
-# QUANT=Q8_0 for the near-lossless 27.8 GB (97.6%). No spec drafter in llama.cpp: the DSpark
+# in 29b52d39) — no PR, no stubs. Q8_0 default (27.8 GB, 97.6% same top token as BF16 — the
+# fair 8-bit comparison vs the 27B's FP8); no 4-bit quants of this model are in play. No spec drafter in llama.cpp: the DSpark
 # drafter (mtp.safetensors) only runs under vLLM/SGLang.
 set -euo pipefail
 
@@ -10,7 +10,7 @@ NAME="${NAME:-inkling}"
 PORT="${PORT:-9990}"
 IMAGE="${IMAGE:-llama-inkling:29b52d39}"
 HF="${HF:-/mnt/cache/huggingface}"
-QUANT="${QUANT:-IQ4_NL}"
+QUANT="${QUANT:-Q8_0}"
 CTX="${CTX:-32768}"
 PARALLEL="${PARALLEL:-4}"
 THREADS="${THREADS:-24}"
