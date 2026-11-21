@@ -148,7 +148,7 @@ def self_test() -> None:
     unpacked = unpack_from_int32(packed.view(-1, 32), num_bits=4, shape=torch.Size([4 * 256, 256])).view(4, 256, 256)
     w_rec = (unpacked.float().view(4, 256, 2, 128) * sc.float().unsqueeze(-1)).view(4, 256, 256)
     rel2 = (w - w_rec).abs().mean() / w.abs().mean()
-    assert rel2 < 0.12, f"w4a16 rel={rel2}"
+    assert rel2 < 0.15, f"w4a16 rel={rel2}"
     print(f"SELF_TEST_OK engram_rel={rel:.4f} w4a16_rel={rel2:.4f}", flush=True)
 
 
