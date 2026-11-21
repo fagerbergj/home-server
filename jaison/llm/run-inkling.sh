@@ -16,6 +16,9 @@ PARALLEL="${PARALLEL:-4}"
 THREADS="${THREADS:-24}"
 UB="${UB:-512}"
 KV="${KV:-q8_0}"
+# Spread across all four cards (27B-style): capacity move (bigger KV pool), not a speed move —
+# 48 all-reduces/token on 3.4B-active layers. A/B it against single-card before assuming.
+TENSOR_SPLIT="${TENSOR_SPLIT:-}"
 
 S="$HF"/hub/models--ggml-org--Inkling-2-Mini-GGUF/snapshots/main
 M="/root/.cache/huggingface/hub/models--ggml-org--Inkling-2-Mini-GGUF/snapshots/main/Inkling-2-Mini-$QUANT.gguf"
@@ -23,15 +26,19 @@ MM="/root/.cache/huggingface/hub/models--ggml-org--Inkling-2-Mini-GGUF/snapshots
 
 ARGS=()
 [ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
+[ -n "$TENSOR_SPLIT" ] && ARGS+=(--tensor-split "$TENSOR_SPLIT")
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
+
+GPUPIN=(-e HIP_VISIBLE_DEVICES=0)   # single-card default; the split A/B needs all four visible
+[ -n "$TENSOR_SPLIT" ] && GPUPIN=()
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 trap 'docker logs "$NAME" > /tmp/inkling-last.log 2>&1; docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
 docker run --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri --group-add video --group-add 991 --ipc=host --shm-size 8g \
-  -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 -e HIP_VISIBLE_DEVICES=0 \
+  -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 "${GPUPIN[@]}" \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \
   "$IMAGE" \
   -m "$M" --load-mode mmap --lazy-mode on --no-host \
