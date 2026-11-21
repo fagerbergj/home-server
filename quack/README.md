@@ -31,8 +31,7 @@ GitHub ──webhook──▶ NPM (TLS) ──▶ Traefik `api` entrypoint (:809
 
 ## Configuration
 
-**`quack.yaml`** — a copy of the upstream `config/quack.yaml` with two server-specific edits
-(a header comment in the file notes this; re-copy + re-apply if the upstream changes):
+**`quack.yaml`** — a copy of the upstream `config/quack.yaml` with two server-specific edits (a header comment in the file notes this; re-copy + re-apply if the upstream changes):
 1. `web_fetch` → `kind: direct` — there's no `crawl4ai` container here (the crawl4ai kind fails startup without a URL); reviews use exa for search and a plain GET for the rare fetch.
 2. `extensions.github` **enabled** — `client_id`/`webhook_secret` from `${VAR}`, `private_key_path: /run/secrets/quack-app.pem` (the mounted `.pem`), and `triggers: [mention, pr_opened, label]`.
 
