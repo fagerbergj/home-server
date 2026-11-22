@@ -8,11 +8,9 @@ from vllm.model_executor.layers.fused_moe.fused_moe import (
     invoke_fused_moe_wna16_triton_kernel,
     moe_align_block_size,
 )
-from vllm.model_executor.layers.fused_moe.config import FusedMoEQuantConfig
 
 device = torch.device("cuda:0")
 E, N_TP, K, TOPK, GS = 512, 384, 1536, 16, 128
-# gate_up has out=2*N_TP=768, in=K=1536; down has out=K=1536, in=N_TP=384
 print("device_name:", torch.cuda.get_device_name(0), flush=True)
 fname = get_config_file_name(E, N_TP, "int4_w4a16", None)
 print("target config filename:", fname, flush=True)
@@ -21,13 +19,6 @@ w13_q = torch.randint(-2**31, 2**31 - 1, (E, 2 * N_TP, K // 8), dtype=torch.int3
 w13_s = torch.randn((E, 2 * N_TP, K // GS), dtype=torch.bfloat16, device=device).abs().clamp(min=1e-3)
 w2_q = torch.randint(-2**31, 2**31 - 1, (E, K, N_TP // 8), dtype=torch.int32, device=device)
 w2_s = torch.randn((E, K, N_TP // GS), dtype=torch.bfloat16, device=device).abs().clamp(min=1e-3)
-
-qcfg = FusedMoEQuantConfig.make(
-    quant_dtype="int4",
-    w1_scale=w13_s,
-    w2_scale=w2_s,
-    group_size=GS,
-)
 
 CANDIDATES = [
     {"BLOCK_SIZE_M": bm, "BLOCK_SIZE_N": bn, "BLOCK_SIZE_K": bk, "GROUP_SIZE_M": gm,
@@ -68,12 +59,14 @@ def bench_cfg(M: int, cfg: dict, iters: int = 12) -> float:
 
     def run_once():
         invoke_fused_moe_wna16_triton_kernel(
-            x, w13_q, out1, w13_s, None, None, topk_w,
-            sorted_ids, expert_ids, num_toks, False, TOPK, cfg, qcfg,
+            x, w13_q, out1, w13_s, None, topk_w,
+            sorted_ids, expert_ids, num_toks, False, TOPK, cfg,
+            None, False, True, [0, GS],
         )
         invoke_fused_moe_wna16_triton_kernel(
-            x2, w2_q, out2, w2_s, None, None, topk_w,
-            sorted_ids, expert_ids, num_toks, True, 1, cfg, qcfg,
+            x2, w2_q, out2, w2_s, None, topk_w,
+            sorted_ids, expert_ids, num_toks, True, 1, cfg,
+            None, False, True, [0, GS],
         )
 
     run_once()
