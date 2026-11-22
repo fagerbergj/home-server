@@ -79,6 +79,8 @@ docker run --init --name "$NAME" --no-healthcheck \
   -e VLLM_USE_RUST_FRONTEND="$RUST_FRONTEND" \
   -e VLLM_ROCM_USE_AITER=1 \
   -e VLLM_ROCM_USE_AITER_TRITON_SPARSE_MLA=1 \
+  -e VLLM_ROCM_USE_AITER_LINEAR=0 \
+  -e VLLM_ROCM_USE_AITER_FP8BMM=0 \
   -e VLLM_CACHE_ROOT=/cache/vllm \
   -e TORCHINDUCTOR_CACHE_DIR=/cache/inductor \
   -e TRITON_CACHE_DIR=/cache/triton \
