@@ -49,18 +49,18 @@ for rel in (
     p.write_text(s)
     print(f"unlocked gfx1201 in {rel}")
 
-# Allow compressed-tensors pack-quantized (INT4 W4A16 group-128) in DFly's checkpoint allowlist.
+# Allow compressed-tensors pack-quantized / mixed-precision (INT4 W4A16 + FP8 linears) in DFly's allowlist.
 dfly_p = vllm_root / "vllm/models/hy_v4/dfly_config.py"
 ds = dfly_p.read_text()
 old_chk = '    if config.get("quant_method") == "fp8":'
 new_chk = (
-    '    if config.get("quant_method") == "compressed-tensors" and config.get("format") == "pack-quantized":\n'
+    '    if config.get("quant_method") == "compressed-tensors" and config.get("format") in ("pack-quantized", "mixed-precision"):\n'
     '        return\n'
     '    if config.get("quant_method") == "fp8":'
 )
 assert old_chk in ds
 dfly_p.write_text(ds.replace(old_chk, new_chk, 1))
-print("unlocked compressed-tensors pack-quantized in dfly_config.py")
+print("unlocked compressed-tensors pack-quantized/mixed-precision in dfly_config.py")
 
 # CompressedTensorsWNA16MoEMethod registers unused w13_weight_shape / w2_weight_shape
 # metadata params; mark them loaded alongside w*_weight_packed so track_weights_loading passes.
