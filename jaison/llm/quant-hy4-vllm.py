@@ -26,10 +26,23 @@ EXPERT_RE = re.compile(r"^model\.layers\.\d+\.mlp\.experts\.(gate_up_proj|down_p
 ENGRAM_RE = re.compile(r"^model\.layers\.\d+\.engram_layer\.multi_head_embedding\.embedding\.weight$")
 
 
+def _hf_headers(url: str) -> dict[str, str]:
+    h = {"User-Agent": "hy4-quant/1"}
+    if "huggingface.co" in url:
+        tok = os.environ.get("HF_TOKEN", "").strip()
+        if not tok:
+            tp = Path("/root/.cache/huggingface/token")
+            if tp.is_file():
+                tok = tp.read_text().strip()
+        if tok:
+            h["Authorization"] = f"Bearer {tok}"
+    return h
+
+
 def download(url: str, dst: Path, workers: int = 8) -> None:
     tmp = dst.with_suffix(dst.suffix + ".part")
     # Resolve final CDN URL and content length once; HF Xet throttles single streams to ~5 MB/s.
-    head = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "hy4-quant/1"})
+    head = urllib.request.Request(url, method="HEAD", headers=_hf_headers(url))
     try:
         with urllib.request.urlopen(head, timeout=60) as r:
             final_url = r.geturl()
@@ -41,7 +54,7 @@ def download(url: str, dst: Path, workers: int = 8) -> None:
     if not accepts_ranges or size < 16 * 1024 * 1024 or workers <= 1:
         for attempt in range(1, 6):
             try:
-                req = urllib.request.Request(url, headers={"User-Agent": "hy4-quant/1"})
+                req = urllib.request.Request(url, headers=_hf_headers(url))
                 with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "wb") as f:
                     shutil.copyfileobj(r, f, length=16 * 1024 * 1024)
                 tmp.replace(dst)
@@ -62,10 +75,10 @@ def download(url: str, dst: Path, workers: int = 8) -> None:
             start, end = span
             for attempt in range(1, 6):
                 try:
-                    req = urllib.request.Request(
-                        final_url if attempt == 1 else url,
-                        headers={"User-Agent": "hy4-quant/1", "Range": f"bytes={start}-{end}"},
-                    )
+                    u = final_url if attempt == 1 else url
+                    hdrs = _hf_headers(u)
+                    hdrs["Range"] = f"bytes={start}-{end}"
+                    req = urllib.request.Request(u, headers=hdrs)
                     with urllib.request.urlopen(req, timeout=120) as r:
                         off = start
                         while True:
