@@ -2,7 +2,7 @@
   "providers": {
     "local": {
       "baseUrl": "http://llm-swap:11436/v1",
-      "capacity": 6,
+      "capacity": 8,
       "models": {
         "qwen3.8-flash-next": {
           "contextWindow": 262144,
@@ -10,9 +10,9 @@
           "reasoning": true,
           "images": true,
           "price": {
-            "input": 0.04,
-            "output": 2.5,
-            "cacheRead": 0.02
+            "input": 0.15,
+            "output": 0.47,
+            "cacheRead": 0.015
           }
         },
         "qwen3.8-27b": {
