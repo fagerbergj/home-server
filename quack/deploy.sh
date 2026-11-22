@@ -1,37 +1,51 @@
 #!/usr/bin/env bash
-# Cuts quack-v1 over to one image on this host; .github/workflows/quack-deploy.yaml runs it on jason-server's runner.
-#   deploy.sh deploy <sha> <ghcr.io/fagerbergj/quack:v1-<sha>@sha256:...>
-#   deploy.sh notify <subject> < body     mails through the SMTP settings Watchtower uses (updater/)
-set -euo pipefail
+# Deploys a quack-v1 image on jason-server. Run it on the server, e.g. over the tailnet:
+#   ssh jason-server@jason-server.hs.internal '~/workspace/home-server/quack/deploy.sh [sha]'
+#
+#   deploy.sh            deploy the newest green quack main build
+#   deploy.sh <sha>      deploy that full 40-character quack commit (it must have a green main build)
+#   deploy.sh --mail-test  send one test email through the failure-mail path
+#
+# Steps: resolve v1-<sha> to its digest, run validate.ts read-only against prod (must print 0 failed), commit and push
+# the pin, stop quack-v1, then up the gate, init and quack-v1, health-check, and on failure revert, push and restart the
+# old pin. Any failure emails the owner through the SMTP settings Watchtower uses (updater/).
+set -Eeuo pipefail
 
 HS="${HOME_SERVER_DIR:-$HOME/workspace/home-server}"
-REMOTE="${HOME_SERVER_REMOTE:-https://github.com/fagerbergj/home-server.git}"
+QUACK_RUNS="${QUACK_RUNS_API:-https://api.github.com/repos/fagerbergj/quack/actions/workflows/v1.yaml/runs}"
 TAILNET_URL="${QUACK_TAILNET_URL:-http://100.64.0.6:18081}"
 TRAEFIK_URL="${QUACK_TRAEFIK_URL:-http://127.0.0.1:8090}"
 PUBLIC_HOST="${QUACK_PUBLIC_HOST:-quack.jasonfagerberg.duckdns.org}"
 HEALTH_SECONDS="${QUACK_HEALTH_SECONDS:-180}"
 SETTLE_SECONDS="${QUACK_SETTLE_SECONDS:-30}"
+LOCK="${QUACK_DEPLOY_LOCK:-/tmp/quack-deploy.lock}"
 COMPOSE="$HS/quack/docker-compose.yml"
+REPO=ghcr.io/fagerbergj/quack
 PIN_KEY='x-quack-v1-image: &quack-v1-image'
-RUN_URL="${GITHUB_RUN_ID:+$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}"
 
 log() { echo "deploy: $*" >&2; }
-die() { echo "::error::$*" >&2; exit 1; }
+# die often runs inside $(...), so the message reaches the failure email through a file, not a variable.
+die() { echo "$*" >>"${FAIL_FILE:-/dev/null}"; echo "deploy: error: $*" >&2; exit 1; }
 
 current_pin() { sed -n "s|^$PIN_KEY ||p" "$COMPOSE"; }
 set_pin() { sed -i "s|^$PIN_KEY .*|x-quack-v1-image: \\&quack-v1-image $1|" "$COMPOSE"; }
+commit() { git -C "$HS" -c user.name='quack deploy' commit -q -m "$1" -m "deployed by quack/deploy.sh on $(hostname)" -- quack/docker-compose.yml; }
+push() { GIT_TERMINAL_PROMPT=0 git -C "$HS" push -q origin HEAD:main; }
 
-commit() {
-  git -C "$HS" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-    commit -q -m "$1" -m "${RUN_URL:-run by hand}" -- quack/docker-compose.yml
+# quack is public, so the GitHub API needs no token here; a green main push run means check passed and v1-<sha> exists.
+green_runs() { curl -fsS --max-time 20 "$QUACK_RUNS?branch=main&event=push&status=success&$1"; }
+resolve_sha() {
+  local sha=${1:-}
+  [[ -n $sha ]] || sha=$(green_runs per_page=1 | jq -r '.workflow_runs[0].head_sha // empty')
+  [[ $sha =~ ^[0-9a-f]{40}$ ]] || die "want a full 40-character quack commit sha, got '$sha'"
+  [[ $(green_runs "head_sha=$sha" | jq -r '.total_count') -gt 0 ]] || die "$sha has no green main push run of quack's v1.yaml"
+  echo "$sha"
 }
-
-# The job token goes in through git's env config, so it never shows in a process listing.
-push() {
-  local auth
-  auth=$(printf 'x-access-token:%s' "${GH_TOKEN:?GH_TOKEN is required to push}" | base64 -w0)
-  GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
-    GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth" git -C "$HS" push -q "$REMOTE" HEAD:main
+resolve_image() {
+  local digest
+  digest=$(docker buildx imagetools inspect "$REPO:v1-$1" --format '{{.Manifest.Digest}}')
+  [[ $digest == sha256:* ]] || die "no digest for $REPO:v1-$1"
+  echo "$REPO:v1-$1@$digest"
 }
 
 # Today's read-only check of the new image against prod's data and config.
@@ -85,16 +99,16 @@ rollback() {
 }
 
 deploy() {
-  local sha=${1:-} image=${2:-} old old_sha deployed
-  [[ $sha =~ ^[0-9a-f]{40}$ ]] || die "want a full 40-character commit sha, got '$sha'"
-  [[ $image == "ghcr.io/fagerbergj/quack:v1-$sha@sha256:"* ]] || die "want ghcr.io/fagerbergj/quack:v1-$sha pinned by digest, got '$image'"
+  local sha image old old_sha deployed
   [[ $(git -C "$HS" symbolic-ref --short HEAD) == main ]] || die "$HS is not on main"
   git -C "$HS" diff --quiet HEAD || die "$HS has uncommitted changes to tracked files; commit or discard them first"
-  git -C "$HS" pull -q --ff-only "$REMOTE" main
+  git -C "$HS" pull -q --ff-only origin main
+  sha=$(resolve_sha "${1:-}")
   old=$(current_pin)
   [[ $old != *":v1-$sha"* ]] || { log "already on $sha"; return 0; }
   old_sha=$(sed -E 's/.*:v1-([0-9a-f]{40}).*/\1/' <<<"$old")
   [[ $old_sha =~ ^[0-9a-f]{40}$ ]] || die "cannot read the current pin from $COMPOSE, so a rollback would have no target"
+  image=$(resolve_image "$sha")
   set_pin "$image"
   validate "$image" || { git -C "$HS" checkout -- quack/docker-compose.yml; die "validate.ts did not report 0 failed for $image; nothing changed"; }
   commit "quack v1: deploy ${sha:0:8}"
@@ -105,20 +119,41 @@ deploy() {
   log "deployed $sha"
 }
 
-notify() {
-  local subject=${1:?subject} from to server port user pw
+mail() {
+  local subject=$1 from to server port user pw
   watchtower() { sed -n "s/^ *- WATCHTOWER_NOTIFICATION_EMAIL_$1=//p" "$HS/updater/docker-compose.yml"; }
   from=$(watchtower FROM) to=$(watchtower TO) server=$(watchtower SERVER) port=$(watchtower SERVER_PORT) user=$(watchtower SERVER_USER)
   pw=$(sed -n 's/^GMAIL_APP_PASSWORD=//p' "$HS/updater/.env" 2>/dev/null) || true
   pw=${pw#\"} pw=${pw%\"}
-  [[ -n $pw && -n $to ]] || die "no GMAIL_APP_PASSWORD in $HS/updater/.env or no recipient in updater/docker-compose.yml; cannot mail"
+  [[ -n $pw && -n $to ]] || { log "no GMAIL_APP_PASSWORD in updater/.env or no recipient in updater/docker-compose.yml; cannot mail"; return 1; }
   { printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n' "$from" "$to" "$subject"; cat; } |
     curl -sS --max-time 30 --url "smtp://$server:$port" --ssl-reqd --mail-from "$from" --mail-rcpt "$to" \
       -K <(printf 'user = "%s:%s"\n' "$user" "$pw") -T -
 }
 
-case "${1:-}" in
-  deploy) shift; deploy "$@" ;;
-  notify) shift; notify "$@" ;;
-  *) echo "usage: $0 deploy <sha> <image@digest> | notify <subject> < body" >&2; exit 2 ;;
-esac
+on_exit() {
+  local rc=$? msg
+  msg=$(cat "$FAIL_FILE" 2>/dev/null) || true
+  rm -f "$FAIL_FILE"
+  ((rc == 0)) && return 0
+  printf 'quack deploy on %s exited %s.\n%s\n' "$(hostname)" "$rc" "${msg:-command '${fail_cmd:-?}' failed at line ${fail_line:-?}}" |
+    mail "quack deploy failed${SHA_ARG:+: ${SHA_ARG:0:8}}" || log "the failure email did not go out"
+  exit "$rc"
+}
+
+main() {
+  if [[ ${1:-} == --mail-test ]]; then
+    echo "test from quack/deploy.sh" | mail "quack deploy mail test"
+    return
+  fi
+  SHA_ARG=${1:-}
+  FAIL_FILE=$(mktemp)
+  trap 'fail_cmd=$BASH_COMMAND fail_line=$LINENO' ERR
+  trap on_exit EXIT
+  exec 9>"$LOCK"
+  flock -n 9 || die "another deploy holds $LOCK"
+  deploy "$@"
+}
+
+# One line, so bash has read all of it before `git pull` can rewrite this file mid-run.
+main "$@"; exit
