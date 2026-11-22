@@ -56,6 +56,7 @@ if [[ "${NO_SPEC:-0}" != "1" ]]; then
 fi
 
 [[ "${ENFORCE_EAGER:-0}" == "1" ]] && ARGS+=(--enforce-eager)
+[[ -n "${PROF_DIR:-}" ]] && ARGS+=(--profiler-config "{\"profiler\":\"torch\",\"torch_profiler_dir\":\"${PROF_DIR}\",\"torch_profiler_dump_cuda_time_total\":true}")
 # shellcheck disable=SC2206
 [[ -n "${EXTRA:-}" ]] && ARGS+=($EXTRA)
 
