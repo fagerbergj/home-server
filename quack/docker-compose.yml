@@ -44,24 +44,19 @@ services:
       # LLM (llm-swap-media on llm_default; peers to jaison). Empty key — llm-swap doesn't auth.
       QUACK_LLM_ENDPOINT: http://llm-swap:11436/v1   # llm-swap-media (3090 + peer to jaison)
       QUACK_LLM_API_KEY: ""
-      # One model (qwen3.8-27b) for orchestrator/researcher/coder - dense hybrid
-      # w/ MTP, beats qwen3.6-35b on GPQA/LiveCodeBench/SWE-bench-Pro despite
-      # being smaller. Native vision. Co-resides with the GPU gemma judge at
-      # full 262144 context - see llm-swap.yaml's qwen3.8-27b comment.
-      QUACK_ORCH_MODEL: qwen3.8-27b
+      # One model (qwen3.8-flash-next) for orchestrator/researcher/coder/judge -
+      # MoE hybrid on Strata: 199.6 tok/s decode, 416k INT8 KV, beats 27B on
+      # DeepSWE/SWE-Pro/GPQA. Resident in llm-swap (swap:false).
+      QUACK_ORCH_MODEL: qwen3.8-flash-next
       QUACK_PUBLIC_URL: https://quack.jasonfagerberg.duckdns.org
       QUACK_TIMEZONE: America/Chicago
-      QUACK_RESEARCHER_MODEL: qwen3.8-27b
-      QUACK_CODER_MODEL: qwen3.8-27b
-      QUACK_JUDGE_MODEL: qwen3.8-27b   # same id as the workers; vLLM serves 2 sequences
+      QUACK_RESEARCHER_MODEL: qwen3.8-flash-next
+      QUACK_CODER_MODEL: qwen3.8-flash-next
+      QUACK_JUDGE_MODEL: qwen3.8-flash-next
       QUACK_MEDIA_MODEL: qwen3-omni-30b
       QUACK_COMPACTION_ENABLED: "true"
-      # Compaction on gemma (GPU, co-resident with the 35b workers set). During a 35b
-      # run (plan/research/conversational) gemma is already loaded, so compaction is
-      # swap-free. Coder-as-compactor forced a 56GB coder load (evicting the workers)
-      # on every 35b run that compacted — pure swap waste. (During a coder run gemma
-      # swaps in, but it already does for judging; and the coder never loads just to compact.)
-      QUACK_COMPACTION_MODEL: qwen3.8-27b      # same model as the workers: no swap, shares the prefix cache
+      # Same model as the workers: no swap, shares the prefix cache.
+      QUACK_COMPACTION_MODEL: qwen3.8-flash-next
       QUACK_EMBED_MODEL: qwen3-embed
       # Semantic memory — reuse the existing qdrant (llm_default), gRPC port.
       QUACK_QDRANT_URL: qdrant:6334
