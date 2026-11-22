@@ -2,7 +2,7 @@
   "providers": {
     "local": {
       "baseUrl": "http://llm-swap:11436/v1",
-      "capacity": 8,
+      "capacity": 6,
       "models": {
         "qwen3.8-flash-next": {
           "contextWindow": 262144,
