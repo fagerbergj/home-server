@@ -82,6 +82,18 @@ sps = sp_p.read_text()
 old_sink = "        from vllm.platforms.rocm import on_mi3xx\n\n        return on_mi3xx()"
 new_sink = "        from vllm.platforms.rocm import on_gfx1201, on_mi3xx\n\n        return on_mi3xx() or on_gfx1201()"
 assert old_sink in sps
-sp_p.write_text(sps.replace(old_sink, new_sink, 1))
-print("unlocked supports_sink() for gfx1201 in rocm_aiter_mla_sparse.py")
+sps = sps.replace(old_sink, new_sink, 1)
+
+# Route all gfx1201 sparse MLA (prefill + decode + sinks) to the pure-Triton kernel
+# instead of falling through to CDNA-only asm_mla.cu.
+old_triton = "        from vllm.platforms.rocm import on_gfx942"
+new_triton = "        from vllm.platforms.rocm import on_gfx942, on_gfx1201"
+assert old_triton in sps
+sps = sps.replace(old_triton, new_triton, 1)
+old_if = "        if (\n            triton_sink_fallback\n            or triton_prefill_fallback"
+new_if = "        if (\n            on_gfx1201()\n            or triton_sink_fallback\n            or triton_prefill_fallback"
+assert old_if in sps
+sps = sps.replace(old_if, new_if, 1)
+sp_p.write_text(sps)
+print("unlocked supports_sink() and forced Triton sparse MLA on gfx1201 in rocm_aiter_mla_sparse.py")
 PY
