@@ -203,6 +203,8 @@ def self_test() -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=Path("/root/.cache/huggingface/hub/hy4-flash-vllm-w4a16"))
+    ap.add_argument("--start", type=int, default=1, help="1-indexed first shard")
+    ap.add_argument("--end", type=int, default=9999, help="1-indexed last shard")
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
@@ -237,6 +239,8 @@ def main() -> None:
     new_wm: dict[str, str] = {}
 
     for idx, shard in enumerate(shards, 1):
+        if idx < args.start or idx > args.end:
+            continue
         out_shard = out / shard
         map_cache = out / f".map_{shard}.json"
         if out_shard.exists() and map_cache.exists():
@@ -284,6 +288,10 @@ def main() -> None:
         del tensors, out_tensors
         raw_shard.unlink(missing_ok=True)
         print(f"  wrote {shard} ({out_shard.stat().st_size / 1e9:.2f} GB)", flush=True)
+
+    if args.start > 1 or args.end < len(shards):
+        print(f"SLICE_COMPLETE: shards {args.start}..{min(args.end, len(shards))} -> {out}", flush=True)
+        return
 
     # 2. Write final index + config.json
     (out / "model.safetensors.index.json").write_text(
