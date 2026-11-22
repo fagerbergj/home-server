@@ -61,4 +61,18 @@ new_chk = (
 assert old_chk in ds
 dfly_p.write_text(ds.replace(old_chk, new_chk, 1))
 print("unlocked compressed-tensors pack-quantized in dfly_config.py")
+
+# CompressedTensorsWNA16MoEMethod registers unused w13_weight_shape / w2_weight_shape
+# metadata params; mark them loaded alongside w*_weight_packed so track_weights_loading passes.
+m_p = vllm_root / "vllm/models/hy_v4_flash/amd/model.py"
+ms = m_p.read_text()
+old_l = "                            loaded.add(target)"
+new_l = (
+    "                            loaded.add(target)\n"
+    '                            if target.endswith("_weight_packed"):\n'
+    '                                loaded.add(target[:-7] + "_shape")'
+)
+assert old_l in ms
+m_p.write_text(ms.replace(old_l, new_l, 1))
+print("marked unused w*_weight_shape params loaded in hy_v4_flash/amd/model.py")
 PY
