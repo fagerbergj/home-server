@@ -34,11 +34,11 @@
       }
     },
     "clef": {
-      "baseUrl": "http://172.22.0.1:8877/upstream/flash/v1",
+      "baseUrl": "http://llm-swap:11436/upstream/clef/v1",
       "api": "systemone",
       "models": {
         "clef": {
-          "contextWindow": 16384,
+          "contextWindow": 8192,
           "price": {
             "input": 0.24
           }
