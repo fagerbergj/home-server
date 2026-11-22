@@ -75,4 +75,13 @@ new_l = (
 assert old_l in ms
 m_p.write_text(ms.replace(old_l, new_l, 1))
 print("marked unused w*_weight_shape params loaded in hy_v4_flash/amd/model.py")
+
+# Unlock ROCMAiterMLASparseBackend.supports_sink() on gfx1201 (runs via Triton sparse MLA).
+sp_p = vllm_root / "vllm/v1/attention/backends/mla/rocm_aiter_mla_sparse.py"
+sps = sp_p.read_text()
+old_sink = "        from vllm.platforms.rocm import on_mi3xx\n\n        return on_mi3xx()"
+new_sink = "        from vllm.platforms.rocm import on_gfx1201, on_mi3xx\n\n        return on_mi3xx() or on_gfx1201()"
+assert old_sink in sps
+sp_p.write_text(sps.replace(old_sink, new_sink, 1))
+print("unlocked supports_sink() for gfx1201 in rocm_aiter_mla_sparse.py")
 PY
