@@ -72,6 +72,7 @@ docker run --init --name "$NAME" --no-healthcheck \
   -p "127.0.0.1:${PORT}:8000" \
   -e HIP_VISIBLE_DEVICES="$GPU" \
   -e NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}" \
+  -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
   -e TRITON_CACHE_AUTOTUNING=1 \
   -e HF_HUB_OFFLINE=1 \
   -e VLLM_USE_RUST_FRONTEND="$RUST_FRONTEND" \
