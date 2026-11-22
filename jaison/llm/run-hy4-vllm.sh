@@ -71,6 +71,7 @@ docker run --init --name "$NAME" --no-healthcheck \
   -v "$CACHE_DIR:/cache" \
   -p "127.0.0.1:${PORT}:8000" \
   -e HIP_VISIBLE_DEVICES="$GPU" \
+  -e NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}" \
   -e HF_HUB_OFFLINE=1 \
   -e VLLM_USE_RUST_FRONTEND="$RUST_FRONTEND" \
   -e VLLM_ROCM_USE_AITER=1 \
