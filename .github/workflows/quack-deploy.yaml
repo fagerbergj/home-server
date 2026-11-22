@@ -1,0 +1,95 @@
+name: quack-deploy
+
+# On demand only: resolve and verify the image on a hosted runner, then cut over on jason-server's runner (quack/deploy.sh).
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: quack commit to deploy (full sha); empty deploys the newest green main build
+        required: false
+        default: ""
+      require_attestation:
+        description: fail unless the image carries a GitHub build attestation from quack main
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: quack-deploy
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    # Only the owner's dispatch of main's copy of this file reaches the server runner.
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      attestations: read
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+      image: ${{ steps.pick.outputs.image }}
+    steps:
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ inputs.sha }}
+          REQUIRE_ATTESTATION: ${{ inputs.require_attestation }}
+        run: |
+          set -euo pipefail
+          runs=repos/fagerbergj/quack/actions/workflows/v1.yaml/runs
+          if [ -z "$SHA" ]; then
+            SHA=$(gh api "$runs?branch=main&event=push&status=success&per_page=1" -q '.workflow_runs[0].head_sha')
+          fi
+          [[ $SHA =~ ^[0-9a-f]{40}$ ]] || { echo "::error::want a full 40-character commit sha, got '$SHA'"; exit 1; }
+          # A green main push run means check passed and the image job published v1-<sha>.
+          green=$(gh api "$runs?branch=main&event=push&status=success&head_sha=$SHA" -q '.total_count')
+          [ "$green" -gt 0 ] || { echo "::error::$SHA has no green main push run of quack's v1.yaml"; exit 1; }
+          repo=ghcr.io/fagerbergj/quack
+          digest=$(docker buildx imagetools inspect "$repo:v1-$SHA" --format '{{.Manifest.Digest}}')
+          [[ $digest == sha256:* ]] || { echo "::error::no digest for $repo:v1-$SHA"; exit 1; }
+          if gh attestation verify "oci://$repo@$digest" --repo fagerbergj/quack --source-ref refs/heads/main --source-digest "$SHA" \
+              --signer-workflow fagerbergj/quack/.github/workflows/v1.yaml --deny-self-hosted-runners; then
+            echo "attestation verified for $digest"
+          elif [ "$REQUIRE_ATTESTATION" = true ]; then
+            echo "::error::$repo@$digest has no verified attestation from quack main"; exit 1
+          else
+            echo "::warning::no verified attestation for $repo:v1-$SHA; pinning by digest only"
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "image=$repo:v1-$SHA@$digest" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: resolve
+    runs-on: [self-hosted, quack-deploy]
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          IMAGE: ${{ needs.resolve.outputs.image }}
+        run: bash quack/deploy.sh deploy "$SHA" "$IMAGE"
+
+  notify:
+    needs: [resolve, deploy]
+    if: failure()
+    runs-on: [self-hosted, quack-deploy]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - env:
+          SHA: ${{ needs.resolve.outputs.sha || inputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          printf 'The quack deploy of %s failed.\nLog: %s\n' "${SHA:-the newest green main build}" "$RUN_URL" |
+            bash quack/deploy.sh notify "quack deploy failed: ${SHA:0:8}"
