@@ -159,7 +159,7 @@ def build_quant_config() -> dict:
         "global_compression_ratio": None,
         "config_groups": {
             "group_0": {
-                "targets": ["FusedMoE"],
+                "targets": ["RoutedExperts"],
                 "weights": {
                     "num_bits": 4,
                     "type": "int",
