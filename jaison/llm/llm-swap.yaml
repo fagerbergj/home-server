@@ -126,6 +126,7 @@ models:
   # Resident default: 199.6 tok/s coding decode, 167 tok/s 4-way aggregate, 416k INT8 KV (262k ctx, 8 lanes),
   # 32.6s cold boot. See run-flashnext-strata.sh.
   "qwen3.8-flash-next":
+    concurrencyLimit: 1000   # backpressure is the engine's (Strata queues past its 8 lanes); the router must not 429 quack's judge fan-out
     proxy: "http://127.0.0.1:9994"
     checkEndpoint: /health
     ttl: 0
