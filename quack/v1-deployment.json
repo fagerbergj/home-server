@@ -4,6 +4,17 @@
       "baseUrl": "http://llm-swap:11436/v1",
       "capacity": 6,
       "models": {
+        "qwen3.8-flash-next": {
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "reasoning": true,
+          "images": true,
+          "price": {
+            "input": 0.04,
+            "output": 2.5,
+            "cacheRead": 0.02
+          }
+        },
         "qwen3.8-27b": {
           "contextWindow": 131072,
           "maxTokens": 32768,
@@ -35,7 +46,7 @@
       }
     }
   },
-  "defaultModel": "local/qwen3.8-27b",
+  "defaultModel": "local/qwen3.8-flash-next",
   "extensions": {
     "github": {
       "settings": {

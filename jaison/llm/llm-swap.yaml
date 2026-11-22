@@ -25,9 +25,14 @@ groups:
     exclusive: false
     persistent: true
     members: ["qwen3-embed"]
-  # Resident default. exclusive: loading it unloads everything else (GLM).
-  "27b":
+  # Resident default (Strata strata-split-4-amd + DFlash2 + Vision, 199.6 tok/s decode, 416k INT8 KV).
+  "flash-next":
     swap: false
+    exclusive: true
+    members: ["qwen3.8-flash-next"]
+  # On-demand fallback (vLLM FP8 TP4 + DFlash2).
+  "27b":
+    swap: true
     exclusive: true
     members: ["qwen3.8-27b"]
   # Whole box + host RAM: GLM IQ4_XS on four cards, ~70 GB of experts in RAM. Drains/unloads the 27B.
@@ -40,12 +45,7 @@ groups:
     swap: true
     exclusive: true
     members: ["deepseek-v4.1-flash"]
-  # Whole box, tensor-split across all four cards. Drains/unloads the 27B.
-  "flash-next":
-    swap: true
-    exclusive: true
-    members: ["qwen3.8-flash-next"]
-  # Whole box + host RAM, 63.5 GB Engram table paged from NVMe. Drains/unloads the 27B.
+  # Whole box + host RAM, 63.5 GB Engram table paged from NVMe. Drains/unloads the resident model.
   "hy4":
     swap: true
     exclusive: true
@@ -77,7 +77,7 @@ models:
     proxy: "http://127.0.0.1:9993"
     checkEndpoint: /health
     useModelName: qwen3.8-27b-vllm   # what the launcher registers with vLLM
-    ttl: 0
+    ttl: 3600
     env:
       - "GPU=0,1,2,3"
       - "TP=4"
@@ -122,18 +122,18 @@ models:
     cmd: ${llm_dir}/run-deepseek.sh
     cmdStop: docker stop -t 60 deepseek   # let it drain: an abrupt multi-GPU stop once preceded a card dropping off the bus
 
-  # Qwen3.8-Flash-Next, llama.cpp b12110 + mtp4/patches (shared MTP head borrows the target's embeddings; PR 28243
-  # never landed upstream). UD-Q4_K_XL tensor-split over all four cards, shared head n2, f16 KV (tensor mode requires
-  # unquantized KV), 1 x 262k slot at ~30 GB/card. See run-flashnext.sh.
+  # Qwen3.8-Flash-Next via Strata v0.2.19 (strata-split-4-amd + DFlash2 + GPU Vision, UD-Q4_K_XL).
+  # Resident default: 199.6 tok/s coding decode, 167 tok/s 4-way aggregate, 416k INT8 KV (262k ctx, 8 lanes),
+  # 32.6s cold boot. See run-flashnext-strata.sh.
   "qwen3.8-flash-next":
     proxy: "http://127.0.0.1:9994"
     checkEndpoint: /health
-    ttl: 3600
+    ttl: 0
     env:
       - "PORT=9994"
       - "NAME=flash-next"
-    cmd: ${llm_dir}/run-flashnext.sh
-    cmdStop: docker stop -t 60 flash-next   # drain like deepseek: RCCL multi-GPU + abrupt stop
+    cmd: ${llm_dir}/run-flashnext-strata.sh
+    cmdStop: docker stop -t 60 flash-next
 
   # Tencent Hy4-flash 220B/A11B, llama.cpp Hy4 PR #32517 build. AngelSlim Q4_K_M, 63.5 GB Engram table
   # paged from NVMe on demand (mmap + lazy). Text-only until the projector-type mismatch is fixed
