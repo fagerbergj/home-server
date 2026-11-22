@@ -2,6 +2,7 @@
 """Microbenchmark & autotune Hy4-flash W4A16 MoE (E=512, N=384, K=1536, topk=16) on AMD Radeon R9700."""
 import json, os, sys, time
 import torch
+from vllm.triton_utils import tl
 from vllm.model_executor.layers.fused_moe.fused_moe import (
     get_config_file_name,
     get_default_config,
@@ -61,12 +62,12 @@ def bench_cfg(M: int, cfg: dict, iters: int = 12) -> float:
         invoke_fused_moe_wna16_triton_kernel(
             x, w13_q, out1, w13_s, None, topk_w,
             sorted_ids, expert_ids, num_toks, False, TOPK, cfg,
-            None, False, True, [0, GS],
+            tl.bfloat16, False, True, [0, GS],
         )
         invoke_fused_moe_wna16_triton_kernel(
             x2, w2_q, out2, w2_s, None, topk_w,
             sorted_ids, expert_ids, num_toks, True, 1, cfg,
-            None, False, True, [0, GS],
+            tl.bfloat16, False, True, [0, GS],
         )
 
     run_once()
