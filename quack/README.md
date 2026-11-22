@@ -39,10 +39,10 @@ GitHub ──webhook──▶ NPM (TLS) ──▶ Traefik `api` entrypoint (:809
 
 | Role | Model | Env var |
 |------|-------|---------|
-| Orchestrator / researcher | `qwen3.8-flash-next` | `QUACK_ORCH_MODEL`, `QUACK_RESEARCHER_MODEL` |
-| Coding (implement/review/explore) | `qwen3.8-flash-next` | `QUACK_CODER_MODEL` |
-| Judge (trust gate) | `qwen3.8-flash-next` | `QUACK_JUDGE_MODEL` |
-| Compaction | `qwen3.8-flash-next` | `QUACK_COMPACTION_MODEL` |
+| Orchestrator / researcher | `qwen3.6-35b` | `QUACK_ORCH_MODEL`, `QUACK_RESEARCHER_MODEL` |
+| Coding (implement/review/explore) | `qwen3-coder-next` | `QUACK_CODER_MODEL` |
+| Judge (trust gate) | `gemma4-26b-a4b` | `QUACK_JUDGE_MODEL` |
+| Compaction | `gemma4-26b-a4b` | `QUACK_COMPACTION_MODEL` |
 | Image / media | `qwen3-vl-32b` / `qwen3-omni-30b` | `QUACK_IMAGE_MODEL` / `QUACK_MEDIA_MODEL` |
 
 **Secrets** (root `../.env`) — set by hand: `QUACK_GITHUB_APP_CLIENT_ID`, `QUACK_GITHUB_APP_PRIVATE_KEY_PATH` (path to the `.pem` on the server), `QUACK_EXA_API_KEY`.
