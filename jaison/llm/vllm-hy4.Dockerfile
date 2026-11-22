@@ -27,4 +27,25 @@ for f in files:
     applied += 1
     print(f"overlaid {fn} ({len(data)} B)")
 assert applied >= 20, f"expected >=20 overlaid files, got {applied}"
+
+# Unlock gfx1201 (RDNA4, native OCP FP8 float8_e4m3fn just like gfx950) past the three
+# MI355X-only software guards in PR #68839.
+for rel in (
+    "vllm/models/hy_v4/dfly_config.py",
+    "vllm/models/hy_v4_flash/amd/attention.py",
+    "vllm/v1/attention/backends/mla/rocm_aiter_mla_sparse.py",
+):
+    p = vllm_root / rel
+    s = p.read_text()
+    assert "from vllm.platforms.rocm import on_gfx950" in s and "if not on_gfx950():" in s, rel
+    s = s.replace(
+        "from vllm.platforms.rocm import on_gfx950",
+        "from vllm.platforms.rocm import on_gfx950, on_gfx1201",
+    )
+    s = s.replace(
+        "if not on_gfx950():",
+        "if not (on_gfx950() or on_gfx1201()):",
+    )
+    p.write_text(s)
+    print(f"unlocked gfx1201 in {rel}")
 PY
