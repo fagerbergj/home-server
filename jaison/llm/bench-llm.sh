@@ -199,6 +199,7 @@ name, port, pt, n, temp, topp = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(
 # distinct prefix per session: identical prefixes make llama.cpp reuse the previous
 text = ((f"{name} session filler. " + "The quick brown fox jumps over the lazy dog. ") * pt)[: pt * 5]
 payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
+                      "stream_options": {"include_usage": True},
                       "temperature": temp, "top_p": topp}).encode()
 req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
                              headers={"content-type": "application/json"})
@@ -239,6 +240,7 @@ nn, port, pt, n, temp, topp = int(sys.argv[1]), sys.argv[2], int(sys.argv[3]), i
 def work(i, go):
     text = ((f"concurrent worker {i} filler. " + "The quick brown fox jumps over the lazy dog. ") * pt)[: pt * 5]
     payload = json.dumps({"prompt": text, "max_tokens": n, "stream": True,
+                          "stream_options": {"include_usage": True},
                           "temperature": temp, "top_p": topp}).encode()
     req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
                                  headers={"content-type": "application/json"})
