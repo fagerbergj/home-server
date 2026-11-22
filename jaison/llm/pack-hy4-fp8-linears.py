@@ -85,7 +85,7 @@ def build_mixed_quant_config(ignored_unaligned: list[str]) -> dict:
             "re:^vit\\..*",
             "re:^visual\\..*",
             "re:.*dfly_layers.*",
-            "re:^model\\.layers\\.0\\.mlp\\..*",
+            "re:.*layers\\.0\\.mlp\\..*",
             *sorted(set(ignored_unaligned)),
         ],
     }
