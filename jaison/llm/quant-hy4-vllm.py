@@ -9,7 +9,7 @@ Transforms shard-by-shard (deletes raw shard after writing output, peak extra di
 
 Run inside a vLLM container (needs torch, safetensors, compressed_tensors). Resumable per shard.
 """
-import argparse, json, os, re, shutil, sys, urllib.request
+import argparse, concurrent.futures, json, os, re, shutil, sys, urllib.request
 from pathlib import Path
 import torch
 from safetensors.torch import load_file, save_file
@@ -26,19 +26,67 @@ EXPERT_RE = re.compile(r"^model\.layers\.\d+\.mlp\.experts\.(gate_up_proj|down_p
 ENGRAM_RE = re.compile(r"^model\.layers\.\d+\.engram_layer\.multi_head_embedding\.embedding\.weight$")
 
 
-def download(url: str, dst: Path) -> None:
+def download(url: str, dst: Path, workers: int = 8) -> None:
     tmp = dst.with_suffix(dst.suffix + ".part")
-    for attempt in range(1, 6):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "hy4-quant/1"})
-            with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "wb") as f:
-                shutil.copyfileobj(r, f, length=16 * 1024 * 1024)
-            tmp.replace(dst)
-            return
-        except Exception as e:
-            if attempt == 5:
-                raise
-            print(f"  retry {attempt}/5 for {dst.name}: {e}", flush=True)
+    # Resolve final CDN URL and content length once; HF Xet throttles single streams to ~5 MB/s.
+    head = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "hy4-quant/1"})
+    try:
+        with urllib.request.urlopen(head, timeout=60) as r:
+            final_url = r.geturl()
+            size = int(r.headers.get("Content-Length") or 0)
+            accepts_ranges = "bytes" in (r.headers.get("Accept-Ranges") or "").lower()
+    except Exception:
+        final_url, size, accepts_ranges = url, 0, False
+
+    if not accepts_ranges or size < 16 * 1024 * 1024 or workers <= 1:
+        for attempt in range(1, 6):
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "hy4-quant/1"})
+                with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "wb") as f:
+                    shutil.copyfileobj(r, f, length=16 * 1024 * 1024)
+                tmp.replace(dst)
+                return
+            except Exception as e:
+                if attempt == 5:
+                    raise
+                print(f"  retry {attempt}/5 for {dst.name}: {e}", flush=True)
+        return
+
+    chunk_sz = 64 * 1024 * 1024  # 64 MiB chunks across parallel workers
+    ranges = [(s, min(s + chunk_sz - 1, size - 1)) for s in range(0, size, chunk_sz)]
+    fd = os.open(str(tmp), os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o644)
+    try:
+        os.ftruncate(fd, size)
+
+        def fetch_chunk(span: tuple[int, int]) -> None:
+            start, end = span
+            for attempt in range(1, 6):
+                try:
+                    req = urllib.request.Request(
+                        final_url if attempt == 1 else url,
+                        headers={"User-Agent": "hy4-quant/1", "Range": f"bytes={start}-{end}"},
+                    )
+                    with urllib.request.urlopen(req, timeout=120) as r:
+                        off = start
+                        while True:
+                            buf = r.read(4 * 1024 * 1024)
+                            if not buf:
+                                break
+                            os.pwrite(fd, buf, off)
+                            off += len(buf)
+                    if off != end + 1:
+                        raise IOError(f"short read {off - start} != {end - start + 1}")
+                    return
+                except Exception as e:
+                    if attempt == 5:
+                        raise
+                    print(f"  chunk retry {attempt}/5 {dst.name} [{start}-{end}]: {e}", flush=True)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+            list(ex.map(fetch_chunk, ranges))
+    finally:
+        os.close(fd)
+    tmp.replace(dst)
 
 
 def dequant_fp8_block128(w: torch.Tensor, scale_inv: torch.Tensor) -> torch.Tensor:
