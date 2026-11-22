@@ -96,4 +96,34 @@ assert old_if in sps
 sps = sps.replace(old_if, new_if, 1)
 sp_p.write_text(sps)
 print("unlocked supports_sink() and forced Triton sparse MLA on gfx1201 in rocm_aiter_mla_sparse.py")
+
+# Unlock pure-Triton mxfp4_mla KV cache (~3.76x denser than BF16 MLA KV, with full
+# Triton sink support in rocm_sparse_attn_decode_bf16 / rocm_sparse_attn_prefill).
+for rel, old, new in (
+    (
+        "vllm/models/hy_v4_flash/amd/model.py",
+        'if vllm_config.cache_config.cache_dtype not in ("auto", "bfloat16"):',
+        'if vllm_config.cache_config.cache_dtype not in ("auto", "bfloat16", "mxfp4_mla"):',
+    ),
+    (
+        "vllm/models/hy_v4/dfly_config.py",
+        'if spec.kv_cache_dtype not in (None, "auto", "bfloat16", "fp8_ds_mla"):',
+        'if spec.kv_cache_dtype not in (None, "auto", "bfloat16", "fp8_ds_mla", "mxfp4_mla"):',
+    ),
+    (
+        "vllm/models/hy_v4/amd/dfly_speculator.py",
+        'if cache_dtype not in ("auto", "bfloat16", "fp8_ds_mla"):',
+        'if cache_dtype not in ("auto", "bfloat16", "fp8_ds_mla", "mxfp4_mla"):',
+    ),
+    (
+        "vllm/models/hy_v4/amd/dfly_target_reuse.py",
+        '            "fp8_ds_mla",\n        ):',
+        '            "fp8_ds_mla",\n            "mxfp4_mla",\n        ):',
+    ),
+):
+    p = vllm_root / rel
+    s = p.read_text()
+    assert old in s, f"missing pattern in {rel}"
+    p.write_text(s.replace(old, new, 1))
+    print(f"unlocked mxfp4_mla in {rel}")
 PY
