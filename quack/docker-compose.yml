@@ -9,7 +9,7 @@
 # the rest of the UI/API sits behind Authentik. Reuses llm-swap + qdrant from the
 # `llm` compose via the external llm_default network. Brings its own postgres.
 # quack-v1, the docker gate and the session image move together: a gate on another image refuses every create.
-x-quack-v1-image: &quack-v1-image ghcr.io/fagerbergj/quack:v1-0b8cc90e8d844758ac67b04efc6a52d64c13e0fd
+x-quack-v1-image: &quack-v1-image ghcr.io/fagerbergj/quack:v1-b613c78483d0aeaedbb6f4e44ff187b8fc65194b
 x-session-containers: &session-containers
   QUACK_SESSION_IMAGE: *quack-v1-image
   QUACK_SESSION_RUNTIME: runsc
