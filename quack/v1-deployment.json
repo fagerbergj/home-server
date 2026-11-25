@@ -31,7 +31,12 @@
           "maxTokens": 4096,
           "images": true
         }
-      }
+      },
+      "hide": [
+        "qwen3-embed",
+        "clef-flash",
+        "flash"
+      ]
     },
     "clef": {
       "baseUrl": "http://llm-swap:11436/upstream/clef/v1",
