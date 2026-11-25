@@ -34,8 +34,7 @@
       },
       "hide": [
         "qwen3-embed",
-        "clef-flash",
-        "flash"
+        "clef-flash"
       ]
     },
     "clef": {
