@@ -28,11 +28,11 @@ models:
       --port 9998
       --metrics
 
-  # Clef-Flash 9B decisions (/upstream/flash/v1/systemone): Q4_K_M, all layers on the 3090
+  # Clef-Flash 9B decisions (/upstream/clef-flash/v1/systemone): Q4_K_M, all layers on the 3090
   # (~6.7 GB weights). Resident decision model 2026-11-20 to 2026-11-22, on-demand since: JevBench public 0.814 vs
   # the 27B's 0.879 (all three quants benched), ~3x per-prompt throughput on the compute-bound
   # single slot, and a 16k hard input cap (2x).
-  "flash":
+  "clef-flash":
     concurrencyLimit: 1000   # backpressure is the engine's (llama.cpp queues past --parallel); the router never 429s
     proxy: "http://127.0.0.1:9997"
     checkEndpoint: /health
@@ -69,7 +69,7 @@ groups:
     swap: true
     exclusive: false
     members:
-      - flash
+      - clef-flash
       - clef
       - qwen3-omni-30b
 
