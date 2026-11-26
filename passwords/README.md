@@ -6,9 +6,9 @@ Accessible at: https://passwords.jasonfagerberg.duckdns.org
 
 ## Notes
 
-- `SIGNUPS_ALLOWED=false` — set after creating your account to prevent others from registering
-- Data stored in `./data/` (SQLite by default)
-- **Back up `./data/` regularly** — this is your entire vault
+- **Signups:** set `SIGNUPS_ALLOWED=false` after creating your account to prevent others from registering.
+- **Storage:** data lives in `./data/` (SQLite by default).
+- **Backups:** back up `./data/` regularly — it holds your entire vault.
 
 ## Backup
 

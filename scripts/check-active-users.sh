@@ -24,7 +24,6 @@ if docker ps --format '{{.Names}}' | grep -q '^minecraft$'; then
     result=$(docker exec minecraft rcon-cli list 2>/dev/null || echo "rcon unavailable")
     if echo "$result" | grep -qv "^0 "; then
         any_active=true
-        # Extract player names after the colon
         players=$(echo "$result" | grep -oP '(?<=: ).+' || true)
         for player in ${players//,/ }; do
             printf "  %-20s online\n" "$player"

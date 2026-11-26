@@ -41,8 +41,13 @@ only takes interactive input, so the dump is hand-driven:
 ./scripts/asus-dump.sh    # password, then at the router prompt: `nvram show`, wait, `exit`
 ```
 
-Fill `.env` from the report: PPPoE user/pass, `staticmap_*` reservations,
-`virtualserver_*` port forwards, DHCP pool, timezone.
+Fill `.env` from the report:
+
+- PPPoE user/pass
+- `staticmap_*` reservations
+- `virtualserver_*` port forwards
+- DHCP pool
+- Timezone
 
 **Step 1 — Build the router config offline.**
 Copy this whole directory + `.env` to a FAT32 USB stick. On the OpenWrt PC

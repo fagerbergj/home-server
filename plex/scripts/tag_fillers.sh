@@ -61,7 +61,6 @@ done
 
 PLEX_URL="${PLEX_URL%/}"  # strip trailing slash
 
-# Compute filler dir from show name slug if not provided
 if [[ -z "$FILLER_DIR" && -n "$SHOW_NAME" ]]; then
     show_slug=$(echo "$SHOW_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
     FILLER_DIR="$SCRIPT_DIR/../filler-lists/$show_slug"
@@ -218,7 +217,6 @@ for season_key in "${season_keys[@]}"; do
         label=$(printf "S%02dE%02d" "$season" "$ep_num")
 
         if $UNTAG; then
-            # Remove tag only if currently tagged
             if [[ "$title" =~ ^\[(Filler|Mixed\ Filler)\][[:space:]] ]]; then
                 new_title="${title#\[Filler\] }"
                 new_title="${new_title#\[Mixed Filler\] }"

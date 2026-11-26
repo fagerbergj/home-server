@@ -15,4 +15,8 @@ Upstream closed PR 28243 unmerged, so 0001 stays until a shared-head fix lands; 
 - `0002-qwen4exp-run-the-MTP-draft-layer-dense-...patch` ("dense-mtp"): the draft context never gets an indexer cache, so every head runs its MTP layer dense, the Oct 5 self-contained QSA head included.
   An A/B arm for the "indexer per draft step" hypothesis, not a numerical match for a QSA-trained head past the top-k budget.
 
-Heads: port image + shared head = PR 28243 behaviour (dense); port image + Oct 5 head = upstream (QSA draft); dense image + either head = dense draft.
+| Image | Head | Behaviour |
+|-------|------|-----------|
+| `port` | shared head | PR 28243 (dense) |
+| `port` | Oct 5 head | upstream (QSA draft) |
+| `dense` | either head | dense draft |

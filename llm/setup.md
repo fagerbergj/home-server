@@ -1,5 +1,7 @@
 # LLM — Setup
 
+Sets up the local LLM router (`llm-swap`) and vector store (`qdrant`), verifies local and tailnet access, and documents how to add or swap models.
+
 ## 1. (Optional) Pre-pull the model weights
 
 Skips the multi-minute wait on the first request to a model.

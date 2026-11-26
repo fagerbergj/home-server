@@ -12,12 +12,10 @@
 #   - The result: loading a large GGUF from /mnt/cache (ext4) hammers
 #     swap because the kernel can't reclaim ARC fast enough.
 #
-# 24 GB: since 2026-08-30 the big models run on jaison, so this box's RAM
-# only hosts the 3090's llama-swap (Clef 27B, ~20 GB in VRAM, little
-# host RAM), Plex, immich and the rest. The old 8 GB cap existed because
-# --no-mmap llama-server processes here competed with ARC and swapped model
-# pages out (decode fell to disk speed); that pressure is gone. Leave ~30 GB
-# for containers and page cache on the 64 GB box.
+# 24 GB cap: big models run on jaison, so this 64 GB box only hosts the
+# 3090's llama-swap (Clef 27B, ~20 GB in VRAM, little host RAM), Plex,
+# Immich, and supporting containers — leaving ~30+ GB for containers and
+# page cache.
 set -euo pipefail
 
 ARC_MAX_BYTES=$((24 * 1024 * 1024 * 1024))

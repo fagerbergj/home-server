@@ -170,7 +170,6 @@ scan_folder() {
         --data-urlencode "filterExistingFiles=false")
     manualimport_json=$(echo "$manualimport_json $result" | jq -s '(.[0] + .[1]) | unique_by(.path)')
 
-    # Recurse into subdirectories
     while IFS= read -r subdir; do
         scan_folder "$subdir"
     done < <(find "$dir" -mindepth 1 -maxdepth 1 -type d | sort -V)

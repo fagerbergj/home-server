@@ -180,22 +180,7 @@ log "Done. Backup size: $(du -sh "$DEST" | cut -f1)"
 ls -lh "$DEST"
 
 # ── Offsite (restic — provider-agnostic, uses RESTIC_REPOSITORY URL) ──────
-#
-# Pushes only the irreplaceable subset (photos, documents, postgres dumps,
-# vaultwarden, rmfakecloud, env.tar.gpg) — not the full local backup. Restic
-# handles encryption, deduplication, and retention.
-#
-# One-time setup before this runs cleanly:
-#   sudo apt install -y restic
-#   restic init                         # bootstrap the remote repo
-#
-# Required env vars in .env (sourced above):
-#   RESTIC_REPOSITORY   e.g. b2:jason-fagerberg:home-server
-#   RESTIC_PASSWORD     long random string — losing this means losing the backups
-#   For B2:  B2_ACCOUNT_ID + B2_ACCOUNT_KEY (the application key, not master)
-#   For S3:  AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_DEFAULT_REGION
-#
-# If the env vars aren't set, this section is a no-op.
+# Optional: no-op unless RESTIC_REPOSITORY and RESTIC_PASSWORD are set (see backups/setup.md).
 
 if [[ -n "${RESTIC_REPOSITORY:-}" && -n "${RESTIC_PASSWORD:-}" ]]; then
     if ! command -v restic &>/dev/null; then
