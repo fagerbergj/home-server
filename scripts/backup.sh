@@ -57,7 +57,7 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 # Root first, then each stack's own file - the pg_dump credentials below moved
 # into photos/.env, so sourcing only the root would break once it is pruned.
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090 -- dynamic .env paths discovered at runtime
 set -a
 source "$ENV_FILE"
 for f in "$REPO_ROOT"/*/.env; do [[ -f "$f" ]] && source "$f"; done

@@ -29,7 +29,7 @@ MM="/root/.cache/huggingface/hub/models--ggml-org--Inkling-2-Mini-GGUF/snapshots
 ARGS=()
 [ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
 [ -n "$TENSOR_SPLIT" ] && ARGS+=(--tensor-split "$TENSOR_SPLIT")
-# shellcheck disable=SC2206
+# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 GPUPIN=(-e HIP_VISIBLE_DEVICES=0)   # single-card default; the split A/B needs all four visible

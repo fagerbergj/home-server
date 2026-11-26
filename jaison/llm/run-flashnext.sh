@@ -30,7 +30,7 @@ D=$(C "$(ls "$R"/*/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf | head -1)")
 
 ARGS=(-md "$D" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
 [ "$MMPROJ" = 1 ] && ARGS+=(--mmproj "$(C "$(ls "$R"/*/mmproj-BF16.gguf | head -1)")")
-# shellcheck disable=SC2206
+# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
