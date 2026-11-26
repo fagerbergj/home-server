@@ -30,6 +30,7 @@ D=$(C "$(ls "$R"/*/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf | head -1)")
 
 ARGS=(-md "$D" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
 [ "$MMPROJ" = 1 ] && ARGS+=(--mmproj "$(C "$(ls "$R"/*/mmproj-BF16.gguf | head -1)")")
+# Splitting $EXTRA into separate CLI flags is intentional.
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 

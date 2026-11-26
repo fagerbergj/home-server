@@ -23,6 +23,7 @@ D=/root/.cache/huggingface/hub/ds41-extra/dspark-Q8_0.gguf
 
 ARGS=()
 [ "$SPEC" = dspark ] && ARGS+=(-md "$D" --spec-type draft-dspark --spec-draft-n-max "$NMAX")
+# Splitting $EXTRA into separate CLI flags is intentional.
 # shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
