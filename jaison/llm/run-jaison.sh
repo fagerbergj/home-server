@@ -247,8 +247,10 @@ BATCHTOK="${BATCHTOK:-4854}"   # MUST be n*block_size + 2*(K-1), where block_siz
                                # fewer than 2*(K-1) tokens silently drops a whole block.
                                # Any value between block multiples wastes activation memory,
                                # and n*block exactly under speculation falls back a block.
-                               # Lower step: 3240 = 2*1616+8 (works with or without
-                               # speculation; +4.3% prefill @32K, +5.5% @98K, -1.3% KV pool).
+                               # 3240 = 2*1616+8 is the lower step that still satisfies the
+                               # rule, at K=5 (the default K=4 wants 3*1616+6 = 4854).
+                               # Measured 2026-08-29 against the old 2560 default:
+                               # +4.3% prefill @32K, +5.5% @98K, -1.3% KV pool.
 LMONLY="${LMONLY:-0}"          # 1 = --language-model-only, drops the vision tower.
 ASYNCSCHED="${ASYNCSCHED:-0}"  # 0 = pass --no-async-scheduling.
 GENCFG="${GENCFG:-1}"          # 1 = pin Qwen's "Thinking Mode / General Tasks" sampling preset

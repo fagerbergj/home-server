@@ -8,4 +8,4 @@ Admin UI at: `http://192.168.50.186:3003` (internal only)
 
 - **DNS:** runs on port 53. The router's DHCP and WAN DNS both point only at `192.168.50.186`, and Headscale makes it the tailnet's resolver, so every device on either network is filtered.
 - **Blocklist:** uses HaGeZi's Pro (1Hosts Xtra broke legitimate sites).
-- **Management:** blocklists and query logs are managed via the web UI.
+- **Web UI:** configure blocklists and inspect query logs at the admin URL above.

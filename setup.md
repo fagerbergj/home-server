@@ -302,7 +302,7 @@ This wires up:
 
 - **msmtp** (Gmail relay)
 - **ZFS Event Daemon (`zed`)** for pool-degraded / scrub-failed emails
-- **Daily disk-usage check** at 08:00 for `/mnt/media` and `/mnt/personal`
+- **Daily disk-usage check** at 08:00 for `/` (85%), `/mnt/media` (90%), and `/mnt/personal` (90%)
 
 ### Memory tuning (ARC cap + swappiness)
 

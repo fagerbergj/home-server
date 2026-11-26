@@ -104,7 +104,7 @@ export B2_ACCOUNT_ID=<keyID-from-B2>
 export B2_ACCOUNT_KEY=<applicationKey-from-B2>
 ```
 
-The `home-server` after the bucket name is just a path-within-bucket — lets you reuse the same bucket for other restic repos later (`b2:jason-fagerberg:laptop`, etc.).
+The `home-server` after the bucket name is just a path-within-bucket — lets you reuse the same bucket for other restic repos later (`b2:jason-fagerberg:laptop`, etc.). For an S3-compatible backend instead of B2, set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_DEFAULT_REGION` with an `s3:` repository URL.
 
 ### d. Install restic and bootstrap the repo
 

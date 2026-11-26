@@ -47,7 +47,7 @@ Fill `.env` from the report:
 - `staticmap_*` reservations
 - `virtualserver_*` port forwards
 - DHCP pool
-- Timezone
+- timezone
 
 **Step 1 — Build the router config offline.**
 Copy this whole directory + `.env` to a FAT32 USB stick. On the OpenWrt PC
