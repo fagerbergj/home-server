@@ -41,7 +41,8 @@ ARGS=()
 [ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
 [ -n "$TENSOR_SPLIT" ] && ARGS+=(--tensor-split "$TENSOR_SPLIT")
 [ -n "$SPEC" ] && ARGS+=(--spec-type "$SPEC")
-# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
+# Splitting $EXTRA into separate CLI flags is intentional.
+# shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true

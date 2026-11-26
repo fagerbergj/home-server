@@ -23,7 +23,8 @@ D=/root/.cache/huggingface/hub/ds41-extra/dspark-Q8_0.gguf
 
 ARGS=()
 [ "$SPEC" = dspark ] && ARGS+=(-md "$D" --spec-type draft-dspark --spec-draft-n-max "$NMAX")
-# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
+# Splitting $EXTRA into separate CLI flags is intentional.
+# shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true

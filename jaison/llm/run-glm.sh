@@ -47,7 +47,8 @@ if [ "$MMPROJ" = 1 ]; then
   P=$(ls "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/*/mmproj-BF16.gguf | head -1)
   ARGS+=(--mmproj "/root/.cache/huggingface${P#"$HF"}")
 fi
-# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
+# Splitting $EXTRA into separate CLI flags is intentional.
+# shellcheck disable=SC2206
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true

@@ -57,7 +57,8 @@ fi
 
 [[ "${ENFORCE_EAGER:-0}" == "1" ]] && ARGS+=(--enforce-eager)
 [[ -n "${PROF_DIR:-}" ]] && ARGS+=(--profiler-config "{\"profiler\":\"torch\",\"torch_profiler_dir\":\"${PROF_DIR}\",\"torch_profiler_dump_cuda_time_total\":true}")
-# shellcheck disable=SC2206 -- EXTRA intentionally word-splits into separate CLI flags
+# Splitting $EXTRA into separate CLI flags is intentional.
+# shellcheck disable=SC2206
 [[ -n "${EXTRA:-}" ]] && ARGS+=($EXTRA)
 
 mkdir -p "$CACHE_DIR"
