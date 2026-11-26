@@ -84,7 +84,8 @@ Settings > Download Clients > + > qBittorrent
 - Port: `8080`
 - Username/password: your qBittorrent credentials
 - Category: `sonarr`
-- Test and save.
+
+Test and save.
 
 **Root folders:**
 Settings > Media Management > Root Folders > + `/mnt/media/shows`

@@ -153,10 +153,8 @@
 # chat- and reasoning-heavy and both peak there; a math- or code-heavy server should run 7.
 # K=5 measures a real -12% dip and should be skipped. Full table in TUNING.md.
 #
-# RETRACTED: an earlier version of this comment said "K>=7 cannot hold MAXLEN=204800 at
-# all". That was true only under KV_GROUP_SIZE=5 and died with the group-padding fix --
-# every K in 4..7 now clears 204800 (K=7 tops out near 243,900). It was a context
-# constraint that had been mistaken for a speed finding.
+# With the group-padding fix, every K in 4..7 clears MAXLEN=204800 (K=7 tops out near
+# 243,900).
 #
 # *** AutoRound NEEDS A THREE-KEY config.json PATCH ON THIS STACK, AND WITHOUT IT THE
 # *** MODEL LOADS SILENTLY WRONG -- NOT WITH AN ERROR. Identical mechanism and identical
@@ -247,15 +245,12 @@ BATCHTOK="${BATCHTOK:-4854}"   # MUST be n*block_size + 2*(K-1), where block_siz
                                # block multiple, and spec decoding takes its slots off
                                # the top first, so a budget that clears the multiple by
                                # fewer than 2*(K-1) tokens silently drops a whole block.
-                               # The old 2560 default dispatched 1616 tokens/step and
-                               # paid activation memory for the other 944 for nothing.
-                               # 3240 = 2*1616+8 is correct with or without speculation:
+                               # Any value between block multiples wastes activation memory,
+                               # and n*block exactly under speculation falls back a block.
+                               # 3240 = 2*1616+8 is the lower step that still satisfies the
+                               # rule, at K=5 (the default K=4 wants 3*1616+6 = 4854).
+                               # Measured 2026-08-29 against the old 2560 default:
                                # +4.3% prefill @32K, +5.5% @98K, -1.3% KV pool.
-                               # Measured 2026-08-29; see the tuning log in the README.
-                               # (The previous ">= 2240 required" comment was wrong: 2240
-                               # is not a floor, and any value between block multiples is
-                               # wasted. Do NOT use n*block exactly under speculation --
-                               # that is 2*(K-1) tokens short and falls back a block.)
 LMONLY="${LMONLY:-0}"          # 1 = --language-model-only, drops the vision tower.
 ASYNCSCHED="${ASYNCSCHED:-0}"  # 0 = pass --no-async-scheduling.
 GENCFG="${GENCFG:-1}"          # 1 = pin Qwen's "Thinking Mode / General Tasks" sampling preset

@@ -4,14 +4,14 @@ Setup is split across two phases because the router config needs no software bey
 
 ---
 
-## Phase 1 — Router & Firewall
+## Phase 1 — Router
 
 Done after first boot, before the system update reboot — the server is on the network so its MAC address is visible in the router. The monitor is still connected.
 
 ### Static Local IP (DHCP Reservation)
 > Manual: [Section 3.9.2 DHCP Server](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.49
 
-1. In the router UI: **Advanced Settings > LAN > DHCP Server**
+1. Open **Advanced Settings > LAN > DHCP Server** in the router UI
 2. Scroll to **Enable Manual Assignment** — set to **Yes**
 3. Find the server's MAC address in the client list, assign it a static IP (`192.168.50.186`)
 4. Click **Add** then **Apply**
@@ -28,12 +28,13 @@ DDNS is handled by the `duckdns-updater` container — no router config needed.
    DUCKDNS_SUBDOMAIN=jasonfagerberg
    DUCKDNS_TOKEN=<your-token>
    ```
-5. The updater container will keep your IP current automatically once started in Phase 6
+
+Once started in Phase 6, the updater container keeps your IP current automatically.
 
 ### Port Forwarding
 > Manual: [Section 3.14.3 Virtual Server / Port Forwarding](E23448_RT-AX58U_V2_UM_V2_WEB.pdf) — p.72
 
-1. In the router UI: **Advanced Settings > WAN > Virtual Server / Port Forwarding**
+1. Open **Advanced Settings > WAN > Virtual Server / Port Forwarding** in the router UI
 2. Set **Enable Port Forwarding** to **On**
 3. Add the following rules pointing to the server's static IP:
 
@@ -66,7 +67,7 @@ docker compose up -d
 ### First-Time Setup
 
 1. Open the admin UI: `http://<server-local-ip>:81`
-2. Default login: `admin@example.com` / `changeme`
+2. Sign in with the default credentials: `admin@example.com` / `changeme`
 3. Change your email and password immediately
 
 ### Request Wildcard SSL Certificate
@@ -74,10 +75,10 @@ docker compose up -d
 Do this before adding proxy hosts so the cert is ready to assign.
 
 1. Go to **SSL Certificates > Add SSL Certificate > Let's Encrypt**
-2. Domain: `*.jasonfagerberg.duckdns.org`
+2. Enter `*.jasonfagerberg.duckdns.org` as the domain
 3. Enable **Use a DNS Challenge**
-4. DNS Provider: **DuckDNS**
-5. Credentials: paste your DuckDNS token
+4. Select **DuckDNS** as the DNS provider
+5. Paste your DuckDNS token into **Credentials**
 6. Agree to ToS and click **Save** — cert will appear once issued
 
 ### Add / Update Proxy Hosts
@@ -109,7 +110,7 @@ Enable **Force SSL** on all. Select the wildcard cert from the dropdown — do n
 ## Phase 7 — Tailnet (Headscale)
 
 Every device runs the open-source Tailscale client logged in to our own control server, [Headscale](../headscale/) at `https://headscale.jasonfagerberg.duckdns.org`.
-Each gets a stable `100.64.x.x` IP and a `<host>.hs.internal` MagicDNS name (short names like `jason-server` resolve too), so admin UIs that aren't safe to expose publicly (NPM `:81`, Traefik `:8091`, AdGuard, qBittorrent, Grafana, Uptime Kuma, Authentik direct on `:9000`, llm-swap on `:11436`) are reachable from any enrolled device without touching the router.
+Each gets a stable `100.64.x.x` IP and a `<host>.hs.internal` MagicDNS name (short names like `jason-server` resolve too), so admin UIs that aren't safe to expose publicly (see [What Becomes Tailnet-Only](#what-becomes-tailnet-only)) are reachable from any enrolled device without touching the router.
 NPM + Authentik continue to handle the genuinely public hosts on `*.jasonfagerberg.duckdns.org`.
 
 ### Install on the Server

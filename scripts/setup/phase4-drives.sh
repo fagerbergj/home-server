@@ -212,7 +212,6 @@ provision_ext4_drive() {
         findmnt "$MNT"
     fi
 
-    # Subdirs + ownership.
     if (( ${#SUBDIRS[@]} > 0 )); then
         sudo mkdir -p "${SUBDIRS[@]/#/$MNT/}"
     fi

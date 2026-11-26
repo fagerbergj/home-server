@@ -48,7 +48,7 @@ EOF
     chmod +x "$STUB_BIN/sudo"
 }
 
-# setfacl, apt, chown, chmod, mkdir — harmless record-only stubs
+# setfacl and apt are record-only stubs; chown, chmod, and mkdir log and delegate to /bin/*
 install_fs_stubs() {
     make_stub setfacl
     make_stub apt
