@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Smoke test hy4-vllm (:9989): coding/reasoning quality, tool calling, vision, DFly metrics."""
-import base64, io, json, struct, sys, time, urllib.request, zlib
+import base64
+import json
+import struct
+import sys
+import time
+import urllib.request
+import zlib
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 9989
 BASE = f"http://127.0.0.1:{PORT}"

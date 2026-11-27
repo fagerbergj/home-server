@@ -9,14 +9,21 @@ Transforms shard-by-shard (deletes raw shard after writing output, peak extra di
 
 Run inside a vLLM container (needs torch, safetensors, compressed_tensors). Resumable per shard.
 """
-import argparse, concurrent.futures, json, os, re, shutil, sys, urllib.request
+import argparse
+import concurrent.futures
+import json
+import os
+import re
+import shutil
+import urllib.request
 from pathlib import Path
+
 import torch
-from safetensors.torch import load_file, save_file
 from compressed_tensors.compressors.pack_quantized.helpers import (
     pack_to_int32,
     unpack_from_int32,
 )
+from safetensors.torch import load_file, save_file
 
 REPO = "tencent/Hy4-flash-FP8"
 BASE_URL = f"https://huggingface.co/{REPO}/resolve/main"
@@ -88,7 +95,7 @@ def download(url: str, dst: Path, workers: int = 8) -> None:
                             os.pwrite(fd, buf, off)
                             off += len(buf)
                     if off != end + 1:
-                        raise IOError(f"short read {off - start} != {end - start + 1}")
+                        raise OSError(f"short read {off - start} != {end - start + 1}")
                     return
                 except Exception as e:
                     if attempt == 5:
@@ -108,7 +115,7 @@ def dequant_fp8_block128(w: torch.Tensor, scale_inv: torch.Tensor) -> torch.Tens
     if orig_ndim == 2:
         w = w.unsqueeze(0)
         scale_inv = scale_inv.unsqueeze(0)
-    E, N, K = w.shape
+    _E, N, K = w.shape
     s = scale_inv.float()
     # Expand block scales to [E, N, K] via repeat_interleave (handles non-multiple-of-128 edges too)
     s_exp = s.repeat_interleave(128, dim=-2)[:, :N, :].repeat_interleave(128, dim=-1)[:, :, :K]

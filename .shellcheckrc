@@ -1,4 +1,2 @@
 external-sources=true
 source-path=SCRIPTDIR
-# Runtime .env files are untracked by design and unavailable during static analysis.
-disable=SC1091

@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Microbenchmark & autotune Hy4-flash W4A16 MoE (E=512, N=384, K=1536, topk=16) on AMD Radeon R9700."""
-import json, os, sys, time
+import json
+import sys
+import time
+
 import torch
-from vllm.triton_utils import tl
 from vllm.model_executor.layers.fused_moe.fused_moe import (
     get_config_file_name,
     get_default_config,
     invoke_fused_moe_wna16_triton_kernel,
     moe_align_block_size,
 )
+from vllm.triton_utils import tl
 
 device = torch.device("cuda:0")
 E, N_TP, K, TOPK, GS = 512, 384, 1536, 16, 128
