@@ -13,6 +13,8 @@
 set -eu
 
 cd "$(dirname "$0")"
+# .env is untracked by design and only exists on the router USB stick at runtime.
+# shellcheck source=/dev/null
 [ -f .env ] && . ./.env
 
 : "${WAN_IF:?set WAN_IF in .env}"

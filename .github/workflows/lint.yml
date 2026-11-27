@@ -1,0 +1,59 @@
+name: lint
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.4.0
+      - name: Lint and typecheck Python files
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            mapfile -t -d '' files < <(git diff -z --name-only --diff-filter=ACMR "origin/${BASE_REF}...HEAD" -- '*.py' ':!jaison/llm/vllm-patches/**' ':!torrent/search/**')
+          else
+            mapfile -t -d '' files < <(git ls-files -z -- '*.py' ':!jaison/llm/vllm-patches/**' ':!torrent/search/**')
+          fi
+          if [ "${#files[@]}" -gt 0 ]; then
+            uvx ruff@0.17.6 check "${files[@]}"
+            uvx mypy@2.4.1 "${files[@]}"
+          fi
+
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Lint shell scripts with ShellCheck
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Gate at warning severity so real bugs (SC2024/SC1090/SC1091) block PRs while legacy info/style notes in jaison/llm/ are paid down incrementally.
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            mapfile -t -d '' files < <(git diff -z --name-only --diff-filter=ACMR "origin/${BASE_REF}...HEAD" -- '*.sh')
+          else
+            mapfile -t -d '' files < <(git ls-files -z -- '*.sh' ':!jaison/llm/**')
+          fi
+          if [ "${#files[@]}" -gt 0 ]; then
+            shellcheck -S warning "${files[@]}"
+          fi

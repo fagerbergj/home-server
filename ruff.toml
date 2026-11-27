@@ -1,0 +1,13 @@
+# Formatter width target; E501 is ignored so long URLs/comments don't fight the formatter.
+line-length = 100
+target-version = "py311"
+force-exclude = true
+exclude = [
+  "jaison/llm/vllm-patches/**",
+  # Third-party qBittorrent search plugins vendored from upstream repos.
+  "torrent/search/**",
+]
+
+[lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "FURB", "RUF"]
+ignore = ["E501"]

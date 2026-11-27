@@ -174,7 +174,7 @@ log "System config..."
 mkdir -p "$DEST/system"
 cp /etc/fstab "$DEST/system/fstab"
 [[ -f /etc/mdadm/mdadm.conf ]] && cp /etc/mdadm/mdadm.conf "$DEST/system/mdadm.conf"
-sudo crontab -l > "$DEST/system/root-crontab" 2>/dev/null || true
+sudo crontab -l 2>/dev/null | tee "$DEST/system/root-crontab" >/dev/null || true
 
 # ── Summary ───────────────────────────────────────────────────────────────
 

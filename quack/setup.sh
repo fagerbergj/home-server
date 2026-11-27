@@ -21,7 +21,10 @@ done
 
 # ── 2. Secrets in ./.env ───────────────────────────────────────────────────
 say "Secrets ($ENV_FILE)"
-touch "$ENV_FILE"; source "$ENV_FILE" 2>/dev/null || true
+touch "$ENV_FILE"
+# .env is untracked by design and created on the server during setup.
+# shellcheck source=/dev/null
+source "$ENV_FILE" 2>/dev/null || true
 need_manual=0
 for v in QUACK_GITHUB_APP_CLIENT_ID QUACK_GITHUB_APP_PRIVATE_KEY_PATH QUACK_EXA_API_KEY; do
   if [[ -n "${!v:-}" ]]; then ok "$v set"; else warn "$v is NOT set in $ENV_FILE — fill it, then re-run"; need_manual=1; fi
@@ -33,6 +36,7 @@ done
 
 say "Generating internal secrets (DB password + webhook secret)"
 ./generate-env.sh
+# shellcheck source=/dev/null
 source "$ENV_FILE" 2>/dev/null || true
 
 # ── 3. Pull + start ─────────────────────────────────────────────────────────
