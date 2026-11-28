@@ -23,7 +23,7 @@ models:
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--ggml-org--Clef-GGUF/snapshots/63840a1a68cb7084c88610cffc328509356b04cb/Clef-Q4_K_M.gguf
       --mmproj /root/.cache/huggingface/hub/models--ggml-org--Clef-GGUF/snapshots/63840a1a68cb7084c88610cffc328509356b04cb/mmproj-Clef-Q8_0.gguf --image-max-tokens 1024
-      -c 8192 -b 8192 -ub 8192 -np 1
+      -fa on -c 8192 -b 8192 -ub 8192 -np 1
       -ngl 999
       --port 9998
       --metrics
@@ -40,7 +40,7 @@ models:
     cmd: >
       /app/llama-server
       -m /root/.cache/huggingface/hub/models--ggml-org--Clef-Flash-GGUF/Clef-Flash-Q4_K_M.gguf
-      -c 32768 -b 16384 -ub 16384 -np 1
+      -fa on -c 32768 -b 16384 -ub 16384 -np 1
       -ngl 999
       --port 9997
       --metrics
