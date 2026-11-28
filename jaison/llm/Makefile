@@ -1,6 +1,6 @@
-.PHONY: up down images strata-image hy4-vllm-image mtp-image glm-image inkling-image
+.PHONY: up down images strata-image mtp-image glm-image inkling-image
 
-CONTAINERS := qwen38-27b-vllm flash-next glm deepseek hy4 hy4-vllm embed mimo omni muse inkling
+CONTAINERS := qwen38-27b-vllm flash-next glm deepseek hy4 embed mimo omni muse inkling
 
 up: images
 	docker compose up -d --build --force-recreate llm-swap
@@ -15,9 +15,6 @@ images: strata-image
 
 strata-image:
 	docker build -f strata.Dockerfile -t strata-server:0.2.19 .
-
-hy4-vllm-image:
-	docker build -f vllm-hy4.Dockerfile -t vllm-hy4:rocm .
 
 # llama.cpp + a model's patch series (upstream/patched.Dockerfile); ccache shares ggml-hip between them.
 # Opt-in targets for cold-storage / fallback models; dry-run patches before bumping base commits.

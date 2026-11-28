@@ -85,4 +85,3 @@ peers:
       - qwen3.8-flash-next
       - qwen3.8-27b
       - hy4-flash
-      - hy4-vllm

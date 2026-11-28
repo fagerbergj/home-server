@@ -34,11 +34,6 @@ groups:
     swap: true
     exclusive: true
     members: ["hy4-flash"]
-  # Whole box (vLLM TP4 W4A16 + FP8 Engram in pinned RAM + DFly + vision). Drains/unloads the resident model.
-  "hy4-vllm":
-    swap: true
-    exclusive: true
-    members: ["hy4-vllm"]
 
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
@@ -116,17 +111,3 @@ models:
       - "NO_MM=1"
     cmd: ${llm_dir}/run-hy4.sh
     cmdStop: docker stop -t 60 hy4   # drain like deepseek: RCCL multi-GPU + abrupt stop
-
-  # Tencent Hy4-flash 220B/A11B on vLLM ROCm (vllm-hy4:rocm): W4A16 INT4 routed experts +
-  # BF16 dense/attn/vision/DFly in VRAM (~96 GB), FP8 Engram in pinned RAM (~64.7 GB).
-  # Native DFly spec decoding + vision. See run-hy4-vllm.sh.
-  "hy4-vllm":
-    concurrencyLimit: 1000
-    proxy: "http://127.0.0.1:9989"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9989"
-      - "NAME=hy4-vllm"
-    cmd: ${llm_dir}/run-hy4-vllm.sh
-    cmdStop: docker stop -t 120 hy4-vllm   # hard kills of TP vLLM wedge the GPU; let it drain

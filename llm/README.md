@@ -24,9 +24,8 @@ OpenAI-compatible LLM gateway backed by [llama-swap](https://github.com/mostlyge
 |---|---|---|
 | `qwen3-embed` | llama.cpp CPU (`ttl: 0`, persistent, preloaded) | Qwen3-Embedding-4B Q8_0, `-t 24 -c 16384 --parallel 4 -ub 4096 -b 4096` |
 | `qwen3.8-flash-next` | Strata v0.2.19 (`ttl: 0`, resident default, preloaded) | UD-Q4_K_XL split-4 + DFlash2 + GPU vision, 416k INT8 KV (262k ctx, 8 lanes) |
-| `qwen3.8-27b` | vLLM ROCm TP=4 (`ttl: 3600`, on-demand) | FP8 + DFlash2 int4 draft + rank-96 super-adapter LoRA, 262k ctx, bf16 KV |
-| `hy4-flash` | llama.cpp ROCm (`ttl: 3600`, on-demand) | AngelSlim Q4_K_M, Engram table paged from NVMe, text-only (`NO_MM=1`) |
-| `hy4-vllm` | vLLM ROCm TP=4 (`ttl: 3600`, on-demand) | W4A16 routed experts + FP8 Engram + DFly + vision + tuned R9700 MoE tiles |
+| `qwen3.8-27b` | vLLM ROCm TP=4 (`ttl: 3600`, on-demand) | Offline-merged super-adapter FP8 + DFlash2 int4 draft, 262k ctx, 1.18M bf16 KV |
+| `hy4-flash` | llama.cpp ROCm (`ttl: 3600`, on-demand) | AngelSlim Q4_K_M, Engram table paged from NVMe, 524k `q8_0` KV, text-only (`NO_MM=1`) |
 
 See [`jaison/llm/README.md`](../jaison/llm/README.md) for `jaison`'s runtime details and cold-storage launchers.
 
