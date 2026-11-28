@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Wrapper for Strata's split-4 AMD binary: injects the DFlash2 draft pack and
+# strips --kv-resident (unsupported by strata-split-4-amd). Mounted into the
+# strata-server container by run-flashnext-strata.sh so updates to /mnt/cache/strata
+# cannot drop DFlash2.
+set -euo pipefail
+ARGS=()
+while [ $# -gt 0 ]; do
+  if [ "$1" = "--kv-resident" ]; then shift 2; continue; fi
+  ARGS+=("$1"); shift
+done
+exec /strata/engine/strata-split-4-amd --draft dflash2 --draft-model /strata/dflash2/dflash2.pack "${ARGS[@]}"

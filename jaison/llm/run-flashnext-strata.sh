@@ -6,6 +6,7 @@
 # 167.2 tok/s 4-way concurrent aggregate, 32.6s cold boot.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME="${NAME:-flash-next}"
 PORT="${PORT:-9994}"
 IMAGE="${IMAGE:-strata-server:0.2.19}"
@@ -15,15 +16,19 @@ MODEL_SUB="${MODEL_SUB:-hub/qwen3.8-flash-next-q4xl}"
 MAX_CTX="${MAX_CTX:-262144}"
 LANES="${LANES:-8}"
 CONV_CACHE_MIB="${CONV_CACHE_MIB:-16384}"
+WRAPPER="${WRAPPER:-$SCRIPT_DIR/strata-split-4-amd-dflash2}"
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 trap 'docker logs "$NAME" > /tmp/flashnext-strata-last.log 2>&1 || true; docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
+# --ulimit memlock=-1:-1 lets Strata mlock its 27.5 GiB word/PLE tables in RAM.
 docker run --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri \
   --group-add video --group-add 991 \
   --ipc=host --shm-size 8g \
+  --ulimit memlock=-1:-1 \
   -v "$STRATA_DIR":/strata:ro \
+  -v "$WRAPPER":/usr/local/bin/strata-split-4-amd-dflash2:ro \
   -v "$HF":/root/.cache/huggingface:ro \
   -p "127.0.0.1:${PORT}:${PORT}" \
   -e PYTHONPATH=/strata/repo/terminal \
@@ -33,7 +38,7 @@ cat > /tmp/strata-run.json <<EOF
 {
   \"model\": \"qwen3.8-flash-next\",
   \"backend\": \"hip\",
-  \"exe\": \"/strata/engine/strata-split-4-amd-dflash2\",
+  \"exe\": \"/usr/local/bin/strata-split-4-amd-dflash2\",
   \"tokenizer\": \"/strata/tok/tokenizer\",
   \"cwd\": \"/strata/engine\",
   \"log\": \"/tmp/strata-engine.log\",

@@ -1,6 +1,6 @@
 # jaison — AI box
 
-LAN-only inference server. Runs the `llm/` stack (llama-swap on the Vulkan llama.cpp image) on 4× AMD Radeon AI Pro R9700; nothing here is on the public gateway. `jason-server` (the media box) keeps Traefik, quack, and the model archive, and reaches this box over the LAN by hostname.
+LAN-only inference server. Runs the `jaison/llm/` router (`llm-swap` launching Strata, vLLM, and llama.cpp sibling containers) on 4× AMD Radeon AI Pro R9700; nothing here is on the public gateway. `jason-server` (the media box) keeps Traefik, quack, `llm-swap-media`, and the model archive, and reaches this box over the LAN (`192.168.50.202:11436`).
 
 | Component | Part |
 |-----------|------|
@@ -19,5 +19,5 @@ Setup: [`setup.md`](setup.md). Scripts: [`scripts/`](scripts/).
 ## How the two boxes fit together
 
 - `jaison/llm/docker-compose.yml` runs here (`make up` from `jaison/llm/`), models on the local NVMe. Long-term model storage is the `media/models` ZFS dataset on the media box; copy to NVMe before serving, never run a model over NFS.
-- The media box's Traefik forwards `api.jasonfagerberg.duckdns.org/openai` to `http://jaison:11436` (file-provider route), quack points `QUACK_LLM_ENDPOINT` at the same address, and the media box's `llm-swap-media` peers to this box for every model except `clef`, including the CPU embedder `qwen3-embed`.
-- Firewall: only 22 and 11436, and 11436 only from the media box.
+- The media box's `llm-swap-media` (`llm/llm-swap-media.yaml`) serves `clef` / `clef-flash` / `qwen3-omni-30b` locally on its RTX 3090 and peers to this box (`http://192.168.50.202:11436`) for every other model, including the CPU embedder `qwen3-embed`. Both Traefik's `/openai` route (`api/traefik/dynamic/llm.yml`) and quack talk to `llm-swap-media`.
+- Firewall: SSH from LAN, 11436 and exporter ports (9100/9836/8082) from the media box, plus tailnet (`tailscale0`).

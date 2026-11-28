@@ -73,7 +73,7 @@ groups:
       - clef
       - qwen3-omni-30b
 
-# jaison (2x R9700, llm-swap.yaml). Unqualified model IDs resolve here when no
+# jaison (4x R9700, jaison/llm/llm-swap.yaml). Unqualified model IDs resolve here when no
 # local model has the name; keep this list in sync with jaison's llm-swap.yaml.
 peers:
   jaison:
@@ -82,7 +82,7 @@ peers:
       responseHeader: 0   # v252 defaults 60s; non-stream calls >60s to first byte got 502 (killed plan runs)
     models:
       - qwen3-embed
-      - qwen3.8-27b
-      - glm-5.3-flash
-      - deepseek-v4.1-flash
       - qwen3.8-flash-next
+      - qwen3.8-27b
+      - hy4-flash
+      - hy4-vllm

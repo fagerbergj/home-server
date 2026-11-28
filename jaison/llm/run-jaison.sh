@@ -502,6 +502,13 @@ else
   LM_ARG=""
 fi
 
+# Optional PEFT LoRA served as LORA_NAME beside the base; requests must name LORA_NAME to get it.
+LORA_ARGS=() LORA_MOUNT_ARG=()
+if [[ -n "${LORA_DIR:-}" ]]; then
+  LORA_MOUNT_ARG=(-v "$LORA_DIR:/lora:ro")
+  LORA_ARGS=(--enable-lora --max-lora-rank "${LORA_RANK:-128}" --max-loras 1 --lora-modules "${LORA_NAME:-lora}=/lora")
+fi
+
 # ROUTING GUARD -- the AutoRound checkpoint DOES NOT WORK unpatched, and it fails SILENTLY.
 # Three defects in its shipped config.json, each with its own silent failure mode:
 #
@@ -573,7 +580,7 @@ q = json.load(open('$MODEL_DIR/config.json')).get('quantization_config', {}) or 
 print(q.get('quant_method') or q.get('format') or 'none')
 " 2>/dev/null || echo unknown)"
   case "$QUANT:$DECLARED" in
-    auto_gptq:auto_gptq) ;;
+    auto_gptq:auto_gptq|fp8:fp8) ;;
     *:unknown|*:none) ;;
     *) echo "[launcher] WARNING: QUANT=$QUANT but config.json declares '$DECLARED'." >&2 ;;
   esac
@@ -670,19 +677,19 @@ json.dump(t, open(p,'w'), ensure_ascii=False)
   fi
 fi
 
-mkdir -p "$CACHE_DIR"
+[[ -d "$CACHE_DIR" ]] || mkdir -p "$CACHE_DIR"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
-trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
-exec docker run --rm --name "$NAME" \
+exec docker run --rm --init --name "$NAME" \
   --device /dev/kfd --device /dev/dri \
   --group-add video --group-add 991 \
-  --shm-size 4g --cap-add SYS_PTRACE --security-opt seccomp=unconfined \
+  --ipc=host --shm-size "${SHM_SIZE:-8g}" --cap-add SYS_PTRACE --security-opt seccomp=unconfined \
   -v "$MODEL_DIR:/model:ro" \
   -v "$CACHE_DIR:/cache" \
   "${TILES_MOUNT_ARG[@]}" \
   "${DFLASH2_MOUNT_ARGS[@]}" \
   "${DRAFT_MOUNT_ARG[@]}" \
+  "${LORA_MOUNT_ARG[@]}" \
   -p "127.0.0.1:${PORT}:8000" \
   -e HIP_VISIBLE_DEVICES=${GPU:-1} \
   -e VLLM_ROCM_USE_AITER=1 -e VLLM_ROCM_USE_AITER_UNIFIED_ATTENTION=1 \
@@ -714,6 +721,7 @@ exec docker run --rm --name "$NAME" \
     --enable-prefix-caching --mamba-cache-mode align \
     --enable-prompt-tokens-details \
     ${SPEC_ARGS} \
+    "${LORA_ARGS[@]}" \
     --reasoning-parser qwen3 \
     --tool-call-parser qwen3_xml --enable-auto-tool-choice \
     ${ASYNC_ARG} \

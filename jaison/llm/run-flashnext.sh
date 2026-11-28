@@ -25,7 +25,8 @@ LOAD="${LOAD:---load-mode none}"   # images before Sep 2026 master only know --n
 R="$HF"/hub/models--unsloth--Qwen3.8-Flash-Next-GGUF/snapshots
 C() { echo "/root/.cache/huggingface${1#"$HF"}"; }
 S=$(ls -d "$R"/*/"$QUANT" | head -1)
-M=$(C "$S")/$(ls "$S" | grep -- '-00001-of-' | head -1)
+M_HOST=("$S"/*-00001-of-*)
+M=$(C "${M_HOST[0]}")
 D=$(C "$(ls "$R"/*/MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf | head -1)")
 
 ARGS=(-md "$D" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
@@ -35,7 +36,6 @@ ARGS=(-md "$D" --spec-type draft-mtp --spec-draft-n-max "$NMAX")
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
-trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
 exec docker run --rm --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri --group-add video --group-add 991 --ipc=host --shm-size 8g \

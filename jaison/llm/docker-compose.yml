@@ -7,13 +7,12 @@ services:
       dockerfile: llm-swap.Dockerfile
     container_name: llm-swap
     network_mode: host
-    environment:
-      - LLM_API_KEY=${LLM_API_KEY:-}
     volumes:
       - ./llm-swap.yaml:/app/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/jason/workspace/home-server/jaison/llm:/home/jason/workspace/home-server/jaison/llm:ro
-      - /mnt/cache:/mnt/cache:ro   # the launcher checks model dirs before docker run
+      - /mnt/cache:/mnt/cache:ro              # launchers inspect HF/strata paths before docker run
+      - /mnt/cache/vllm:/mnt/cache/vllm:rw    # vLLM launchers may create cache dirs or patch checkpoint configs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11436/v1/models"]

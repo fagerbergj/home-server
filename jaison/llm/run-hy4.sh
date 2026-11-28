@@ -30,15 +30,19 @@ SPEC="${SPEC:-}"
 
 R="$HF"/hub/models--AngelSlim--Hy4-flash-GGUF/snapshots
 S=$(ls -d "$R"/*/ | head -1)
+S="${S%/}"
 # -m needs the container-side path (/root/.cache/huggingface = $HF mounted ro)
-REL="${S#"$HF"/}"
-M="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '-00001-of-' | head -1)"
-MM="/root/.cache/huggingface/$REL/$(ls "$S" | grep -- '^mmproj-' | head -1)"
+M_HOST=("$S"/*-00001-of-*)
+M="/root/.cache/huggingface${M_HOST[0]#"$HF"}"
 
 # NO_MM=1 runs text-only: this PR build does not recognize AngelSlim's mmproj
 # projector type (hy_v4_flash), so vision serving is broken until that is resolved.
 ARGS=()
-[ "${NO_MM:-0}" != "1" ] && ARGS+=(--mmproj "$MM")
+if [ "${NO_MM:-0}" != "1" ]; then
+  MM_HOST=("$S"/mmproj-*)
+  MM="/root/.cache/huggingface${MM_HOST[0]#"$HF"}"
+  ARGS+=(--mmproj "$MM")
+fi
 [ -n "$TENSOR_SPLIT" ] && ARGS+=(--tensor-split "$TENSOR_SPLIT")
 [ -n "$SPEC" ] && ARGS+=(--spec-type "$SPEC")
 # Splitting $EXTRA into separate CLI flags is intentional.
@@ -56,7 +60,7 @@ docker run --init --name "$NAME" --no-healthcheck \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \
   "$IMAGE" \
   -m "$M" --load-mode mmap --lazy-mode on --no-host \
-  --jinja --reasoning-format deepseek --temp 0.9 --top-p 1.0 \
+  --jinja --reasoning-format deepseek --temp 0.9 --top-p 1.0 --top-k 0 \
   -fa on -fit on -fitt "$FITT" "${ARGS[@]}" \
   --cache-type-k "$KV" --cache-type-v "$KV" --metrics --host 0.0.0.0 \
   -c "$CTX" --parallel "$PARALLEL" -t "$THREADS" -ub "$UB" -b 2048 --port "$PORT"

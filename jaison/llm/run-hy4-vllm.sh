@@ -7,21 +7,27 @@
 # ENFORCE_EAGER=1 (skip cudagraphs), RUST_FRONTEND=0 (Python multimodal processor).
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME="${NAME:-hy4-vllm}"
 PORT="${PORT:-9989}"
 IMAGE="${IMAGE:-vllm-hy4:rocm}"
 MODEL_DIR="${MODEL_DIR:-/mnt/cache/huggingface/hub/hy4-flash-vllm-w4a16}"
 CACHE_DIR="${CACHE_DIR:-/mnt/cache/vllm/cache-hy4}"
+MOE_CFG="${MOE_CFG:-$SCRIPT_DIR/hy4-moe-r9700.json}"
+MOE_CFG_DST="/usr/local/lib/python3.14/dist-packages/vllm/model_executor/layers/fused_moe/configs/E=512,N=384,device_name=AMD_Radeon_R9700,dtype=int4_w4a16.json"
 SERVED="${SERVED:-hy4-vllm}"
 GPU="${GPU:-0,1,2,3}"
 TP="${TP:-4}"
-MAXLEN="${MAXLEN:-65536}"
-MAXSEQS="${MAXSEQS:-4}"
-BATCHTOK="${BATCHTOK:-2048}"
-GPUUTIL="${GPUUTIL:-0.95}"
+MAXLEN="${MAXLEN:-131072}"
+MAXSEQS="${MAXSEQS:-6}"
+BATCHTOK="${BATCHTOK:-1024}"
+GPUUTIL="${GPUUTIL:-0.92}"
 KV_DTYPE="${KV_DTYPE:-auto}"
 SPEC_TOKENS="${SPEC_TOKENS:-5}"
 RUST_FRONTEND="${RUST_FRONTEND:-1}"
+# Default NO_MM=1: profiling a max-resolution 4,914-token image in encoder_runner spikes >9 GiB
+# transient VRAM on top of the 22.3 GiB weights and OOMs a 32 GiB R9700. Set NO_MM=0 to override.
+NO_MM="${NO_MM:-1}"
 
 if [[ ! -f "$MODEL_DIR/config.json" ]]; then
   echo "FATAL: $MODEL_DIR/config.json missing — run quant-hy4-vllm.py first" >&2
@@ -61,7 +67,10 @@ fi
 # shellcheck disable=SC2206
 [[ -n "${EXTRA:-}" ]] && ARGS+=($EXTRA)
 
-mkdir -p "$CACHE_DIR"
+MOE_MOUNT=()
+[[ -f "$MOE_CFG" ]] && MOE_MOUNT=(-v "$MOE_CFG:${MOE_CFG_DST}:ro")
+
+[[ -d "$CACHE_DIR" ]] || mkdir -p "$CACHE_DIR"
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 trap 'docker logs "$NAME" > /tmp/hy4-vllm-last.log 2>&1 || true; docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
 
@@ -71,6 +80,7 @@ docker run --init --name "$NAME" --no-healthcheck \
   --ipc=host --shm-size 8g --cap-add SYS_PTRACE --security-opt seccomp=unconfined \
   -v "$MODEL_DIR:/model:ro" \
   -v "$CACHE_DIR:/cache" \
+  "${MOE_MOUNT[@]}" \
   -p "127.0.0.1:${PORT}:8000" \
   -e HIP_VISIBLE_DEVICES="$GPU" \
   -e NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}" \

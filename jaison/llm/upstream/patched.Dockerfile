@@ -29,8 +29,9 @@ RUN cd /src/build/bin && ./test-tokenizer-0 /src/models/ggml-vocab-qwen35.gguf &
 
 FROM ${BASE}
 ARG LLAMA_COMMIT=4413a192410fad1f054e9216114087a3e01527a0
+ARG LLAMA_VERSION=b11580
 ARG PATCH_SHA=none
-LABEL org.opencontainers.image.revision=${LLAMA_COMMIT} org.opencontainers.image.version=b11580 llama.patches=${PATCH_SHA}
+LABEL org.opencontainers.image.revision=${LLAMA_COMMIT} org.opencontainers.image.version=${LLAMA_VERSION} llama.patches=${PATCH_SHA}
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /src/build/bin/ /app/
 ENV LD_LIBRARY_PATH=/app:/opt/rocm/lib

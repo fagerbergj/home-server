@@ -1,22 +1,16 @@
 # jaison: one llama-swap for all four R9700s; each model is a `docker run` it starts and stops.
 # Bind-mount paths in cmds are HOST paths (the daemon resolves them).
-healthCheckTimeout: 2400   # vLLM cold torch.compile; deepseek's cold mmap load + KV pools ran past 20 min once
+healthCheckTimeout: 2400   # vLLM cold torch.compile; large mmap + KV pools can run past 20 min cold
 timeouts:
   responseHeader: 0   # never guillotine long first-byte waits
 logLevel: info
 hooks:
   on_startup:
-    preload: ["qwen3-embed"]
+    preload: ["qwen3-embed", "qwen3.8-flash-next"]
 
 macros:
   hf: /mnt/cache/huggingface
   llm_dir: /home/jason/workspace/home-server/jaison/llm
-  gpu: >
-    --device /dev/kfd --device /dev/dri --group-add video --group-add 991
-  llama_common: >
-    --jinja --reasoning-format deepseek
-    --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0
-    -fa on -ngl 999 --cache-type-k q8_0 --cache-type-v q8_0 --metrics --host 0.0.0.0
 
 groups:
   # The embedder sits outside every exclusive group: persistent, so no swap ever unloads it.
@@ -30,27 +24,17 @@ groups:
     swap: false
     exclusive: true
     members: ["qwen3.8-flash-next"]
-  # On-demand fallback (vLLM FP8 TP4 + DFlash2).
+  # On-demand fallback (vLLM FP8 TP4 + DFlash2 + rank-96 super-adapter LoRA).
   "27b":
     swap: true
     exclusive: true
     members: ["qwen3.8-27b"]
-  # Whole box + host RAM: GLM IQ4_XS on four cards, ~70 GB of experts in RAM. Drains/unloads the 27B.
-  "glm":
-    swap: true
-    exclusive: true
-    members: ["glm-5.3-flash"]
-  # Whole box + host RAM, Engram table paged from NVMe. Drains/unloads the 27B.
-  "deepseek":
-    swap: true
-    exclusive: true
-    members: ["deepseek-v4.1-flash"]
   # Whole box + host RAM, 63.5 GB Engram table paged from NVMe. Drains/unloads the resident model.
   "hy4":
     swap: true
     exclusive: true
     members: ["hy4-flash"]
-  # Whole box (vLLM TP4 W4A16 + FP8 Engram in pinned RAM + DFly + vision). Drains/unloads the 27B.
+  # Whole box (vLLM TP4 W4A16 + FP8 Engram in pinned RAM + DFly + vision). Drains/unloads the resident model.
   "hy4-vllm":
     swap: true
     exclusive: true
@@ -59,8 +43,11 @@ groups:
 models:
   # Qwen3-Embedding-4B Q8 on the CPU (the cards belong to the big models); the media router reaches it through its peers list.
   # 2560-dim: switching embed models means dropping quack's Qdrant collections. 17-token query ~62 ms, 674-token doc ~2.0 s at -t 24.
+  # -ub 4096 -b 4096 matches the 4096-token per-slot context window (embedding inputs must fit in one ubatch).
   "qwen3-embed":
+    concurrencyLimit: 1000
     proxy: "http://127.0.0.1:9995"
+    checkEndpoint: /health
     ttl: 0
     cmd: >
       docker run --rm --init --name embed --no-healthcheck
@@ -68,59 +55,9 @@ models:
       ghcr.io/ggml-org/llama.cpp:server-b11371
       -m /root/.cache/huggingface/hub/models--Qwen--Qwen3-Embedding-4B-GGUF/snapshots/f4602530db1d980e16da9d7d3a70294cf5c190be/Qwen3-Embedding-4B-Q8_0.gguf
       --embedding --pooling last -ngl 0 -t 24
-      -c 16384 --parallel 4 -ub 2048 -b 2048
+      -c 16384 --parallel 4 -ub 4096 -b 4096
       --host 0.0.0.0 --port 9995 --metrics
     cmdStop: docker stop embed
-
-  # vLLM TP=4, FP8 weights + DFlash2 draft: 90k 3813 prefill / 108 decode t/s (int4 was 126; 8-bit chosen for quality). MAXSEQS 6, bf16 KV. ttl 0: resident; GLM swaps it out.
-  "qwen3.8-27b":
-    proxy: "http://127.0.0.1:9993"
-    checkEndpoint: /health
-    useModelName: qwen3.8-27b-vllm   # what the launcher registers with vLLM
-    ttl: 3600
-    env:
-      - "GPU=0,1,2,3"
-      - "TP=4"
-      - "MAXLEN=262144"
-      - "MAXSEQS=6"   # bf16 KV pool ~1.15M tokens = 4 worst-case 262k seqs; vLLM queues beyond that, never OOMs
-      - "KV_DTYPE=bfloat16"   # ~1 pt quality over fp8 KV; no measured speed cost on gfx1201
-      - "PORT=9993"
-      - "NAME=qwen38-27b-vllm"
-      - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
-      - "MODEL_DIR=/mnt/cache/vllm/qwen3.8-27b-fp8"
-      - "QUANT=fp8"   # official Qwen block-fp8; launcher defaults to auto_gptq for AutoRound
-      - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
-      - "CACHE_DIR=/mnt/cache/vllm/cache"
-      - "REASONING_EFFORT=medium"
-      - "MAX_NEW_TOKENS=32768"   # 16k cut heavy plan-writing steps mid-think (empty outputs)
-      - "PATCH_DIR=/home/jason/workspace/home-server/jaison/llm/vllm-patches"   # macros do not expand in env
-    cmd: ${llm_dir}/run-jaison.sh
-    cmdStop: docker stop -t 120 qwen38-27b-vllm   # hard kills of a TP vLLM wedge the GPU (MES/sdma reset); let it drain
-
-  # GLM-5.3-Flash 320B/A18B, llama.cpp b11580 + glm/patches (RDNA4 sparse FA). UD-IQ4_XS, own MTP head n2, q8_0 KV:
-  # 1 stream ~21 t/s code / ~20 prose, 4 streams ~26 aggregate. Prefill 294 t/s @30k, 268 @106k, 246 @170k;
-  # 4 x 256k slots still lean on prompt-prefix reuse. See run-glm.sh.
-  "glm-5.3-flash":
-    proxy: "http://127.0.0.1:9998"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9998"
-      - "NAME=glm"
-    cmd: ${llm_dir}/run-glm.sh
-    cmdStop: docker stop glm
-
-  # DeepSeek-V4.1-Flash-1017, stock llama.cpp b11960. UD-IQ2_XXS, DSpark drafter n3, q8_0 KV, 4 x 128k slots.
-  # The 135 GB Engram table is read from disk on demand (mmap + lazy). See run-deepseek.sh.
-  "deepseek-v4.1-flash":
-    proxy: "http://127.0.0.1:9992"
-    checkEndpoint: /health
-    ttl: 3600
-    env:
-      - "PORT=9992"
-      - "NAME=deepseek"
-    cmd: ${llm_dir}/run-deepseek.sh
-    cmdStop: docker stop -t 60 deepseek   # let it drain: an abrupt multi-GPU stop once preceded a card dropping off the bus
 
   # Qwen3.8-Flash-Next via Strata v0.2.19 (strata-split-4-amd + DFlash2 + GPU Vision, UD-Q4_K_XL).
   # Resident default: 199.6 tok/s coding decode, 167 tok/s 4-way aggregate, 416k INT8 KV (262k ctx, 8 lanes),
@@ -136,12 +73,40 @@ models:
     cmd: ${llm_dir}/run-flashnext-strata.sh
     cmdStop: docker stop -t 60 flash-next
 
+  # vLLM TP=4, FP8 weights (harness-hub super-adapter offline-merged via merge-lora-fp8.py) + DFlash2 draft.
+  # 131 tok/s single-stream decode (vs 73 tok/s with runtime LoRA), 1.18M bf16 KV pool (4.5x @ 262k). On-demand fallback.
+  "qwen3.8-27b":
+    concurrencyLimit: 1000
+    proxy: "http://127.0.0.1:9993"
+    checkEndpoint: /health
+    useModelName: qwen3.8-27b-vllm
+    ttl: 3600
+    env:
+      - "GPU=0,1,2,3"
+      - "TP=4"
+      - "MAXLEN=262144"
+      - "MAXSEQS=6"   # bf16 KV pool ~1.18M tokens = 4.5 worst-case 262k seqs; vLLM queues beyond that, never OOMs
+      - "KV_DTYPE=bfloat16"   # ~1 pt quality over fp8 KV; no measured speed cost on gfx1201
+      - "PORT=9993"
+      - "NAME=qwen38-27b-vllm"
+      - "IMAGE=docker.io/stilldeadcode/vllm-radiance:0.9.3"
+      - "MODEL_DIR=/mnt/cache/vllm/qwen3.8-27b-super-fp8"   # super-adapter merged offline into Qwen block-fp8
+      - "QUANT=fp8"   # official Qwen block-fp8; launcher defaults to auto_gptq for AutoRound
+      - "DRAFT_DIR=/mnt/cache/vllm/qwen3.8-27b-dflash2-int4"
+      - "CACHE_DIR=/mnt/cache/vllm/cache"
+      - "REASONING_EFFORT=medium"
+      - "MAX_NEW_TOKENS=32768"   # 16k cut heavy plan-writing steps mid-think (empty outputs)
+      - "PATCH_DIR=/home/jason/workspace/home-server/jaison/llm/vllm-patches"   # macros do not expand in env
+    cmd: ${llm_dir}/run-jaison.sh
+    cmdStop: docker stop -t 120 qwen38-27b-vllm   # hard kills of a TP vLLM wedge the GPU (MES/sdma reset); let it drain
+
   # Tencent Hy4-flash 220B/A11B, llama.cpp Hy4 PR #32517 build. AngelSlim Q4_K_M, 63.5 GB Engram table
   # paged from NVMe on demand (mmap + lazy). Text-only until the projector-type mismatch is fixed
   # upstream (AngelSlim's mmproj says hy_v4_flash; this build registers hy_v4_vl) — NO_MM=1 below.
   # No spec drafter in the GGUF (DFly2 layers dropped by the converter). Sampling per model card:
   # temp 0.9, top_p 1.0, top_k off. See run-hy4.sh.
   "hy4-flash":
+    concurrencyLimit: 1000
     proxy: "http://127.0.0.1:9991"
     checkEndpoint: /health
     ttl: 3600
@@ -156,6 +121,7 @@ models:
   # BF16 dense/attn/vision/DFly in VRAM (~96 GB), FP8 Engram in pinned RAM (~64.7 GB).
   # Native DFly spec decoding + vision. See run-hy4-vllm.sh.
   "hy4-vllm":
+    concurrencyLimit: 1000
     proxy: "http://127.0.0.1:9989"
     checkEndpoint: /health
     ttl: 3600

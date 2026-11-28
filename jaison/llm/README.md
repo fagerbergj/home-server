@@ -1,67 +1,59 @@
 # jaison/llm — the AI box's model router
 
-One `llm-swap` container (llama-swap) owns all four R9700s. It does not run any model itself: each entry in `llm-swap.yaml` is a `docker run` of that model's runtime image, started on the first request and stopped with `docker stop` when it is swapped out or its TTL expires. The media box's `llm-swap-media` (`llm/`) peers to this router for every model listed here, so clients never talk to jaison directly.
+One `llm-swap` container (llama-swap) owns all four R9700s. It does not run any model itself: each entry in `llm-swap.yaml` is a `docker run` of that model's runtime image, started on startup preload or first request and stopped with `docker stop` when swapped out or its TTL expires. The media box's `llm-swap-media` (`llm/`) peers to this router for every model listed here, so clients never talk to jaison directly.
 
 ## Pieces
 
 | File | Role |
 |---|---|
-| `docker-compose.yml` | The router. Host networking (it proxies to the runtimes' `127.0.0.1` ports), `/var/run/docker.sock` (it launches them), and this directory mounted at its host path (the vLLM launcher bind-mounts files from it). |
-| `llm-swap.Dockerfile` | `docker:cli` + bash/python3 + the llama-swap binary. No GPU libraries; those live in the runtime images. |
-| `llm-swap.yaml` | Model table, groups, and the per-model `cmd` / `cmdStop`. Bind-mount paths inside cmds are **host** paths because the daemon resolves them. |
-| `run-flashnext.sh` | Qwen3.8-Flash-Next launcher (llama.cpp, tensor split). Knobs: `QUANT`, `SM`, `KV`, `CTX`, `PARALLEL`, `THREADS`, `UB`, `NMAX`, `MMPROJ`, `LOAD`. |
-| `run-glm.sh` | GLM-5.3-Flash launcher (llama.cpp). Knobs: `QUANT`, `SPEC` (mtp/dflash/none), `NMAX`, `KV`, `CTX`, `PARALLEL`, `NCMOE`/`TS` (placement; empty `NCMOE` = auto-fit with `FITT` margins), `MMPROJ`. |
-| `run-mimo.sh` | MiMo-V2.6-Flash launcher (llama.cpp). Reads `PORT`, `NAME`, `NCMOE`, `CTX`, `PARALLEL`, `THREADS` from the model's `env:`. |
-| `run-jaison.sh` | vLLM launcher for the 27B. Reads `GPU`, `TP`, `MAXLEN`, `MAXSEQS`, `PORT`, `MODEL_DIR`, `DRAFT_DIR`, `CACHE_DIR`, `REASONING_EFFORT` from the model's `env:`. |
-| `vllm-patches/` | Tuned Triton kernel and patched vLLM sources for DFlash2 and KV sizing, bind-mounted over the image. See its README. |
-| `upstream/patched.Dockerfile` | llama.cpp + one model's patch series, gfx1201 + RCCL. `mtp4/patches` (Flash-Next's shared MTP head) builds `llama-mtp4:b12110-port` (`make mtp-image`; base pinned by MTP_COMMIT/MTP_BASE — dry-run the series on a new tree before bumping); `glm/patches` (RDNA4 sparse FA) builds `llama-glm:b11580-p1` (`make glm-image`). Each `patches/README.md` says what is carried and why. |
-| `Makefile` | `make up` pulls runtime images, builds the patched images, and starts the router. `make down` stops the router and any runtime it left running. |
+| `docker-compose.yml` | The router. Host networking (it proxies to the runtimes' `127.0.0.1` ports), `/var/run/docker.sock` (it launches them), this directory mounted at its host path, `/mnt/cache` `:ro`, and `/mnt/cache/vllm` `:rw` for vLLM cache/config guards. |
+| `llm-swap.Dockerfile` | `docker:cli` + bash/python3 + SHA256-verified llama-swap binary. No GPU libraries; those live in the runtime images. |
+| `llm-swap.yaml` | Model table, groups, startup preloads, and per-model `cmd` / `cmdStop`. Bind-mount paths inside cmds are **host** paths because the daemon resolves them. |
+| `run-flashnext-strata.sh` | Resident `qwen3.8-flash-next` launcher (Strata v0.2.19 + `strata-split-4-amd-dflash2` wrapper + `--ulimit memlock=-1:-1`). |
+| `run-flashnext-rdna.sh` | Drop-in `llama-cpp-rdna-boosts` launcher for `qwen3.8-flash-next` (524k unified `q8_0` KV, 8 slots × 262k, GPU vision, strict greedy purity). |
+| `run-jaison.sh` | vLLM launcher for `qwen3.8-27b` (using offline-merged `qwen3.8-27b-super-fp8` via `merge-lora-fp8.py`). |
+| `run-hy4.sh` | Hy4-flash launcher (llama.cpp PR #32517, Engram table paged from NVMe via mmap + lazy rows). |
+| `run-hy4-vllm.sh` | Hy4-flash launcher (vLLM ROCm TP=4 W4A16 + FP8 linears + FP8 Engram + DFly + `hy4-moe-r9700.json` tuned MoE tiles, 205k BF16 KV). |
+| `run-glm.sh`, `run-deepseek.sh`, `run-flashnext.sh`, `run-mimo.sh`, `run-inkling.sh` | Cold-storage / fallback llama.cpp launchers kept in git for quick restoration when weights are copied back to `/mnt/cache`. |
+| `vllm-patches/` | Tuned Triton kernel and patched vLLM sources for DFlash2 and KV sizing, bind-mounted over `vllm-radiance:0.9.3`. See its README. |
+| `upstream/patched.Dockerfile` | Opt-in llama.cpp + patch-series builder (`make mtp-image`, `make glm-image`, `make inkling-image`). |
+| `Makefile` | `make up` builds/pulls active runtime images and recreates the router. `make down` drains and stops the router and every runtime container. |
 
-## Runtimes
+## Active Runtimes
 
 | Model id | Image | Cards | Notes |
 |---|---|---|---|
-| `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | all four, TP=4 | vLLM, resident (`ttl: 0`), FP8 + DFlash2 draft |
-| `glm-5.3-flash` | `llama-glm:b11580-p1` | all four + host RAM | llama.cpp + `glm/patches`, experts in RAM |
-| `deepseek-v4.1-flash` | `ghcr.io/ggml-org/llama.cpp:server-rocm-b12110` | all four + host RAM | stock image + `run-deepseek.sh`, Engram table on disk |
-| `qwen3.8-flash-next` | `llama-mtp4:b12110-port` | all four | llama.cpp b12110 + `mtp4/patches`, tensor-split |
+| `qwen3-embed` | `ghcr.io/ggml-org/llama.cpp:server-b11371` | CPU (`-t 24`) | Persistent (`ttl: 0`), preloaded at startup, `-c 16384 --parallel 4 -ub 4096 -b 4096` |
+| `qwen3.8-flash-next` | `strata-server:0.2.19` | all four | Resident default (`ttl: 0`), preloaded at startup; Strata split-4 + DFlash2 + GPU vision, 416k INT8 KV (262k ctx, 8 lanes) |
+| `qwen3.8-27b` | `stilldeadcode/vllm-radiance:0.9.3` | all four, TP=4 | On-demand fallback (`ttl: 3600`); offline-merged super-adapter FP8 + DFlash2, 1.18M bf16 KV (4.5× @ 262k), 131 tok/s |
+| `hy4-flash` | `llama-hy4:f8d4cc41` | all four + host RAM | On-demand (`ttl: 3600`); AngelSlim Q4_K_M, Engram table paged from NVMe, text-only (`NO_MM=1`) |
+| `hy4-vllm` | `vllm-hy4:rocm` | all four, TP=4 + RAM | On-demand (`ttl: 3600`); W4A16 routed experts + FP8 linears + FP8 Engram + DFly + `hy4-moe-r9700.json`, 205k bf16 KV (`NO_MM=1`) |
 
 Runtime details:
 
-`qwen3.8-27b` — FP8 (Qwen block-fp8) + DFlash2 int4 draft, 262k context, 6 sequences, bf16 KV.
-~3 min boot with a warm compile cache in `/mnt/cache/vllm/cache`.
+- `qwen3.8-flash-next` — Strata v0.2.19 with the tracked `strata-split-4-amd-dflash2` wrapper, `--ulimit memlock=-1:-1` (locks 29.5 GB word/PLE tables in RAM), 416k INT8 KV pool + 16 GiB RAM conversation park cache, ~28 s cold boot. (`run-flashnext-rdna.sh` is an alternative on `llama-cpp-rdna-boosts` with 524k unified `q8_0` KV across 8 × 262k slots, 3,405 tok/s prefill, 83.1 tok/s decode without drafter, strict greedy purity.)
+- `qwen3.8-27b` — `harness-hub/Qwen3.8-27B-super-adapter` offline-merged into Qwen block-FP8 (`merge-lora-fp8.py`, max FP8 rel err 0.0021) + DFlash2 int4 draft, 262k context, 6 sequences, 1.18M bf16 KV (4.50× @ 262k), **131.1 tok/s** single-stream decode (up from 73 tok/s with runtime LoRA). ~2.5 min warm boot.
+- `hy4-flash` / `hy4-vllm` — Tencent Hy4-flash 220B/A11B; `hy4-vllm` runs with 415 non-expert BF16 linears packed to block-FP8 (`pack-hy4-fp8-linears.py`, 22.34 GiB/card), `hy4-moe-r9700.json` tuned R9700 MoE tiles, DFly (3.09 tok/step), and 205k bf16 KV (`MAXLEN=131072`, `NO_MM=1` to avoid 4,914-token vision profiling OOM).
 
-`glm-5.3-flash` — unsloth UD-IQ4_XS, experts of 23 layers (~76 GiB) in RAM, GLM's MTP head at depth 2, q8_0 KV, 4 slots x 256k.
-~22 t/s code, ~17 prose, ~28 aggregate at 4 streams.
-Built with `glm/patches` so attention reads only the indexer's 2048 top-k keys: prefill 227 t/s at 30k, 196 at 106k, 174 at 170k (a cold 170k prompt takes ~16 min).
-`--no-host` is required: pinned host buffers fault the GPU when a slot restores cached state.
-Loading it drains and unloads the 27B.
+Groups: `embed` is persistent (never evicted); `flash-next` is the resident default; `27b`, `hy4`, and `hy4-vllm` are exclusive on-demand groups that drain/evict the resident model on use.
 
-`deepseek-v4.1-flash` — stock image (DeepSeek-V4.1 and the DSpark drafter are upstream), unsloth UD-IQ2_XXS, DSpark n3, q8_0 KV, 4 x 128k slots, cold load ~12 min.
-The 135 GB Engram table (shard 6) stays on disk: `mmap` + `--lazy-mode` read its rows on demand, so the page cache must not be dropped after load.
-b12110's fitter can't measure the drafter ("fitting without it"), so `-fitt` margins reserve dev0's 2.5 GB for dspark — without them the drafter OOMs at load (see `run-deepseek.sh`; crash logs land in the router container's /tmp/deepseek-last.log).
-
-`qwen3.8-flash-next` — the shared MTP head borrows the target's embeddings (PR 28243 never landed upstream), unsloth UD-Q4_K_XL tensor-split across all four cards, shared head n2, f16 KV (tensor mode requires unquantized KV and ignores -ot; the 28.8 GB n-gram table stays in VRAM), 1 x 262k slot at ~30 GB/card.
-~45 s load warm.
-
-Groups: `27b` is the resident default; `glm` is exclusive, so a request for it swaps the 27B out and the next 27B call pays the boot.
-
-MiMo is in cold storage on the media box (`/mnt/media/models/huggingface`); `run-mimo.sh` and its git history bring it back. Flash-Next returned on b12110 (see Runtimes). Omni moved to the media box's 3090 (`llm/llm-swap-media.yaml`).
+Cold-storage models (`glm-5.3-flash`, `deepseek-v4.1-flash`, `mimo`, `inkling`): weights live on the media box archive (`/mnt/media/models/huggingface`); their `run-*.sh` launchers and git history bring them back when copied to `/mnt/cache`. Omni runs on the media box's RTX 3090 (`llm/llm-swap-media.yaml`).
 
 ## Data on disk (jaison)
 
-- `/mnt/cache/huggingface` — GGUFs and mmprojs (HF cache layout, `HF_HUB_OFFLINE=1`).
-- `/mnt/cache/vllm/qwen3.8-27b-fp8`, `/mnt/cache/vllm/qwen3.8-27b-dflash2-int4` — vLLM checkpoints; `/mnt/cache/vllm/cache` — torch.compile cache.
+- `/mnt/cache/huggingface` — GGUFs, mmprojs, and quantized checkpoints (`HF_HUB_OFFLINE=1`).
+- `/mnt/cache/strata` — Strata engine binaries, DFlash2 pack, tokenizer, and server code.
+- `/mnt/cache/vllm/qwen3.8-27b-fp8`, `/mnt/cache/vllm/qwen3.8-27b-dflash2-int4`, `/mnt/cache/vllm/qwen3.8-27b-super-adapter` — vLLM checkpoints and LoRA; `/mnt/cache/vllm/cache` and `/mnt/cache/vllm/cache-hy4` — torch.compile/Triton caches.
 
 ## Day to day
 
 ```bash
-cd ~/workspace/home-server/jaison/llm && set -a && . ../../.env && set +a
+cd ~/workspace/home-server/jaison/llm
 make up
 curl -s localhost:11436/v1/models | jq '.data[].id'   # what the router offers
 curl -s localhost:11436/running                        # what is loaded right now
-docker ps                                              # runtimes: qwen38-27b-vllm / glm
-docker logs -f qwen38-27b-vllm                         # a runtime's own log
+docker ps                                              # runtimes: flash-next / embed / qwen38-27b-vllm / hy4 / hy4-vllm
+docker logs -f flash-next                              # a runtime's own log
 ```
 
 Config edits: `git pull` replaces `llm-swap.yaml`, and the bind mount follows the old inode, so `docker compose up -d --force-recreate llm-swap` (or `make up`) after pulling. Never recreate the router while a review is in flight; it stops every runtime.

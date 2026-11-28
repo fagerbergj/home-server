@@ -26,6 +26,19 @@ scrape_configs:
     static_configs:
       - targets: ['192.168.50.202:8082']
 
+  # LLM router + persistent embedder metrics (never scrape non-persistent /upstream/<model>/metrics:
+  # llama-swap treats /upstream/* as an active request and would force-load/evict models).
+  - job_name: jaison_llamaswap
+    static_configs:
+      - targets: ['192.168.50.202:11436']
+  - job_name: jaison_embed
+    metrics_path: /upstream/qwen3-embed/metrics
+    static_configs:
+      - targets: ['192.168.50.202:11436']
+  - job_name: media_llamaswap
+    static_configs:
+      - targets: ['192.168.50.186:11436']
+
   - job_name: smartctl
     static_configs:
       - targets: ['smartctl-exporter:9633']

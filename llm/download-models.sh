@@ -7,21 +7,17 @@
 #   ./download-models.sh <repo> <file> ...     # download specific repo/file pairs
 set -euo pipefail
 
-HF_CACHE=/mnt/cache/huggingface
+HF_CACHE="${HF_CACHE:-/mnt/media/models/huggingface}"
 
-# repo/file pairs for every GGUF llm-swap.yaml loads via -hf.
+# repo/file pairs for active GGUF models (media box + jaison working set).
 DEFAULTS=(
-  unsloth/Qwen3.6-35B-A3B-GGUF Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-  unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q4_K_XL.gguf
-  unsloth/Qwen3.8-27B-GGUF mmproj-BF16.gguf
-  unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-UD-Q4_K_XL.gguf
-  unsloth/Qwen3-VL-32B-Instruct-GGUF Qwen3-VL-32B-Instruct-UD-Q4_K_XL.gguf
-  Qwen/Qwen3-Embedding-4B-GGUF Qwen3-Embedding-4B-Q8_0.gguf
-  unsloth/gemma-4-26B-A4B-it-GGUF gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf
+  ggml-org/Clef-GGUF Clef-Q4_K_M.gguf
+  ggml-org/Clef-GGUF mmproj-Clef-Q8_0.gguf
+  ggml-org/Clef-Flash-GGUF Clef-Flash-Q4_K_M.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
   ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF mmproj-Qwen3-Omni-30B-A3B-Instruct-bf16.gguf
-  unsloth/Muse-Glimmer-30B-GGUF Muse-Glimmer-30B-UD-Q4_K_XL.gguf
-  unsloth/Muse-Glimmer-30B-GGUF mmproj-Muse-Glimmer-30B-Q8_0.gguf
+  Qwen/Qwen3-Embedding-4B-GGUF Qwen3-Embedding-4B-Q8_0.gguf
+  unsloth/Qwen3.8-Flash-Next-GGUF mmproj-BF16.gguf
 )
 
 args=("$@")

@@ -29,7 +29,8 @@ MMPROJ="${MMPROJ:-0}"
 
 # pinned: the Oct 5 snapshot whose shard 1 uses upstream's glm5-next arch name (shards 2-5 link the old blobs)
 S=$(ls -d "$HF"/hub/models--unsloth--GLM-5.3-Flash-GGUF/snapshots/a38483c8cd5df544f53d70fb281afe97369d5ab6/"$QUANT" | head -1)
-M=/root/.cache/huggingface${S#"$HF"}/$(ls "$S" | grep -- '-00001-of-' | head -1)
+M_HOST=("$S"/*-00001-of-*)
+M=/root/.cache/huggingface${M_HOST[0]#"$HF"}
 
 if [ -n "$NCMOE" ]; then
   ARGS=(-ngl 999 --n-cpu-moe "$NCMOE" -ts "$TS")
@@ -52,14 +53,26 @@ fi
 [ -n "${EXTRA:-}" ] && ARGS+=($EXTRA)
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
-trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT INT TERM
+DROP_PID=""
+cleanup() {
+  [ -n "$DROP_PID" ] && kill "$DROP_PID" >/dev/null 2>&1 || true
+  docker rm -f "$NAME" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT INT TERM
 
 (
-  until curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null; do sleep 10; done
-  docker run --rm --privileged alpine sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
+  sleep 10
+  while docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null | grep -q true; do
+    if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null; then
+      docker run --rm --privileged alpine sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'
+      exit 0
+    fi
+    sleep 10
+  done
 ) &
+DROP_PID=$!
 
-exec docker run --rm --init --name "$NAME" --no-healthcheck \
+docker run --rm --init --name "$NAME" --no-healthcheck \
   --device /dev/kfd --device /dev/dri --group-add video --group-add 991 --ipc=host --shm-size 8g \
   -e HF_HUB_OFFLINE=1 -e GPU_MAX_HW_QUEUES=1 \
   -v "$HF":/root/.cache/huggingface:ro -p "127.0.0.1:${PORT}:${PORT}" \

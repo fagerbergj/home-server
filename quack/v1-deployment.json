@@ -16,7 +16,7 @@
           }
         },
         "qwen3.8-27b": {
-          "contextWindow": 131072,
+          "contextWindow": 262144,
           "maxTokens": 32768,
           "reasoning": true,
           "images": true,

@@ -24,17 +24,6 @@ w13_s = torch.randn((E, 2 * N_TP, K // GS), dtype=torch.bfloat16, device=device)
 w2_q = torch.randint(-2**31, 2**31 - 1, (E, K, N_TP // 8), dtype=torch.int32, device=device)
 w2_s = torch.randn((E, K, N_TP // GS), dtype=torch.bfloat16, device=device).abs().clamp(min=1e-3)
 
-CANDIDATES = [
-    {"BLOCK_SIZE_M": bm, "BLOCK_SIZE_N": bn, "BLOCK_SIZE_K": bk, "GROUP_SIZE_M": gm,
-     "num_warps": nw, "num_stages": 2, "waves_per_eu": wpe}
-    for bm in (16, 32)
-    for bn in (16, 32, 64)
-    for bk in (64, 128)
-    for gm in (1, 4)
-    for nw in (1, 2, 4)
-    for wpe in (0, 2, 4)
-    if not (bm == 32 and bn == 64 and bk == 128 and nw == 1)
-]
 # Keep search bounded (~40 solid RDNA4 wave32 candidates)
 CANDIDATES = [
     {"BLOCK_SIZE_M": bm, "BLOCK_SIZE_N": bn, "BLOCK_SIZE_K": bk, "GROUP_SIZE_M": gm,

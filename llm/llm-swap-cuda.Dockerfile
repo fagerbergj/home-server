@@ -5,11 +5,13 @@ FROM ghcr.io/ggml-org/llama.cpp:server-cuda-b11429@sha256:883915ea20a4b350e98f72
 
 ARG TARGETARCH=amd64
 ARG LS_VER=252
+ARG LS_SHA256=32aea60b5c1be987c27dde6ea4aaa84f9be7ad93eaede011295fad1e276e80ea
 
 WORKDIR /app
 
 RUN curl -fsSL \
     "https://github.com/mostlygeek/llama-swap/releases/download/v${LS_VER}/llama-swap_${LS_VER}_linux_${TARGETARCH}.tar.gz" \
-    | tar -xz -C /app
+    | tar -xz -C /app \
+ && if [ "${TARGETARCH}" = "amd64" ]; then echo "${LS_SHA256}  /app/llama-swap" | sha256sum -c -; fi
 
 ENTRYPOINT ["/app/llama-swap", "-config", "/app/config.yaml", "--listen", ":11436"]

@@ -6,7 +6,7 @@
 # restores the resident model. Replaces bench-hy4.sh.
 #
 #   MODEL=hy4-flash                 model id in the yaml (default)
-#   RESTORE=qwen3.8-27b             model to reload afterwards (default; API model name)
+#   RESTORE=qwen3.8-flash-next      model to reload afterwards (default; API model name)
 #   CONC=4                          concurrent sweep: 1, 2, 3, 4 parallel requests (0 = off)
 #   CONC_P / CONC_N                 concurrent request shape (default = medium)
 #   SKIP_SWAP=1                     target already loaded — bench it, no stop/restore
@@ -26,7 +26,7 @@ for a in "$@"; do case "$a" in --dry) DRY=1 ;; *) POS+=("$a") ;; esac; done
 LLM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${CONFIG:-$LLM_DIR/llm-swap.yaml}"
 MODEL="${MODEL:-${POS[0]:-hy4-flash}}"
-RESTORE="${RESTORE:-qwen3.8-27b}"
+RESTORE="${RESTORE:-qwen3.8-flash-next}"
 ROUTER_PORT="${ROUTER_PORT:-11436}"
 CONC="${CONC:-0}"; CONC_P="${CONC_P:-}"; CONC_N="${CONC_N:-}"
 SKIP_SWAP="${SKIP_SWAP:-0}"; LOAD_TIMEOUT="${LOAD_TIMEOUT:-90}"
@@ -119,9 +119,11 @@ restore() {
     bash -c "$T_CMDSTOP" 2>/dev/null || true
     sleep 3
   fi
-  local rport; rport=$(cfg_get "$RESTORE" port 2>/dev/null) || { echo "WARNING: $RESTORE not in $CONFIG — cannot verify restore"; return; }
+  local rport rep
+  rport=$(MODEL="$RESTORE" cfg_get port 2>/dev/null) || { echo "WARNING: $RESTORE not in $CONFIG — cannot verify restore"; return; }
+  rep=$(MODEL="$RESTORE" cfg_get endpoint 2>/dev/null || echo /health)
   # is the restore model already up?
-  if [ -n "$rport" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}$(cfg_get "$RESTORE" endpoint 2>/dev/null || echo /health)" 2>/dev/null)" = "200" ]; then
+  if [ -n "$rport" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}${rep}" 2>/dev/null)" = "200" ]; then
     say "restore: $RESTORE already healthy"
     return
   fi
@@ -130,11 +132,11 @@ restore() {
     -H 'content-type: application/json' \
     -d "{\"model\":\"$RESTORE\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":1}" \
     > /dev/null || echo "WARNING: trigger request failed; check the router"
-  for i in $(seq 1 240); do
-    [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}/health" 2>/dev/null)" = "200" ] && break
+  for _ in $(seq 1 240); do
+    [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}${rep}" 2>/dev/null)" = "200" ] && break
     sleep 5
   done
-  if [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}/health" 2>/dev/null)" = "200" ]; then
+  if [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${rport}${rep}" 2>/dev/null)" = "200" ]; then
     say "restore: $RESTORE healthy on :${rport}"
   else
     echo "WARNING: $RESTORE not healthy after 20 min — check the router"
@@ -147,7 +149,7 @@ STOPS=()
 if [ "$SKIP_SWAP" = "1" ]; then
   say "1/5 SKIP_SWAP: benching $MODEL as-is"
 elif [ "$T_EXCL" = "1" ] && [ -n "$OTHER_EXCL" ]; then
-  while IFS='=' read -r mname cname; do
+  while IFS='=' read -r _ cname; do
     [ -n "$cname" ] || continue
     docker ps -q --filter "name=^${cname}$" | grep -q . && STOPS+=("$cname")
   done <<< "$OTHER_EXCL"
@@ -157,7 +159,7 @@ elif [ "$T_EXCL" = "1" ] && [ -n "$OTHER_EXCL" ]; then
     say "1/5 stopping: ${STOPS[*]}"
     for c in "${STOPS[@]}"; do docker stop -t 60 "$c"; done
     drained=0
-    for i in $(seq 1 60); do
+    for _ in $(seq 1 60); do
       # driver baseline is ~60 MB; require < 1 GB per card
       busy=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | awk -F, 'NR>1 && $3+0>1073741824 {c++} END {print c+0}')
       [ "${busy:-1}" = "0" ] && { drained=1; break; }
@@ -178,7 +180,7 @@ else
   # launcher env from the yaml + this environment (so CTX=/PARALLEL=/TENSOR_SPLIT= flow through)
   env "${E_TARGET[@]}" bash -c "$T_CMD" &
   T_PID=$!
-  for i in $(seq 1 $((LOAD_TIMEOUT * 12))); do
+  for _ in $(seq 1 $((LOAD_TIMEOUT * 12))); do
     [ "$(curl -s -o /dev/null -w '%{http_code}' -m 2 "http://127.0.0.1:${T_PORT}${T_EP}" 2>/dev/null)" = "200" ] && { LOADED=1; break; }
     kill -0 "$T_PID" 2>/dev/null || die "launcher exited early — check its log; if it is a KV/OOM fit, retry with e.g. CTX=262144 PARALLEL=2 $MODEL"
     sleep 5
@@ -244,7 +246,7 @@ def work(i, go):
                           "temperature": temp, "top_p": topp}).encode()
     req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/completions", data=payload,
                                  headers={"content-type": "application/json"})
-    t0 = time.time(); go.wait()
+    go.wait(); t0 = time.time()
     first, toks, usage = None, 0, {}
     try:
         r = urllib.request.urlopen(req, timeout=7200)
@@ -275,7 +277,7 @@ errs = [r[4] for r in res if r[4]]
 ttfbs = sorted(r[1] for r in res)
 agg = tot_gen / wall if wall > 0 else 0.0
 if errs:
-    print(f"FATAL: concurrent request failed — {errs[0]}")
+    sys.exit(f"FATAL: concurrent request failed — {errs[0]}")
 with open(sys.argv[7], "a") as f:
     f.write(f"conc\t{nn}\t{res[0][0]}\t{tot_gen}\t{wall:.3f}\t{agg:.3f}\t{agg / nn:.3f}\t"
             f"{ttfbs[0]:.3f}\t{ttfbs[len(ttfbs) // 2]:.3f}\t{ttfbs[-1]:.3f}\n")
